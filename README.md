@@ -26,7 +26,7 @@ CI builds every package on each push to `main` and publishes the signed repo to 
 
 ```ini
 [kriss]
-Server = https://github.com/<org>/krissos/releases/download/repo-x86_64
+Server = https://github.com/krazetech/krissos/releases/download/repo-x86_64
 ```
 
 ### Signing key (one-time setup)
