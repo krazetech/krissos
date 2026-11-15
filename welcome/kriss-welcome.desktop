@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=KrissOS Welcome
+Name[ms]=Selamat Datang ke KrissOS
+Comment=Check your games and bring your Windows apps
+Comment[ms]=Semak permainan anda dan bawa aplikasi Windows anda
+Exec=kriss-welcome
+Icon=start-here-kde
+Categories=Qt;KDE;System;
+Keywords=windows;games;apps;anti-cheat;

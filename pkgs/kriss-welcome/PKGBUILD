@@ -1,0 +1,39 @@
+# Maintainer: Kraze Tech
+pkgname=kriss-welcome
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='KrissOS first-boot app: game checker and Bring your apps'
+arch=('any')
+url='https://github.com/krazetech/krissos'
+license=('GPL-3.0-or-later' 'MIT')
+depends=('flatpak' 'kirigami' 'pyside6' 'python' 'qqc2-desktop-style')
+makedepends=('qt6-tools')
+
+# Sources live in this monorepo, so package straight from welcome/.
+_src="$startdir/../../welcome"
+
+build() {
+  mkdir -p "$srcdir/i18n"
+  /usr/lib/qt6/bin/lrelease "$_src/i18n/kriss-welcome_ms.ts" -qm "$srcdir/i18n/kriss-welcome_ms.qm"
+}
+
+check() {
+  cd "$_src" && python -B test_welcome.py
+}
+
+package() {
+  # Added here, not above: makepkg --syncdeps cannot resolve sibling [kriss] packages.
+  depends+=('kriss-tools>=0.2.0')
+  local share="$pkgdir/usr/share/kriss-welcome"
+  install -Dm644 -t "$share" "$_src"/kriss_welcome.py "$_src"/logic.py
+  install -Dm644 -t "$share/qml" "$_src"/qml/*.qml
+  install -Dm644 -t "$share/data" "$_src"/data/{apps.json,games.json,SOURCES.md}
+  install -Dm644 -t "$share/i18n" "$srcdir"/i18n/*.qm
+  install -Dm644 "$_src/kriss-welcome.desktop" "$pkgdir/usr/share/applications/org.krissos.Welcome.desktop"
+  install -Dm644 "$_src/kriss-welcome-autostart.desktop" "$pkgdir/etc/xdg/autostart/kriss-welcome.desktop"
+  install -d "$pkgdir/usr/bin"
+  printf '#!/bin/sh\nexec python /usr/share/kriss-welcome/kriss_welcome.py "$@"\n' >"$pkgdir/usr/bin/kriss-welcome"
+  chmod 755 "$pkgdir/usr/bin/kriss-welcome"
+  # AreWeAntiCheatYet data is MIT; its notice is in SOURCES.md.
+  install -Dm644 "$_src/data/SOURCES.md" "$pkgdir/usr/share/licenses/$pkgname/DATA-SOURCES.md"
+}
