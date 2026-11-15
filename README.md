@@ -9,6 +9,7 @@ productivity, gaming and local AI. See [ARCHITECTURE.md](ARCHITECTURE.md) for th
 |---|---|
 | `pkgs/` | One PKGBUILD per package in the `[kriss]` repo |
 | `tools/` | Source for `kriss` and the other `kriss-*` tools |
+| `welcome/` | Source for `kriss-welcome`, the first-boot app, and its data |
 | `.github/workflows/` | CI that builds, signs and publishes the repo |
 
 ## Building a package locally
