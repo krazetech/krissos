@@ -1,0 +1,40 @@
+# KrissOS branding for the Calamares installer. Rendered by theme/generate.py from
+# theme/tokens.json; edit the template, not the installed copy.
+---
+componentName: krissos
+
+welcomeStyleCalamares: false
+welcomeExpandingLogo: true
+windowExpanding: normal
+windowSize: 1024px,640px
+windowPlacement: center
+sidebar: widget
+navigation: widget
+
+strings:
+    productName: KrissOS
+    shortProductName: KrissOS
+    version: rolling
+    shortVersion: rolling
+    versionedName: KrissOS
+    shortVersionedName: KrissOS
+    bootloaderEntryName: KrissOS
+    productUrl: https://github.com/krazetech/krissos
+    supportUrl: https://github.com/krazetech/krissos/issues
+    knownIssuesUrl: https://github.com/krazetech/krissos/issues
+    releaseNotesUrl: https://github.com/krazetech/krissos/releases
+
+# The logo ships in kriss-theme at this path.
+images:
+    productIcon: /usr/share/pixmaps/krissos.svg
+    productLogo: /usr/share/pixmaps/krissos.svg
+    productWelcome: /usr/share/pixmaps/krissos.svg
+
+style:
+    SidebarBackground: "{{bg}}"
+    SidebarText: "{{fg}}"
+    SidebarTextCurrent: "{{bg}}"
+    SidebarBackgroundCurrent: "{{accent}}"
+
+slideshow: show.qml
+slideshowAPI: 2
