@@ -76,9 +76,11 @@ PanelWindow {
                     border.color: Theme.alpha(Theme.accent, 0.35)
                     visible: Desktop.launcherOpen && Desktop.screen === bar.screen
                 }
-                // ponytail: the accent disc shows on its own until kriss-theme ships krissos.svg (PR #8).
-                Rectangle { anchors.fill: parent; radius: width / 2; color: Theme.accent }
+                // The KrissOS emblem from kriss-theme; a plain accent disc if an older
+                // kriss-theme doesn't have it yet.
+                Rectangle { anchors.fill: parent; radius: width / 2; color: Theme.accent; visible: logo.status !== Image.Ready }
                 Image {
+                    id: logo
                     anchors.fill: parent
                     source: "file:///usr/share/pixmaps/krissos.svg"
                     sourceSize: Qt.size(76, 76)

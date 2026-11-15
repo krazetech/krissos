@@ -82,8 +82,10 @@ Scope {
                 Rectangle {
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: 84; height: 84; radius: 42
-                    color: Theme.accent
+                    // The accent disc shows only without kriss-theme's emblem.
+                    color: lockLogo.status === Image.Ready ? "transparent" : Theme.accent
                     Image {
+                        id: lockLogo
                         anchors.fill: parent
                         source: "file:///usr/share/pixmaps/krissos.svg"
                         sourceSize: Qt.size(168, 168)
