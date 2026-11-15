@@ -1,0 +1,7 @@
+[Unit]
+Description=Check for KrissOS updates and offer to install them
+After=graphical-session.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/kriss-update-notify

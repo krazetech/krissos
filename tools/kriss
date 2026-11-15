@@ -77,6 +77,19 @@ cmd_hwcheck() {
     "$ram_mb" "$cores" "$virt" "$kvm" "$(gpu_vendors)" "$ok" "${reasons%,}"
 }
 
+# Update everything, after a btrfs snapshot when snapper is set up, so a bad update rolls back
+# from the boot menu. Runs as root: the update notice calls it through pkexec.
+cmd_update() {
+  ((EUID == 0)) || die "update needs root. Run: pkexec kriss update"
+  if command -v snapper >/dev/null && snapper list-configs 2>/dev/null | grep -q '^root '; then
+    snapper -c root create --cleanup-algorithm number --description 'before kriss update'
+  fi
+  pacman -Syu --noconfirm
+  if command -v flatpak >/dev/null; then
+    flatpak update --noninteractive --assumeyes
+  fi
+}
+
 cmd_version() {
   printf 'kriss %s\n%s\n' "$KRISS_VERSION" "$(os_field PRETTY_NAME 'not running on KrissOS')"
 }
@@ -108,6 +121,7 @@ EOF
 main() {
   case "${1:-info}" in
     info) cmd_info ;;
+    update) cmd_update ;;
     version | --version | -V) cmd_version ;;
     hwcheck) cmd_hwcheck ;;
     help | --help | -h) cmd_help ;;

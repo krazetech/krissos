@@ -1,0 +1,41 @@
+#!/bin/sh
+# kriss-update-notify: if updates are waiting, show a desktop notification whose "Update"
+# button runs `kriss update` through pkexec. kriss-update-notify.timer runs it.
+set -u
+
+# English and Bahasa Melayu, picked from the user's locale.
+case "${LC_ALL:-${LC_MESSAGES:-${LANG:-}}}" in
+ms*)
+  t_title="Kemas kini tersedia"
+  t_body="%s kemas kini sedia untuk dipasang."
+  t_update="Kemas kini"
+  t_done="KrissOS sudah dikemas kini"
+  t_failed="Kemas kini tidak selesai. Cuba lagi nanti."
+  ;;
+*)
+  t_title="Updates available"
+  t_body="%s updates are ready to install."
+  t_update="Update"
+  t_done="KrissOS is up to date"
+  t_failed="The update did not finish. Try again later."
+  ;;
+esac
+
+# checkupdates (pacman-contrib) syncs a private copy of the database, so it needs no root.
+count=$(($(checkupdates 2>/dev/null | wc -l)))
+if command -v flatpak >/dev/null; then
+  count=$((count + $(flatpak remote-ls --updates --columns=application 2>/dev/null | wc -l)))
+fi
+[ "$count" -gt 0 ] || exit 0
+
+# shellcheck disable=SC2059 # the translated body is the format string
+action=$(notify-send --app-name=KrissOS --icon=system-software-update --wait \
+  --action=update="$t_update" "$t_title" "$(printf "$t_body" "$count")")
+[ "$action" = update ] || exit 0
+
+pkexec kriss update
+case $? in
+0) notify-send --app-name=KrissOS --icon=system-software-update "$t_done" ;;
+126 | 127) ;; # the password prompt was cancelled
+*) notify-send --app-name=KrissOS --icon=dialog-warning --urgency=critical "$t_failed" ;;
+esac

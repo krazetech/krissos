@@ -1,15 +1,23 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-tools
-pkgver=0.2.0
+pkgver=0.3.0
 pkgrel=1
 pkgdesc='KrissOS system tools'
 arch=('any')
 url='https://github.com/krazetech/krissos'
 license=('GPL-3.0-or-later')
-depends=('bash' 'coreutils' 'glibc' 'grep' 'sed')
-optdepends=('power-profiles-daemon: show the active power profile')
+depends=('bash' 'coreutils' 'glibc' 'grep' 'libnotify' 'pacman-contrib' 'polkit' 'sed')
+optdepends=('power-profiles-daemon: show the active power profile'
+            'snapper: snapshot before kriss update'
+            'flatpak: update Flatpak apps with kriss update')
 
 # Sources live in this monorepo, so package straight from tools/.
 package() {
-  install -Dm755 "$startdir/../../tools/kriss" "$pkgdir/usr/bin/kriss"
+  local tools="$startdir/../../tools" units="$pkgdir/usr/lib/systemd/user"
+  install -Dm755 "$tools/kriss" "$pkgdir/usr/bin/kriss"
+  install -Dm755 "$tools/kriss-update-notify" "$pkgdir/usr/bin/kriss-update-notify"
+  install -Dm644 -t "$units" "$tools"/systemd/kriss-update-notify.{service,timer}
+  # On for every user, like `systemctl --global enable`; `systemctl --user mask` turns it off.
+  install -d "$units/timers.target.wants"
+  ln -s ../kriss-update-notify.timer "$units/timers.target.wants/kriss-update-notify.timer"
 }

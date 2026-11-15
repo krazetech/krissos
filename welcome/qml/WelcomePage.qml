@@ -39,6 +39,11 @@ Kirigami.ScrollablePage {
                 icon.name: "system-software-install"
                 onClicked: root.showPage(2)
             }
+            QQC2.Button {
+                text: qsTr("Copy my files")
+                icon.name: "folder-download"
+                onClicked: root.showPage(3)
+            }
         }
 
         Kirigami.FormLayout {

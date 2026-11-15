@@ -15,8 +15,8 @@ Kirigami.ApplicationWindow {
         { title: qsTr("Welcome"), icon: "go-home", page: welcomePage },
         { title: qsTr("Game checker"), icon: "input-gaming", page: gamesPage },
         { title: qsTr("Bring your apps"), icon: "system-software-install", page: appsPage },
-        { title: qsTr("Copy from Windows"), icon: "folder-download", page: soonPage },
-        { title: qsTr("Drivers and extras"), icon: "preferences-system", page: soonPage }
+        { title: qsTr("Copy from Windows"), icon: "folder-download", page: copyPage },
+        { title: qsTr("Drivers and extras"), icon: "preferences-system", page: extrasPage }
     ]
 
     function showPage(i) {
@@ -46,16 +46,6 @@ Kirigami.ApplicationWindow {
     Component { id: welcomePage; WelcomePage {} }
     Component { id: gamesPage; GamesPage {} }
     Component { id: appsPage; AppsPage {} }
-    Component {
-        id: soonPage
-        Kirigami.Page {
-            Kirigami.PlaceholderMessage {
-                anchors.centerIn: parent
-                width: parent.width - Kirigami.Units.gridUnit * 4
-                icon.name: "clock"
-                text: qsTr("Coming soon")
-                explanation: qsTr("This part of KrissOS Welcome arrives in a later update.")
-            }
-        }
-    }
+    Component { id: copyPage; CopyPage {} }
+    Component { id: extrasPage; ExtrasPage {} }
 }
