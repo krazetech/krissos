@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- KrissOS wallpaper. Rendered by theme/generate.py from theme/tokens.json; edit this file, not the output. -->
+<!-- Gradients only, no filters: Qt's SVG renderer (SDDM, Plasma) ignores blur. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="3840" height="2160" viewBox="0 0 3840 2160" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <radialGradient id="glow" gradientUnits="userSpaceOnUse" cx="2900" cy="1540" r="2100">
+      <stop offset="0" stop-color="{{accent}}" stop-opacity="0.26"/>
+      <stop offset="0.45" stop-color="{{accent}}" stop-opacity="0.07"/>
+      <stop offset="1" stop-color="{{accent}}" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="orb" x1="0.2" y1="0.1" x2="0.8" y2="0.95">
+      <stop offset="0" stop-color="{{accent}}" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="{{accent}}" stop-opacity="0.18"/>
+    </linearGradient>
+    <linearGradient id="pane" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="{{surface}}" stop-opacity="0.78"/>
+      <stop offset="1" stop-color="{{surface}}" stop-opacity="0.42"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="{{fg}}" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="{{fg}}" stop-opacity="0.02"/>
+    </linearGradient>
+  </defs>
+  <rect x="-2000" y="-2000" width="7840" height="6160" fill="{{bg}}"/>
+  <rect x="-2000" y="-2000" width="7840" height="6160" fill="url(#glow)"/>
+  <g fill="none" stroke="{{accent}}" stroke-width="3">
+    <circle cx="2900" cy="1540" r="1060" stroke-opacity="0.16"/>
+    <circle cx="2900" cy="1540" r="1420" stroke-opacity="0.09"/>
+    <circle cx="2900" cy="1540" r="1800" stroke-opacity="0.05"/>
+  </g>
+  <circle cx="2900" cy="1540" r="660" fill="url(#orb)"/>
+  <rect x="1840" y="1020" width="1120" height="700" rx="150" fill="url(#pane)"/>
+  <rect x="1840" y="1020" width="1120" height="700" rx="150" fill="{{fg}}" fill-opacity="0.04" stroke="url(#rim)" stroke-width="4"/>
+</svg>
