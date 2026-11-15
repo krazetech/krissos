@@ -9,6 +9,10 @@ with {{name}} replaced by the token value. Colour tokens also give
 {{name.hex}} (no '#'), {{name.rgb}} ("r,g,b" decimal, for KDE) and
 {{name.rgbf}} ("r, g, b" as 0-1 floats, for Plymouth).
 An unknown {{token}} is a KeyError, so a typo fails the build.
+
+wallpaper.svg is rendered twice into usr/share/backgrounds/kriss/: kriss-dark.svg
+from the tokens as they are, kriss-light.svg with every light_X token in place of X.
+{{keris}} in it is the emblem's keris path with no fill, so the wallpaper colours it.
 """
 import json
 import pathlib
@@ -16,6 +20,8 @@ import re
 import sys
 
 TOKENS = pathlib.Path(__file__).with_name("tokens.json")
+WALLPAPER = pathlib.Path(__file__).with_name("wallpaper.svg")
+LOGO = pathlib.Path(__file__).parent / "templates/usr/share/pixmaps/krissos.svg"
 
 
 def variants(tokens):
@@ -29,12 +35,17 @@ def variants(tokens):
     return out
 
 
+def light(tokens):
+    return {**tokens, **{k[6:]: v for k, v in tokens.items() if k.startswith("light_")}}
+
+
 def render(text, values):
     return re.sub(r"\{\{([\w.]+)\}\}", lambda m: values[m.group(1)], text)
 
 
 def main(src, dst):
-    values = variants(json.loads(TOKENS.read_text()))
+    tokens = json.loads(TOKENS.read_text())
+    values = variants(tokens)
     src, dst = pathlib.Path(src), pathlib.Path(dst)
     for f in sorted(src.rglob("*")):
         if f.is_file():
@@ -42,6 +53,13 @@ def main(src, dst):
             out.parent.mkdir(parents=True, exist_ok=True)
             out.write_text(render(f.read_text(), values))
             out.chmod(f.stat().st_mode & 0o777)  # keep the exec bit on scripts
+    wp = dst / "usr/share/backgrounds/kriss"
+    wp.mkdir(parents=True, exist_ok=True)
+    # Inlined, not <image>: Qt's SVG renderer cannot load an external or nested SVG.
+    keris = re.sub(r' fill="[^"]*"', "", re.search(r"<path [^>]*/>", LOGO.read_text()).group(0))
+    for mode, t in (("dark", tokens), ("light", light(tokens))):
+        out = render(WALLPAPER.read_text(), {**variants(t), "keris": keris})
+        (wp / f"kriss-{mode}.svg").write_text(out)
 
 
 def test():
@@ -50,6 +68,7 @@ def test():
     assert v["accent.rgb"] == "41,178,232"
     assert v["accent.rgbf"] == "0.161, 0.698, 0.910"
     assert "font.hex" not in v
+    assert light({"bg": "#000000", "light_bg": "#FFFFFF"})["bg"] == "#FFFFFF"
     json.loads(TOKENS.read_text())
     print("ok")
 

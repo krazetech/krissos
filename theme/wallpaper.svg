@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- KrissOS wallpaper. Rendered by theme/generate.py from theme/tokens.json; edit this file, not the output. -->
+<!-- Gradients only, no filters: Qt's SVG renderer (SDDM, Plasma) ignores blur. Soft edges come
+     from gradients that fade to nothing where a shape ends. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="3840" height="2160" viewBox="0 0 3840 2160" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <radialGradient id="pool-low" gradientUnits="userSpaceOnUse" cx="600" cy="2050" r="1900">
+      <stop offset="0" stop-color="{{accent}}" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="{{accent}}" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="pool-high" gradientUnits="userSpaceOnUse" cx="3400" cy="250" r="1700">
+      <stop offset="0" stop-color="{{accent}}" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="{{accent}}" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="halo" gradientUnits="userSpaceOnUse" cx="1920" cy="760" r="1000">
+      <stop offset="0" stop-color="{{accent}}" stop-opacity="0.20"/>
+      <stop offset="1" stop-color="{{accent}}" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="wave-far" gradientUnits="userSpaceOnUse" x1="0" y1="1520" x2="0" y2="2160">
+      <stop offset="0" stop-color="{{accent}}" stop-opacity="0"/>
+      <stop offset="1" stop-color="{{accent}}" stop-opacity="0.26"/>
+    </linearGradient>
+    <linearGradient id="wave-near" gradientUnits="userSpaceOnUse" x1="0" y1="1790" x2="0" y2="2160">
+      <stop offset="0" stop-color="{{accent}}" stop-opacity="0"/>
+      <stop offset="1" stop-color="{{accent}}" stop-opacity="0.32"/>
+    </linearGradient>
+    <linearGradient id="wave-front" gradientUnits="userSpaceOnUse" x1="0" y1="2000" x2="0" y2="2160">
+      <stop offset="0" stop-color="{{color14}}" stop-opacity="0"/>
+      <stop offset="1" stop-color="{{color14}}" stop-opacity="0.28"/>
+    </linearGradient>
+    <!-- Bounding-box units in the traced path's own space, which is y-up: 0 is the foot. -->
+    <linearGradient id="keris" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="{{accent}}" stop-opacity="0"/>
+      <stop offset="0.45" stop-color="{{accent}}" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="{{accent}}" stop-opacity="0.30"/>
+    </linearGradient>
+  </defs>
+  <rect x="-2000" y="-2000" width="7840" height="6160" fill="{{bg}}"/>
+  <rect x="-2000" y="-2000" width="7840" height="6160" fill="url(#pool-low)"/>
+  <rect x="-2000" y="-2000" width="7840" height="6160" fill="url(#pool-high)"/>
+  <rect x="-2000" y="-2000" width="7840" height="6160" fill="url(#halo)"/>
+  <path fill="url(#wave-far)" d="M -400 1420 C 500 1220 1300 1640 2150 1470 S 3500 1180 4300 1380 L 4300 2600 L -400 2600 Z"/>
+  <path fill="url(#wave-near)" d="M -400 1720 C 700 1560 1500 1900 2450 1740 S 3600 1540 4300 1720 L 4300 2600 L -400 2600 Z"/>
+  <path fill="url(#wave-front)" d="M -400 1960 C 900 1840 1700 2080 2700 1960 S 3700 1860 4300 1960 L 4300 2600 L -400 2600 Z"/>
+  <!-- The emblem's keris, large and faint, fading into the waves at its foot. -->
+  <g transform="translate(1039 104) scale(2.6)" fill="url(#keris)">{{keris}}</g>
+</svg>

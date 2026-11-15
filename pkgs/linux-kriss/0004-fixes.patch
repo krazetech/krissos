@@ -1,0 +1,1741 @@
+Origin: https://github.com/CachyOS/linux tag cachyos-7.3.4-1, commit c99c04b747ef4d0dd72d6bf7ef18ecd9925486a6 (Merge branch '7.3/fixes' into 7.3/base-dev)
+Squashed diff of the upstream commits below; their headers are unmodified.
+
+commit c90c777f9f7ce867fe7154aa9cfd4ebec7fc8292
+Author: Eric Naim <dnaim@cachyos.org>
+Date:   Mon Apr 13 15:40:34 2026 +0800
+
+    x86/cpu/amd: Don't clear RDSEED32 bit on znver5
+    
+    It seems that even after 6 months there still exists a system that
+    hasn't updated their microcode to fix this. Instead of removing the
+    detection altogether, keep the warning but don't clear the cpuid bit so
+    that we can spread awareness and have people update their microcode
+    revision.
+    
+    Signed-off-by: Eric Naim <dnaim@cachyos.org>
+
+commit df68eb7bafa0a18601aeff41f65062436f80a956
+Author: Christoffer Sandberg <cs@tuxedo.de>
+Date:   Mon May 12 11:51:54 2025 +0200
+
+    drm/i915/rc6: Disable RC6 for InfinityBook Pro Gen8
+    
+    Signed-off-by: Christoffer Sandberg <cs@tuxedo.de>
+
+commit 13805bdf27ca5903d9d41d741e5c87dca586739d
+Author: Christoffer Sandberg <cs@tuxedo.de>
+Date:   Tue Jul 1 09:29:21 2025 +0200
+
+    drm/i915/rc6: Add another Boardname to "Disable RC6 for InfinityBook Pro Gen8"
+    
+    Signed-off-by: Christoffer Sandberg <cs@tuxedo.de>
+
+commit eb155ccbd4567db1ff9aeab3685f8f1fb135fcb4
+Author: mnacakanov <petrushksa@gmail.com>
+Date:   Sun Dec 21 10:30:48 2025 -0500
+
+    Add BT support for PRIME B650M-A AX6 II motherboard
+    
+    By default BT starts up but doesn't show any devices when you try to pair. Adding the device id in block list, fixes that.
+
+commit a82b45662d416814e30c761f60afb5ece44f971c
+Author: Eric Naim <dnaim@cachyos.org>
+Date:   Sun Feb 8 23:03:53 2026 +0800
+
+    bluetooth: btusb: Add VID/PID 13d3:3625
+    
+    Signed-off-by: Eric Naim <dnaim@cachyos.org>
+
+commit 3abc003bf2a413690b0d5db175e50af838d255b6
+Author: Huang Shijie <shijie@os.amperecomputing.com>
+Date:   Tue Jul 22 18:26:00 2025 +0800
+
+    sched/fair: do not scan twice in detach_tasks()
+    
+    detach_tasks() uses struct lb_env.loop_max as an env.src_rq->cfs_tasks
+    iteration count limit. It is however set without the source RQ lock held.
+    
+    This means that env.loop_max and the actual length of env.src_rq->cfs_tasks
+    as observed within detach_tasks() can differ. This can cause some tasks to
+    be unnecessarily iterated over more than once, for instance:
+    
+      env.loop_max := 4
+      detach_tasks()
+        // Here env.src->cfs_tasks only contains two tasks which can't be
+        // migrated anywhere, so they're put back in the list each time.
+        env.src->cfs_tasks := [p1, p0]
+        // The iteration goes:
+        p0; cfs_tasks := [p0, p1]
+        p1; cfs_tasks := [p1, p0]
+        p0; cfs_tasks := [p0, p1]
+        p1; cfs_tasks := [p1, p0]
+    
+        // IOW we iterate over each task twice
+    
+    In the Specjbb test, the similar issues can be caught many times.
+    (Over 330,000 times in a 30-minites Specjbb test)
+    
+    This patch sets env.loop_max only once RQ lock is taken,
+    and uses busiest->cfs.h_nr_queued for setting the env.loop_max.
+    
+    After this patch, I cannot catch any above issue in the Specjbb test.
+    
+    Signed-off-by: Huang Shijie <shijie@os.amperecomputing.com>
+    Reviewed-by: Vincent Guittot <vincent.guittot@linaro.org>
+    Reviewed-by: Valentin Schneider <vschneid@redhat.com>
+
+commit f38c1aede384969fb6de20f3c859d3d146a1b8d0
+Author: Xie Yuanbin <qq570070308@gmail.com>
+Date:   Sun Mar 1 16:35:20 2026 +0800
+
+    sched/core: Make finish_task_switch() and its subfunctions always inline
+    
+    finish_task_switch() is not inlined even in the O2 level optimization,
+    performance testing indicates that this could lead to a significant
+    performance degradation when certain Spectre vulnerability mitigations
+    are enabled.
+    
+    In switch_mm_irq_off(), some mitigations may clear branch prediction
+    history, or the instruction cache, like arm64_apply_bp_hardening() on
+    arm64, BPIALL/ICIALLU on arm, and indirect_branch_prediction_barrier()
+    on x86. finish_task_switch() is right after switch_mm_irqs_off(), the
+    performance is greatly affected by function calls and branch jumps.
+    
+    __schedule() has a __sched attribute, which makes it be placed in
+    '.sched.text' section, while finish_task_switch() does not. This makes
+    they "far away from each other" in vmlinux, which aggravating the
+    performance degradation.
+    
+    Make finish_task_switch() and its subfunctions always inline to optimize
+    the performance.
+    
+    Performance test - time spent on calling finish_task_switch():
+    1. x86-64: Intel i5-8300h@4Ghz, DDR4@2666mhz; unit: x86's tsc
+     | test scenario                     |    old |   new |           delta |
+     | gcc 15.2                          |  27.50 | 25.45 |  -2.05 ( -7.5%) |
+     | gcc 15.2     + spectre_v2_user=on |  46.75 | 25.96 | -20.79 (-44.5%) |
+     | clang 21.1.7                      |  27.25 | 25.45 |  -1.80 ( -6.6%) |
+     | clang 21.1.7 + spectre_v2_user=on |  39.50 | 26.00 | -13.50 (-34.2%) |
+    
+    2. x86-64: AMD 9600x@5.45Ghz, DDR5@4800mhz; unit: x86's tsc
+     | test scenario                     |    old |   new |           delta |
+     | gcc 15.2                          |  27.51 | 27.51 |      0 (    0%) |
+     | gcc 15.2     + spectre_v2_user=on | 105.21 | 67.89 | -37.32 (-35.5%) |
+     | clang 21.1.7                      |  27.51 | 27.51 |      0 (    0%) |
+     | clang 21.1.7 + spectre_v2_user=on | 104.15 | 67.52 | -36.63 (-35.2%) |
+    
+    3. arm64: Raspberry Pi 3b Rev 1.2, Cortex-A53@1.2Ghz; unit: cntvct_el0
+     | test scenario                     |    old |   new |           delta |
+     | gcc 15.2                          |  1.453 | 1.115 | -0.338 (-23.3%) |
+     | clang 21.1.7                      |  1.532 | 1.123 | -0.409 (-26.7%) |
+    
+    4. arm32: Raspberry Pi 3b Rev 1.2, Cortex-A53@1.2Ghz; unit: cntvct_el0
+     | test scenario                     |    old |   new |           delta |
+     | gcc 15.2                          |  1.421 | 1.187 | -0.234 (-16.5%) |
+     | clang 21.1.7                      |  1.437 | 1.200 | -0.237 (-16.5%) |
+    
+    Cc: Peter Zijlstra <peterz@infradead.org>
+    Cc: Thomas Gleixner <tglx@kernel.org>
+    Cc: Rik van Riel <riel@surriel.com>
+    Cc: Segher Boessenkool <segher@kernel.crashing.org>
+    Cc: David Hildenbrand (Arm) <david@kernel.org>
+    Cc: H. Peter Anvin (Intel) <hpa@zytor.com>
+    Cc: Arnd Bergmann <arnd@arndb.de>
+    Signed-off-by: Xie Yuanbin <qq570070308@gmail.com>
+
+commit 929056a37f56a6666437433b5a9f10e99cfc640c
+Author: Taylor Hewetson <taylor@exponent.digital>
+Date:   Sun Apr 19 07:08:58 2026 +1200
+
+    USB: core: sanitize string descriptors against C0 control characters
+    
+    Some USB devices report string descriptors with a declared length
+    greater than the actual string, leaving uninitialized firmware memory
+    - often including C0 control characters such as 0x18 - appended to
+    the returned string. This has been observed on the ASUS ROG Azoth
+    2.4GHz dongle (USB ID 0b05:1a85), where the trailing bytes make their
+    way into hid->uniq and then /sys/class/input/inputN/uniq.
+    
+    Downstream userspace components then reject the device. systemd's
+    sd-device property_is_valid() treats any string property containing
+    control characters as invalid and refuses to set ID_SERIAL_SHORT,
+    which in turn prevents the device from being tagged with seat. On
+    GNOME Wayland, mutter silently declines to open input devices that
+    are missing this tagging, leaving the keyboard visible and producing
+    keycodes at the kernel layer but dead to the user in a graphical
+    session.
+    
+    Truncate the returned UTF-8 string at the first C0 control character
+    (0x00..0x1F) or DEL (0x7F). Printable Unicode beyond ASCII is left
+    intact, so legitimate non-ASCII serials (e.g. European manufacturers)
+    continue to work. Callers that previously received a string with
+    trailing garbage now receive the clean leading portion, which is
+    well-formed UTF-8 and safe for all downstream consumers.
+    
+    Signed-off-by: Taylor Hewetson <taylor@exponent.digital>
+
+commit 99d4f73dbc9c8c9c3f34e6c4450b2c87682e300b
+Author: Eric Naim <dnaim@cachyos.org>
+Date:   Tue Jun 2 10:27:28 2026 +0700
+
+    i2c: Force ASUE140D touchpad i2c freq to 100khz
+    
+    A user reported random 300-500ms input delays for this touchpad on a
+    ASUS ZenBook UX3404 / Q410VA. Force it to run on 100khz instead to get
+    rid of those random delays.
+    
+    Signed-off-by: Eric Naim <dnaim@cachyos.org>
+
+commit 3ae3d192fabbd2066f89397dade820f5d107cdeb
+Author: Cole Leavitt <cole@unwrap.rs>
+Date:   Mon Apr 20 10:44:06 2026 -0700
+
+    wifi: iwlwifi: mld: skip TX when firmware is dead
+    
+    When firmware encounters an error, STATUS_FW_ERROR is set but the
+    mac80211 TX path continues pulling frames from TXQs. Each frame
+    fails at iwl_trans_tx() which checks STATUS_FW_ERROR and returns
+    -EIO, but iwl_mld_tx_from_txq() keeps looping over every queued
+    frame. This burns CPU in a tight loop on dead firmware and can
+    cause soft lockups during firmware error recovery.
+    
+    Add a STATUS_FW_ERROR check at the top of iwl_mld_tx_from_txq()
+    to stop pulling frames from mac80211 TXQs when firmware is dead.
+    Also guard iwl_mld_mac80211_tx() which bypasses the TXQ path
+    entirely and would otherwise continue feeding frames to dead
+    firmware.
+    
+    Once STATUS_FW_ERROR is cleared during firmware restart, TX
+    resumes naturally with no explicit wake needed.
+    
+    Fixes: d1e879ec600f ("wifi: iwlwifi: add iwlmld sub-driver")
+    Signed-off-by: Cole Leavitt <cole@unwrap.rs>
+
+commit 18a890878b5114f8b54856256fff29ff048b6a35
+Author: Eric Naim <dnaim@cachyos.org>
+Date:   Sat Jul 18 20:30:09 2026 +0700
+
+    sof: Add quirk for Dell XPS 13 DX13260
+    
+    LLM yap:
+    The two CS35L63 amps are SPI sidecar amps hanging off the CS42L43 (they enumerate as spi-cs35l56-left/-right, driven by the cs35l56 driver, part 0x3563) — not SoundWire devices. The kernel only creates the cs42l43-cs35l56 bridge DAI that routes audio into these amps when the SOC_SDW_SIDECAR_AMPS quirk is set. That quirk is applied per-machine by the DMI table in sound/soc/intel/boards/sof_sdw.c, keyed on Dell DMI_PRODUCT_SKU. This machine's SKU 0E53 was missing from the table, so the quirk stayed off → bridge DAI never created → external amps silent → only the CS42L43 internal amp plays
+    
+    Signed-off-by: Eric Naim <dnaim@cachyos.org>
+
+commit d10310a163cefdadf7e42689243b15eef85a5435
+Author: Eric Naim <dnaim@cachyos.org>
+Date:   Tue Sep 15 10:05:48 2026 +0800
+
+    Revert "drm/gud: validate TV mode names before creating enum property"
+    
+    This reverts commit da1ea35fea67ad841f4ada28dd61b41be65e5437.
+    This commit breaks compiling with clang 22.1.8 -O3.
+    
+    Since the prior commit already mitigates the issue, reverting this
+    should be fine until clang gets updated in Arch Linux/CachyOS.
+    
+    Signed-off-by: Eric Naim <dnaim@cachyos.org>
+
+commit 68f054f6774bdacae6631f36e0984606e6287033
+Author: Hao Li <hao.li@linux.dev>
+Date:   Mon Sep 21 17:41:13 2026 +0800
+
+    mm/slub: refill prefilled sheaves from the barn
+    
+    Currently, when the prefill API refills a non-full sheaf, it takes the
+    objects from partial slabs and never from the full sheaves in the barn,
+    so once the barn's full list becomes saturated, it stays saturated.
+    
+    For objects freed via kfree_rcu(), every RCU sheaf then has to be
+    flushed to slabs because the barn's full list has no room.
+    
+    To fix this, let the sheaf refill from the barn first, and introduce a
+    partial sheaf in the barn, which holds the leftover objects [1].
+    
+    Only the prefill path needs the partial sheaf. The generic allocation
+    path (__pcs_replace_empty_main()) exchanges an empty sheaf for a full
+    one from the barn, so nothing is left over. The prefill path refills a
+    sheaf that is not necessarily empty, so taking objects from the barn
+    usually leaves leftovers, and the partial sheaf is where they are
+    kept. refill_sheaf() only takes objects from partial slabs and never
+    involves the partial sheaf.
+    
+    The sheaf is refilled by copying objects from the partial sheaf, and
+    then from a full sheaf taken from the barn if it is still not full. A
+    sheaf that objects were copied from stays in the barn as the partial
+    sheaf if it still holds objects, or goes on the empty list if it is
+    empty. The sheaf being refilled is never replaced.
+    
+    The gain comes from two sides: every full sheaf taken out makes room on
+    the barn's full list for a future RCU sheaf, and refilling from the
+    barn is cheaper than refilling from partial slabs under list_lock.
+    
+    Note that putting the sheaf with the leftover objects on the full list
+    instead would not work: it would occupy room on the full list, so the
+    list would stay saturated and rcu_free_sheaf() would still keep
+    flushing.
+    
+    An earlier version of this patch swapped sheaves instead, to minimize
+    the memcpy overhead. As Harry Yoo pointed out [2], replacing the
+    caller's sheaf loses cache affinity, filling it directly is more
+    straightforward, and testing showed no measurable difference between
+    the two approaches, so the approach he suggested is used.
+    
+    Tested with will-it-scale mmap1 (192 processes, one-minute runs) on the
+    maple_node cache.
+    
+    throughput: 27778727 -> 34500556 (+24.2%)
+    
+    metric                       baseline           patched        change
+    =====================================================================
+    alloc_fastpath                 54,124            56,696        +4.75%
+    alloc_slab                  7,100,651           159,739       -97.75%
+    barn_get                          849       194,460,392    +22904539.81%
+    barn_get_fail                       2               217    +10750.00%
+    barn_put                          851       182,306,701    +21422544.07%
+    barn_put_fail             260,400,484       145,522,675       -44.12%
+    cmpxchg_double_fail         1,029,204           334,228       -67.53%
+    free_add_partial          326,694,687       181,935,790       -44.31%
+    free_fastpath                  13,297            15,611       +17.40%
+    free_rcu_sheaf          8,332,839,104    10,490,535,227       +25.89%
+    free_remove_partial         7,099,788           158,297       -97.77%
+    free_slab                   7,099,788           158,297       -97.77%
+    free_slowpath              10,969,156           782,851       -92.86%
+    objects                        15,295            14,849        -2.92%
+    objects_partial                15,295            14,849        -2.92%
+    partial                         1,604             2,336       +45.64%
+    sheaf_alloc               137,757,895       141,208,076        +2.50%
+    sheaf_flush             8,332,823,922     4,656,725,764       -44.12%
+    sheaf_free                137,757,883       141,208,072        +2.50%
+    sheaf_prefill_fast      3,337,502,163     4,196,506,116       +25.74%
+    sheaf_prefill_slow                685               400       -41.61%
+    sheaf_refill            8,343,794,364     4,657,509,724       -44.18%
+    sheaf_return_fast       3,337,502,411     4,196,506,382       +25.74%
+    sheaf_return_slow                 437               134       -69.34%
+    slabs                           1,604             2,336       +45.64%
+    total_objects                 102,656           149,504       +45.64%
+    
+    Here is what the important metric changes mean.
+    
+    barn_get and barn_put: refills now take full sheaves out of the barn,
+    and RCU sheaves are put into the barn again. Before, the barn's full
+    list was saturated once and hardly ever consumed.
+    
+    barn_put_fail: more than half of the RCU sheaves are now put into the
+    barn instead of being flushed. The rest are still flushed because they
+    arrive while the barn's full list is at its limit.
+    
+    sheaf_refill and free_add_partial: fewer objects are taken from partial
+    slabs to refill sheaves, and fewer slabs are added to the partial list,
+    by the same percentage.
+    
+    alloc_slab and free_slab: the partial list is almost never empty when a
+    refill looks at it, so slabs are almost never allocated and freed again
+    only to serve refills.
+    
+    After the test, the maple_node cache holds 1604 slabs without the patch
+    and 2336 with it. After a manual shrink
+    (echo 1 > /sys/kernel/slab/maple_node/shrink), it holds 485 without
+    the patch and 563 with it. So most of the extra slabs are held only by
+    objects sitting in sheaves and are returned by a shrink, and what
+    remains is a small difference, because objects handed out from the barn
+    come from many more slabs than a refill from partial slabs would use.
+    
+    Link: https://lore.kernel.org/linux-mm/aqPlMzUIw-4g2iOX@fedora/ [1]
+    Link: https://lore.kernel.org/linux-mm/aq0ylDidEHa2kg4X@thinkstation/ [2]
+    Signed-off-by: Hao Li <hao.li@linux.dev>
+    Reviewed-by: Harry Yoo (Meta) <harry@kernel.org>
+    Link: https://patch.msgid.link/20260921094521.141665-1-hao.li@linux.dev
+    Reviewed-by: Vlastimil Babka (SUSE) <vbabka@kernel.org>
+    Signed-off-by: Harry Yoo (Meta) <harry@kernel.org>
+
+commit 2d0a9e75fe414c9bdd15e3ca5850fa6677632f78
+Author: Ramses de Norre <ramses@well-founded.dev>
+Date:   Thu Aug 27 13:52:56 2026 +0200
+
+    wireguard: queueing: preserve tstamp_type when encapsulating packet
+    
+    Sending traffic through a wireguard tunnel on a host using the fq
+    qdisc fills the log with:
+    
+      fq: likely mono tstamp with tstamp_type 0
+    
+    An skb carries a timestamp in skb->tstamp and, separately, a
+    skb->tstamp_type field recording which clock that timestamp came from.
+    The two have to agree.
+    
+    When wireguard encapsulates a packet it calls wg_reset_packet(), which
+    clears the fields that must not leak from the inner packet into the
+    tunnel packet. It does so in two steps:
+    
+      skb_scrub_packet(skb, true);
+      memset(&skb->headers, 0, sizeof(skb->headers));
+    
+    skb_scrub_packet() deliberately keeps skb->tstamp when it holds a
+    monotonic timestamp: that value is the time the packet is scheduled to
+    be sent, and the qdisc still needs it. The memset then zeroes
+    skb->tstamp_type, because that field sits inside the headers group
+    while skb->tstamp does not. The packet therefore leaves wireguard
+    carrying a monotonic timestamp labelled as a realtime one.
+    
+    Nothing noticed until commit c4f796c4f16b ("net_sched: sch_fq: convert
+    skb->tstamp if not monotonic"): fq used to assume every timestamp was
+    monotonic. It now consults tstamp_type, spots the mismatch, warns, and
+    falls back to treating the value as monotonic. Pacing still ends up
+    correct, so the log spam is the actual problem.
+    
+    Save tstamp_type before the memset and restore it when encapsulating,
+    next to the hash fields that are already carried over this way. When
+    decapsulating it stays zeroed, which is right: an incoming packet's
+    timestamp is a realtime receive timestamp.
+    
+    Fixes: de799101519a ("net: Add skb_clear_tstamp() to keep the mono delivery_time")
+    Signed-off-by: Ramses de Norre <ramses@well-founded.dev>
+    Reviewed-by: Toke Høiland-Jørgensen <toke@kernel.org>
+    Reviewed-by: Eric Dumazet <edumazet@google.com>
+    Cc: stable@vger.kernel.org
+    Signed-off-by: Jason A. Donenfeld <Jason@zx2c4.com>
+    Cherry-picked-for: https://gitlab.archlinux.org/archlinux/packaging/packages/linux/-/work_items/212
+
+commit 6ac9c0cb071f7cd42e32322fae160c1729b176a2
+Author: Arun R Murthy <arun.r.murthy@intel.com>
+Date:   Tue Sep 15 09:53:00 2026 +0530
+
+    drm/i915/dp: On DPCD init wake the DPRx for eDP
+    
+    Its observed that on AUX_CH failure, even if the retry is increased to
+    1000, it does not succeed. Either the command might be wrong or sink in
+    an unknown/sleep state can cause this. So try waking the sink device.
+    Before reading the DPCD caps wake the sink for eDP.
+    
+    v2: Use poll_timeout_us (Jani N)
+        Add the reason, why this change is required (Ville)
+    v3: Wake sink only for eDP
+        Remove the dpcd probe set to true/false in wake_sink (Imre)
+    v4: make edp_wake_sinc() static and dpcd_readb -> dpcd_reab_byte (Suraj)
+    v5: Drop poll_timeout_us. drm_dp_dpcd_read_byte() already retries the AUX
+        transaction internally (up to ~16ms), so the outer 6ms poll could
+        never iterate and only added a pre-read delay on the hot path; read
+        DP_SET_POWER once instead. Wake the sink before reading the DPCD
+        caps, otherwise a sleeping sink fails the caps read and returns
+        early before the wake ever runs. (Suraj, Jani, Sashiko)
+    v6: Mask and write DP_SET_POWER (Sashiko)
+    
+    Closes: https://gitlab.freedesktop.org/drm/i915/kernel/-/issues/4391
+    Closes: https://gitlab.freedesktop.org/drm/i915/kernel/-/work_items/16654
+    Signed-off-by: Arun R Murthy <arun.r.murthy@intel.com>
+    Reviewed-by: Suraj Kandpal <suraj.kandpal@intel.com>
+    Link: https://patch.msgid.link/20260915042300.2201757-1-arun.r.murthy@intel.com
+    Cherry-picked-for: https://github.com/zen-kernel/zen-kernel/issues/422
+
+commit 84967922853d85027c5ea9c58d10e3d9b22009f0
+Author: Wentao Guan <guanwentao@uniontech.com>
+Date:   Fri Sep 18 17:09:10 2026 +0800
+
+    cpufreq/amd-pstate: Skip auto_sel write when it already matches the mode
+    
+    Since commit 9dfd13f80c85 ("cpufreq/amd-pstate: Toggle auto_sel in active
+    mode on shared memory systems"), shmem_init_perf() programs
+    AUTONOMOUS_SELECTION_ENABLE unconditionally, including in active mode.
+    
+    Platforms that exclusively support autonomous selection report this field
+    as an Integer of 1, as required by the ACPI specification, instead of as a
+    register descriptor.  cppc_get_reg_val() reads such a field back
+    successfully, but cppc_set_reg_val() rejects the write with -EOPNOTSUPP
+    because the entry is not an ACPI_TYPE_BUFFER.
+    
+    shmem_init_perf() propagates that error, so every amd_pstate_epp_cpu_init()
+    fails, cpufreq_register_driver() ends up with an empty policy list and
+    returns -ENODEV, and amd-pstate refuses to load at all:
+    
+      amd_pstate: failed to set auto_sel, ret: -95
+      amd_pstate: Failed to initialize CPU 0: -95
+      ...
+      amd_pstate: failed to register with return -19
+    
+    Skip the write when the register already holds the value the requested mode
+    needs.  Active and guided mode are fixed on these platforms, which report
+    auto_sel as 1, while passive mode still fails to load on a platform that
+    cannot disable autonomous selection, exactly as it did before the
+    offending commit.
+    
+    Fixes: 9dfd13f80c85 ("cpufreq/amd-pstate: Toggle auto_sel in active mode on shared memory systems")
+    Cc: stable@vger.kernel.org
+    Reviewed-by: K Prateek Nayak <kprateek.nayak@amd.com>
+    Tested-by: K Prateek Nayak <kprateek.nayak@amd.com>
+    Tested-by: LFRon <ronforever@outlook.com>
+    Signed-off-by: Wentao Guan <guanwentao@uniontech.com>
+    Link: https://lore.kernel.org/r/20260918090909.86544-1-guanwentao@uniontech.com
+    Signed-off-by: Mario Limonciello <superm1@kernel.org>
+    (cherry picked from commit b400642c5e93863ec17ea15fcbd3efc81c299531)
+    Cherry-picked-for: https://github.com/CachyOS/linux-cachyos/issues/1001
+
+commit e93468e0030d287fdf3677fde75669a421e010cb
+Author: Peter Jung <admin@ptr1337.dev>
+Date:   Sun Nov 1 09:36:39 2026 +0100
+
+    HID: logitech-hidpp: read G920 force feedback config before hid_connect()
+    
+    Commit 544315e40172 ("HID: logitech-hidpp: move FF initialization to
+    .input_configured()") moved g920_get_config() into
+    hidpp_input_configured(). That callback runs from hid_connect(), and
+    hidpp_probe() calls hid_device_io_stop() just before hid_connect().
+    hid_input_report() therefore drops the device's replies while
+    .input_configured() runs. Every HID++ command in g920_get_config() times
+    out, and force feedback never gets set up:
+    
+      logitech-hidpp-device 0003:046D:C26E.0006: Unable to initialize force feedback support, errno -110
+    
+    Read the force feedback config in probe() while IO is still enabled,
+    and keep hidpp_ff_init() in .input_configured(). hidpp_ff_init() does
+    not talk to the device, so FF is still set up before the input device
+    is registered, which is what the commit above intended.
+    
+    Link: https://github.com/CachyOS/linux-cachyos/issues/1105
+    Fixes: 544315e40172 ("HID: logitech-hidpp: move FF initialization to .input_configured()")
+    Signed-off-by: Peter Jung <admin@ptr1337.dev>
+
+commit a558a2bbbfc3f9e0c9fd99bf8a04ac6e99953242
+Author: Rishabh Jain <rishabh.jain1198@gmail.com>
+Date:   Fri Oct 30 12:36:47 2026 -0700
+
+    usb: pci-quirks: always assert xHCI OS ownership
+    
+    The xHCI ownership protocol requires the OS driver to assert the HC OS
+    Owned semaphore before using the host controller, then wait for HC BIOS
+    Owned to clear if firmware owns it.
+    
+    quirk_usb_handoff_xhci() currently asserts OS Owned only when BIOS Owned
+    is already set. If firmware leaves BIOS Owned clear, Linux uses the xHC
+    while both ownership semaphores remain clear.
+    
+    The timeout fallback also clears BIOS Owned using the original register
+    value, which can clear OS Owned at the same time.
+    
+    On an AMD PROM21 xHCI controller (1022:43fc), this caused every S3
+    resume to terminate Controller Restore State with USBSTS 0x401. Linux
+    then reset the host controller, both root hubs and the USB Bluetooth
+    adapter.
+    
+    The controller entered resume ready and halted with USBSTS 0x1.
+    Endpoint state, 100 ms save/restore delays, scratchpads, the DCBAA,
+    device contexts and command, event and transfer rings were verified not
+    to cause the restore error.
+    
+    Across four S3 cycles, asserting only HC OS Owned changed USBLEGSUP from
+    0x00000801 to 0x01000801 and eliminated the restore failure. Testing
+    included the unmodified 7.1.8-ogc1.1.fc44.x86_64 distribution kernel
+    using a test module that set the HC OS Owned semaphore. The same test
+    was repeated after review with the same result. Clearing USBLEGCTLSTS
+    was independently verified to be unnecessary.
+    
+    Always assert OS Owned for controllers using the standard xHCI handoff,
+    and leave the existing TI/Renesas forced handoff unchanged. Keep OS
+    Owned asserted after the standard handoff, including when forcing BIOS
+    Owned clear after a timeout, to prevent firmware from reclaiming the
+    controller during subsequent suspends.
+    
+    Fixes: 66d4eadd8d06 ("USB: xhci: BIOS handoff and HW initialization.")
+    Cc: stable@vger.kernel.org
+    Reviewed-by: Mario Limonciello (AMD) <superm1@kernel.org>
+    Tested-by: McKenna Fan <blue_sun@tuta.io>
+    Tested-by: Quinn Schive <quinnschive@hotmail.com>
+    Tested-by: Bruno Filipe <bmilreu@gmail.com>
+    Tested-by: Maciej Zonski <me@zonni.pl>
+    Signed-off-by: Rishabh Jain <rishabh.jain1198@gmail.com>
+
+commit 06697f5e15b61987ac86eb2037484dce32faffc0
+Author: Maxime Bélair <maxime.belair@canonical.com>
+Date:   Tue Sep 1 16:07:15 2026 +0200
+
+    apparmor: convert duplicated dfa transitions to match_char()
+    
+    For historical reasons several matchers duplicate the dfa character
+    transition instead of using match_char().
+    
+    This is because aa_dfa_match_until() and aa_dfa_matchn_until() were
+    written on a branch that did not yet have match_char(), and copied code
+    from aa_dfa_match(). leftmatch_fb() used the same pattern.
+    
+    When match_char() added support for diff-encoded states, the change was
+    never ported to these copies.
+    
+    match_char() resolves a diff encoded state by using def[state] and
+    retrying the same character, until it reaches a state with a valid
+    transition. The copies instead do a simple `state = def[state];` after
+    the character is consumed, so on a diff encoded state one byte is dropped
+    and the walk continues from the diff parent in the wrong state.
+    
+    This makes an unnamed px/Px/cx/Cx transition resolve to no profile, and
+    exec fails with
+    
+      apparmor="DENIED" operation="exec" info="profile transition not found"
+    
+    Convert the three copies to match_char(). For a dfa with no diff
+    encoded state this is a no-op.
+    
+    This bug is latent until the kernel advertises policy/diff-encode.
+    
+    Closes: https://gitlab.com/apparmor/apparmor/-/work_items/663
+    Fixes: 21f606610502 ("apparmor: improve overlapping domain attachment resolution")
+    Fixes: 031dcc8f4e84f ("apparmor: dfa add support for state differential encoding")
+    Signed-off-by: Maxime Bélair <maxime.belair@canonical.com>
+    Signed-off-by: John Johansen <john.johansen@canonical.com>
+
+commit 1236df3b85d02ac9fea399bbda0668e50397c5a2
+Author: Rickey Bartlett <subtexel@gmail.com>
+Date:   Mon Aug 24 21:32:20 2026 -0700
+
+    PCI: vmd: Flush DMA writes before handling MSI on Meteor Lake
+    
+    Per the Intel Core Ultra Processor Specification Update
+    (ID 792254 of 9/1/2026), the Meteor Lake VMD (8086:7d0b) is affected by an
+    MSI erratum:
+    
+      MTL016: MSI from VMD-Owned Device May Pass Memory Write
+    
+      Problem      When the storage subsystem is configured to operate in RAID
+                   0 or 1 mode, a Message Signaled Interrupt (MSI) from an
+                   Intel® Volume Management Device (Intel® VMD) owned device
+                   may interrupt a core before a previous write from the device
+                   is completed.
+    
+      Workaround   None identified. The VMD MSI interrupt-handler should
+                   initially perform a dummy register read to the MSI initiator
+                   device prior to any writes to ensure proper PCIe ordering.
+    
+    The VMD can signal its MSI before the posted writes carrying a child
+    device's DMA data have landed in memory. vmd_irq() then demuxes to the
+    child handler while the child's completion queue is not yet coherent, so
+    the handler observes no completion and returns without consuming it. The
+    I/O is only recovered when the block layer timeout expires and polls the
+    queue:
+    
+      nvme nvme0: I/O tag 253 (50fd) QID 1 timeout, completion polled
+    
+    The practical effect is therefore not a lost I/O but a 30 second stall
+    of the entire storage stack, repeated under any sustained read load.
+    
+    This was originally diagnosed and fixed by Kai-Heng Feng in September
+    2024 [1]. That patch used udelay(4); Keith Busch objected that the delay
+    is merely a side effect of the read, and that flushing the pending
+    device-to-host writes is what the erratum actually requires. Kai-Heng
+    agreed to respin with a dummy register read. The thread then stalled on
+    an open question from Manivannan Sadhasivam [2]: whether the read must
+    target the child device (the "MSI initiator" named by the erratum)
+    rather than the VMD, and whether the workaround belongs in the NVMe
+    driver instead. No revision followed, and the erratum has remained
+    unmitigated in mainline since.
+    
+    This implements the flush read Keith asked for, and answers the open
+    question empirically: the read MUST complete at the initiating child
+    device. A read of the VMD's own config BAR was tried first and does not
+    help - it terminates at the VMD and never traverses the downstream
+    link, so it does not order against the child's posted writes (measured:
+    timeout rate unchanged). Reading the initiator's config space does
+    order correctly: per PCIe ordering rules the read completion cannot
+    pass the device's earlier posted writes, so returning from the read
+    guarantees the completion queue entry is visible.
+    
+    The initiator's config address is captured per-IRQ at MSI allocation
+    time from the requesting device, so the hot path adds one config read
+    only on affected parts, and only for vectors owned by a child device.
+    The read is serialized with cfg_lock like all other VMD config access.
+    No NVMe driver change is needed.
+    
+    Measured on a Dell Pro Max 14 MC14250 (Meteor Lake, VMD 8086:7d0b,
+    KIOXIA BG6 512GB, 7.0.0-30-generic). The drive is healthy (46C, 0 media
+    errors, 2% used) and ASPM is disabled on the link with all L1 substates
+    off, so neither ASPM nor APST is involved.
+    
+    Dropping caches and reading 3000 shared libraries, measuring
+    /proc/pressure/io "full" (every task on the system blocked on I/O),
+    with nvme_core.io_timeout=5:
+    
+      unpatched:      round 1  wall 37.4s   full I/O stall 32.6s   timeouts 0
+                      round 2  wall 30.6s   full I/O stall 28.7s   timeouts 1
+                      round 3  wall 30.3s   full I/O stall 27.4s   timeouts 1
+    
+      VMD-BAR read:   round 1  wall 44.8s   full I/O stall 38.6s   timeouts 8
+      (insufficient)  round 2  wall 234.8s  full I/O stall 207.9s  timeouts 37
+                      round 3  wall 3.6s    full I/O stall 0.8s    timeouts 0
+    
+      this patch:     round 1  wall 3.6s    full I/O stall 1.3s    timeouts 0
+                      round 2  wall 3.6s    full I/O stall 1.3s    timeouts 0
+                      round 3  wall 3.6s    full I/O stall 1.4s    timeouts 0
+    
+    Before any workaround, 208 seconds of total-system I/O stall
+    accumulated in the first 13 minutes of uptime, roughly 27% of wall
+    clock. Userspace experiences this as GUI applications taking 30-60+
+    seconds to start while throughput between stalls looks entirely normal
+    (1.9 GB/s QD1) - which is what makes the fault easy to misattribute to
+    ASPM or to the drive.
+    
+    [1] https://lore.kernel.org/20240903025544.286223-1-kai.heng.feng@canonical.com/
+    [2] https://lore.kernel.org/20240913111142.4cgrmirofhhgrbqm@thinkpad/
+    
+    Reported-by: Kai-Heng Feng <kai.heng.feng@canonical.com>
+    Suggested-by: Keith Busch <kbusch@kernel.org>
+    Assisted-by: LLM
+    Signed-off-by: Rickey Bartlett <subtexel@gmail.com>
+    Signed-off-by: Manivannan Sadhasivam <manivannan.sadhasivam@oss.qualcomm.com>
+    [bhelgaas: include erratum source and text, update URLs, cc: stable]
+    Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+    Tested-by: Varsh Satti <varsh@varram.me>
+    Acked-by: Keith Busch <kbusch@kernel.org>
+    Cc: stable@vger.kernel.org
+    Link: https://patch.msgid.link/20260825043220.9047-1-subtexel@gmail.com
+
+commit 5f35c1ed9a38e5937237e5d04efc3116d726ca8f
+Author: Vladimir Nedoshivin <gvozd188@mail.ru>
+Date:   Fri Sep 11 00:05:39 2026 +0400
+
+    PCI: vmd: Flush DMA writes before handling MSI on Arrow Lake
+    
+    Per the Intel Core Ultra Processors (Series 2) Specification Update
+    (ID 834774 of 9/1/2026), the Arrow Lake VMD device 0xad0b is affected by an
+    MSI erratum:
+    
+      ARL004: MSI from VMD-Owned Device May Pass Memory Write
+    
+      Problem      When the storage subsystem is configured to operate in RAID
+                   0 or 1 mode, a Message Signaled Interrupt (MSI) from an
+                   Intel® Volume Management Device (Intel® VMD) owned device
+                   may interrupt a core before a previous write from the device
+                   is completed.
+    
+      Workaround   None identified. The VMD MSI interrupt-handler should
+                   initially perform a dummy register read to the MSI initiator
+                   device prior to any writes to ensure proper PCIe ordering.
+    
+    The existing VMD_FEAT_INTERRUPT_QUIRK implements Intel's documented
+    workaround by issuing a configuration-space read to the MSI initiator
+    before dispatching the interrupt.
+    
+    Enable the existing quirk for 0xad0b as well as 0x7d0b and make the
+    comments describe both MTL016 and ARL004.
+    
+    Tested on an MSI Vector 17 HX AI with Intel VMD 8086:ad0b and an NVMe
+    device behind VMD. With the quirk enabled, the NVMe completion stalls
+    observed without the workaround are no longer reproduced.
+    
+    Link: https://bugs.launchpad.net/bugs/2166325
+    Signed-off-by: Vladimir Nedoshivin <gvozd188@mail.ru>
+    [bhelgaas: include erratum source and text, cc: stable]
+    Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+    Cc: stable@vger.kernel.org
+    Link: https://patch.msgid.link/20260910200539.10862-1-gvozd188@mail.ru
+
+commit 3f1d6b739afe6b9d14828d1d35b8f2031e0b5d7b
+Author: Jason Perlow <jperlow@gmail.com>
+Date:   Wed Oct 21 22:52:38 2026 +0530
+
+    wifi: brcmfmac: map msgbuf RX packet IDs bidirectional
+    
+    Commit f0ba5fd51ff2 ("wifi: brcmfmac: Set DMA direction for msgbuf
+    packet IDs") maps the RX packet ID buffers DMA_FROM_DEVICE. The
+    BCM4364 firmware also reads posted RX buffers, so with VT-d
+    translation enabled every such read faults ("PTE Read access is not
+    set") and the firmware crashes and resets in a loop.
+    
+    Map the RX pool DMA_BIDIRECTIONAL again, as before that commit. TX
+    keeps DMA_TO_DEVICE.
+    
+    Fixes: f0ba5fd51ff2 ("wifi: brcmfmac: Set DMA direction for msgbuf packet IDs")
+    Cc: stable@vger.kernel.org
+    Signed-off-by: Jason Perlow <jperlow@gmail.com>
+    Signed-off-by: Aditya Garg <aditya.garg@linux.dev>
+    Acked-by: Arend van Spriel <arend.vanspriel@broadcom.com>
+    Link: https://patch.msgid.link/20261021172238.10004-1-aditya.garg@linux.dev
+    Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+    (cherry picked from commit 7ed5dce55fa8393972b1bf2bf5af1c818c5e7dc2)
+
+---
+diff --git a/arch/arm/include/asm/mmu_context.h b/arch/arm/include/asm/mmu_context.h
+index db2cb06aa..bebde469f 100644
+--- a/arch/arm/include/asm/mmu_context.h
++++ b/arch/arm/include/asm/mmu_context.h
+@@ -80,7 +80,7 @@ static inline void check_and_switch_context(struct mm_struct *mm,
+ #ifndef MODULE
+ #define finish_arch_post_lock_switch \
+ 	finish_arch_post_lock_switch
+-static inline void finish_arch_post_lock_switch(void)
++static __always_inline void finish_arch_post_lock_switch(void)
+ {
+ 	struct mm_struct *mm = current->mm;
+ 
+diff --git a/arch/riscv/include/asm/sync_core.h b/arch/riscv/include/asm/sync_core.h
+index 9153016da..2fe6b7fe6 100644
+--- a/arch/riscv/include/asm/sync_core.h
++++ b/arch/riscv/include/asm/sync_core.h
+@@ -6,7 +6,7 @@
+  * RISC-V implements return to user-space through an xRET instruction,
+  * which is not core serializing.
+  */
+-static inline void sync_core_before_usermode(void)
++static __always_inline void sync_core_before_usermode(void)
+ {
+ 	asm volatile ("fence.i" ::: "memory");
+ }
+diff --git a/arch/s390/include/asm/mmu_context.h b/arch/s390/include/asm/mmu_context.h
+index bd1ef5e2d..95d03be2c 100644
+--- a/arch/s390/include/asm/mmu_context.h
++++ b/arch/s390/include/asm/mmu_context.h
+@@ -93,7 +93,7 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
+ }
+ 
+ #define finish_arch_post_lock_switch finish_arch_post_lock_switch
+-static inline void finish_arch_post_lock_switch(void)
++static __always_inline void finish_arch_post_lock_switch(void)
+ {
+ 	struct task_struct *tsk = current;
+ 	struct mm_struct *mm = tsk->mm;
+diff --git a/arch/sparc/include/asm/mmu_context_64.h b/arch/sparc/include/asm/mmu_context_64.h
+index 78bbacc14..d1967214e 100644
+--- a/arch/sparc/include/asm/mmu_context_64.h
++++ b/arch/sparc/include/asm/mmu_context_64.h
+@@ -160,7 +160,7 @@ static inline void arch_start_context_switch(struct task_struct *prev)
+ }
+ 
+ #define finish_arch_post_lock_switch	finish_arch_post_lock_switch
+-static inline void finish_arch_post_lock_switch(void)
++static __always_inline void finish_arch_post_lock_switch(void)
+ {
+ 	/* Restore the state of MCDPER register for the new process
+ 	 * just switched to.
+diff --git a/arch/x86/include/asm/sync_core.h b/arch/x86/include/asm/sync_core.h
+index df22113db..3b0ed46df 100644
+--- a/arch/x86/include/asm/sync_core.h
++++ b/arch/x86/include/asm/sync_core.h
+@@ -93,7 +93,7 @@ static __always_inline void sync_core(void)
+  * to user-mode. x86 implements return to user-space through sysexit,
+  * sysrel, and sysretq, which are not core serializing.
+  */
+-static inline void sync_core_before_usermode(void)
++static __always_inline void sync_core_before_usermode(void)
+ {
+ 	/* With PTI, we unconditionally serialize before running user code. */
+ 	if (cpu_feature_enabled(X86_FEATURE_PTI))
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 9edc08b86..9c6c26e2f 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -1049,11 +1049,8 @@ static const struct x86_cpu_id zen5_rdseed_microcode[] = {
+ 
+ static void init_amd_zen5(struct cpuinfo_x86 *c)
+ {
+-	if (!x86_match_min_microcode_rev(zen5_rdseed_microcode)) {
+-		clear_cpu_cap(c, X86_FEATURE_RDSEED);
+-		msr_clear_bit(MSR_AMD64_CPUID_FN_7, 18);
+-		pr_emerg_once("RDSEED32 is broken. Disabling the corresponding CPUID bit.\n");
+-	}
++	if (!x86_match_min_microcode_rev(zen5_rdseed_microcode))
++		pr_emerg_once("RDSEED32 is broken. Please update your firmware.\n");
+ 
+ 	if (cpu_has(c, X86_FEATURE_INVLPGB) &&
+ 	    !cpu_has(c, X86_FEATURE_TLBSYNC_SFW_NO))
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index ece1fd426..109013b43 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -587,6 +587,8 @@ static const struct usb_device_id quirks_table[] = {
+ 						     BTUSB_WIDEBAND_SPEECH },
+ 	{ USB_DEVICE(0x13d3, 0x3612), .driver_info = BTUSB_REALTEK |
+ 						     BTUSB_WIDEBAND_SPEECH },
++	{ USB_DEVICE(0x0489, 0xe112), .driver_info = BTUSB_REALTEK |
++						     BTUSB_WIDEBAND_SPEECH },
+ 	{ USB_DEVICE(0x0489, 0xe122), .driver_info = BTUSB_REALTEK |
+ 						     BTUSB_WIDEBAND_SPEECH },
+ 
+@@ -717,6 +719,8 @@ static const struct usb_device_id quirks_table[] = {
+ 	{ USB_DEVICE(0x13d3, 0x3596), .driver_info = BTUSB_MEDIATEK |
+ 						     BTUSB_WIDEBAND_SPEECH },
+ 	/* MediaTek MT7922 Bluetooth devices */
++	{ USB_DEVICE(0x13d3, 0x3625), .driver_info = BTUSB_MEDIATEK |
++						     BTUSB_WIDEBAND_SPEECH },
+ 	{ USB_DEVICE(0x13d3, 0x3585), .driver_info = BTUSB_MEDIATEK |
+ 						     BTUSB_WIDEBAND_SPEECH },
+ 	{ USB_DEVICE(0x13d3, 0x3610), .driver_info = BTUSB_MEDIATEK |
+diff --git a/drivers/gpu/drm/gud/gud_connector.c b/drivers/gpu/drm/gud/gud_connector.c
+index 8141c3a1e..5c0065c87 100644
+--- a/drivers/gpu/drm/gud/gud_connector.c
++++ b/drivers/gpu/drm/gud/gud_connector.c
+@@ -399,11 +399,8 @@ static int gud_connector_add_tv_mode(struct gud_device *gdrm, struct drm_connect
+ 	for (i = 0; i < num_modes; i++) {
+ 		char *mode = &buf[i * GUD_CONNECTOR_TV_MODE_NAME_LEN];
+ 
+-		if (!memchr(mode, '\0', GUD_CONNECTOR_TV_MODE_NAME_LEN)) {
+-			ret = -EIO;
+-			goto free;
+-		}
+-
++		/* The device is not trusted to NUL-terminate the name */
++		mode[GUD_CONNECTOR_TV_MODE_NAME_LEN - 1] = '\0';
+ 		modes[i] = mode;
+ 	}
+ 
+diff --git a/drivers/gpu/drm/i915/display/intel_dp.c b/drivers/gpu/drm/i915/display/intel_dp.c
+index 3152122e6..26c4535e7 100644
+--- a/drivers/gpu/drm/i915/display/intel_dp.c
++++ b/drivers/gpu/drm/i915/display/intel_dp.c
+@@ -4785,6 +4785,38 @@ intel_edp_set_sink_rates(struct intel_dp *intel_dp)
+ 	intel_edp_set_data_override_rates(intel_dp);
+ }
+ 
++static void intel_edp_wake_sink(struct intel_dp *intel_dp)
++{
++	u8 value = 0;
++	int ret;
++
++	/*
++	 * Read the current sink power state. drm_dp_dpcd_read_byte() already
++	 * retries the AUX transaction internally, so a single read suffices.
++	 * First commercial eDP panels are Ver1.0 or 1.1, on which DPCD
++	 * DP_SET_POWER is supported.
++	 */
++	ret = drm_dp_dpcd_read_byte(&intel_dp->aux, DP_SET_POWER, &value);
++
++	/*
++	 * If the AUX read failed the sink may be asleep and not responding,
++	 * or it read back D3; in either case wake it up to D0.
++	 * In case of AUX read failure which is usually a POR case, the
++	 * remaining bits of register 0x600 is set to '0' on POR. So a bare
++	 * write should be fine.
++	 */
++	if (ret < 0 || value == DP_SET_POWER_D3) {
++		value &= ~DP_SET_POWER_MASK;
++		value |= DP_SET_POWER_D0;
++		drm_dp_dpcd_write_byte(&intel_dp->aux, DP_SET_POWER,
++				       value);
++		/* After setting to D0 need a min of 1ms to wake (Spec DP2.1 sec 2.3.1.2) */
++		fsleep(1000);
++		drm_dp_dpcd_write_byte(&intel_dp->aux, DP_SET_POWER,
++				       value);
++	}
++}
++
+ static bool
+ intel_edp_init_dpcd(struct intel_dp *intel_dp, struct intel_connector *connector)
+ {
+@@ -4795,6 +4827,12 @@ intel_edp_init_dpcd(struct intel_dp *intel_dp, struct intel_connector *connector
+ 	/* this function is meant to be called only once */
+ 	drm_WARN_ON(display->drm, intel_dp->dpcd[DP_DPCD_REV] != 0);
+ 
++	/*
++	 * Spec DP2.1 Section 3.5.2.16 page 966.
++	 * Also if sink is asleep, this will wake the sink.
++	 */
++	intel_edp_wake_sink(intel_dp);
++
+ 	if (drm_dp_read_dpcd_caps(&intel_dp->aux, intel_dp->dpcd) != 0)
+ 		return false;
+ 
+diff --git a/drivers/gpu/drm/i915/gt/intel_rc6.c b/drivers/gpu/drm/i915/gt/intel_rc6.c
+index e91e5cdca..a0361f823 100644
+--- a/drivers/gpu/drm/i915/gt/intel_rc6.c
++++ b/drivers/gpu/drm/i915/gt/intel_rc6.c
+@@ -2,9 +2,9 @@
+ /*
+  * Copyright © 2019 Intel Corporation
+  */
+-
+ #include <linux/pm_runtime.h>
+ #include <linux/string_helpers.h>
++#include <linux/dmi.h>
+ 
+ #include <drm/drm_print.h>
+ #include <drm/intel/intel_pcode_regs.h>
+@@ -499,6 +499,17 @@ static bool rc6_supported(struct intel_rc6 *rc6)
+ 	if (!HAS_RC6(i915))
+ 		return false;
+ 
++	if (dmi_match(DMI_PRODUCT_SKU, "IBP1XI08MK1") ||
++	    dmi_match(DMI_PRODUCT_SKU, "IBP14I08MK2") ||
++	    dmi_match(DMI_PRODUCT_SKU, "IBP1XI08MK2") ||
++	    dmi_match(DMI_PRODUCT_SKU, "IBP16I08MK2") ||
++	    dmi_match(DMI_PRODUCT_SKU, "OMNIA08IMK1") ||
++	    dmi_match(DMI_PRODUCT_SKU, "OMNIA08IMK2")) {
++		drm_notice(&i915->drm,
++			   "RC6 disabled by quirk\n");
++		return false;
++	}
++
+ 	if (intel_vgpu_active(i915))
+ 		return false;
+ 
+diff --git a/drivers/hid/hid-logitech-hidpp.c b/drivers/hid/hid-logitech-hidpp.c
+index 9646380fe..4269ca8ba 100644
+--- a/drivers/hid/hid-logitech-hidpp.c
++++ b/drivers/hid/hid-logitech-hidpp.c
+@@ -214,6 +214,8 @@ struct hidpp_device {
+ 	int hires_wheel_multiplier;
+ 	u8 hires_wheel_feature_index;
+ 
++	struct hidpp_ff_private_data *ff_config;
++
+ 	bool connected_once;
+ };
+ 
+@@ -4093,19 +4095,16 @@ static int hidpp_input_configured(struct hid_device *hdev, struct hid_input *hid
+ 		return 0;
+ 
+ 	if (hidpp->quirks & HIDPP_QUIRK_CLASS_G920) {
+-		struct hidpp_ff_private_data data;
+-
+ 		if (!list_is_first(&hidinput->list, &hdev->inputs))
+ 			return 0;
+ 
+-		ret = g920_get_config(hidpp, &data);
+-		if (!ret)
+-			ret = hidpp_ff_init(hidpp, &data);
+-
+-		if (ret) {
+-			hid_warn(hidpp->hid_dev,
+-				 "Unable to initialize force feedback support, errno %d\n",
+-				 ret);
++		/* The config was read in probe(), IO is stopped here */
++		if (hidpp->ff_config) {
++			ret = hidpp_ff_init(hidpp, hidpp->ff_config);
++			if (ret)
++				hid_warn(hidpp->hid_dev,
++					 "Unable to initialize force feedback support, errno %d\n",
++					 ret);
+ 		}
+ 	}
+ 
+@@ -4764,6 +4763,24 @@ static int hidpp_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 	if (hidpp->quirks & HIDPP_QUIRK_DELAYED_INIT)
+ 		connect_mask &= ~HID_CONNECT_HIDINPUT;
+ 
++	/*
++	 * Force feedback is set up from .input_configured(), which runs from
++	 * hid_connect() with IO stopped, so the device's replies cannot be
++	 * received there. Read the config while IO is still enabled.
++	 */
++	if (hidpp->quirks & HIDPP_QUIRK_CLASS_G920) {
++		struct hidpp_ff_private_data *data;
++
++		data = devm_kzalloc(&hdev->dev, sizeof(*data), GFP_KERNEL);
++		ret = data ? g920_get_config(hidpp, data) : -ENOMEM;
++		if (ret)
++			hid_warn(hdev,
++				 "Unable to initialize force feedback support, errno %d\n",
++				 ret);
++		else
++			hidpp->ff_config = data;
++	}
++
+ 	/* Now export the actual inputs and hidraw nodes to the world */
+ 	hid_device_io_stop(hdev);
+ 	ret = hid_connect(hdev, connect_mask);
+diff --git a/drivers/i2c/i2c-core-acpi.c b/drivers/i2c/i2c-core-acpi.c
+index 37d1309e9..dffeec6bd 100644
+--- a/drivers/i2c/i2c-core-acpi.c
++++ b/drivers/i2c/i2c-core-acpi.c
+@@ -371,6 +371,7 @@ static const struct acpi_device_id i2c_acpi_force_100khz_device_ids[] = {
+ 	 * the device works without issues on Windows at what is expected to be
+ 	 * a 400KHz frequency. The root cause of the issue is not known.
+ 	 */
++	{ "ASUE140D", 0 },
+ 	{ "DLL0945", 0 },
+ 	{ "ELAN0678", 0 },
+ 	{ "ELAN06FA", 0 },
+diff --git a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/msgbuf.c b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/msgbuf.c
+index 069ba7016..ff47d4827 100644
+--- a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/msgbuf.c
++++ b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/msgbuf.c
+@@ -1639,7 +1639,7 @@ int brcmf_proto_msgbuf_attach(struct brcmf_pub *drvr)
+ 	if (!msgbuf->tx_pktids)
+ 		goto fail;
+ 	msgbuf->rx_pktids = brcmf_msgbuf_init_pktids(NR_RX_PKTIDS,
+-						     DMA_FROM_DEVICE);
++						     DMA_BIDIRECTIONAL);
+ 	if (!msgbuf->rx_pktids)
+ 		goto fail;
+ 
+diff --git a/drivers/net/wireless/intel/iwlwifi/mld/mac80211.c b/drivers/net/wireless/intel/iwlwifi/mld/mac80211.c
+index 3a4c8fda6..a007acbe7 100644
+--- a/drivers/net/wireless/intel/iwlwifi/mld/mac80211.c
++++ b/drivers/net/wireless/intel/iwlwifi/mld/mac80211.c
+@@ -516,6 +516,10 @@ iwl_mld_mac80211_tx(struct ieee80211_hw *hw,
+ 	u32 link_id = u32_get_bits(info->control.flags,
+ 				   IEEE80211_TX_CTRL_MLO_LINK);
+ 
++	if (unlikely(test_bit(STATUS_FW_ERROR, &mld->trans->status))) {
++		ieee80211_free_txskb(hw, skb);
++		return;
++	}
+ 	/* In AP mode, mgmt frames are sent on the bcast station,
+ 	 * so the FW can't translate the MLD addr to the link addr. Do it here
+ 	 */
+diff --git a/drivers/net/wireless/intel/iwlwifi/mld/tx.c b/drivers/net/wireless/intel/iwlwifi/mld/tx.c
+index 2df6643a5..7db7554ce 100644
+--- a/drivers/net/wireless/intel/iwlwifi/mld/tx.c
++++ b/drivers/net/wireless/intel/iwlwifi/mld/tx.c
+@@ -987,6 +987,9 @@ void iwl_mld_tx_from_txq(struct iwl_mld *mld, struct ieee80211_txq *txq)
+ 	struct sk_buff *skb = NULL;
+ 	u8 zero_addr[ETH_ALEN] = {};
+ 
++	if (unlikely(test_bit(STATUS_FW_ERROR, &mld->trans->status)))
++		return;
++
+ 	/*
+ 	 * Don't transmit during firmware restart. The firmware is dead,
+ 	 * so iwl_trans_tx() would return -EIO for each frame. Avoid the
+diff --git a/drivers/usb/core/message.c b/drivers/usb/core/message.c
+index 276768f47..2e1df746f 100644
+--- a/drivers/usb/core/message.c
++++ b/drivers/usb/core/message.c
+@@ -1052,6 +1052,25 @@ int usb_string(struct usb_device *dev, int index, char *buf, size_t size)
+ 			UTF16_LITTLE_ENDIAN, buf, size);
+ 	buf[err] = 0;
+ 
++	/*
++	 * Some devices report string descriptors with a declared length
++	 * greater than the actual serial, leaving uninitialized firmware
++	 * memory (often including C0 control characters) appended to the
++	 * returned string. Truncate at the first control character so
++	 * callers get a clean, well-formed string.
++	 */
++	{
++		int i;
++		for (i = 0; i < err; i++) {
++			unsigned char c = buf[i];
++			if (c < 0x20 || c == 0x7f) {
++				buf[i] = 0;
++				err = i;
++				break;
++			}
++		}
++	}
++
+ 	if (tbuf[1] != USB_DT_STRING)
+ 		dev_dbg(&dev->dev,
+ 			"wrong descriptor type %02x for string %d (\"%s\")\n",
+diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
+index 0404489c2..2b12a35e6 100644
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -1193,10 +1193,11 @@ static void quirk_usb_handoff_xhci(struct pci_dev *pdev)
+ 			 && pdev->device == 0x0014)) {
+ 		val = (val | XHCI_HC_OS_OWNED) & ~XHCI_HC_BIOS_OWNED;
+ 		writel(val, base + ext_cap_offset);
+-	}
+-
+-	/* If the BIOS owns the HC, signal that the OS wants it, and wait */
+-	if (val & XHCI_HC_BIOS_OWNED) {
++	} else {
++		/*
++		 * Perform the standard handoff and leave OS ownership set to
++		 * keep the BIOS at bay during subsequent suspends.
++		 */
+ 		writel(val | XHCI_HC_OS_OWNED, base + ext_cap_offset);
+ 
+ 		/* Wait for 1 second with 10 microsecond polling interval */
+@@ -1208,7 +1209,9 @@ static void quirk_usb_handoff_xhci(struct pci_dev *pdev)
+ 			dev_warn(&pdev->dev,
+ 				 "xHCI BIOS handoff failed (BIOS bug ?) %08x\n",
+ 				 val);
+-			writel(val & ~XHCI_HC_BIOS_OWNED, base + ext_cap_offset);
++			writel((val | XHCI_HC_OS_OWNED) &
++			       ~XHCI_HC_BIOS_OWNED,
++			       base + ext_cap_offset);
+ 		}
+ 	}
+ 
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 2d5e76878..b422c06a7 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -1616,7 +1616,7 @@ static inline void perf_event_task_migrate(struct task_struct *task)
+ 		task->sched_migrated = 1;
+ }
+ 
+-static inline void perf_event_task_sched_in(struct task_struct *prev,
++static __always_inline void perf_event_task_sched_in(struct task_struct *prev,
+ 					    struct task_struct *task)
+ {
+ 	if (static_branch_unlikely(&perf_sched_events))
+diff --git a/include/linux/sched/mm.h b/include/linux/sched/mm.h
+index d7c6a942a..99d555f26 100644
+--- a/include/linux/sched/mm.h
++++ b/include/linux/sched/mm.h
+@@ -32,7 +32,7 @@ extern struct mm_struct *mm_alloc(void);
+  * See also <Documentation/mm/active_mm.rst> for an in-depth explanation
+  * of &mm_struct.mm_count vs &mm_struct.mm_users.
+  */
+-static inline void mmgrab(struct mm_struct *mm)
++static __always_inline void mmgrab(struct mm_struct *mm)
+ {
+ 	atomic_inc(&mm->mm_count);
+ }
+@@ -44,7 +44,7 @@ static inline void smp_mb__after_mmgrab(void)
+ 
+ extern void __mmdrop(struct mm_struct *mm);
+ 
+-static inline void mmdrop(struct mm_struct *mm)
++static __always_inline void mmdrop(struct mm_struct *mm)
+ {
+ 	/*
+ 	 * The implicit full barrier implied by atomic_dec_and_test() is
+@@ -71,27 +71,27 @@ static inline void __mmdrop_delayed(struct rcu_head *rhp)
+  * Invoked from finish_task_switch(). Delegates the heavy lifting on RT
+  * kernels via RCU.
+  */
+-static inline void mmdrop_sched(struct mm_struct *mm)
++static __always_inline void mmdrop_sched(struct mm_struct *mm)
+ {
+ 	/* Provides a full memory barrier. See mmdrop() */
+ 	if (atomic_dec_and_test(&mm->mm_count))
+ 		call_rcu(&mm->delayed_drop, __mmdrop_delayed);
+ }
+ #else
+-static inline void mmdrop_sched(struct mm_struct *mm)
++static __always_inline void mmdrop_sched(struct mm_struct *mm)
+ {
+ 	mmdrop(mm);
+ }
+ #endif
+ 
+ /* Helpers for lazy TLB mm refcounting */
+-static inline void mmgrab_lazy_tlb(struct mm_struct *mm)
++static __always_inline void mmgrab_lazy_tlb(struct mm_struct *mm)
+ {
+ 	if (IS_ENABLED(CONFIG_MMU_LAZY_TLB_REFCOUNT))
+ 		mmgrab(mm);
+ }
+ 
+-static inline void mmdrop_lazy_tlb(struct mm_struct *mm)
++static __always_inline void mmdrop_lazy_tlb(struct mm_struct *mm)
+ {
+ 	if (IS_ENABLED(CONFIG_MMU_LAZY_TLB_REFCOUNT)) {
+ 		mmdrop(mm);
+@@ -104,7 +104,7 @@ static inline void mmdrop_lazy_tlb(struct mm_struct *mm)
+ 	}
+ }
+ 
+-static inline void mmdrop_lazy_tlb_sched(struct mm_struct *mm)
++static __always_inline void mmdrop_lazy_tlb_sched(struct mm_struct *mm)
+ {
+ 	if (IS_ENABLED(CONFIG_MMU_LAZY_TLB_REFCOUNT))
+ 		mmdrop_sched(mm);
+@@ -128,12 +128,12 @@ static inline void mmdrop_lazy_tlb_sched(struct mm_struct *mm)
+  * See also <Documentation/mm/active_mm.rst> for an in-depth explanation
+  * of &mm_struct.mm_count vs &mm_struct.mm_users.
+  */
+-static inline void mmget(struct mm_struct *mm)
++static __always_inline void mmget(struct mm_struct *mm)
+ {
+ 	atomic_inc(&mm->mm_users);
+ }
+ 
+-static inline bool mmget_not_zero(struct mm_struct *mm)
++static __always_inline bool mmget_not_zero(struct mm_struct *mm)
+ {
+ 	return atomic_inc_not_zero(&mm->mm_users);
+ }
+@@ -531,7 +531,7 @@ enum {
+ #include <asm/membarrier.h>
+ #endif
+ 
+-static inline void membarrier_mm_sync_core_before_usermode(struct mm_struct *mm)
++static __always_inline void membarrier_mm_sync_core_before_usermode(struct mm_struct *mm)
+ {
+ 	/*
+ 	 * The atomic_read() below prevents CSE. The following should
+diff --git a/include/linux/tick.h b/include/linux/tick.h
+index b121c5d53..ea7002ad7 100644
+--- a/include/linux/tick.h
++++ b/include/linux/tick.h
+@@ -172,7 +172,7 @@ extern cpumask_var_t tick_nohz_full_mask;
+ #ifdef CONFIG_NO_HZ_FULL
+ extern bool tick_nohz_full_running;
+ 
+-static inline bool tick_nohz_full_enabled(void)
++static __always_inline bool tick_nohz_full_enabled(void)
+ {
+ 	if (!context_tracking_enabled())
+ 		return false;
+@@ -296,7 +296,7 @@ static inline void __tick_nohz_task_switch(void) { }
+ static inline void tick_nohz_full_setup(cpumask_var_t cpumask) { }
+ #endif
+ 
+-static inline void tick_nohz_task_switch(void)
++static __always_inline void tick_nohz_task_switch(void)
+ {
+ 	if (tick_nohz_full_enabled())
+ 		__tick_nohz_task_switch();
+diff --git a/include/linux/vtime.h b/include/linux/vtime.h
+index 82825e775..ce83fc743 100644
+--- a/include/linux/vtime.h
++++ b/include/linux/vtime.h
+@@ -89,24 +89,24 @@ static __always_inline void vtime_account_guest_exit(void)
+  * For now vtime state is tied to context tracking. We might want to decouple
+  * those later if necessary.
+  */
+-static inline bool vtime_accounting_enabled(void)
++static __always_inline bool vtime_accounting_enabled(void)
+ {
+ 	return context_tracking_enabled();
+ }
+ 
+-static inline bool vtime_accounting_enabled_cpu(int cpu)
++static __always_inline bool vtime_accounting_enabled_cpu(int cpu)
+ {
+ 	return vtime_generic_enabled_cpu(cpu);
+ }
+ 
+-static inline bool vtime_accounting_enabled_this_cpu(void)
++static __always_inline bool vtime_accounting_enabled_this_cpu(void)
+ {
+ 	return vtime_generic_enabled_this_cpu();
+ }
+ 
+ extern void vtime_task_switch_generic(struct task_struct *prev);
+ 
+-static inline void vtime_task_switch(struct task_struct *prev)
++static __always_inline void vtime_task_switch(struct task_struct *prev)
+ {
+ 	if (vtime_accounting_enabled_this_cpu())
+ 		vtime_task_switch_generic(prev);
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 5d38537dd..7563d55d1 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5097,7 +5097,7 @@ static inline void prepare_task(struct task_struct *next)
+ 	WRITE_ONCE(next->on_cpu, 1);
+ }
+ 
+-static inline void finish_task(struct task_struct *prev)
++static __always_inline void finish_task(struct task_struct *prev)
+ {
+ 	/*
+ 	 * This must be the very last reference to @prev from this CPU. After
+@@ -5141,7 +5141,7 @@ static void zap_balance_callbacks(struct rq *rq)
+ 	rq->balance_callback = found ? &balance_push_callback : NULL;
+ }
+ 
+-static void do_balance_callbacks(struct rq *rq, struct balance_callback *head)
++static __always_inline void do_balance_callbacks(struct rq *rq, struct balance_callback *head)
+ {
+ 	void (*func)(struct rq *rq);
+ 	struct balance_callback *next;
+@@ -5176,7 +5176,7 @@ struct balance_callback balance_push_callback = {
+ 	.func = balance_push,
+ };
+ 
+-static inline struct balance_callback *
++static __always_inline struct balance_callback *
+ __splice_balance_callbacks(struct rq *rq, bool split)
+ {
+ 	struct balance_callback *head = rq->balance_callback;
+@@ -5250,7 +5250,7 @@ prepare_lock_switch(struct rq *rq, struct task_struct *next, struct rq_flags *rf
+ 	__acquire(__rq_lockp(this_rq()));
+ }
+ 
+-static inline void finish_lock_switch(struct rq *rq)
++static __always_inline void finish_lock_switch(struct rq *rq)
+ 	__releases(__rq_lockp(rq))
+ {
+ 	/*
+@@ -5284,7 +5284,7 @@ static inline void kmap_local_sched_out(void)
+ #endif
+ }
+ 
+-static inline void kmap_local_sched_in(void)
++static __always_inline void kmap_local_sched_in(void)
+ {
+ #ifdef CONFIG_KMAP_LOCAL
+ 	if (unlikely(current->kmap_ctrl.idx))
+@@ -5338,7 +5338,7 @@ prepare_task_switch(struct rq *rq, struct task_struct *prev,
+  * past. 'prev == current' is still correct but we need to recalculate this_rq
+  * because prev may have moved to another CPU.
+  */
+-static struct rq *finish_task_switch(struct task_struct *prev)
++static __always_inline struct rq *finish_task_switch(struct task_struct *prev)
+ 	__releases(__rq_lockp(this_rq()))
+ {
+ 	struct rq *rq = this_rq();
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 9d657f70c..e413fdc70 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -13827,12 +13827,15 @@ redo:
+ 		 * still unbalanced. ld_moved simply stays zero, so it is
+ 		 * correctly treated as an imbalance.
+ 		 */
+-		env.loop_max  = min(sysctl_sched_nr_migrate, busiest->nr_running);
+-
+ more_balance:
+ 		rq_lock_irqsave(busiest, &rf);
+ 		update_rq_clock(busiest);
+ 
++		if (!env.loop_max)
++			env.loop_max  = min(sysctl_sched_nr_migrate, busiest->cfs.h_nr_queued);
++		else
++			env.loop_max  = min(env.loop_max, busiest->cfs.h_nr_queued);
++
+ 		/*
+ 		 * cur_ld_moved - load moved in current iteration
+ 		 * ld_moved     - cumulative load moved across iterations
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 87750d280..efd96e9ff 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -1481,12 +1481,12 @@ static inline struct cpumask *sched_group_span(struct sched_group *sg);
+ 
+ DECLARE_STATIC_KEY_FALSE(__sched_core_enabled);
+ 
+-static inline bool sched_core_enabled(struct rq *rq)
++static __always_inline bool sched_core_enabled(struct rq *rq)
+ {
+ 	return static_branch_unlikely(&__sched_core_enabled) && rq->core_enabled;
+ }
+ 
+-static inline bool sched_core_disabled(void)
++static __always_inline bool sched_core_disabled(void)
+ {
+ 	return !static_branch_unlikely(&__sched_core_enabled);
+ }
+@@ -1495,7 +1495,7 @@ static inline bool sched_core_disabled(void)
+  * Be careful with this function; not for general use. The return value isn't
+  * stable unless you actually hold a relevant rq->__lock.
+  */
+-static inline raw_spinlock_t *rq_lockp(struct rq *rq)
++static __always_inline raw_spinlock_t *rq_lockp(struct rq *rq)
+ {
+ 	if (sched_core_enabled(rq))
+ 		return &rq->core->__lock;
+@@ -1503,7 +1503,7 @@ static inline raw_spinlock_t *rq_lockp(struct rq *rq)
+ 	return &rq->__lock;
+ }
+ 
+-static inline raw_spinlock_t *__rq_lockp(struct rq *rq)
++static __always_inline raw_spinlock_t *__rq_lockp(struct rq *rq)
+ 	__returns_ctx_lock(rq_lockp(rq)) /* alias them */
+ {
+ 	if (rq->core_enabled)
+@@ -1606,12 +1606,12 @@ static inline bool sched_core_disabled(void)
+ 	return true;
+ }
+ 
+-static inline raw_spinlock_t *rq_lockp(struct rq *rq)
++static __always_inline raw_spinlock_t *rq_lockp(struct rq *rq)
+ {
+ 	return &rq->__lock;
+ }
+ 
+-static inline raw_spinlock_t *__rq_lockp(struct rq *rq)
++static __always_inline raw_spinlock_t *__rq_lockp(struct rq *rq)
+ 	__returns_ctx_lock(rq_lockp(rq)) /* alias them */
+ {
+ 	return &rq->__lock;
+@@ -1671,33 +1671,33 @@ extern void raw_spin_rq_lock_nested(struct rq *rq, int subclass)
+ extern bool raw_spin_rq_trylock(struct rq *rq)
+ 	__cond_acquires(true, __rq_lockp(rq));
+ 
+-static inline void raw_spin_rq_lock(struct rq *rq)
++static __always_inline void raw_spin_rq_lock(struct rq *rq)
+ 	__acquires(__rq_lockp(rq))
+ {
+ 	raw_spin_rq_lock_nested(rq, 0);
+ }
+ 
+-static inline void raw_spin_rq_unlock(struct rq *rq)
++static __always_inline void raw_spin_rq_unlock(struct rq *rq)
+ 	__releases(__rq_lockp(rq))
+ {
+ 	raw_spin_unlock(rq_lockp(rq));
+ }
+ 
+-static inline void raw_spin_rq_lock_irq(struct rq *rq)
++static __always_inline void raw_spin_rq_lock_irq(struct rq *rq)
+ 	__acquires(__rq_lockp(rq))
+ {
+ 	local_irq_disable();
+ 	raw_spin_rq_lock(rq);
+ }
+ 
+-static inline void raw_spin_rq_unlock_irq(struct rq *rq)
++static __always_inline void raw_spin_rq_unlock_irq(struct rq *rq)
+ 	__releases(__rq_lockp(rq))
+ {
+ 	raw_spin_rq_unlock(rq);
+ 	local_irq_enable();
+ }
+ 
+-static inline unsigned long _raw_spin_rq_lock_irqsave(struct rq *rq)
++static __always_inline unsigned long _raw_spin_rq_lock_irqsave(struct rq *rq)
+ 	__acquires(__rq_lockp(rq))
+ {
+ 	unsigned long flags;
+@@ -1708,7 +1708,7 @@ static inline unsigned long _raw_spin_rq_lock_irqsave(struct rq *rq)
+ 	return flags;
+ }
+ 
+-static inline void raw_spin_rq_unlock_irqrestore(struct rq *rq, unsigned long flags)
++static __always_inline void raw_spin_rq_unlock_irqrestore(struct rq *rq, unsigned long flags)
+ 	__releases(__rq_lockp(rq))
+ {
+ 	raw_spin_rq_unlock(rq);
+diff --git a/mm/slub.c b/mm/slub.c
+index 544cff397..a0f0bdc1e 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -422,6 +422,7 @@ struct node_barn {
+ 	spinlock_t lock;
+ 	struct list_head sheaves_full;
+ 	struct list_head sheaves_empty;
++	struct slab_sheaf *sheaf_partial;
+ 	unsigned int nr_full;
+ 	unsigned int nr_empty;
+ };
+@@ -3298,6 +3299,7 @@ static void barn_init(struct node_barn *barn)
+ 	spin_lock_init(&barn->lock);
+ 	INIT_LIST_HEAD(&barn->sheaves_full);
+ 	INIT_LIST_HEAD(&barn->sheaves_empty);
++	barn->sheaf_partial = NULL;
+ 	barn->nr_full = 0;
+ 	barn->nr_empty = 0;
+ }
+@@ -3315,6 +3317,10 @@ static void barn_shrink(struct kmem_cache *s, struct node_barn *barn)
+ 	barn->nr_full = 0;
+ 	list_splice_init(&barn->sheaves_empty, &empty_list);
+ 	barn->nr_empty = 0;
++	if (barn->sheaf_partial) {
++		list_add(&barn->sheaf_partial->barn_list, &full_list);
++		barn->sheaf_partial = NULL;
++	}
+ 
+ 	spin_unlock_irqrestore(&barn->lock, flags);
+ 
+@@ -5073,12 +5079,87 @@ void *kmem_cache_alloc_node_noprof(struct kmem_cache *s, gfp_t gfpflags, int nod
+ }
+ EXPORT_SYMBOL(kmem_cache_alloc_node_noprof);
+ 
++/*
++ * Refill @sheaf from the barn: from its partial sheaf first, then from its full
++ * sheaves. A sheaf that objects were copied from stays in the barn as the
++ * partial sheaf if it still holds objects, or goes on the empty list if it is
++ * empty.
++ *
++ * Returns true if the sheaf is now full, at s->sheaf_capacity.
++ * Returns false if the sheaf is still not full.
++ */
++static bool refill_sheaf_from_barn(struct kmem_cache *s,
++				   struct slab_sheaf *sheaf)
++{
++	struct node_barn *barn = get_barn(s);
++	struct slab_sheaf *src;
++	unsigned int to_move;
++	unsigned long flags;
++
++	if (!barn)
++		return false;
++
++	if (!data_race(barn->nr_full) && !data_race(barn->sheaf_partial))
++		return false;
++
++	spin_lock_irqsave(&barn->lock, flags);
++
++	/*
++	 * The partial sheaf can hold fewer objects than @sheaf needs to
++	 * reach capacity, and a sheaf on the full list is not necessarily
++	 * full (see the comment in rcu_free_sheaf()), so keep taking from
++	 * the barn until @sheaf is full or nothing is left.
++	 */
++	while (sheaf->size < s->sheaf_capacity) {
++		src = barn->sheaf_partial;
++		barn->sheaf_partial = NULL;
++		if (!src) {
++			if (!barn->nr_full)
++				break;
++			src = list_first_entry(&barn->sheaves_full,
++					       struct slab_sheaf, barn_list);
++			list_del(&src->barn_list);
++			barn->nr_full--;
++		}
++
++		to_move = min(s->sheaf_capacity - sheaf->size, src->size);
++		src->size -= to_move;
++		memcpy(&sheaf->objects[sheaf->size], &src->objects[src->size],
++		       to_move * sizeof(void *));
++		sheaf->size += to_move;
++
++		if (src->size) {
++			barn->sheaf_partial = src;
++		} else {
++			/*
++			 * No empty-limit check: the sheaf put on the empty list
++			 * was already in the barn, so the barn holds no more
++			 * sheaves than before. barn_replace_empty_sheaf() skips
++			 * the check for the same reason.
++			 */
++			list_add(&src->barn_list, &barn->sheaves_empty);
++			barn->nr_empty++;
++		}
++	}
++
++	spin_unlock_irqrestore(&barn->lock, flags);
++
++	if (sheaf->size < s->sheaf_capacity)
++		return false;
++
++	stat(s, BARN_GET);
++	return true;
++}
++
+ static int __prefill_sheaf_pfmemalloc(struct kmem_cache *s,
+ 				      struct slab_sheaf *sheaf, gfp_t gfp)
+ {
+ 	gfp_t gfp_nomemalloc;
+ 	int ret;
+ 
++	if (refill_sheaf_from_barn(s, sheaf))
++		return 0;
++
+ 	gfp_nomemalloc = gfp | __GFP_NOMEMALLOC;
+ 	if (gfp_pfmemalloc_allowed(gfp))
+ 		gfp_nomemalloc |= __GFP_NOWARN;
+diff --git a/security/apparmor/match.c b/security/apparmor/match.c
+index ca30a4292..a3361d3db 100644
+--- a/security/apparmor/match.c
++++ b/security/apparmor/match.c
+@@ -613,7 +613,7 @@ aa_state_t aa_dfa_match_until(const struct aa_dfa *dfa, aa_state_t start,
+ 	u32 *next = NEXT_TABLE(dfa);
+ 	u32 *check = CHECK_TABLE(dfa);
+ 	u32 *accept = ACCEPT_TABLE(dfa);
+-	aa_state_t state = start, pos;
++	aa_state_t state = start;
+ 
+ 	if (state == DFA_NOMATCH)
+ 		return DFA_NOMATCH;
+@@ -624,22 +624,18 @@ aa_state_t aa_dfa_match_until(const struct aa_dfa *dfa, aa_state_t start,
+ 		u8 *equiv = EQUIV_TABLE(dfa);
+ 		/* default is direct to next state */
+ 		while (*str) {
+-			pos = base_idx(base[state]) + equiv[(u8) *str++];
+-			if (check[pos] == state)
+-				state = next[pos];
+-			else
+-				state = def[state];
++			u8 c = equiv[(u8) *str++];
++
++			match_char(state, def, base, next, check, c);
+ 			if (accept[state])
+ 				break;
+ 		}
+ 	} else {
+ 		/* default is direct to next state */
+ 		while (*str) {
+-			pos = base_idx(base[state]) + (u8) *str++;
+-			if (check[pos] == state)
+-				state = next[pos];
+-			else
+-				state = def[state];
++			u8 c = (u8) *str++;
++
++			match_char(state, def, base, next, check, c);
+ 			if (accept[state])
+ 				break;
+ 		}
+@@ -674,7 +670,7 @@ aa_state_t aa_dfa_matchn_until(const struct aa_dfa *dfa, aa_state_t start,
+ 	u32 *next = NEXT_TABLE(dfa);
+ 	u32 *check = CHECK_TABLE(dfa);
+ 	u32 *accept = ACCEPT_TABLE(dfa);
+-	aa_state_t state = start, pos;
++	aa_state_t state = start;
+ 
+ 	*retpos = NULL;
+ 	if (state == DFA_NOMATCH)
+@@ -686,22 +682,18 @@ aa_state_t aa_dfa_matchn_until(const struct aa_dfa *dfa, aa_state_t start,
+ 		u8 *equiv = EQUIV_TABLE(dfa);
+ 		/* default is direct to next state */
+ 		for (; n; n--) {
+-			pos = base_idx(base[state]) + equiv[(u8) *str++];
+-			if (check[pos] == state)
+-				state = next[pos];
+-			else
+-				state = def[state];
++			u8 c = equiv[(u8) *str++];
++
++			match_char(state, def, base, next, check, c);
+ 			if (accept[state])
+ 				break;
+ 		}
+ 	} else {
+ 		/* default is direct to next state */
+ 		for (; n; n--) {
+-			pos = base_idx(base[state]) + (u8) *str++;
+-			if (check[pos] == state)
+-				state = next[pos];
+-			else
+-				state = def[state];
++			u8 c = (u8) *str++;
++
++			match_char(state, def, base, next, check, c);
+ 			if (accept[state])
+ 				break;
+ 		}
+@@ -750,7 +742,7 @@ static aa_state_t leftmatch_fb(const struct aa_dfa *dfa, aa_state_t start,
+ 	u32 *base = BASE_TABLE(dfa);
+ 	u32 *next = NEXT_TABLE(dfa);
+ 	u32 *check = CHECK_TABLE(dfa);
+-	aa_state_t state = start, pos;
++	aa_state_t state = start;
+ 
+ 	AA_BUG(!dfa);
+ 	AA_BUG(!str);
+@@ -768,13 +760,10 @@ static aa_state_t leftmatch_fb(const struct aa_dfa *dfa, aa_state_t start,
+ 		/* default is direct to next state */
+ 		while (*str) {
+ 			unsigned int adjust;
++			u8 c = equiv[(u8) *str++];
+ 
+ 			wb->history[wb->pos] = state;
+-			pos = base_idx(base[state]) + equiv[(u8) *str++];
+-			if (check[pos] == state)
+-				state = next[pos];
+-			else
+-				state = def[state];
++			match_char(state, def, base, next, check, c);
+ 			if (is_loop(wb, state, &adjust)) {
+ 				state = aa_dfa_match(dfa, state, str);
+ 				*count -= adjust;
+@@ -787,13 +776,10 @@ static aa_state_t leftmatch_fb(const struct aa_dfa *dfa, aa_state_t start,
+ 		/* default is direct to next state */
+ 		while (*str) {
+ 			unsigned int adjust;
++			u8 c = (u8) *str++;
+ 
+ 			wb->history[wb->pos] = state;
+-			pos = base_idx(base[state]) + (u8) *str++;
+-			if (check[pos] == state)
+-				state = next[pos];
+-			else
+-				state = def[state];
++			match_char(state, def, base, next, check, c);
+ 			if (is_loop(wb, state, &adjust)) {
+ 				state = aa_dfa_match(dfa, state, str);
+ 				*count -= adjust;
+diff --git a/sound/soc/intel/boards/sof_sdw.c b/sound/soc/intel/boards/sof_sdw.c
+index 72fe013ff..60b4d868a 100644
+--- a/sound/soc/intel/boards/sof_sdw.c
++++ b/sound/soc/intel/boards/sof_sdw.c
+@@ -845,6 +845,15 @@ static const struct dmi_system_id sof_sdw_quirk_table[] = {
+ 		},
+ 		.driver_data = (void *)(SOC_SDW_PCH_DMIC),
+ 	},
++	{
++		/* Dell XPS 13 DX13260 (Wildcat Lake), CS42L43 + 2x CS35L63 sidecar amps */
++		.callback = sof_sdw_quirk_cb,
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc"),
++			DMI_EXACT_MATCH(DMI_PRODUCT_SKU, "0E53")
++		},
++		.driver_data = (void *)(SOC_SDW_SIDECAR_AMPS),
++	},
+ 	{}
+ };
+ 

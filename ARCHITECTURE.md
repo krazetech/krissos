@@ -110,7 +110,7 @@ the shell does not block them. KrissOS Shell becomes the default at `110`.
 |---|---|
 | `bg` | `#000000` Obsidian |
 | `surface` | `#0B0D0F` |
-| `accent` | `#29B2E8` Sky Cyan (approximate; to confirm against the source logo) |
+| `accent` | `#24B1E6` Sky Cyan (sampled from the Kraze Tech logo) |
 | `fg` | `#E6EDF2` |
 | `muted` | `#6B7680` |
 
@@ -119,7 +119,8 @@ the shell does not block them. KrissOS Shell becomes the default at `110`.
   One bottom bar holds the launcher, apps and status. Sky Cyan is the only accent; no neon.
 - **Type:** Figtree + JetBrains Mono (OFL) proposed.
 - **Reference:** the concept mockup at https://claude.ai/artifact/Cye2G1TUoXHAGoNX3typoD.
-- **Logo:** the logo is redrawn as a vector file. All assets are generated from these tokens
+- **Logo:** the Kraze Tech emblem, a keris hilt on a Sky Cyan disc, redrawn as a vector at
+  `theme/templates/usr/share/pixmaps/krissos.svg`. All assets are generated from these tokens
   so a change in one place updates everything.
 
 ## 7. Windows apps
@@ -185,10 +186,9 @@ kriss-vm revert         # restore every file `kriss-vm` changed from its backups
 
 ## 11. Open decisions
 
-1. Final accent hex and the logo vector redraw.
-2. Font: confirm Figtree.
-3. License for the tooling: GPL-3.0-or-later (assumed) or MIT.
-4. Results of the cosmic-comp layer-shell test.
+1. Font: confirm Figtree.
+2. License for the tooling: GPL-3.0-or-later (assumed) or MIT.
+3. Results of the cosmic-comp layer-shell test.
 
 ## 12. Roadmap to `110`
 

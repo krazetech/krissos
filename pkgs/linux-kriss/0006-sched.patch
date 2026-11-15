@@ -1,0 +1,409 @@
+Origin: https://github.com/CachyOS/linux tag cachyos-7.3.4-1, commit aa0b02b8b15ecdd3e8ce7b2382f5ad1dd78e2614 (Merge branch '7.3/sched' into 7.3/base-dev)
+Squashed diff of the upstream commits below; their headers are unmodified.
+
+commit c0606860890da24c657f47202d6c51a92fdb2cd5
+Author: Vincent Guittot <vincent.guittot@linaro.org>
+Date:   Mon Sep 21 17:22:31 2026 +0200
+
+    sched/eevdf: Ensure that vprot will never go above a min slice
+    
+    ineligible_vruntime() can be after the duration of a min slice but we
+    want to make sure that current will not run more than a min slice.
+    
+    Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+    Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+    Link: https://patch.msgid.link/20260921152238.3804392-2-vincent.guittot@linaro.org
+    (cherry picked from commit aae2a33ea66299f39252bc1891bb4f05f631255d)
+
+commit 78c4ec7aa4e0344f20738d8362d84304183ff58c
+Author: Vincent Guittot <vincent.guittot@linaro.org>
+Date:   Mon Sep 21 17:22:32 2026 +0200
+
+    sched/eevdf: Align update_protect_slice to set_protect_slice
+    
+    Apply the same logic as for set_protect_slice when updating it.
+    
+    Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+    Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+    Link: https://patch.msgid.link/20260921152238.3804392-3-vincent.guittot@linaro.org
+    (cherry picked from commit 4bf32ec3327d2d2286e96508cd128ce1592f43ce)
+
+commit 5901bea2446078562354c075386fc368eb07f5d8
+Author: Vincent Guittot <vincent.guittot@linaro.org>
+Date:   Mon Sep 21 17:22:33 2026 +0200
+
+    sched/eevdf: Handle more short slice waking cases
+    
+    Handle better the cases with several short slice tasks waking up
+    simultaneously.
+    
+    Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+    Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+    Link: https://patch.msgid.link/20260921152238.3804392-4-vincent.guittot@linaro.org
+    (cherry picked from commit d2e0100827578641df2f85546bdb57bb1d8ff55b)
+
+commit 7107dcbd03dc5ff79045df7980218cf2d0db2ef8
+Author: Eric Kim <seohyun.kim@outlook.kr>
+Date:   Tue Aug 18 12:48:29 2026 +0900
+
+    sched/fair: Reset NUMA fault locality after scan period update
+    
+    When updating the task scan period for NUMA locality checks,
+    update_task_scan_period() checks whether there were no faults or failed
+    migration on the last scan window, at which it prolongs the scan period.
+    
+    However, p->numa_faults_locality, which is used to check for migration
+    failure and number of faults at the previous scan window is not cleared
+    after changing the scan period, which unintentionally increases
+    numa_scan_period up to numa_scan_period_max even when there were no
+    migration failures or no faults at previous scan.
+    
+    Fix this by jumping to the out label on early exit at this case to
+    ensure p->numa_faults_locality is always cleared before returning.
+    
+    Closes: https://lore.kernel.org/all/20250404095354.311156-1-qlsdnjs236@chungbuk.ac.kr/
+    Reported-by: Binwon Song <qlsdnjs236@chungbuk.ac.kr>
+    Signed-off-by: Eric Kim <seohyun.kim@outlook.kr>
+    Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+    Cc: stable@vger.kernel.org
+    Link: https://patch.msgid.link/Message-ID:
+    (cherry picked from commit e81ee06308379a5f2ededf997bcf17551bce5db7)
+
+commit 8ac89a7ed293bacce03eeac08c2c9f79f4c4e07c
+Author: Stian Halseth <stian@itx.no>
+Date:   Wed Oct 7 16:29:50 2026 +0200
+
+    sched/cputime: Don't account idle time twice after dyntick-idle
+    
+    On idle exit the dyntick-idle accounting accounts the time up to now,
+    then the tick is restarted on its old period. The first tick accounts a
+    whole TICK_NSEC to whatever runs, although the part of that period
+    before the idle exit has just been accounted as idle time, or with
+    IRQ_TIME_ACCOUNTING as IRQ time. That is up to a full tick per idle
+    exit, and /proc/stat reports more idle time than wall time.
+    
+    Record how much of the current tick period dyntick-idle has accounted,
+    and leave it out of the tick that ends the period.
+    
+    Fixes: cf6444c3e1bb7 ("tick/sched: Unify idle cputime accounting")
+    Signed-off-by: Stian Halseth <stian@itx.no>
+    Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+    Reviewed-by: Frederic Weisbecker <frederic@kernel.org>
+    Link: https://lore.kernel.org/all/20261004142724.3896396-1-stian@itx.no/
+    Link: https://patch.msgid.link/20261007142950.547604-1-stian@itx.no
+    (cherry picked from commit 96a494c9cfd8f4bb7b1a7a70275426db71cf98aa)
+
+commit 1d1df75336dcf45998d32593c965b978f8dcacfd
+Author: Jemmy Wong <jemmywong512@gmail.com>
+Date:   Tue Oct 13 16:43:38 2026 +0800
+
+    sched/cache: Avoid publishing partial LLC utilization
+    
+    update_sg_lb_stats() sums utilization over the CPUs in both
+    sched_group_span(group) and env->cpus, but takes capacity from
+    group->sgc->capacity for the whole group. record_sg_llc_stats()
+    publishes both.
+    
+    Rejecting an all-affinity-pinned source runqueue removes that CPU from
+    env->cpus and retries group selection. The retry can publish the
+    partial utilization with the full capacity.
+    
+    can_migrate_llc() then treats a busy preferred LLC as having spare
+    capacity. More tasks can aggregate into it, migrations out can be
+    blocked, and two busy LLCs may not fall back to generic balancing.
+    This increases CPU contention and task latency. Found by inspection.
+    
+    Skip publication on affinity retries using LBF_ALL_PINNED, retaining
+    the first-pass snapshots and avoiding repeated cpumask checks. On the
+    first pass, publish either shared LLC statistic only when env->cpus
+    covers the whole group. Load balancing still uses the affinity-filtered
+    statistics.
+    
+    The same window exists during CPU hotplug. env->cpus drops a CPU at
+    set_cpu_active(false), but the group span and sgc->capacity still
+    include it until cpuset_cpu_inactive() rebuilds the domains. Keeping
+    the previous snapshot avoids the mismatched publish. After the rebuild,
+    the next periodic balance records both statistics again.
+    
+    Fixes: f025ef275388 ("sched/cache: Record per LLC utilization to guide cache aware scheduling decisions")
+    Suggested-by: K Prateek Nayak <kprateek.nayak@amd.com>
+    Suggested-by: Tim Chen <tim.c.chen@linux.intel.com>
+    Signed-off-by: Jemmy Wong <jemmywong512@gmail.com>
+    Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+    Link: https://patch.msgid.link/20261013084338.55100-1-jemmywong512@gmail.com
+    (cherry picked from commit fcceb7da94659695d6cba97190e18e87d9cce82c)
+
+---
+diff --git a/include/linux/kernel_stat.h b/include/linux/kernel_stat.h
+index 9ca6c2259..6e252048b 100644
+--- a/include/linux/kernel_stat.h
++++ b/include/linux/kernel_stat.h
+@@ -40,6 +40,9 @@ struct kernel_cpustat {
+ 	seqcount_t	idle_sleeptime_seq;
+ 	u64		idle_entrytime;
+ 	u64		idle_stealtime[2];
++	u64		idle_dyntick_entry;
++	u64		idle_tick_period;
++	u64		idle_tick_overlap;
+ #endif
+ 	u64		cpustat[NR_STATS];
+ };
+@@ -111,7 +114,7 @@ static inline unsigned long kstat_cpu_irqs_sum(unsigned int cpu)
+ #ifdef CONFIG_HAVE_VIRT_CPU_ACCOUNTING_IDLE
+ 
+ static inline void kcpustat_dyntick_start(u64 now) { }
+-static inline void kcpustat_dyntick_stop(u64 now) { }
++static inline void kcpustat_dyntick_stop(u64 now, u64 tick_start) { }
+ static inline void kcpustat_irq_enter(u64 now) { }
+ static inline void kcpustat_irq_exit(u64 now) { }
+ static inline bool kcpustat_idle_dyntick(void) { return false; }
+@@ -132,7 +135,7 @@ static inline u64 kcpustat_field_iowait(int cpu)
+ #else /* !CONFIG_HAVE_VIRT_CPU_ACCOUNTING_IDLE */
+ 
+ extern void kcpustat_dyntick_start(u64 now);
+-extern void kcpustat_dyntick_stop(u64 now);
++extern void kcpustat_dyntick_stop(u64 now, u64 tick_start);
+ extern void kcpustat_irq_enter(u64 now);
+ extern void kcpustat_irq_exit(u64 now);
+ extern u64 kcpustat_field_idle(int cpu);
+diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+index 06bddaa73..faac7c206 100644
+--- a/kernel/sched/cputime.c
++++ b/kernel/sched/cputime.c
+@@ -381,9 +381,9 @@ void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
+  * softirq as those do not count in task exec_runtime any more.
+  */
+ static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
+-					 int ticks)
++					 u64 cputime)
+ {
+-	u64 other, cputime = TICK_NSEC * ticks;
++	u64 other;
+ 
+ 	/*
+ 	 * When returning from idle, many ticks can get accounted at
+@@ -418,7 +418,7 @@ static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
+ 
+ #else /* !CONFIG_IRQ_TIME_ACCOUNTING: */
+ static inline void irqtime_account_process_tick(struct task_struct *p, int user_tick,
+-						int nr_ticks) { }
++						u64 cputime) { }
+ #endif /* !CONFIG_IRQ_TIME_ACCOUNTING */
+ 
+ #if defined(CONFIG_NO_HZ_COMMON) && !defined(CONFIG_HAVE_VIRT_CPU_ACCOUNTING_IDLE)
+@@ -468,18 +468,38 @@ static void kcpustat_idle_start(struct kernel_cpustat *kc, u64 now)
+ 	write_seqcount_end(&kc->idle_sleeptime_seq);
+ }
+ 
+-void kcpustat_dyntick_stop(u64 now)
++void kcpustat_dyntick_stop(u64 now, u64 tick_start)
+ {
+ 	struct kernel_cpustat *kc = kcpustat_this_cpu;
+ 
+ 	if (!vtime_generic_enabled_this_cpu()) {
+ 		WARN_ON_ONCE(!kc->idle_dyntick);
++		if (kc->idle_tick_period != tick_start) {
++			kc->idle_tick_period = tick_start;
++			kc->idle_tick_overlap = 0;
++		}
++		tick_start = max(tick_start, kc->idle_dyntick_entry);
++		if (!WARN_ON_ONCE(now < tick_start))
++			kc->idle_tick_overlap += now - tick_start;
+ 		kcpustat_idle_stop(kc, now);
+ 		kc->idle_dyntick = false;
+ 		vtime_dyntick_stop();
+ 	}
+ }
+ 
++/*
++ * The first tick after dyntick-idle covers a period that the dyntick-idle
++ * accounting may already have accounted in part.
++ */
++static inline u64 kcpustat_tick_overlap(void)
++{
++	struct kernel_cpustat *kc = kcpustat_this_cpu;
++	u64 overlap = kc->idle_tick_overlap;
++
++	kc->idle_tick_overlap = 0;
++	return overlap;
++}
++
+ void kcpustat_dyntick_start(u64 now)
+ {
+ 	struct kernel_cpustat *kc = kcpustat_this_cpu;
+@@ -487,6 +507,7 @@ void kcpustat_dyntick_start(u64 now)
+ 	if (!vtime_generic_enabled_this_cpu()) {
+ 		vtime_dyntick_start();
+ 		kc->idle_dyntick = true;
++		kc->idle_dyntick_entry = now;
+ 		kcpustat_idle_start(kc, now);
+ 	}
+ }
+@@ -555,6 +576,11 @@ u64 kcpustat_field_iowait(int cpu)
+ }
+ EXPORT_SYMBOL_GPL(kcpustat_field_iowait);
+ #else
++static inline u64 kcpustat_tick_overlap(void)
++{
++	return 0;
++}
++
+ static u64 kcpustat_field_dyntick(int cpu, enum cpu_usage_stat idx,
+ 				  bool compute_delta, ktime_t now)
+ {
+@@ -695,12 +721,13 @@ void account_process_tick(struct task_struct *p, int user_tick)
+ 	if (kcpustat_idle_dyntick())
+ 		return;
+ 
++	cputime = TICK_NSEC - kcpustat_tick_overlap();
++
+ 	if (irqtime_enabled()) {
+-		irqtime_account_process_tick(p, user_tick, 1);
++		irqtime_account_process_tick(p, user_tick, cputime);
+ 		return;
+ 	}
+ 
+-	cputime = TICK_NSEC;
+ 	steal = steal_account_process_time(ULONG_MAX);
+ 
+ 	if (steal >= cputime)
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index e413fdc70..b17461aac 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -829,12 +829,6 @@ static u64 ineligible_vruntime(struct cfs_rq *cfs_rq)
+ 	if (curr && !curr->on_rq)
+ 		curr = NULL;
+ 
+-	/*
+-	 * This is called from set_next_task_fair(.first=true) /
+-	 * set_protect_slice() so curr had better be set and on_rq.
+-	 */
+-	WARN_ON_ONCE(!curr);
+-
+ 	if (weight) {
+ 		s64 runtime = cfs_rq->sum_w_vruntime;
+ 
+@@ -1146,10 +1140,9 @@ static inline void set_protect_slice(struct cfs_rq *cfs_rq, struct sched_entity
+ 
+ 	/* If there are shorter slices than se's one */
+ 	if (slice != se->slice) {
++		vprot = min_vruntime(vprot, se->vruntime + calc_delta_fair(slice, se));
+ 		if (sched_feat(PREEMPT_SHORT))
+ 			vprot = min_vruntime(vprot, ineligible_vruntime(cfs_rq));
+-		else
+-			vprot = min_vruntime(vprot, se->vruntime + calc_delta_fair(slice, se));
+ 	}
+ 
+ 	se->vprot = vprot;
+@@ -1157,10 +1150,19 @@ static inline void set_protect_slice(struct cfs_rq *cfs_rq, struct sched_entity
+ 
+ static inline void update_protect_slice(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ {
+-	u64 slice = cfs_rq_min_slice(cfs_rq);
+ 	u64 vruntime = min_vruntime(se->vruntime, avg_vruntime(cfs_rq));
++	u64 slice = normalized_sysctl_sched_base_slice;
++	u64 vprot;
++
++	if (sched_feat(RUN_TO_PARITY))
++		slice = cfs_rq_min_slice(cfs_rq);
++
++	vprot = min_vruntime(se->vprot, vruntime + calc_delta_fair(slice, se));
++
++	if (sched_feat(PREEMPT_SHORT) && slice != se->slice)
++		vprot = min_vruntime(vprot, ineligible_vruntime(cfs_rq));
+ 
+-	se->vprot = min_vruntime(se->vprot, vruntime + calc_delta_fair(slice, se));
++	se->vprot = vprot;
+ }
+ 
+ static inline bool protect_slice(struct sched_entity *se)
+@@ -10092,8 +10094,14 @@ static inline bool set_preempt_buddy(struct cfs_rq *cfs_rq, struct sched_entity
+ 
+ static inline bool set_short_buddy(struct cfs_rq *cfs_rq, struct sched_entity *pse)
+ {
+-	if (cfs_rq->next && cfs_rq->next->slice < pse->slice)
+-		return false;
++	if (cfs_rq->next) {
++		if (cfs_rq->next->slice < pse->slice)
++			return false;
++
++		if (cfs_rq->next->slice == pse->slice &&
++		    entity_before(cfs_rq->next, pse))
++			return false;
++	}
+ 
+ 	set_next_buddy(cfs_rq, pse);
+ 	return true;
+@@ -12137,6 +12145,14 @@ static void record_sg_llc_stats(struct lb_env *env,
+ 	if (env->sd->child != rcu_dereference_all(per_cpu(sd_llc, env->dst_cpu)))
+ 		return;
+ 
++	/*
++	 * A redo repeats stats published on the first pass. Hotplug can
++	 * still leave env->cpus partial, so util would not match capacity.
++	 */
++	if ((env->flags & LBF_ALL_PINNED) ||
++	    !cpumask_subset(sched_group_span(group), env->cpus))
++		return;
++
+ 	/*
+ 	 * At this point we know this group spans a LLC domain.
+ 	 * Record the statistic of this group in its corresponding
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index baa3ac9b4..6546e1966 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -775,12 +775,18 @@ static ktime_t tick_forward_now(ktime_t expires, ktime_t now)
+ 	return expires + TICK_NSEC;
+ }
+ 
++static void tick_nohz_forward_last_tick(struct tick_sched *ts, ktime_t now)
++{
++	if (now >= ts->last_tick)
++		ts->last_tick = tick_forward_now(ts->last_tick, now);
++}
++
+ static void tick_nohz_restart(struct tick_sched *ts, ktime_t now)
+ {
+-	ktime_t expires = ts->last_tick;
++	ktime_t expires;
+ 
+-	if (now >= expires)
+-		expires = tick_forward_now(expires, now);
++	tick_nohz_forward_last_tick(ts, now);
++	expires = ts->last_tick;
+ 
+ 	if (tick_sched_flag_test(ts, TS_FLAG_HIGHRES)) {
+ 		hrtimer_start(&ts->sched_timer,	expires, HRTIMER_MODE_ABS_PINNED_HARD);
+@@ -1341,6 +1347,12 @@ unsigned long tick_nohz_get_idle_calls_cpu(int cpu)
+ 	return ts->idle_calls;
+ }
+ 
++static void tick_nohz_dyntick_stop(struct tick_sched *ts, ktime_t now)
++{
++	tick_nohz_forward_last_tick(ts, now);
++	kcpustat_dyntick_stop(now, ts->last_tick - TICK_NSEC);
++}
++
+ void tick_nohz_idle_restart_tick(void)
+ {
+ 	struct tick_sched *ts = this_cpu_ptr(&tick_cpu_sched);
+@@ -1353,7 +1365,7 @@ void tick_nohz_idle_restart_tick(void)
+ 		 * no tiny amount of idle time is accounted twice.
+ 		 */
+ 		ts->idle_entrytime = ktime_get();
+-		kcpustat_dyntick_stop(ts->idle_entrytime);
++		tick_nohz_dyntick_stop(ts, ts->idle_entrytime);
+ 		tick_nohz_restart_sched_tick(ts, ts->idle_entrytime);
+ 	}
+ }
+@@ -1397,7 +1409,7 @@ void tick_nohz_idle_exit(void)
+ 
+ 	if (tick_sched_flag_test(ts, TS_FLAG_STOPPED)) {
+ 		now = ktime_get();
+-		kcpustat_dyntick_stop(now);
++		tick_nohz_dyntick_stop(ts, now);
+ 		tick_nohz_idle_update_tick(ts, now);
+ 	}
+ 

@@ -1,6 +1,6 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-theme
-pkgver=0.2.0
+pkgver=0.3.0
 pkgrel=1
 pkgdesc='KrissOS colours, fonts, wallpaper, Plasma, SDDM, Plymouth and Limine theme'
 arch=('any')
@@ -24,6 +24,21 @@ build() {
   # Plymouth cannot load SVG.
   rsvg-convert -w 128 -h 128 -o "$srcdir/root/usr/share/plymouth/themes/kriss/logo.png" \
     "$srcdir/root/usr/share/pixmaps/krissos.svg"
+
+  # Plasma picks the closest WxH.png and switches images/ <-> images_dark/ with the
+  # colour scheme. The SVGs crop to fill (preserveAspectRatio slice), so setting
+  # the root size renders the right crop for each aspect ratio.
+  local bg="$srcdir/root/usr/share/backgrounds/kriss"
+  local wp="$srcdir/root/usr/share/wallpapers/KrissOS/contents"
+  local size mode dir
+  for mode in light dark; do
+    dir=images; [[ $mode = dark ]] && dir=images_dark
+    install -d "$wp/$dir"
+    for size in 1920x1080 1920x1200 2560x1440 2560x1600 3840x2160; do
+      sed "s/width=\"3840\" height=\"2160\"/width=\"${size%x*}\" height=\"${size#*x}\"/" \
+        "$bg/kriss-$mode.svg" | rsvg-convert -o "$wp/$dir/$size.png"
+    done
+  done
 }
 
 check() {
@@ -34,7 +49,6 @@ package() {
   cp -r --no-preserve=ownership "$srcdir/root/." "$pkgdir/"
   install -d "$pkgdir/usr/share/fontconfig/conf.default"
   ln -s ../conf.avail/60-kriss.conf "$pkgdir/usr/share/fontconfig/conf.default/"
-  install -d "$pkgdir/usr/share/wallpapers/KrissOS/contents/images"
-  ln -s /usr/share/backgrounds/kriss/default.svg \
-    "$pkgdir/usr/share/wallpapers/KrissOS/contents/images/3840x2160.svg"
+  # ponytail: old name of the dark wallpaper; drop once nothing points at it.
+  ln -s kriss-dark.svg "$pkgdir/usr/share/backgrounds/kriss/default.svg"
 }
