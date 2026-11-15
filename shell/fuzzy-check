@@ -2,7 +2,7 @@
 // Checks the launcher's fuzzy ranking in qml/fuzzy.js: node shell/fuzzy-check
 const fs = require("fs"), path = require("path"), assert = require("assert");
 const src = fs.readFileSync(path.join(__dirname, "qml/fuzzy.js"), "utf8").replace(".pragma library", "");
-const { score, best } = new Function(src + "; return { score, best };")();
+const { score, best, typeahead } = new Function(src + "; return { score, best, typeahead };")();
 
 assert(score("Firefox", "firefox") > score("Firefox", "fire"));          // exact over prefix
 assert(score("Firefox", "fire") > score("COSMIC Files", "files"));       // prefix over word start
@@ -13,4 +13,11 @@ assert.strictEqual(score("Firefox", "xyz"), 0);
 assert.strictEqual(score("Firefox", "xf"), 0);                           // order matters
 assert.strictEqual(score("", "a"), 0);
 assert.strictEqual(best(["Files", undefined, "explorer"], "expl"), score("explorer", "expl"));
+const menu = ["Open", "Pin to taskbar", "Properties", "Quit"];
+assert.strictEqual(typeahead(menu, "p", -1), 1);       // first P
+assert.strictEqual(typeahead(menu, "pp", 1), 2);       // the same letter again: next P
+assert.strictEqual(typeahead(menu, "ppp", 2), 1);      // and round again
+assert.strictEqual(typeahead(menu, "pr", 1), 2);       // a longer prefix
+assert.strictEqual(typeahead(menu, "pi", 1), 1);       // still matches the current one
+assert.strictEqual(typeahead(menu, "x", 0), -1);
 console.log("ok");

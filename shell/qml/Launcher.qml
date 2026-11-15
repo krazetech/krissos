@@ -59,7 +59,7 @@ PanelWindow {
             .sort((a, b) => b.score - a.score).slice(0, limit);
         const groups = [
             [Tr.t("Apps"), ranked(everything.map(e => ({
-                kind: "app", label: e.name, icon: e.icon, run: () => launch(e),
+                kind: "app", label: e.name, icon: e.icon, entry: e, run: () => launch(e),
                 score: Fuzzy.best([e.name, e.genericName, ...e.keywords], q)
             })), 7)],
             [Tr.t("Actions"), ranked(actions.map(a => ({
@@ -87,6 +87,23 @@ PanelWindow {
         if (!query.trim()) { if (shown[current]) launch(shown[current]); return; }
         const r = results.find(r => r.sel === current);
         if (r) r.run();
+    }
+    // Open, and pin or unpin, for an app; byKeyboard highlights the first item.
+    function appMenuFor(entry, item, byKeyboard) {
+        appMenu.show(item, [
+            [Tr.t("Open"), () => launch(entry)],
+            [Desktop.isPinned(entry.id) ? Tr.t("Unpin from taskbar") : Tr.t("Pin to taskbar"), () => Desktop.togglePin(entry.id)]
+        ], byKeyboard);
+    }
+    // The menu key (or Shift+F10) on the selected app, as on Windows.
+    function menuForCurrent() {
+        if (!query.trim()) {
+            const cell = grid.itemAtIndex(current);
+            if (cell && shown[current]) appMenuFor(shown[current], cell, true);
+            return;
+        }
+        const i = results.findIndex(r => r.sel === current);
+        if (i >= 0 && results[i].entry) appMenuFor(results[i].entry, list.itemAtIndex(i), true);
     }
     function move(by) { if (count) current = Math.max(0, Math.min(count - 1, current + by)); }
 
@@ -203,7 +220,8 @@ PanelWindow {
                         Keys.onTabPressed: win.move(1)
                         Keys.onBacktabPressed: win.move(-1)
                         Keys.onPressed: event => {
-                            if (event.key === Qt.Key_Home && event.modifiers & Qt.ControlModifier) win.current = 0;
+                            if (event.key === Qt.Key_Menu || event.key === Qt.Key_F10 && event.modifiers & Qt.ShiftModifier) win.menuForCurrent();
+                            else if (event.key === Qt.Key_Home && event.modifiers & Qt.ControlModifier) win.current = 0;
                             else if (event.key === Qt.Key_End && event.modifiers & Qt.ControlModifier) win.current = win.count - 1;
                             else return;
                             event.accepted = true;
@@ -254,11 +272,7 @@ PanelWindow {
                     acceptedButtons: Qt.LeftButton | Qt.RightButton
                     onClicked: mouse => {
                         if (mouse.button === Qt.LeftButton) return win.launch(modelData);
-                        const id = modelData.id;
-                        appMenu.show(cell, [
-                            [Tr.t("Open"), () => win.launch(modelData)],
-                            [Desktop.isPinned(id) ? Tr.t("Unpin from taskbar") : Tr.t("Pin to taskbar"), () => Desktop.togglePin(id)]
-                        ]);
+                        win.appMenuFor(modelData, cell, false);
                     }
 
                     Rectangle {

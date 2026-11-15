@@ -29,3 +29,19 @@ function score(text, query) {
 function best(fields, query) {
     return Math.max(0, ...fields.map(f => score(f, query)));
 }
+
+// Type-ahead in a menu, as in Radix: the next label after `from` that starts with what was
+// typed, wrapping round. Typing one letter again and again cycles through its labels.
+// -1 when nothing matches.
+function typeahead(labels, typed, from) {
+    const t = typed.toLowerCase();
+    const same = t.length > 1 && [...t].every(c => c === t[0]);
+    const prefix = same ? t[0] : t;
+    // A longer prefix may still match the current label; a new or repeated letter moves on.
+    const start = same || t.length === 1 ? from + 1 : from;
+    for (let k = 0; k < labels.length; k++) {
+        const i = (Math.max(start, 0) + k) % labels.length;
+        if (labels[i].toLowerCase().startsWith(prefix)) return i;
+    }
+    return -1;
+}
