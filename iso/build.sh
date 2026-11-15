@@ -31,7 +31,7 @@ id builder >/dev/null 2>&1 || useradd -m builder
 src="$work/src" local_repo="$work/kriss-local"
 rm -rf "$src" "$local_repo"
 mkdir -p "$src" "$local_repo"
-cp -a "$here/../pkgs" "$here/../theme" "$here/../tools" "$src/"
+cp -a "$here/../pkgs" "$here/../theme" "$here/../tools" "$here/../shell" "$src/"
 chown -R builder "$src" "$local_repo"
 for p in kriss-keyring kriss-settings kriss-theme kriss-tools kriss-shell; do
   su builder -c "cd '$src/pkgs/$p' && PKGDEST='$local_repo' makepkg --noconfirm --nodeps"
