@@ -18,6 +18,13 @@ Singleton {
         return n.urgency === NotificationUrgency.Critical || now - (arrived[n.id] ?? 0) < popupMs;
     }
 
+    // Taking an action finishes a notification, as on Windows, unless the app asked
+    // for it to stay (resident).
+    function invoke(n, action) {
+        action.invoke();
+        if (!n.resident) n.dismiss();
+    }
+
     function clear() {
         for (const n of all.slice()) n.dismiss();
     }

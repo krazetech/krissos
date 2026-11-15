@@ -29,17 +29,22 @@ PanelWindow {
         spacing: 10
 
         // Header while the list is open.
-        RowLayout {
+        Rectangle {
             visible: Desktop.notificationsOpen
             Layout.fillWidth: true
-            Layout.leftMargin: 6
-            Layout.rightMargin: 6
+            implicitHeight: 48
+            radius: Theme.radius
+            color: Theme.win
+            border.width: 1
+            border.color: Theme.rim
+        RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 18
+            anchors.rightMargin: 10
             Text {
                 Layout.fillWidth: true
                 text: Notifs.all.length ? "Notifications" : "No new notifications"
-                color: Theme.nightFg
-                style: Text.Raised
-                styleColor: Theme.alpha(Theme.night, 0.6)
+                color: Theme.fg
                 font { family: Theme.sans; pixelSize: 14; weight: Font.DemiBold }
             }
             MouseArea {
@@ -48,7 +53,7 @@ PanelWindow {
                 implicitHeight: 28
                 cursorShape: Qt.PointingHandCursor
                 onClicked: Notifs.clear()
-                Rectangle { anchors.fill: parent; radius: 14; color: Theme.bar; border.width: 1; border.color: Theme.rim }
+                Rectangle { anchors.fill: parent; radius: 14; color: Theme.card }
                 Text {
                     id: clearText
                     anchors.centerIn: parent
@@ -57,6 +62,7 @@ PanelWindow {
                     font { family: Theme.sans; pixelSize: 12; weight: Font.DemiBold }
                 }
             }
+        }
         }
 
         Repeater {
@@ -68,12 +74,13 @@ PanelWindow {
                 Layout.fillWidth: true
                 implicitHeight: content.implicitHeight + 28
                 cursorShape: defaultAction ? Qt.PointingHandCursor : Qt.ArrowCursor
-                onClicked: defaultAction ? defaultAction.invoke() : modelData.dismiss()
+                onClicked: defaultAction ? Notifs.invoke(modelData, defaultAction) : modelData.dismiss()
 
                 Rectangle {
                     anchors.fill: parent
                     radius: Theme.radius
-                    color: Theme.bar
+                    // Solid: notifications have no blur behind them, and app content showed through.
+                    color: Theme.win
                     border.width: card.modelData.urgency === NotificationUrgency.Critical ? 2 : 1
                     border.color: card.modelData.urgency === NotificationUrgency.Critical ? Theme.red : Theme.rim
                 }
@@ -143,7 +150,7 @@ PanelWindow {
                                     width: actText.implicitWidth + 26
                                     height: 30
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: modelData.invoke()
+                                    onClicked: Notifs.invoke(card.modelData, modelData)
                                     // The first action is the one most apps expect you to take.
                                     Rectangle { anchors.fill: parent; radius: 15; color: act.index === 0 ? Theme.accent : Theme.card }
                                     Text {

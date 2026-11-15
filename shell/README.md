@@ -30,7 +30,9 @@ KRISS_SHELL_DATA=$dev KRISS_SHELL_LIB=$dev/lib PATH="$PWD/shell:$PWD/shell/sessi
   cosmic-comp shell/session/kriss-shell --inside
 ```
 
-The first run copies the `cosmic/` defaults into your `~/.config/cosmic`, as a real session would.
+Nested like this, cosmic-comp runs in kiosk mode, which turns its keyboard shortcuts off, so the
+Windows key does nothing there. A real session (`kriss-shell` with no arguments, which SDDM runs)
+starts cosmic-comp normally and copies the `cosmic/` defaults into `~/.config/cosmic`.
 
 After editing a QML file, re-run the first `generate.py` line. Quickshell reloads most
 changes on its own; restart cosmic-comp if a change doesn't show. Logs: `qs log -p "$dev/qml"`.

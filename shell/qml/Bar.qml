@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Widgets
+import Quickshell.Io
 import Quickshell.WindowManager
 import Quickshell.Networking
 import Quickshell.Services.Pipewire
@@ -215,6 +216,14 @@ PanelWindow {
 
     component PowerPill: MouseArea {
         id: pp
+        // Only with power-profiles-daemon installed; without it the pill would show a
+        // profile that nothing applies.
+        visible: ppd.loaded
+        FileView {
+            id: ppd
+            path: "/usr/share/dbus-1/system-services/net.hadess.PowerProfiles.service"
+            printErrors: false
+        }
         readonly property var order: PowerProfiles.hasPerformanceProfile
             ? [PowerProfile.Balanced, PowerProfile.Performance, PowerProfile.PowerSaver]
             : [PowerProfile.Balanced, PowerProfile.PowerSaver]

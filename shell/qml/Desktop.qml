@@ -18,6 +18,9 @@ Singleton {
     ]
 
     function pinnedEntries(limit) {
+        // Read the app list so bindings that call this re-run once Quickshell has
+        // finished scanning desktop files (byId returns null until then).
+        DesktopEntries.applications.values;
         const out = [];
         for (const id of pinned) {
             const entry = DesktopEntries.byId(id);
