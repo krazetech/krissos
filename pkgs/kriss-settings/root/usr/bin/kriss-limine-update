@@ -79,12 +79,15 @@ menu() {
     done
 }
 
-conf=$(menu)
+# Not $(menu): that subshell would lose the keep list.
+conf=$(mktemp)
+trap 'rm -f "$conf"' EXIT
+menu >"$conf"
 for d in "$esp/limine" "$esp/BOOT"; do
     # EFI/BOOT is ours only when the installer put Limine there (and a limine.conf).
     [ -f "$d/limine.conf" ] || [ "$d" = "$esp/limine" ] || continue
     cmp -s /usr/share/limine/BOOTX64.EFI "$d/BOOTX64.EFI" || cp /usr/share/limine/BOOTX64.EFI "$d/BOOTX64.EFI"
-    printf '%s\n' "$conf" >"$d/limine.conf.new"
+    cp "$conf" "$d/limine.conf.new"
     mv "$d/limine.conf.new" "$d/limine.conf"
 done
 

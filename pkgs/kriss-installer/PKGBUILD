@@ -21,7 +21,8 @@ build() {
 check() {
   local f
   for f in "$_src"/kriss-install "$_src"/lib/*; do bash -n "$f"; done
-  ! grep -rn '{{' "$srcdir/installer"
+  # No template left unrendered. (`! grep` would not fail the build under errexit.)
+  if grep -rn '{{' "$srcdir/installer"; then return 1; fi
   # Turing and newer get the open modules; older cards and other vendors get nothing.
   local sys="$srcdir/sys/bus/pci/devices"
   mkdir -p "$sys/turing" "$sys/pascal" "$sys/intel"
