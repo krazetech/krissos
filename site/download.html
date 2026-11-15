@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Download KrissOS</title>
+<meta name="description" content="Download the KrissOS live ISO for x86_64.">
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="./"><img src="favicon.svg" alt="" width="22" height="22"><span>KrissOS</span></a>
+    <nav aria-label="Main">
+      <ul>
+        <li><a href="download.html" aria-current="page">Download</a></li>
+        <li><a href="install.html">Arch repo</a></li>
+        <li><a href="roadmap.html">Roadmap</a></li>
+        <li><a href="https://github.com/krazetech/krissos">GitHub</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <section class="center">
+    <div class="wrap">
+      <p class="eyebrow rise">Download</p>
+      <h1 class="rise d1">Get KrissOS.</h1>
+      <div id="release" class="rise d2">
+        <p class="lede">The first live ISO is on its way. It boots to KDE Plasma with the KrissOS look, and it will appear here as soon as it is published.</p>
+        <div class="actions">
+          <a class="btn" href="https://github.com/krazetech/krissos/releases">Watch the releases</a>
+          <a class="btn ghost" href="install.html">Use the repo on Arch</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap split">
+      <div class="reveal">
+        <p class="eyebrow">Before you install</p>
+        <h2>What to expect.</h2>
+        <p class="lede">KrissOS is young. The first images are for testing on spare hardware or in a VM, not for your only machine yet.</p>
+      </div>
+      <ul class="list reveal">
+        <li><span>Architecture<small>x86_64 only. Apple Silicon comes later as its own image.</small></span></li>
+        <li><span>Desktop<small>KDE Plasma first. The KrissOS Shell becomes the default at 110.</small></span></li>
+        <li><span>Updates<small>Rolling, straight from the Arch mirrors plus the <code>[kriss]</code> repo.</small></span></li>
+        <li><span>Releases<small>Images are tagged by codename: <code>110</code>, <code>115</code>, and on.</small></span></li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="head reveal">
+        <p class="eyebrow">Verify</p>
+        <h2>Check the image.</h2>
+        <p class="lede">Compare the checksum with the one published on the release page before you write the ISO to a USB stick.</p>
+      </div>
+      <div class="code reveal"><pre><code>sha256sum krissos-*.iso</code></pre></div>
+    </div>
+  </section>
+</main>
+
+<script>
+// Show the newest release that carries an .iso, if one exists. Without JS the "coming" text stays.
+// ponytail: unauthenticated GitHub API, 60 requests/hour per visitor IP; plenty for a static page.
+fetch('https://api.github.com/repos/krazetech/krissos/releases?per_page=20')
+  .then(r => r.ok ? r.json() : [])
+  .then(list => {
+    for (const rel of list) {
+      if (rel.draft) continue;
+      const iso = rel.assets.find(a => a.name.endsWith('.iso'));
+      if (!iso) continue;
+      const box = document.getElementById('release');
+      const p = document.createElement('p');
+      p.className = 'lede';
+      p.textContent = `${rel.name || rel.tag_name}${rel.prerelease ? ' (pre-release)' : ''}, published ${new Date(rel.published_at).toLocaleDateString()}. ${(iso.size / 1e9).toFixed(1)} GB live ISO for x86_64.`;
+      const a = document.createElement('a');
+      a.className = 'btn';
+      a.href = iso.browser_download_url;
+      a.textContent = 'Download ISO';
+      const notes = document.createElement('a');
+      notes.className = 'btn ghost';
+      notes.href = rel.html_url;
+      notes.textContent = 'Release notes and checksums';
+      const actions = document.createElement('div');
+      actions.className = 'actions';
+      actions.append(a, notes);
+      box.replaceChildren(p, actions);
+      return;
+    }
+  })
+  .catch(() => {});
+</script>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>KrissOS by Kraze Tech. Free software under the <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>.<br>Not affiliated with Arch Linux.</p>
+    <nav aria-label="Footer">
+      <a href="download.html">Download</a>
+      <a href="install.html">Arch repo</a>
+      <a href="roadmap.html">Roadmap</a>
+      <a href="https://github.com/krazetech/krissos">GitHub</a>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>

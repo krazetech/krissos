@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KrissOS: Arch Linux for work, play and local AI</title>
+<meta name="description" content="KrissOS is a thin overlay on Arch Linux by Kraze Tech, built for productivity, gaming and local AI.">
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="./"><img src="favicon.svg" alt="" width="22" height="22"><span>KrissOS</span></a>
+    <nav aria-label="Main">
+      <ul>
+        <li><a href="download.html">Download</a></li>
+        <li><a href="install.html">Arch repo</a></li>
+        <li><a href="roadmap.html">Roadmap</a></li>
+        <li><a href="https://github.com/krazetech/krissos">GitHub</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero center">
+    <div class="wrap">
+      <p class="pill rise">In development. First ISO coming soon.</p>
+      <h1 class="rise d1">Arch Linux,<br>ready to work.</h1>
+      <p class="lede rise d2">KrissOS is a thin overlay on Arch Linux, tuned for productivity, gaming and local AI. Rolling updates straight from Arch, plus a small signed repo of our own.</p>
+      <div class="actions rise d2">
+        <a class="btn" href="download.html">Download</a>
+        <a class="btn ghost" href="install.html">Add the repo to Arch</a>
+      </div>
+
+      <div class="screen rise d3" role="img" aria-label="Concept of the KrissOS desktop: floating rounded windows over a black and Sky Cyan wallpaper, with one bottom bar.">
+        <svg class="rings" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <g fill="none" stroke="#29B2E8" stroke-width="1.5">
+            <circle cx="1200" cy="710" r="440" stroke-opacity=".16"/>
+            <circle cx="1200" cy="710" r="590" stroke-opacity=".09"/>
+            <circle cx="1200" cy="710" r="750" stroke-opacity=".05"/>
+          </g>
+          <defs><linearGradient id="orb" x1=".2" y1=".1" x2=".8" y2=".95"><stop offset="0" stop-color="#29B2E8" stop-opacity=".95"/><stop offset="1" stop-color="#29B2E8" stop-opacity=".18"/></linearGradient></defs>
+          <circle cx="1200" cy="710" r="230" fill="url(#orb)"/>
+        </svg>
+        <div class="win term focus">
+          <div class="dots"><i></i><i></i><i></i></div>
+          <div><span class="a">~</span> <b>kriss version</b></div>
+          <div>KrissOS 110 (codename 110)</div>
+          <div><span class="a">~</span> <b>kriss-tune performance</b></div>
+          <div>profile: performance, scx scheduler on</div>
+          <div><span class="a">~</span> <b>ollama run llama3</b></div>
+          <div>using GPU: Vulkan</div>
+        </div>
+        <div class="win side">
+          <div class="dots"><i></i><i></i><i></i></div>
+          <div><b>Snapshots</b></div>
+          <div>#42 before update</div>
+          <div>#41 kriss-vm setup</div>
+          <div class="a">Boot from Limine</div>
+        </div>
+        <div class="bar" aria-hidden="true"><i></i><i></i><i></i><i></i><span>14:20</span></div>
+      </div>
+    </div>
+  </section>
+  <p class="caption wrap">Concept render of the KrissOS Shell, planned for 110. The first ISO ships with KDE Plasma.</p>
+
+  <section id="pillars">
+    <div class="wrap">
+      <div class="head center reveal">
+        <p class="eyebrow">Three pillars</p>
+        <h2>One system for the whole day.</h2>
+        <p class="lede">Work in the morning, play at night, and run your own models in between, without reinstalling or dual booting.</p>
+      </div>
+      <div class="grid">
+        <article class="card pillar reveal">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="3"/><path d="M8 21h8M12 17v4"/></svg></div>
+          <h3>Productivity</h3>
+          <p>A calm, rounded desktop with one accent color. Snapshots you can boot into when an update goes wrong. Windows apps through WinBoat when you need them.</p>
+        </article>
+        <article class="card pillar reveal">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 11h4M8 9v4M15 12h.01M18 10h.01"/><path d="M17.3 5H6.7a4 4 0 0 0-4 3.6L2 15a3 3 0 0 0 5.3 2.2L9 15h6l1.7 2.2A3 3 0 0 0 22 15l-.7-6.4a4 4 0 0 0-4-3.6Z"/></svg></div>
+          <h3>Gaming</h3>
+          <p>A kernel built for modern CPUs, Steam, Gamescope and MangoHud in one package, and power profiles that switch the scheduler for you.</p>
+        </article>
+        <article class="card pillar reveal">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="3"/><path d="M9 9h6v6H9zM9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg></div>
+          <h3>Local AI</h3>
+          <p>Ollama on the host with CUDA, ROCm or Vulkan picked for your GPU, and an optional step to install the coding agents you already use.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="wrap">
+      <div class="head reveal">
+        <p class="eyebrow">What's inside</p>
+        <h2>Small on purpose.</h2>
+        <p class="lede">Upstream packages come straight from Arch. We ship only what is ours, in one signed repo that two people can keep alive.</p>
+      </div>
+      <div class="grid">
+        <article class="card reveal">
+          <span class="tag live">Live</span>
+          <h3>Signed <code>[kriss]</code> repo</h3>
+          <p>Our packages, built and signed in CI and served from GitHub Releases. No mirrors to run.</p>
+        </article>
+        <article class="card reveal">
+          <span class="tag wip">In progress</span>
+          <h3><code>linux-kriss</code> kernel</h3>
+          <p>Built for x86-64-v3 with CachyOS scheduler patches and LTO, from source in our CI. A generic build covers older CPUs.</p>
+        </article>
+        <article class="card reveal">
+          <span class="tag wip">In progress</span>
+          <h3>Theme and defaults</h3>
+          <p>Obsidian and Sky Cyan across wallpapers, terminal colors, boot splash and login, all generated from one set of tokens.</p>
+        </article>
+        <article class="card reveal">
+          <span class="tag plan">Planned</span>
+          <h3>Bootable snapshots</h3>
+          <p>btrfs and snapper, with every snapshot one pick away in the Limine boot menu.</p>
+        </article>
+        <article class="card reveal">
+          <span class="tag plan">Planned</span>
+          <h3>Secure Boot</h3>
+          <p>Supported through <code>sbctl</code>. A pacman hook re-signs the kernel and bootloader on every update.</p>
+        </article>
+        <article class="card reveal">
+          <span class="tag plan">Planned</span>
+          <h3><code>kriss-tune</code></h3>
+          <p>Performance, balanced and powersave profiles, each with a matching sched_ext scheduler.</p>
+        </article>
+        <article class="card reveal">
+          <span class="tag plan">Planned</span>
+          <h3><code>kriss-vm</code></h3>
+          <p>GPU passthrough to a Windows VM with Looking Glass. Checks your hardware first, backs up every file it edits, and reverts in one command.</p>
+        </article>
+        <article class="card reveal">
+          <span class="tag plan">Planned</span>
+          <h3>Windows apps</h3>
+          <p>WinBoat runs Windows productivity apps in a container. One command checks KVM and sets it up.</p>
+        </article>
+        <article class="card reveal">
+          <span class="tag plan">Planned</span>
+          <h3>Ollama, set up</h3>
+          <p>GPU detection for CUDA, ROCm and Vulkan. <code>kriss-vm</code> hands the GPU over and back without a fight.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="desktop">
+    <div class="wrap split">
+      <div class="reveal">
+        <p class="eyebrow">Desktop</p>
+        <h2>Plasma now. Our shell at 110.</h2>
+        <p class="lede">The first images ship stock KDE Plasma with the KrissOS wallpapers. The KrissOS Shell, a panel, dock, launcher and lock screen on <code>cosmic-comp</code>, becomes the default at release 110.</p>
+      </div>
+      <ul class="list reveal">
+        <li><span>KDE Plasma<small>Stock Plasma, KrissOS wallpapers</small></span><span class="tag wip">First ISO</span></li>
+        <li><span>KrissOS Shell<small>Floating windows, one bottom bar, Sky Cyan focus ring</small></span><span class="tag plan">Default at 110</span></li>
+        <li><span>Apple Silicon<small>A separate image on Arch Linux ARM and Asahi</small></span><span class="tag plan">After 110</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="center">
+    <div class="wrap reveal">
+      <p class="eyebrow">Open source</p>
+      <h2>Built in the open.</h2>
+      <p class="lede">Every package, kernel and image is built from source on public CI. Follow along, file an issue, or try the repo on your Arch install today.</p>
+      <div class="actions">
+        <a class="btn" href="roadmap.html">See the roadmap</a>
+        <a class="btn ghost" href="https://github.com/krazetech/krissos">View on GitHub</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>KrissOS by Kraze Tech. Free software under the <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>.<br>Not affiliated with Arch Linux.</p>
+    <nav aria-label="Footer">
+      <a href="download.html">Download</a>
+      <a href="install.html">Arch repo</a>
+      <a href="roadmap.html">Roadmap</a>
+      <a href="https://github.com/krazetech/krissos">GitHub</a>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>
