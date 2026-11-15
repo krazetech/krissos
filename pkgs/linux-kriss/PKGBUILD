@@ -34,9 +34,8 @@ license=('GPL-2.0-only')
 options=('!strip' '!debug' '!lto')
 makedepends=(
   bc binutils cpio gettext git glibc libelf libgcc openssl perl python
-  rust rust-bindgen rust-src tar xxhash xz zlib zstd
-  # pahole needs the --lang_exclude fix for merged LTO CUs to generate BTF for Rust modules
-  clang llvm lld 'pahole>=1:1.32-2'
+  tar xxhash xz zlib zstd
+  clang llvm lld pahole
 )
 
 # ponytail: makepkg sources the PKGBUILD from its own directory, so a glob picks up the
@@ -74,12 +73,16 @@ prepare() {
     GIT_CEILING_DIRECTORIES="$srcdir" git apply "../$p"
   done
 
+  # ponytail: Rust is off. BTF for Rust modules in an LTO kernel needs a pahole fix that
+  # Arch's pahole (1:1.32-1) lacks, and sched_ext needs BTF. Re-enable RUST (and the rust,
+  # rust-bindgen, rust-src makedepends) once Arch ships the fix.
   # Upstream's config with upstream's default build options. CONFIG_CACHY is the Kconfig
   # symbol that gates the patch set's tunables; it is a code identifier, not branding.
   cp ../config .config
   scripts/config \
     -e GENERIC_CPU -d MZEN4 -d X86_NATIVE_CPU --set-val X86_64_VERSION "$_x86_64_version" \
     -e CACHY -e SCHED_BORE \
+    -d RUST \
     -e LTO_CLANG_THIN \
     -d HZ_300 -e HZ_1000 --set-val HZ 1000 \
     -d HZ_PERIODIC -d NO_HZ_IDLE -d CONTEXT_TRACKING_FORCE \
@@ -138,7 +141,7 @@ _package() {
 _package-headers() {
   pkgdesc="Headers and scripts for building modules for the $pkgdesc kernel"
   depends=(binutils glibc libelf libgcc openssl xxhash zlib zstd
-           clang llvm lld 'pahole>=1:1.32-2' "$pkgbase")
+           clang llvm lld pahole "$pkgbase")
   provides=(LINUX-HEADERS)
 
   cd "$_srcname"
