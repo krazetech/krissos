@@ -23,6 +23,26 @@ PanelWindow {
     implicitHeight: Math.min(stack.implicitHeight, 640)
     color: "transparent"
 
+    // While the list is open, a click anywhere else (bar aside) or Esc closes it,
+    // like the quick settings panel. The toasts sit above it on the overlay layer.
+    PanelWindow {
+        visible: Desktop.notificationsOpen
+        screen: Desktop.screen
+        WlrLayershell.layer: WlrLayer.Top
+        WlrLayershell.namespace: "kriss-notifications-close"
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
+        exclusionMode: ExclusionMode.Normal
+        exclusiveZone: 0
+        anchors { top: true; bottom: true; left: true; right: true }
+        color: "transparent"
+        MouseArea {
+            anchors.fill: parent
+            focus: true
+            onClicked: Desktop.notificationsOpen = false
+            Keys.onEscapePressed: Desktop.notificationsOpen = false
+        }
+    }
+
     ColumnLayout {
         id: stack
         anchors { left: parent.left; right: parent.right; bottom: parent.bottom }

@@ -1,4 +1,5 @@
 //@ pragma IconTheme {{icon_theme}}
+//@ pragma UseQApplication
 import QtQuick
 import Quickshell
 import Quickshell.Io

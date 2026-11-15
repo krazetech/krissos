@@ -9,8 +9,21 @@ import Quickshell.Io
 Singleton {
     id: root
 
-    // [{id, appId, title, active, minimized, output}]
-    property var list: []
+    // [{id, appId, title, active, minimized, output}], as the helper reports them.
+    property var raw: []
+    // The same, with each appId swapped for the pinned app it belongs to. A window's id
+    // can name another desktop file for the same program (KDE System Settings runs as
+    // "kdesystemsettings", the pin is "systemsettings"), so a pin with the same command counts.
+    readonly property var list: {
+        DesktopEntries.applications.values; // re-run once desktop files are scanned
+        const pins = Desktop.pinned;
+        const cmd = id => DesktopEntries.byId(id)?.command.join(" ");
+        return raw.map(w => {
+            const c = DesktopEntries.heuristicLookup(w.appId)?.command.join(" ");
+            const pin = pins.find(p => p.toLowerCase() === w.appId.toLowerCase() || c && cmd(p) === c);
+            return pin ? Object.assign({}, w, { appId: pin }) : w;
+        });
+    }
     // Windows that Show desktop minimized, to bring back on the second press.
     property var hidden: []
 
@@ -53,7 +66,7 @@ Singleton {
         stdout: SplitParser {
             onRead: line => {
                 try {
-                    root.list = JSON.parse(line);
+                    root.raw = JSON.parse(line);
                 } catch (e) {
                     console.warn("kriss-shell-toplevels:", line);
                 }

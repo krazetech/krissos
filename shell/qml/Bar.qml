@@ -236,10 +236,12 @@ PanelWindow {
         hoverEnabled: true
         cursorShape: dragging ? Qt.ClosedHandCursor : Qt.PointingHandCursor
         acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
-        onPressed: mouse => { pressX = mouse.x; dragging = false; }
+        // Window coordinates: mouse.x moves with the Translate below, so it would undo the drag.
+        onPressed: mouse => { pressX = mapToItem(null, mouse.x, 0).x; dragging = false; }
         onPositionChanged: mouse => {
-            if (pressed && pinned && pressedButtons & Qt.LeftButton && Math.abs(mouse.x - pressX) > 10) dragging = true;
-            if (dragging) shift.x = mouse.x - pressX;
+            const dx = mapToItem(null, mouse.x, 0).x - pressX;
+            if (pressed && pinned && pressedButtons & Qt.LeftButton && Math.abs(dx) > 10) dragging = true;
+            if (dragging) shift.x = dx;
         }
         onReleased: {
             if (!dragging) return;

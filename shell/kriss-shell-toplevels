@@ -137,6 +137,7 @@ def main():
         def read_commands():
             for line in sys.stdin:
                 tops.command(line)
+            os._exit(0)  # stdin closed: the shell is gone (else this lingers until the next window event)
         threading.Thread(target=read_commands, daemon=True).start()
 
         while display.dispatch(block=True) != -1:
