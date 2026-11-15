@@ -35,8 +35,37 @@ Scope {
         }
     }
 
+    // cosmic-comp 1.11 gives a new lock surface the keyboard only when something else had
+    // it just before. On an empty desktop, or right after the launcher closes, nothing
+    // does, and typing went nowhere until a click. So a 1 px surface takes the keyboard
+    // first, and the lock follows a moment later.
+    // ponytail: the lock starts 200 ms after the request; drop this once cosmic-comp
+    // focuses lock surfaces itself.
+    property bool engaged: false
+    Connections {
+        target: Desktop
+        function onLockedChanged() {
+            if (Desktop.locked) engage.restart();
+            else { engage.stop(); root.engaged = false; }
+        }
+    }
+    Timer { id: engage; interval: 200; onTriggered: root.engaged = true }
+
+    PanelWindow {
+        visible: Desktop.locked && !root.engaged
+        implicitWidth: 1
+        implicitHeight: 1
+        anchors { top: true; left: true }
+        exclusionMode: ExclusionMode.Ignore
+        color: "transparent"
+        mask: Region {}
+        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.namespace: "kriss-lock-focus"
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+    }
+
     WlSessionLock {
-        locked: Desktop.locked
+        locked: root.engaged
 
         WlSessionLockSurface {
             color: Theme.night
