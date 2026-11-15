@@ -10,7 +10,8 @@ with {{name}} replaced by the token value. Colour tokens also give
 {{name.rgbf}} ("r, g, b" as 0-1 floats, for Plymouth).
 An unknown {{token}} is a KeyError, so a typo fails the build.
 
-wallpaper.svg is rendered twice into usr/share/backgrounds/kriss/: kriss-dark.svg
+When TEMPLATE_DIR is theme/templates (kriss-theme), wallpaper.svg is also
+rendered twice into usr/share/backgrounds/kriss/: kriss-dark.svg
 from the tokens as they are, kriss-light.svg with every light_X token in place of X.
 {{keris}} in it is the emblem's keris path with no fill, so the wallpaper colours it.
 """
@@ -53,6 +54,9 @@ def main(src, dst):
             out.parent.mkdir(parents=True, exist_ok=True)
             out.write_text(render(f.read_text(), values))
             out.chmod(f.stat().st_mode & 0o777)  # keep the exec bit on scripts
+    # Only kriss-theme owns the wallpapers; kriss-settings reuses this script too.
+    if src.resolve() != LOGO.parents[3].resolve():
+        return
     wp = dst / "usr/share/backgrounds/kriss"
     wp.mkdir(parents=True, exist_ok=True)
     # Inlined, not <image>: Qt's SVG renderer cannot load an external or nested SVG.
