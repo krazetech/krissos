@@ -11,7 +11,7 @@ An unknown {{token}} is a KeyError, so a typo fails the build.
 
 wallpaper.svg is rendered twice into usr/share/backgrounds/kriss/: kriss-dark.svg
 from the tokens as they are, kriss-light.svg with every light_X token in place of X.
-{{logo}} in it is the emblem's SVG body, always in its dark-token colours.
+{{keris}} in it is the emblem's keris path with no fill, so the wallpaper colours it.
 """
 import json
 import pathlib
@@ -54,9 +54,9 @@ def main(src, dst):
     wp = dst / "usr/share/backgrounds/kriss"
     wp.mkdir(parents=True, exist_ok=True)
     # Inlined, not <image>: Qt's SVG renderer cannot load an external or nested SVG.
-    logo = re.search(r"<svg[^>]*>(.*)</svg>", render(LOGO.read_text(), values), re.S).group(1)
+    keris = re.sub(r' fill="[^"]*"', "", re.search(r"<path [^>]*/>", LOGO.read_text()).group(0))
     for mode, t in (("dark", tokens), ("light", light(tokens))):
-        out = render(WALLPAPER.read_text(), {**variants(t), "logo": logo})
+        out = render(WALLPAPER.read_text(), {**variants(t), "keris": keris})
         (wp / f"kriss-{mode}.svg").write_text(out)
 
 
