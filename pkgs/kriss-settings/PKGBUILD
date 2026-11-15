@@ -1,7 +1,7 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-settings
 pkgver=0.1.0
-pkgrel=1
+pkgrel=2
 pkgdesc='KrissOS default user configs and pacman hooks'
 arch=('any')
 url='https://github.com/krazetech/krissos'
