@@ -119,6 +119,19 @@ the shell does not block them. KrissOS Shell becomes the default at `110`.
   One bottom bar holds the launcher, apps and status. Sky Cyan is the only accent; no neon.
 - **Type:** Figtree + JetBrains Mono (OFL) proposed.
 - **Reference:** the concept mockup at https://claude.ai/artifact/Cye2G1TUoXHAGoNX3typoD.
+- **Behaviour and motion references:** every UI surface (shell, `kriss-welcome`, installer,
+  website) copies how these behave. They are rebuilt in QML, never added as dependencies.
+
+  | Surface | Reference | What to copy |
+  |---|---|---|
+  | Launcher | [cmdk](https://cmdk.paco.me) | One search field, fuzzy results grouped by type, keyboard first |
+  | Notifications | [Sonner](https://sonner.emilkowal.ski) | Stacked toasts that expand on hover, swipe to dismiss, a pause on hover |
+  | Quick settings | [Vaul](https://vaul.emilkowal.ski) | A sheet you drag to close, with snap points |
+  | Bar numbers | [NumberFlow](https://number-flow.barvian.me) | Digits that roll when the clock, battery or volume changes |
+  | Menus and focus | [Radix](https://www.radix-ui.com) / [Base UI](https://base-ui.com) | Arrow keys, Esc, focus trap, type-ahead |
+
+  Effect-heavy libraries (Magic UI, Aceternity and the like) are out: no glows, beams or
+  particles. Every animation respects reduced motion.
 - **Logo:** the Kraze Tech emblem, a keris hilt on a Sky Cyan disc, redrawn as a vector at
   `theme/templates/usr/share/pixmaps/krissos.svg`. All assets are generated from these tokens
   so a change in one place updates everything.
