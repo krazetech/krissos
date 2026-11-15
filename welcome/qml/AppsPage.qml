@@ -105,18 +105,18 @@ Kirigami.ScrollablePage {
                         model: row.ans && row.ans.kind !== "web" ? row.ans.alts : []
                         delegate: RowLayout {
                             required property var modelData
-                            readonly property string state: modelData.flatpak ? (page.installs[modelData.flatpak] || "") : ""
+                            readonly property string installState: modelData.flatpak ? (page.installs[modelData.flatpak] || "") : ""
                             QQC2.Label {
                                 Layout.fillWidth: true
                                 text: modelData.name + (modelData.unofficial ? " " + qsTr("(unofficial)") : "")
                             }
                             QQC2.Button {
                                 text: !modelData.flatpak ? qsTr("Website")
-                                    : state === "installing" ? qsTr("Installing…")
-                                    : state === "installed" ? qsTr("Installed")
-                                    : state === "failed" ? qsTr("Failed, try again") : qsTr("Install")
+                                    : installState === "installing" ? qsTr("Installing…")
+                                    : installState === "installed" ? qsTr("Installed")
+                                    : installState === "failed" ? qsTr("Failed, try again") : qsTr("Install")
                                 icon.name: modelData.flatpak ? "download" : "internet-services"
-                                enabled: state !== "installing" && state !== "installed"
+                                enabled: installState !== "installing" && installState !== "installed"
                                 onClicked: {
                                     if (!modelData.flatpak) return Qt.openUrlExternally(modelData.url)
                                     page.pending = modelData

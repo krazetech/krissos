@@ -33,7 +33,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Lint tools
-        run: shellcheck tools/kriss tools/ci/*.sh
+        run: shellcheck tools/kriss tools/kriss-update-notify tools/ci/*.sh
 
       - name: Test the publish script
         run: tools/ci/publish-test.sh

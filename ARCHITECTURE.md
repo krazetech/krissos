@@ -252,11 +252,11 @@ office users, and creators and AI tinkerers. Every default is checked against on
 
 | Area | Decision |
 |---|---|
-| Desktop | KDE Plasma with Windows habits in the KrissOS look: bottom taskbar, Start-style launcher, close button top-right, the Win key opens the menu. Not a Windows 11 clone |
+| Desktop | The KrissOS Shell (§5) with Windows habits in the KrissOS look: bottom taskbar, Start-style launcher, close button top-right, the Win key opens the menu. Not a Windows 11 clone. KDE Plasma is the installer's alternative |
 | Install | Dual-boot alongside Windows by default. The installer resizes Windows safely, detects BitLocker and stops with clear steps if it's on, and keeps Windows in the boot menu |
 | NVIDIA | The installer detects the GPU and installs the right driver (open modules on Turing and newer), so games work on first boot |
 | Apps | Discover with Flathub on by default, pacman underneath |
-| Updates | A tray notice; one click updates, after an automatic btrfs snapshot, so a bad update rolls back from the boot menu |
+| Updates | A desktop notification with an Update button (`kriss-update-notify.timer`). One click runs `kriss update`, which takes a btrfs snapshot through snapper first, so a bad update rolls back from the boot menu |
 | Windows apps | WinBoat up front, adapted to the hardware (see `kriss-welcome`). The Windows licence follows WinBoat's own approach; KrissOS adds no licence step |
 | Anti-cheat | Said upfront: gamers check their games before switching, on the website and in `kriss-welcome` |
 | Language | English and Bahasa Melayu from day one: installer, `kriss-welcome`, website |
@@ -279,7 +279,8 @@ A new `[kriss]` package. It opens on first login and stays in the menu.
    AI setup (Ollama plus the AI CLIs from §9).
 
 - **Stack:** Qt/QML (Kirigami) to match KDE. Every system change goes through `kriss` / `pkexec`
-  commands, so the app holds no root logic of its own.
+  commands, or through udisks and Flatpak, which ask polkit themselves, so the app holds no root
+  logic of its own.
 - **Strings:** every string is translatable from the start, with English and Bahasa Melayu shipped.
 - **Roadmap:** `kriss-welcome` lands with the installer (§12 step 3); the game checker and
   Bring your apps go first, because they decide whether people switch at all.

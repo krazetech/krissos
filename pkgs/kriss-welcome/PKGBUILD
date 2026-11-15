@@ -1,12 +1,12 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-welcome
-pkgver=0.1.0
+pkgver=0.2.0
 pkgrel=1
-pkgdesc='KrissOS first-boot app: game checker and Bring your apps'
+pkgdesc='KrissOS first-boot app: game checker, apps, copy from Windows, drivers and extras'
 arch=('any')
 url='https://github.com/krazetech/krissos'
 license=('GPL-3.0-or-later' 'MIT')
-depends=('flatpak' 'kirigami' 'pyside6' 'python' 'qqc2-desktop-style')
+depends=('flatpak' 'kirigami' 'pyside6' 'python' 'polkit' 'qqc2-desktop-style' 'udisks2' 'util-linux' 'xdg-user-dirs')
 makedepends=('qt6-tools')
 
 # Sources live in this monorepo, so package straight from welcome/.
@@ -19,6 +19,7 @@ build() {
 
 check() {
   cd "$_src" && python -B test_welcome.py
+  QT_QPA_PLATFORM=offscreen python -B smoke_qml.py
 }
 
 package() {
