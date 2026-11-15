@@ -22,28 +22,36 @@ cd pkgs/kriss-tools && makepkg -si
 ## Package repo
 
 CI builds every package on each push to `main` and publishes the signed repo to the
-`repo-x86_64` GitHub release. To use it, add this to `/etc/pacman.conf`:
+`repo-x86_64` GitHub release. KrissOS installs come with the keyring already set up. To use
+the repo on plain Arch, trust the signing key first:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/krazetech/krissos/main/pkgs/kriss-keyring/krissos.gpg | sudo pacman-key --add -
+```
+
+```bash
+sudo pacman-key --lsign-key 7C92AE8B599AF81321666CA31317AA31B21C5F87
+```
+
+Then add this to `/etc/pacman.conf`:
 
 ```ini
 [kriss]
 Server = https://github.com/krazetech/krissos/releases/download/repo-x86_64
 ```
 
-### Signing key (one-time setup)
+### Signing key
 
-CI only publishes when a signing key is configured. Create a key with no passphrase,
-dedicated to package signing:
+Packages are signed by `KrissOS Packages`, fingerprint
+`7C92AE8B599AF81321666CA31317AA31B21C5F87`.
 
-```bash
-gpg --quick-gen-key "KrissOS Packages <packages@krisstech.invalid>" ed25519 sign never
-```
-
-Then:
-
-1. Export the private key with `gpg --armor --export-secret-keys <KEYID>` and save it as the
-   repository secret `KRISS_GPG_KEY`.
-2. Keep an offline backup of the private key. If it is lost, every user has to trust a new key.
-3. The public half goes into the `kriss-keyring` package, which is not written yet.
+- **Where the private key lives:** in the `KRISS_GPG_KEY` repository secret, and in the
+  maintainer's local GnuPG keyring, with an offline backup.
+- **Where the public key lives:** it ships in the `kriss-keyring` package.
+- **Rotating the key:**
+  1. Add the new key to `pkgs/kriss-keyring/`.
+  2. Move the old fingerprint to `krissos-revoked`.
+  3. Bump the package version and replace the secret.
 
 ## License
 

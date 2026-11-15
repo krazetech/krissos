@@ -1,0 +1,18 @@
+# Maintainer: Kraze Tech
+pkgname=kriss-keyring
+pkgver=20261115
+pkgrel=1
+pkgdesc='KrissOS package signing keys'
+arch=('any')
+url='https://github.com/krazetech/krissos'
+license=('GPL-3.0-or-later')
+install=kriss-keyring.install
+source=('krissos.gpg' 'krissos-trusted' 'krissos-revoked')
+sha256sums=('SKIP' 'SKIP' 'SKIP')
+
+package() {
+  local f
+  for f in "${source[@]}"; do
+    install -Dm644 "$f" "$pkgdir/usr/share/pacman/keyrings/$f"
+  done
+}
