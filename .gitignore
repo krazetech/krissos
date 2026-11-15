@@ -9,3 +9,6 @@ out/
 NOTES.md
 .DS_Store
 .impeccable/
+
+# private signing key backups: never commit
+*-signing-key.asc
