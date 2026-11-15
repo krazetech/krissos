@@ -11,7 +11,7 @@ ovmf=${OVMF:-/usr/share/ovmf/OVMF.fd}
 mkdir -p "$out"
 disk=$out/disk.qcow2
 qemu-img create -f qcow2 "$disk" 40G
-qemu=(qemu-system-x86_64 -enable-kvm -cpu host -smp 4 -m 6144 -device virtio-vga -display none
+qemu=(qemu-system-x86_64 -enable-kvm -cpu host -smp 4 -m 4096 -device virtio-vga -display none
       -drive "file=$disk,if=virtio,format=qcow2" -monitor "unix:$out/mon,server,nowait")
 shot() { echo "screendump $out/$1.png -f png" | socat - "UNIX-CONNECT:$out/mon" >/dev/null; }
 
