@@ -3,12 +3,8 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Widgets
-import Quickshell.Io
 import Quickshell.WindowManager
-import Quickshell.Networking
-import Quickshell.Services.Pipewire
 import Quickshell.Services.SystemTray
-import Quickshell.Services.UPower
 
 // The one floating bar: keris launcher, this screen's workspaces, pinned and running
 // apps on the left; tray icons, power profile, quick settings (network, volume,
@@ -286,129 +282,6 @@ PanelWindow {
             radius: 2
             color: btn.front ? Theme.accent : Theme.soft
             Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutQuart } }
-        }
-    }
-
-    component TrayIcon: MouseArea {
-        id: tray
-        required property SystemTrayItem modelData
-        width: 24
-        height: 24
-        anchors.verticalCenter: parent.verticalCenter
-        cursorShape: Qt.PointingHandCursor
-        acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
-        onClicked: mouse => {
-            if (mouse.button === Qt.MiddleButton) modelData.secondaryActivate();
-            else if (mouse.button === Qt.RightButton || modelData.onlyMenu) { if (modelData.hasMenu) trayMenu.open(); }
-            else modelData.activate();
-        }
-        onWheel: wheel => modelData.scroll(wheel.angleDelta.y, false)
-        IconImage { anchors.fill: parent; source: tray.modelData.icon }
-        QsMenuAnchor {
-            id: trayMenu
-            menu: tray.modelData.menu
-            anchor.item: tray
-            anchor.edges: Edges.Top
-            anchor.gravity: Edges.Top
-        }
-    }
-
-    component PowerPill: MouseArea {
-        id: pp
-        // Only with power-profiles-daemon installed; without it the pill would show a
-        // profile that nothing applies.
-        visible: ppd.loaded
-        FileView {
-            id: ppd
-            path: "/usr/share/dbus-1/system-services/net.hadess.PowerProfiles.service"
-            printErrors: false
-        }
-        readonly property var order: PowerProfiles.hasPerformanceProfile
-            ? [PowerProfile.Balanced, PowerProfile.Performance, PowerProfile.PowerSaver]
-            : [PowerProfile.Balanced, PowerProfile.PowerSaver]
-        readonly property int p: PowerProfiles.profile
-        readonly property var look: p === PowerProfile.Performance ? ["performance", Tr.t("Performance")]
-            : p === PowerProfile.PowerSaver ? ["saver", Tr.t("Power saver")] : ["balanced", Tr.t("Balanced")]
-
-        implicitWidth: pill.width
-        implicitHeight: 34
-        cursorShape: Qt.PointingHandCursor
-        onClicked: PowerProfiles.profile = order[(order.indexOf(p) + 1) % order.length]
-
-        Rectangle {
-            id: pill
-            height: parent.height
-            width: row.implicitWidth + 26
-            radius: height / 2
-            color: Theme.card
-            border.width: pp.p === PowerProfile.Performance ? 2 : 0
-            border.color: Theme.accent
-            Row {
-                id: row
-                anchors.centerIn: parent
-                spacing: 7
-                Glyph {
-                    anchors.verticalCenter: parent.verticalCenter
-                    name: pp.look[0]
-                    size: 16
-                    color: pp.p === PowerProfile.Performance ? Theme.accent : Theme.fg
-                }
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: pp.look[1]
-                    color: Theme.fg
-                    font { family: Theme.sans; pixelSize: 13; weight: Font.DemiBold }
-                }
-            }
-        }
-    }
-
-    component NetworkGlyph: Glyph {
-        readonly property var dev: Networking.devices.values.find(d => d.connected) ?? null
-        anchors.verticalCenter: parent.verticalCenter
-        name: !dev ? "wifiOff" : dev.type === DeviceType.Wifi ? "wifi" : "wired"
-        color: dev ? Theme.fg : Theme.soft
-    }
-
-    // Scroll to change the volume; a click opens quick settings.
-    component VolumeGlyph: MouseArea {
-        id: vol
-        readonly property var sink: Pipewire.defaultAudioSink
-        width: 20
-        height: 20
-        anchors.verticalCenter: parent.verticalCenter
-        acceptedButtons: Qt.NoButton
-        onWheel: wheel => {
-            if (sink?.audio) sink.audio.volume = Math.max(0, Math.min(1, sink.audio.volume + (wheel.angleDelta.y > 0 ? 0.05 : -0.05)));
-        }
-        PwObjectTracker { objects: [Pipewire.defaultAudioSink] }
-        Glyph { name: vol.sink?.audio?.muted ? "mute" : "volume" }
-    }
-
-    component Battery: Row {
-        id: bat
-        readonly property var dev: UPower.displayDevice
-        visible: dev.isLaptopBattery
-        spacing: 6
-        anchors.verticalCenter: parent.verticalCenter
-        Rectangle {
-            anchors.verticalCenter: parent.verticalCenter
-            width: 22; height: 12; radius: 3.5
-            color: "transparent"
-            border.width: 2
-            border.color: Theme.fg
-            Rectangle {
-                x: 3; y: 3
-                height: 6; radius: 1.5
-                width: Math.max(1, 16 * bat.dev.percentage)
-                color: bat.dev.percentage < 0.15 ? Theme.red : Theme.fg
-            }
-        }
-        Text {
-            anchors.verticalCenter: parent.verticalCenter
-            text: Math.round(bat.dev.percentage * 100) + "%"
-            color: Theme.fg
-            font { family: Theme.sans; pixelSize: 13; weight: Font.DemiBold; features: { "tnum": 1 } }
         }
     }
 }
