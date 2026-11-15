@@ -157,12 +157,12 @@ if os.geteuid():
     assert r.returncode == 2 and "pkexec kriss update" in r.stderr, r
 
 # kriss-update-notify, with stand-ins for the tools it calls.
-def notify(updates, click, pkexec_code, lang="en_US.UTF-8"):
+def notify(updates, click, pkexec_code, lang="en_US.UTF-8", err=""):
     with tempfile.TemporaryDirectory() as t:
         t = pathlib.Path(t)
         stubs = {"checkupdates": f"printf '%s' '{updates}'",
                  "notify-send": f'echo "notify $*" >> {t}/log; case "$*" in *--wait*) echo {click};; esac',
-                 "pkexec": f'echo "pkexec $*" >> {t}/log; exit {pkexec_code}'}
+                 "pkexec": f'echo "pkexec $*" >> {t}/log; echo "{err}" >&2; exit {pkexec_code}'}
         for name, body in stubs.items():
             (t / name).write_text(f"#!/bin/sh\n{body}\n")
             (t / name).chmod(0o755)
@@ -179,7 +179,9 @@ assert "pkexec" not in log, log  # dismissed: no update
 assert "Kemas kini tersedia" in notify("a\n", "", 0, "ms_MY.UTF-8")
 assert "did not finish" in notify("a\n", "update", 1)
 assert "did not finish" not in notify("a\n", "update", 126)  # password prompt cancelled
-assert "did not finish" in notify("a\n", "update", 127)  # no polkit agent: say so, not silence
+assert "did not finish" not in notify("a\n", "update", 127)  # cancelled in the KDE agent
+assert "did not finish" in notify("a\n", "update", 127, err="Error creating textual authentication agent")
+assert "1 update is ready to install." in notify("a\n", "", 0)
 
 # Every qsTr string has a Bahasa Melayu translation.
 ts = ET.parse(ROOT / "i18n/kriss-welcome_ms.ts")
