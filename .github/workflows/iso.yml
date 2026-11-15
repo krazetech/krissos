@@ -4,7 +4,7 @@ on:
   push:
     tags: ['[0-9]*', 'MR*']   # release codenames: 110, 115, MR3
   pull_request:
-    paths: ['iso/**', '.github/workflows/iso.yml']
+    paths: ['iso/**', 'installer/**', 'pkgs/calamares/**', 'pkgs/kriss-installer/**', '.github/workflows/iso.yml']
   schedule:
     - cron: '30 3 * * *'      # nightly
   workflow_dispatch:
@@ -19,7 +19,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
 
@@ -81,6 +81,23 @@ jobs:
         with:
           name: boot-test
           path: boot-test/
+          if-no-files-found: ignore
+
+      # Unattended install onto a QEMU disk with the installer's own scripts, then boot it.
+      - name: Install test
+        run: |
+          sudo rm -rf "$RUNNER_TEMP"/{mkarchiso,profile,src,kriss-local,logo}
+          df -h /
+          iso/install-test.sh out/*.iso install-test
+
+      - name: Upload install test
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: install-test
+          path: |
+            install-test/*.log
+            install-test/*.png
           if-no-files-found: ignore
 
       - name: Upload ISO

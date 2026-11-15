@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Boot the ISO in QEMU/KVM, screenshot the UEFI boot menu, then boot it again with a
-# serial console and wait until the KrissOS Shell starts. Needs qemu-system-x86, ovmf,
+# Boot the ISO in QEMU/KVM, screenshot the UEFI boot menu, then boot the "Install KrissOS"
+# entry with a serial console and wait until the KrissOS Shell and then the installer
+# (Calamares) start. Needs qemu-system-x86, ovmf,
 # libarchive-tools (bsdtar) and socat.
 # usage: iso/boot-test.sh ISO OUT_DIR
 set -euo pipefail
@@ -21,20 +22,31 @@ kill $! && wait $! || true
 
 # 2. Same kernel, initramfs and options, plus a serial console with the journal on it.
 tmp=$(mktemp -d)
-bsdtar -xf "$iso" -C "$tmp" loader/entries/01-krissos.conf 'kriss/boot/x86_64/*'
-opts=$(sed -n 's/^options *//p' "$tmp/loader/entries/01-krissos.conf")
+bsdtar -xf "$iso" -C "$tmp" loader/entries/02-krissos-install.conf 'kriss/boot/x86_64/*'
+opts=$(sed -n 's/^options *//p' "$tmp/loader/entries/02-krissos-install.conf")
 rm -f "$out/mon"
 "${qemu[@]}" -kernel "$tmp"/kriss/boot/x86_64/vmlinuz-* -initrd "$tmp"/kriss/boot/x86_64/initramfs-*.img \
   -append "$opts console=ttyS0,115200 systemd.journald.forward_to_console=1" \
   -serial "file:$out/serial.log" &
 pid=$!
-ok=0
-for _ in $(seq 60); do
-  if grep -q 'kriss-shell.*KrissOS Shell started' "$out/serial.log"; then ok=1; break; fi
-  sleep 5
-done
-sleep 20  # let the desktop draw
-shot desktop
+# wait_for PATTERN TRIES: poll the serial log every 5 s.
+wait_for() {
+  for _ in $(seq "$2"); do
+    grep -q "$1" "$out/serial.log" && return 0
+    sleep 5
+  done
+  return 1
+}
+shell=0 installer=0
+wait_for 'kriss-shell.*KrissOS Shell started' 60 && shell=1
+# kriss-install logs Calamares to the journal with the tag calamares.
+(( shell )) && wait_for 'calamares.*Window now visible' 24 && installer=1
+sleep 15  # let the window draw
+shot installer
 kill "$pid" && wait "$pid" || true
 grep -m1 'Started.*Greeter daemon' "$out/serial.log" || true
-if (( ok )); then echo 'KrissOS Shell started.'; else echo 'The KrissOS Shell did not start within 5 minutes.' >&2; exit 1; fi
+grep 'calamares.*\(Calamares version\|ERROR\|FATAL\)' "$out/serial.log" || true
+if (( ! shell )); then echo 'The KrissOS Shell did not start within 5 minutes.' >&2; exit 1; fi
+echo 'KrissOS Shell started.'
+if (( ! installer )); then echo 'The installer did not open within 2 minutes of the Shell.' >&2; exit 1; fi
+echo 'Installer (Calamares) started.'

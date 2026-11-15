@@ -1,0 +1,12 @@
+#!/bin/bash
+# A snapshot picked in the Limine menu is read-only. This hook puts a RAM overlay on top,
+# so it starts like a normal system; changes are gone after a reboot.
+
+build() {
+    add_module overlay
+    add_runscript
+}
+
+help() {
+    echo 'Boots a read-only btrfs snapshot (kriss_snapshot=1) with a writable RAM overlay.'
+}

@@ -1,0 +1,48 @@
+# Maintainer: Kraze Tech
+pkgname=kriss-installer
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='KrissOS installer: Calamares sequence, module configs, desktop picker and install scripts'
+arch=('any')
+url='https://github.com/krazetech/krissos'
+license=('GPL-3.0-or-later')
+depends=('arch-install-scripts' 'btrfs-progs' 'dosfstools' 'efibootmgr' 'ntfs-3g' 'os-prober'
+         'quickshell' 'sudo' 'util-linux')
+makedepends=('python')
+
+# Sources live in this monorepo. notice.qml takes its colours from theme/tokens.json.
+_src="$startdir/../../installer"
+_theme="$startdir/../../theme"
+
+build() {
+  python "$_theme/generate.py" "$_src" "$srcdir/installer"
+}
+
+check() {
+  local f
+  for f in "$_src"/kriss-install "$_src"/lib/*; do bash -n "$f"; done
+  ! grep -rn '{{' "$srcdir/installer"
+  # Turing and newer get the open modules; older cards and other vendors get nothing.
+  local sys="$srcdir/sys/bus/pci/devices"
+  mkdir -p "$sys/turing" "$sys/pascal" "$sys/intel"
+  printf '0x10de\n' >"$sys/turing/vendor"; printf '0x1f08\n' >"$sys/turing/device"; printf '0x030000\n' >"$sys/turing/class"
+  printf '0x10de\n' >"$sys/pascal/vendor"; printf '0x1b80\n' >"$sys/pascal/device"; printf '0x030000\n' >"$sys/pascal/class"
+  printf '0x8086\n' >"$sys/intel/vendor"; printf '0x3e92\n' >"$sys/intel/device"; printf '0x030000\n' >"$sys/intel/class"
+  [ "$(KRISS_SYSFS="$srcdir/sys" sh "$_src/lib/nvidia" linux-kriss 2>/dev/null)" = \
+    'nvidia-open-dkms nvidia-utils linux-kriss-headers' ]
+  rm -r "$sys/turing"
+  [ -z "$(KRISS_SYSFS="$srcdir/sys" sh "$_src/lib/nvidia" linux-kriss 2>/dev/null)" ]
+}
+
+package() {
+  # Added here, not above: makepkg --syncdeps cannot resolve [kriss] packages.
+  # kriss-theme carries the Calamares branding (usr/share/calamares/branding/krissos).
+  depends+=('calamares' 'kriss-theme')
+  local s="$srcdir/installer"
+  install -Dm644 -t "$pkgdir/etc/calamares" "$s/calamares/settings.conf"
+  install -Dm644 -t "$pkgdir/etc/calamares/modules" "$s"/calamares/modules/*.conf
+  install -Dm755 -t "$pkgdir/usr/lib/kriss-installer" "$s"/lib/*
+  install -Dm644 -t "$pkgdir/usr/share/kriss-installer" "$s/notice.qml"
+  install -Dm755 "$s/kriss-install" "$pkgdir/usr/bin/kriss-install"
+  install -Dm644 -t "$pkgdir/usr/share/applications" "$s/org.krissos.Installer.desktop"
+}

@@ -3,9 +3,9 @@ name: packages
 on:
   push:
     branches: [main]
-    paths: ['pkgs/**', '!pkgs/linux-kriss/**', 'tools/**', 'shell/**', 'theme/**', '.github/workflows/pkgs.yml']
+    paths: ['pkgs/**', '!pkgs/linux-kriss/**', 'tools/**', 'shell/**', 'theme/**', 'installer/**', '.github/workflows/pkgs.yml']
   pull_request:
-    paths: ['pkgs/**', '!pkgs/linux-kriss/**', 'tools/**', 'shell/**', 'theme/**', '.github/workflows/pkgs.yml']
+    paths: ['pkgs/**', '!pkgs/linux-kriss/**', 'tools/**', 'shell/**', 'theme/**', 'installer/**', '.github/workflows/pkgs.yml']
   workflow_dispatch:
 
 permissions:
@@ -30,7 +30,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Lint tools
-        run: shellcheck tools/kriss tools/ci/*.sh
+        run: shellcheck tools/kriss tools/ci/*.sh installer/kriss-install installer/lib/* pkgs/kriss-settings/root/usr/bin/kriss-limine-update
 
       - name: Test the publish script
         run: tools/ci/publish-test.sh

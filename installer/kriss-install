@@ -1,0 +1,33 @@
+#!/bin/sh
+# Start the KrissOS installer (Calamares) from the live session.
+#   kriss-install                     check the PC, then start the installer
+#   kriss-install --boot              the same, only when the boot menu's "Install KrissOS"
+#                                     entry asked for it (kriss.install on the kernel line)
+#   kriss-install --ignore-bitlocker  skip the BitLocker stop, to erase the whole disk
+set -u
+share=/usr/share/kriss-installer
+
+case "${1:-}" in
+--boot) grep -qw kriss.install /proc/cmdline || exit 0 ;;
+esac
+
+# A page with the steps, in the user's language, instead of the installer.
+notice() {
+    KRISS_NOTICE=$1 exec qs -p "$share/notice.qml"
+}
+
+[ -d /sys/firmware/efi ] || notice bios
+# Windows' BitLocker volumes cannot be resized, so dual-boot cannot make room. Stop
+# before anything is touched and say how to turn it off.
+if [ "${1:-}" != --ignore-bitlocker ] && lsblk -lno FSTYPE | grep -qix bitlocker; then
+    notice bitlocker
+fi
+
+# Calamares runs as root on the live user's Wayland display. An absolute socket path,
+# because Qt replaces a runtime dir that root does not own.
+case ${WAYLAND_DISPLAY:-} in
+'' | /*) ;;
+*) WAYLAND_DISPLAY=$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY; export WAYLAND_DISPLAY ;;
+esac
+# The log goes to the journal too (tag calamares); the ISO boot test reads it there.
+exec systemd-cat -t calamares sudo -E calamares -d
