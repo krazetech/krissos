@@ -8,6 +8,7 @@ quick settings, notifications and a lock screen, written in QML for [Quickshell]
 |---|---|
 | `qml/` | The shell. `shell.qml` is the entry point. Colours and fonts are `{{token}}` placeholders filled from `theme/tokens.json` at build time |
 | `qml/i18n/` | Translations, one `<lang>.json` per language (`ms` is Bahasa Melayu). See below |
+| `fuzzy-check` | Tests the launcher's fuzzy ranking and the menus' type-ahead: `node shell/fuzzy-check` |
 | `i18n-check` | Checks every shell string has a translation; `--list` prints them all |
 | `kriss-shell-toplevels` | Python helper that lists open windows (and the screen each is on) and focuses, minimizes or closes them. Quickshell can't read windows from cosmic-comp directly |
 | `protocols/` | COSMIC protocol files the helper's bindings are generated from |
@@ -73,6 +74,15 @@ command = "kriss-shell greeter"
 user = "greeter"
 ```
 
+## Motion and keyboard
+
+The behaviour follows four web references, rebuilt in QML: the launcher search works
+like [cmdk](https://cmdk.paco.me), notifications stack like [Sonner](https://sonner.emilkowal.ski),
+quick settings is a sheet like [Vaul](https://vaul.emilkowal.ski), and the clock, battery and
+volume digits roll like [NumberFlow](https://number-flow.barvian.me). Menus follow Radix's
+keyboard rules. Every animation goes through `Theme.ms()`, which is 0 when
+`org.gnome.desktop.interface enable-animations` is off.
+
 ## Settings
 
 Pinned apps (in taskbar order) and Do not disturb are kept in `~/.config/kriss/shell.json`.
@@ -89,6 +99,7 @@ bar to move it. Without the file, the defaults in `qml/Desktop.qml` apply.
 | Windows+D | Show the desktop; again to bring the windows back |
 | Windows+E | COSMIC Files |
 | Windows+L | Lock |
+| Menu key, Shift+F10 | In the launcher, the selected app's menu |
 | Windows+Left / Right | Snap the window to that half (Windows+Shift+Up / Down then makes it a quarter) |
 | Windows+Up / Down | Maximize / minimize |
 | Windows+1…9 | Go to that workspace |
