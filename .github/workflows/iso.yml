@@ -70,7 +70,7 @@ jobs:
       - name: Boot test
         run: |
           sudo apt-get update -q
-          sudo apt-get install -y -q --no-install-recommends qemu-system-x86 ovmf libarchive-tools socat
+          sudo apt-get install -y -q --no-install-recommends qemu-system-x86 qemu-utils ovmf libarchive-tools socat
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
             | sudo tee /etc/udev/rules.d/99-kvm.rules
           sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm

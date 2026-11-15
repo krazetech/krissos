@@ -25,7 +25,7 @@ tmp=$(mktemp -d)
 bsdtar -xf "$iso" -C "$tmp" loader/entries/02-krissos-install.conf 'kriss/boot/x86_64/*'
 opts=$(sed -n 's/^options *//p' "$tmp/loader/entries/02-krissos-install.conf")
 rm -f "$out/mon"
-"${qemu[@]}" -kernel "$tmp"/kriss/boot/x86_64/vmlinuz-* -initrd "$tmp"/kriss/boot/x86_64/initramfs-*.img \
+"${qemu[@]}" -bios "$ovmf" -kernel "$tmp"/kriss/boot/x86_64/vmlinuz-* -initrd "$tmp"/kriss/boot/x86_64/initramfs-*.img \
   -append "$opts console=ttyS0,115200 systemd.journald.forward_to_console=1" \
   -serial "file:$out/serial.log" &
 pid=$!
