@@ -19,23 +19,19 @@ kriss-settings
 kriss-theme
 kriss-tools
 
-# KDE Plasma (Wayland only)
-plasma-desktop
-sddm
-breeze-gtk
-xdg-desktop-portal-kde
-plasma-nm
-plasma-pa
-powerdevil
-bluedevil
-kscreen
-konsole
-dolphin
-kate
+# KrissOS Shell on cosmic-comp, with the KrissOS login screen on greetd
+kriss-shell
+greetd
+cosmic-files
+cosmic-terminal
+cosmic-settings
+xdg-desktop-portal-cosmic
+power-profiles-daemon
+upower
+libnotify
 firefox
 noto-fonts
 noto-fonts-emoji
-qt6-multimedia-ffmpeg
 pipewire
 pipewire-alsa
 pipewire-pulse
