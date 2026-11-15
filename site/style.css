@@ -3,7 +3,7 @@
 :root {
   --bg: #000000;
   --surface: #0B0D0F;
-  --accent: #29B2E8;
+  --accent: #24B1E6;
   --fg: #E6EDF2;
   --muted: #6B7680;
   --soft: #A3AEB8; /* body copy: fg mixed toward muted, still AA on bg */
@@ -88,7 +88,7 @@ section + section { border-top: 1px solid var(--line); }
   background: var(--accent); color: #000;
   transition: transform .2s var(--ease), background .2s;
 }
-.btn:hover { text-decoration: none; transform: translateY(-1px); background: #4CC0EE; }
+.btn:hover { text-decoration: none; transform: translateY(-1px); background: #4AC1EC; }
 .btn.ghost { background: transparent; color: var(--fg); box-shadow: inset 0 0 0 1px rgba(230, 237, 242, .22); }
 .btn.ghost:hover { background: rgba(230, 237, 242, .06); }
 
@@ -102,19 +102,19 @@ section + section { border-top: 1px solid var(--line); }
 .hero { padding-top: clamp(64px, 10vw, 120px); padding-bottom: 0; overflow: hidden; }
 .hero .lede { margin-inline: auto; }
 .pill { display: inline-flex; align-items: center; gap: 10px; padding: 7px 14px 7px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); font-size: .85rem; color: var(--soft); margin-bottom: 28px; }
-.pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px rgba(41, 178, 232, .18); }
+.pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px rgba(36, 177, 230, .18); }
 
-/* Desktop mock: mirrors the composition of theme/wallpaper.svg (PR #3) with CSS only. */
-/* ponytail: placeholder until the wallpaper PR merges; then use <img src="wallpaper-dark.png"> from theme/ output. */
+.mark { margin: 0 auto 28px; width: clamp(72px, 9vw, 96px); height: auto; filter: drop-shadow(0 0 40px rgba(36, 177, 230, .35)); }
+
+/* Desktop mock over the real wallpaper. logo.svg and wallpaper.svg are rendered copies of
+   theme/templates/usr/share/pixmaps/krissos.svg and theme/wallpaper.svg (kriss-dark.svg) by theme/generate.py. */
+/* ponytail: copies, not linked; re-render them into site/ when the tokens or artwork change. */
 .screen {
   position: relative; margin: 72px auto 0; width: min(1040px, 100%); text-align: left;
   aspect-ratio: 16 / 10; border-radius: 28px 28px 0 0; overflow: hidden;
   border: 1px solid rgba(230, 237, 242, .14); border-bottom: 0;
-  background:
-    radial-gradient(circle at 75% 71% , rgba(41, 178, 232, .26), rgba(41, 178, 232, .07) 30%, transparent 70%),
-    var(--bg);
+  background: var(--bg) url(wallpaper.svg) center / cover;
 }
-.screen .rings { position: absolute; inset: 0; }
 .screen .win {
   position: absolute; border-radius: 18px;
   background: linear-gradient(135deg, rgba(11, 13, 15, .9), rgba(11, 13, 15, .62));
@@ -151,10 +151,10 @@ section + section { border-top: 1px solid var(--line); }
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
   padding: 32px; transition: border-color .3s, transform .3s var(--ease);
 }
-.card:hover { border-color: rgba(41, 178, 232, .35); }
+.card:hover { border-color: rgba(36, 177, 230, .35); }
 .card p { color: var(--soft); margin: 0; }
 .card .tag { margin-bottom: 18px; }
-.icon { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: rgba(41, 178, 232, .12); color: var(--accent); margin-bottom: 22px; }
+.icon { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: rgba(36, 177, 230, .12); color: var(--accent); margin-bottom: 22px; }
 .icon svg { width: 22px; height: 22px; }
 .pillar { padding: 40px 32px; }
 .pillar h3 { font-size: 1.6rem; }
@@ -184,7 +184,7 @@ section + section { border-top: 1px solid var(--line); }
 .steps > li::before {
   content: counter(step); position: absolute; left: 0; top: 0;
   width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center;
-  background: rgba(41, 178, 232, .12); color: var(--accent); font-weight: 700;
+  background: rgba(36, 177, 230, .12); color: var(--accent); font-weight: 700;
 }
 .steps h3 { line-height: 36px; margin-bottom: 8px; }
 .steps p { color: var(--soft); }
