@@ -1,0 +1,421 @@
+<!doctype html>
+<!-- KrissOS promo. Every scene is a pure function of time: render.mjs calls seek(t) per frame. -->
+<html>
+<head>
+<meta charset="utf-8">
+<title>KrissOS promo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=block">
+<style>
+:root {
+  --bg: #000000; --surface: #0B0D0F; --accent: #29B2E8; --fg: #E6EDF2; --muted: #6B7680;
+  --rim: rgba(230, 237, 242, .09);
+}
+/* 1rem = 10 design px on a 1920-wide landscape stage, or a 1080-wide portrait one. */
+html { font-size: calc(100vw / 192); }
+@media (orientation: portrait) { html { font-size: calc(100vw / 108); } }
+* { box-sizing: border-box; margin: 0; }
+body { background: var(--bg); color: var(--fg); font: 500 3rem/1.2 Figtree, sans-serif; overflow: hidden;
+  width: 100vw; height: 100vh; -webkit-font-smoothing: antialiased; }
+#wall { position: absolute; inset: 0; background: url(out/wallpaper.svg) center / cover; opacity: 0; }
+.scene { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center;
+  justify-content: center; gap: 4rem; padding: 8rem; text-align: center; }
+h1 { font-weight: 700; font-size: 12rem; letter-spacing: -.035em; line-height: 1.02; }
+h1.l { font-size: 9.6rem; }
+.sub { color: var(--muted); font-size: 3.6rem; max-width: 120rem; }
+.sub b { color: var(--fg); font-weight: 600; }
+.eyebrow { display: flex; gap: 1.6rem; align-items: center; font-size: 2.8rem; font-weight: 600; color: var(--accent); }
+.mono { font-family: 'JetBrains Mono', monospace; }
+.tag { font: 600 1.9rem Figtree; color: var(--fg); border: .2rem solid rgba(41,178,232,.55);
+  background: rgba(41,178,232,.10); padding: .5rem 1.6rem; border-radius: 99rem; letter-spacing: .01em; }
+.row { display: flex; gap: 4rem; align-items: center; justify-content: center; }
+@media (orientation: portrait) {
+  .row { flex-direction: column; }
+  h1 { font-size: 11rem; } h1.l { font-size: 9rem; }
+  .scene { padding: 6rem; gap: 5rem; }
+}
+
+/* windows */
+.win { background: rgba(11,13,15,.92); border: .2rem solid var(--rim); border-radius: 2.8rem; text-align: left;
+  box-shadow: 0 4rem 10rem rgba(0,0,0,.6); overflow: hidden; }
+.win.focus { border-color: var(--accent); box-shadow: 0 0 0 .1rem var(--accent), 0 0 6rem rgba(41,178,232,.25), 0 4rem 10rem rgba(0,0,0,.6); }
+.win .bar { height: 5.6rem; display: flex; align-items: center; justify-content: center; position: relative;
+  font-size: 2rem; color: var(--muted); border-bottom: .2rem solid var(--rim); }
+.win .bar::after { content: ""; position: absolute; right: 2.2rem; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: #2A3036; }
+.win.focus .bar::after { background: var(--accent); }
+.term pre { font: 400 2.6rem/1.55 'JetBrains Mono', monospace; padding: 2.6rem 3.4rem 3.2rem; white-space: pre; }
+.term { width: 104rem; }
+.p { color: var(--accent); }
+.m { color: var(--muted); }
+.ok { color: #57C785; }
+.typing::after { content: ""; display: inline-block; width: .6em; height: 1.1em; vertical-align: -.2em;
+  background: var(--accent); margin-left: .1em; }
+
+/* desktop */
+#desk { padding: 0; }
+#desk .win { position: absolute; }
+#files { left: 11%; top: 13%; width: 46%; height: 58%; display: flex; flex-direction: column; }
+#files .body { display: flex; flex: 1; }
+#files nav { width: 26%; padding: 2.4rem; border-right: .2rem solid var(--rim); font-size: 2.2rem; color: var(--muted);
+  display: flex; flex-direction: column; gap: 1.6rem; }
+#files nav .on { color: var(--fg); }
+#files .grid { flex: 1; padding: 3rem; display: grid; grid-template-columns: repeat(4, 1fr); gap: 2.6rem; align-content: start; }
+#files .grid div { aspect-ratio: 1.2; border-radius: 1.8rem; background: #161A1E; display: flex; align-items: flex-end;
+  padding: 1.4rem; font-size: 1.8rem; color: var(--muted); }
+#files .grid .sel { background: rgba(41,178,232,.16); outline: .2rem solid var(--accent); color: var(--fg); }
+#dterm { left: 47%; top: 34%; width: 42%; }
+#dterm pre { font-size: 2.2rem; }
+#toast { right: 3%; top: 5%; width: 46rem; padding: 2.4rem 2.8rem; font-size: 2.2rem; }
+#toast b { display: block; font-size: 2.3rem; margin-bottom: .6rem; }
+#toast span { color: var(--muted); }
+#dock { position: absolute; left: 50%; bottom: 3rem; transform: translateX(-50%); height: 8.4rem; border-radius: 99rem;
+  background: rgba(11,13,15,.82); border: .2rem solid var(--rim); display: flex; align-items: center; gap: 1.8rem;
+  padding: 0 2rem 0 1.4rem; }
+#dock i { width: 5.6rem; height: 5.6rem; border-radius: 1.6rem; background: #1C2227; position: relative; }
+#dock i.k { border-radius: 50%; background: var(--accent); }
+#dock i.on::after { content: ""; position: absolute; bottom: -1.2rem; left: 50%; width: .8rem; height: .8rem;
+  margin-left: -.4rem; border-radius: 50%; background: var(--accent); }
+#dock .clock { font-size: 2.2rem; color: var(--fg); margin-left: 2rem; white-space: nowrap; }
+#desk .cap { position: absolute; left: 0; right: 0; bottom: 14rem; display: flex; justify-content: center; gap: 1.6rem;
+  align-items: center; font-size: 2.4rem; color: var(--muted); }
+@media (orientation: portrait) {
+  #files { left: 6%; top: 10%; width: 88%; height: 30%; }
+  #files nav { display: none; }
+  #dterm { left: 6%; top: 44%; width: 88%; }
+  #toast { right: 6%; top: 3%; }
+  #desk .cap { bottom: 16rem; }
+}
+
+/* pillars */
+.cards { display: flex; gap: 3.2rem; }
+.card { width: 48rem; padding: 4.4rem; border-radius: 3.2rem; background: var(--surface); border: .2rem solid var(--rim);
+  text-align: left; display: flex; flex-direction: column; gap: 1.4rem; }
+.card svg { width: 7.2rem; height: 7.2rem; margin-bottom: 2rem; }
+.card h2 { font-size: 7.2rem; font-weight: 700; letter-spacing: -.03em; }
+.card .k { color: var(--accent); font-weight: 600; font-size: 2.6rem; }
+.card p { color: var(--muted); font-size: 2.6rem; }
+@media (orientation: portrait) { .cards { flex-direction: column; gap: 2.4rem; } .card { width: 88rem; padding: 3.4rem 4.4rem; }
+  .card svg { position: absolute; } .card { position: relative; padding-left: 16rem; } .card svg { left: 4.4rem; top: 4rem; } }
+
+/* kriss-tune pills */
+.pills { position: relative; display: flex; gap: .8rem; padding: 1rem; border-radius: 99rem; background: var(--surface);
+  border: .2rem solid var(--rim); }
+.pills span { position: relative; z-index: 1; padding: 1.6rem 3.6rem; font-size: 3rem; font-weight: 600; color: var(--muted); border-radius: 99rem; }
+.pills span.on { color: #00141C; }
+.pills .hl { position: absolute; top: 1rem; bottom: 1rem; border-radius: 99rem; background: var(--accent); }
+@media (orientation: portrait) { .pills span { padding: 1.4rem 2.2rem; font-size: 2.6rem; } }
+
+/* kernel */
+.giant { font: 800 26rem/1 Figtree; letter-spacing: -.05em; color: var(--accent); }
+@media (orientation: portrait) { .giant { font-size: 17rem; } }
+.chips { display: flex; flex-wrap: wrap; gap: 1.6rem; justify-content: center; max-width: 140rem; }
+.chips span { padding: 1.2rem 2.6rem; border-radius: 99rem; background: var(--surface); border: .2rem solid var(--rim); font-size: 2.6rem; }
+
+/* boot menu */
+.boot { width: 110rem; font: 400 2.8rem/1 'JetBrains Mono', monospace; padding: 3.6rem; display: flex; flex-direction: column; gap: 1rem; }
+.boot .t { color: var(--muted); font-size: 2.2rem; margin-bottom: 1.6rem; }
+.boot div.e { padding: 1.8rem 2.4rem; border-radius: 1.6rem; display: flex; justify-content: space-between; color: var(--muted); }
+.boot div.e.sel { background: rgba(41,178,232,.14); color: var(--fg); box-shadow: inset 0 0 0 .2rem var(--accent); }
+.boot div.e i { font-style: normal; }
+@media (orientation: portrait) { .boot { width: 94rem; font-size: 2.4rem; } }
+
+/* shield */
+#shield { width: 30rem; height: 30rem; }
+
+/* winboat */
+.winapp { width: 84rem; background: #EEF2F5; color: #0B0D0F; border-color: rgba(0,0,0,.06); }
+.winapp .bar { color: #6B7680; border-bottom-color: rgba(0,0,0,.08); }
+.winapp .doc { display: flex; gap: 2.4rem; padding: 3rem; height: 40rem; }
+.winapp .side { width: 22rem; display: flex; flex-direction: column; gap: 1.4rem; }
+.winapp .side i, .winapp .page i { display: block; height: 1.8rem; border-radius: 1rem; background: #D5DCE2; }
+.winapp .page { flex: 1; background: #fff; border-radius: 1.6rem; padding: 3.6rem; display: flex; flex-direction: column; gap: 1.6rem;
+  box-shadow: 0 .4rem 2rem rgba(0,0,0,.06); }
+.winapp .page b { font-size: 3.6rem; margin-bottom: 1rem; }
+.small .term, .term.small { width: 78rem; }
+.small pre { font-size: 2.3rem; }
+@media (orientation: portrait) { .winapp { width: 92rem; } .term.small { width: 92rem; } }
+
+/* ai checklist */
+.list { display: flex; flex-direction: column; gap: 1.6rem; width: 56rem; text-align: left; }
+.list .h { color: var(--muted); font-size: 2.4rem; margin-bottom: .6rem; }
+.list div.i { display: flex; align-items: center; justify-content: space-between; padding: 2.2rem 2.8rem; border-radius: 2rem;
+  background: var(--surface); border: .2rem solid var(--rim); font-size: 2.8rem; font-weight: 600; }
+.list div.i u { text-decoration: none; width: 6.4rem; height: 3.6rem; border-radius: 99rem; background: var(--accent); position: relative; }
+.list div.i u::after { content: ""; position: absolute; right: .5rem; top: .5rem; width: 2.6rem; height: 2.6rem; border-radius: 50%; background: #00141C; }
+@media (orientation: portrait) { .list { width: 92rem; } .term.ai { width: 92rem; } }
+.term.ai { width: 96rem; }
+
+/* close */
+.logo { font: 800 22rem/1 Figtree; letter-spacing: -.05em; }
+.logo em { font-style: normal; color: var(--accent); display: block; }
+@media (orientation: portrait) { .logo { font-size: 17rem; } .sub { max-width: 80rem; } }
+/* Wallpaper scenes: text sits left, clear of the wallpaper's orb. */
+@media (orientation: landscape) {
+  .hero { align-items: flex-start; text-align: left; padding-left: 16rem; gap: 3rem; }
+  .hero .sub { max-width: 80rem; }
+}
+</style>
+</head>
+<body>
+<div id="wall"></div>
+
+<!-- 1 cold open -->
+<section class="scene" data-start="0" data-end="3.5">
+  <h1><span data-in=".3">This</span> <span data-in=".65">is</span> <span data-in="1">not</span> <span data-in="1.35">a</span> <span data-in="1.7">theme.</span></h1>
+</section>
+
+<!-- 2 reveal -->
+<section class="scene hero" data-start="3.5" data-end="8" data-wall="1">
+  <h1 class="logo" data-in=".5">KrissOS</h1>
+  <p class="sub" data-in="1.4">Arch Linux, rebuilt around how you actually use your PC.</p>
+</section>
+
+<!-- 3 desktop -->
+<section class="scene" id="desk" data-start="8" data-end="13" data-wall="1">
+  <div class="win" id="files" data-in=".2">
+    <div class="bar">Home</div>
+    <div class="body">
+      <nav><span class="on">Home</span><span>Documents</span><span>Games</span><span>Models</span><span>Snapshots</span></nav>
+      <div class="grid"><div>Desktop</div><div class="sel">Projects</div><div>Music</div><div>Pictures</div>
+        <div>Games</div><div>Models</div><div>Videos</div><div>Notes</div></div>
+    </div>
+  </div>
+  <div class="win term focus" id="dterm" data-in=".5">
+    <div class="bar">Terminal</div>
+<pre><span class="p">❯</span> kriss
+  <span class="m">os</span>        KrissOS 110
+  <span class="m">kernel</span>    7.3.4-kriss · x86-64-v3
+  <span class="m">desktop</span>   KrissOS Shell
+  <span class="m">profile</span>   balanced</pre>
+  </div>
+  <div class="win" id="toast" data-in="1.6"><b>Snapshot taken</b><span>Before today's update. Boot it from the menu any time.</span></div>
+  <div id="dock" data-in=".8"><i class="k"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><span class="clock">Sun 15 Nov · 10:10</span></div>
+  <div class="cap" data-in="2">KrissOS Shell concept <span class="tag">Coming in 110</span></div>
+</section>
+
+<!-- 4 pillars -->
+<section class="scene" data-start="13" data-end="19.5" data-wall=".35">
+  <h1 class="l" data-in=".2">Built for three things.</h1>
+  <div class="cards">
+    <div class="card" data-in="1.3">
+      <svg viewBox="0 0 48 48" fill="none" stroke="#29B2E8" stroke-width="3" stroke-linejoin="round"><rect x="5" y="9" width="38" height="26" rx="6"/><path d="M17 41h14M24 35v6"/></svg>
+      <span class="k">Productivity</span><h2>Work.</h2><p>Floating windows. One bar. Nothing in your way.</p></div>
+    <div class="card" data-in="1.7">
+      <svg viewBox="0 0 48 48" fill="none" stroke="#29B2E8" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><path d="M14 14h20a9 9 0 0 1 9 9v4a8 8 0 0 1-14 5h-10a8 8 0 0 1-14-5v-4a9 9 0 0 1 9-9z"/><path d="M15 21v8M11 25h8M32 23h.01M36 27h.01"/></svg>
+      <span class="k">Gaming</span><h2>Play.</h2><p>Steam, Gamescope, GameMode and MangoHud, set up.</p></div>
+    <div class="card" data-in="2.1">
+      <svg viewBox="0 0 48 48" fill="none" stroke="#29B2E8" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><rect x="12" y="12" width="24" height="24" rx="5"/><path d="M19 5v7M29 5v7M19 36v7M29 36v7M5 19h7M5 29h7M36 19h7M36 29h7"/></svg>
+      <span class="k">Local AI</span><h2>Think.</h2><p>Models on your own GPU. Nothing leaves.</p></div>
+  </div>
+</section>
+
+<!-- 5 kriss -->
+<section class="scene" data-start="19.5" data-end="27">
+  <div class="eyebrow" data-in=".1"><span class="mono">kriss</span></div>
+  <h1 class="l" data-in=".2">One command. Your whole system.</h1>
+  <div class="win term focus" data-in=".7">
+    <div class="bar">Terminal</div>
+<pre><span class="p">❯</span> <span data-type="1.3">kriss</span>
+<span data-at="1.8">  <span class="m">os</span>        KrissOS 110
+  <span class="m">kernel</span>    7.3.4-kriss · x86-64-v3
+  <span class="m">profile</span>   balanced</span>
+<span data-at="2.5"><span class="p">❯</span> </span><span data-type="2.7">kriss --kapcai</span>
+<span data-at="3.6">                 __
+            ____/ _\___
+      _____/___________\___
+     (  <span class="p">@</span>  )           (  <span class="p">@</span>  )
+      `---'             `---'
+   <span class="p">Modenas Kriss 110</span> · KrissOS 110</span></pre>
+  </div>
+  <p class="sub" data-in="4.6" style="font-size:2.6rem">Psst. It's not in <span class="mono">--help</span>.</p>
+</section>
+
+<!-- 6 kriss-tune -->
+<section class="scene" id="tune" data-start="27" data-end="33.5">
+  <div class="eyebrow" data-in=".1"><span class="mono">kriss-tune</span><span class="tag">Coming in 110</span></div>
+  <h1 class="l" data-in=".2">Tuned in one word.</h1>
+  <div class="pills" data-in=".8"><div class="hl"></div><span>performance</span><span>balanced</span><span>powersave</span><span>kapcai</span></div>
+  <div class="win term small" data-in="1.2">
+<pre><span class="p">❯</span> <span data-type="1.6">kriss-tune performance</span>
+<span data-at="2.9">  <span class="m">profile</span>     performance
+  <span class="m">scheduler</span>   sched_ext · <span class="ok">on</span>
+  <span class="m">gamemode</span>    <span class="ok">ready</span></span></pre>
+  </div>
+</section>
+
+<!-- 7 kernel -->
+<section class="scene" data-start="33.5" data-end="39.5">
+  <div class="eyebrow" data-in=".1"><span class="mono">linux-kriss</span><span class="tag">Coming in 110</span></div>
+  <h1 class="l" data-in=".2">A kernel built for your CPU.</h1>
+  <div class="giant" data-in=".9">x86-64-v3</div>
+  <div class="chips">
+    <span data-in="1.6">CachyOS patches</span><span data-in="1.75">BORE</span><span data-in="1.9">sched_ext</span>
+    <span data-in="2.05">LTO</span><span data-in="2.2">Built from source in CI</span>
+  </div>
+  <p class="sub" data-in="2.9" style="font-size:2.6rem">Older CPU? The installer picks <span class="mono">linux-kriss-generic</span>.</p>
+</section>
+
+<!-- 8 snapshots -->
+<section class="scene" id="snap" data-start="39.5" data-end="45.5">
+  <div class="eyebrow" data-in=".1">btrfs + snapper<span class="tag">Coming in 110</span></div>
+  <h1 class="l" data-in=".2">Break it. Boot yesterday.</h1>
+  <div class="win boot" data-in=".9">
+    <span class="t">Limine</span>
+    <div class="e sel">KrissOS 110<i>linux-kriss</i></div>
+    <div class="e">Snapshot · after update<i>today 10:02</i></div>
+    <div class="e">Snapshot · before update<i>today 09:58</i></div>
+    <div class="e">Snapshot · weekly<i>Sun 8 Nov</i></div>
+  </div>
+  <p class="sub" data-in="3.6" style="font-size:2.6rem">Pick a snapshot. Boot it. You're back.</p>
+</section>
+
+<!-- 9 secure boot -->
+<section class="scene" id="sb" data-start="45.5" data-end="50">
+  <svg id="shield" viewBox="0 0 120 120" fill="none" stroke="#29B2E8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" data-in=".1">
+    <path pathLength="1" d="M60 10 L100 25 V58 C100 84 82 102 60 110 C38 102 20 84 20 58 V25 Z"/>
+    <path pathLength="1" d="M42 60 L55 73 L80 46"/>
+  </svg>
+  <h1 class="l" data-in=".6">Secure Boot. Stays on.</h1>
+  <p class="sub" data-in="1.3"><span class="mono">sbctl</span> re-signs the kernel and bootloader on every update.</p>
+</section>
+
+<!-- 10 kriss-vm -->
+<section class="scene" data-start="50" data-end="57">
+  <div class="eyebrow" data-in=".1"><span class="mono">kriss-vm</span><span class="tag">Coming in 110</span></div>
+  <h1 class="l" data-in=".2">Hand your GPU to Windows.</h1>
+  <div class="win term focus" data-in=".8">
+    <div class="bar">Terminal</div>
+<pre><span class="p">❯</span> <span data-type="1.3">kriss-vm start</span>
+<span data-at="2.3">  <span class="ok">✓</span> stopped Ollama</span>
+<span data-at="2.7">  <span class="ok">✓</span> bound the dGPU to vfio-pci</span>
+<span data-at="3.1">  <span class="ok">✓</span> started the Windows VM</span>
+<span data-at="3.5">  <span class="ok">✓</span> opened Looking Glass</span></pre>
+  </div>
+  <p class="sub" data-in="4.3" style="font-size:2.6rem"><span class="mono">kriss-vm revert</span> undoes every change it made.</p>
+</section>
+
+<!-- 11 winboat -->
+<section class="scene" data-start="57" data-end="61.5" data-wall=".5">
+  <div class="eyebrow" data-in=".1">WinBoat<span class="tag">Coming in 110</span></div>
+  <h1 class="l" data-in=".2">Windows apps, on your desktop.</h1>
+  <div class="row">
+    <div class="win winapp" data-in=".8"><div class="bar">Windows app</div>
+      <div class="doc"><div class="side"><i></i><i style="width:70%"></i><i></i><i style="width:50%"></i></div>
+        <div class="page"><b>Quarterly plan</b><i></i><i style="width:85%"></i><i></i><i style="width:60%"></i></div></div></div>
+    <div class="win term small focus" data-in="1.1">
+<pre><span class="p">❯</span> <span data-type="1.5">kriss winapps setup</span>
+<span data-at="2.6">  <span class="ok">✓</span> KVM and groups</span>
+<span data-at="2.9">  <span class="ok">✓</span> Podman and Compose</span>
+<span data-at="3.2">  <span class="ok">✓</span> Windows container</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- 12 local ai -->
+<section class="scene" data-start="61.5" data-end="68.5">
+  <div class="eyebrow" data-in=".1">Ollama<span class="tag">Coming in 110</span></div>
+  <h1 class="l" data-in=".2">AI that stays on your machine.</h1>
+  <div class="row">
+    <div class="win term ai focus" data-in=".8">
+      <div class="bar">Terminal</div>
+<pre><span class="p">❯</span> <span data-type="1.2">ollama run llama3.2</span>
+<span data-at="2.3"><span class="m">&gt;&gt;&gt;</span> </span><span data-type="2.4">What's on my list today?</span>
+<span data-at="3.7">Ship the ISO, review the kernel PR,
+and back up before the update.</span>
+<span data-at="4.4" class="m">gpu: detected · runs offline</span></pre>
+    </div>
+    <div class="list">
+      <span class="h" data-in="2">Optional AI tools, at setup</span>
+      <div class="i" data-in="2.3">Claude Code<u></u></div>
+      <div class="i" data-in="2.5">Codex CLI<u></u></div>
+      <div class="i" data-in="2.7">Gemini CLI<u></u></div>
+      <div class="i" data-in="2.9">Antigravity<u></u></div>
+    </div>
+  </div>
+</section>
+
+<!-- 13 signed repo -->
+<section class="scene" data-start="68.5" data-end="73">
+  <div class="eyebrow" data-in=".1"><span class="mono">[kriss]</span></div>
+  <h1 class="l" data-in=".2">Every package. Signed.</h1>
+  <div class="win term small" data-in=".8">
+    <div class="bar">/etc/pacman.conf</div>
+<pre><span class="p">[kriss]</span>
+Server = https://github.com/krazetech/
+         krissos/releases/download/repo-x86_64</pre>
+  </div>
+  <p class="sub" data-in="1.6" style="font-size:2.6rem">Built in CI. Published on GitHub Releases.<br><span class="mono" style="font-size:2.2rem">7C92 AE8B 599A F813 2166 6CA3 1317 AA31 B21C 5F87</span></p>
+</section>
+
+<!-- 14 close -->
+<section class="scene hero" data-start="73" data-end="78" data-wall="1">
+  <div class="logo" data-in=".3">KrissOS <em>110</em></div>
+  <p class="sub" data-in="1.2"><b>Work. Play. Think.</b></p>
+  <p class="sub mono" data-in="2" style="font-size:2.8rem">github.com/krazetech/krissos</p>
+</section>
+
+<script>
+const DURATION = 78;
+const clamp = x => Math.min(1, Math.max(0, x));
+const ease = p => 1 - Math.pow(1 - p, 4);           // quart out: fast in, long settle
+const inout = p => p < .5 ? 8 * p ** 4 : 1 - (-2 * p + 2) ** 4 / 2;
+const scenes = [...document.querySelectorAll('.scene')].map(el => ({
+  el, start: +el.dataset.start, end: +el.dataset.end, wall: +(el.dataset.wall || 0),
+}));
+for (const t of document.querySelectorAll('[data-type]')) t.dataset.full = t.textContent;
+
+// Per-scene extras that the generic data-in / data-at / data-type attributes can't express.
+const hooks = {
+  tune(el, t) {
+    const pills = el.querySelectorAll('.pills span'), hl = el.querySelector('.hl');
+    const a = pills[1], b = pills[0], p = inout(clamp((t - 2.4) / .5));
+    hl.style.left = a.offsetLeft + (b.offsetLeft - a.offsetLeft) * p + 'px';
+    hl.style.width = a.offsetWidth + (b.offsetWidth - a.offsetWidth) * p + 'px';
+    pills.forEach(s => s.classList.toggle('on', s === (p > .5 ? b : a)));
+  },
+  snap(el, t) {
+    const sel = t < 2 ? 0 : t < 2.5 ? 1 : 2;
+    el.querySelectorAll('.e').forEach((e, i) => e.classList.toggle('sel', i === sel));
+  },
+  sb(el, t) {
+    const [shield, tick] = el.querySelectorAll('path');
+    shield.style.strokeDasharray = tick.style.strokeDasharray = 1;
+    shield.style.strokeDashoffset = 1 - inout(clamp((t - .2) / 1.2));
+    tick.style.strokeDashoffset = 1 - ease(clamp((t - 1.2) / .5));
+  },
+};
+
+function seek(T) {
+  let wall = 0;
+  for (const s of scenes) {
+    const t = T - s.start, len = s.end - s.start;
+    const on = t >= 0 && t < len;
+    s.el.style.display = on ? 'flex' : 'none';
+    if (!on) continue;
+    const out = ease(clamp((t - (len - .45)) / .45));
+    s.el.style.opacity = 1 - out;
+    s.el.style.transform = `scale(${1 - .03 * out})`;
+    s.el.style.filter = out ? `blur(${out * 8}px)` : '';
+    wall += s.wall * clamp(t / .8) * (1 - out);
+    for (const e of s.el.querySelectorAll('[data-in]')) {
+      const p = ease(clamp((t - e.dataset.in) / .7));
+      e.style.opacity = p;
+      if (e.id !== 'dock') e.style.transform = `translateY(${(1 - p) * 2.4}rem)`;
+      else e.style.transform = `translate(-50%, ${(1 - p) * 2.4}rem)`;
+      e.style.filter = p < 1 ? `blur(${(1 - p) * 10}px)` : '';
+    }
+    for (const e of s.el.querySelectorAll('[data-at]')) e.style.visibility = t >= e.dataset.at ? 'visible' : 'hidden';
+    for (const e of s.el.querySelectorAll('[data-type]')) {
+      const full = e.dataset.full, n = Math.floor((t - e.dataset.type) * 24);   // 24 chars/s
+      e.textContent = full.slice(0, clamp(n / full.length) * full.length);
+      e.classList.toggle('typing', n >= 0 && n < full.length + 6);
+    }
+    hooks[s.el.id]?.(s.el, t);
+  }
+  const w = document.getElementById('wall');
+  w.style.opacity = wall;
+  w.style.transform = `scale(${1.08 - .08 * T / DURATION})`;   // slow push-in across the film
+}
+seek(+(location.hash.slice(1) || 0));   // open index.html#12 to preview a moment
+</script>
+</body>
+</html>

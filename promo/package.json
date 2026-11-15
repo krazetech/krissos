@@ -1,0 +1,8 @@
+{
+  "name": "krissos-promo",
+  "private": true,
+  "license": "GPL-3.0-or-later",
+  "dependencies": {
+    "puppeteer-core": "^24.43.1"
+  }
+}
