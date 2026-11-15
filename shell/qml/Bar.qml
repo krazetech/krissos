@@ -187,7 +187,7 @@ PanelWindow {
             Column {
                 Layout.leftMargin: 4
                 SystemClock { id: clock; precision: SystemClock.Minutes }
-                Text {
+                RollingText {
                     anchors.right: parent.right
                     text: Qt.formatDateTime(clock.date, "HH:mm")
                     color: Theme.fg
