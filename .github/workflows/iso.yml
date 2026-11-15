@@ -33,6 +33,7 @@ jobs:
 
       # mkarchiso needs mounts, so the container must be privileged.
       - name: Build ISO
+        id: build
         run: |
           mkdir -p out
           sudo docker run --rm --privileged -v "$PWD:/src" -v "$RUNNER_TEMP:/work" archlinux:latest \
@@ -85,6 +86,7 @@ jobs:
 
       # Unattended install onto a QEMU disk with the installer's own scripts, then boot it.
       - name: Install test
+        if: always() && steps.build.outcome == 'success'
         run: |
           sudo rm -rf "$RUNNER_TEMP"/{mkarchiso,profile,src,kriss-local,logo}
           df -h /
@@ -100,7 +102,9 @@ jobs:
             install-test/*.png
           if-no-files-found: ignore
 
+      # Also when a test fails, so the ISO can be tried by hand.
       - name: Upload ISO
+        if: always() && steps.build.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: krissos-iso
