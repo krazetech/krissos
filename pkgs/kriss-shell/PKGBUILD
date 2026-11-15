@@ -9,7 +9,8 @@ license=('GPL-3.0-or-later')
 depends=('cosmic-comp' 'quickshell' 'python-pywayland' 'glib2' 'dbus'
          'grim' 'slurp' 'wl-clipboard' 'xdg-user-dirs' 'brightnessctl')
 makedepends=('python' 'python-pywayland' 'wayland' 'wayland-protocols')
-optdepends=('networkmanager: network status and Wi-Fi in quick settings'
+optdepends=('greetd: the KrissOS login screen'
+            'networkmanager: network status and Wi-Fi in quick settings'
             'bluez: Bluetooth in quick settings'
             'libnotify: a notification after a screenshot'
             'cosmic-files: the file manager Windows+E opens'

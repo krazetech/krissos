@@ -6,6 +6,7 @@
 #   kriss-shell notifications
 #                          open or close the notification list (Windows+N)
 #   kriss-shell lock       lock the screen (Windows+L)
+#   kriss-shell greeter    the login screen, which greetd runs (see shell/README.md)
 #   kriss-shell desktop    show the desktop, or bring the windows back (Windows+D)
 #   kriss-shell screenshot [region]
 #                          the whole screen (Print Screen) or a dragged region
@@ -45,6 +46,16 @@ screenshot)
     *) title="Screenshot saved" body="${file##*/} is also on the clipboard." ;;
     esac
     notify-send -a Screenshot -i "$file" "$title" "$body" 2>/dev/null
+    ;;
+greeter)
+    # greetd's greeter user has no home, and cosmic-comp keeps running after its command
+    # exits, so give it one under the runtime dir and stop cosmic-comp once the login
+    # screen hands over to the session.
+    set -a; . /etc/locale.conf 2>/dev/null; set +a
+    export HOME="$XDG_RUNTIME_DIR/kriss-greeter"
+    mkdir -p "$HOME"
+    # shellcheck disable=SC2016 # $1 and $PPID belong to the inner shell
+    exec cosmic-comp sh -c 'qs -p "$1"; kill "$PPID"' sh "$qml/greeter.qml"
     ;;
 --inside)
     # The shell inside a running cosmic-comp. Also how to run it nested for development.
@@ -98,7 +109,7 @@ screenshot)
     wait "$comp"
     ;;
 *)
-    echo "usage: kriss-shell [launcher|quick|notifications|lock|desktop|screenshot [region]]" >&2
+    echo "usage: kriss-shell [launcher|quick|notifications|lock|desktop|screenshot [region]|greeter]" >&2
     exit 2
     ;;
 esac

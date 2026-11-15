@@ -11,7 +11,7 @@ quick settings, notifications and a lock screen, written in QML for [Quickshell]
 | `i18n-check` | Checks every shell string has a translation; `--list` prints them all |
 | `kriss-shell-toplevels` | Python helper that lists open windows (and the screen each is on) and focuses, minimizes or closes them. Quickshell can't read windows from cosmic-comp directly |
 | `protocols/` | COSMIC protocol files the helper's bindings are generated from |
-| `session/kriss-shell` | Starts the session, and handles the commands the shortcuts below run |
+| `session/kriss-shell` | Starts the session and the login screen, and handles the commands the shortcuts below run |
 | `cosmic/` | Defaults copied into `~/.config/cosmic` on first start: the shortcuts below, and the Sky Cyan ring on the focused window. Existing user values are left alone |
 | `mockup/index.html` | The approved concept |
 
@@ -56,6 +56,22 @@ gsettings set org.gnome.desktop.interface color-scheme default
 ```
 
 The last one switches to the light variant; `prefer-dark` switches back.
+
+## Login screen
+
+`qml/greeter.qml` is the login screen. It looks like the lock screen, lists other users at the
+bottom left and the desktop to start at the bottom right. [greetd](https://sr.ht/~kennylevinsen/greetd/)
+runs it on cosmic-comp. To use it, put this in `/etc/greetd/config.toml` and enable `greetd`
+in place of SDDM:
+
+```toml
+[terminal]
+vt = 1
+
+[default_session]
+command = "kriss-shell greeter"
+user = "greeter"
+```
 
 ## Settings
 
