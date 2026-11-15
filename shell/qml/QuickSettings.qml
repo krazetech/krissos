@@ -439,12 +439,17 @@ PanelWindow {
                 border.color: Theme.accent
             }
         }
-        Text {
+        // Right-aligned in a fixed width, so the slider doesn't shift as the digits change.
+        Item {
             Layout.preferredWidth: 34
-            horizontalAlignment: Text.AlignRight
-            text: Math.round(sl.value * 100)
-            color: Theme.soft
-            font { family: Theme.sans; pixelSize: 12; weight: Font.DemiBold; features: { "tnum": 1 } }
+            implicitHeight: pct.height
+            RollingText {
+                id: pct
+                anchors.right: parent.right
+                text: Math.round(sl.value * 100)
+                color: Theme.soft
+                font { family: Theme.sans; pixelSize: 12; weight: Font.DemiBold; features: { "tnum": 1 } }
+            }
         }
         MouseArea {
             visible: sl.list !== ""

@@ -20,7 +20,7 @@ Row {
             color: bat.dev.percentage < 0.15 ? Theme.red : Theme.fg
         }
     }
-    Text {
+    RollingText {
         anchors.verticalCenter: parent.verticalCenter
         text: Math.round(bat.dev.percentage * 100) + "%"
         color: Theme.fg
