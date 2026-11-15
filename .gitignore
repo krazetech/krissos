@@ -1,0 +1,11 @@
+# makepkg output
+pkgs/*/src/
+pkgs/*/pkg/
+*.pkg.tar.*
+*.log
+out/
+
+# local working notes
+NOTES.md
+.DS_Store
+.impeccable/

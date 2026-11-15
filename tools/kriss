@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# kriss: KrissOS system tool.
+set -euo pipefail
+
+readonly KRISS_VERSION="0.1.0"
+readonly OS_RELEASE="${KRISS_OS_RELEASE:-/etc/os-release}"
+
+die() { printf 'kriss: %s\n' "$*" >&2; exit 2; }
+
+# os_field KEY [DEFAULT]: read a value from os-release without sourcing it.
+os_field() {
+  local value=""
+  if [[ -r $OS_RELEASE ]]; then
+    value=$(sed -n "s/^$1=//p" "$OS_RELEASE" | tr -d '"')
+  fi
+  printf '%s' "${value:-${2:-}}"
+}
+
+# The dynamic loader reports which x86-64 levels the CPU supports (glibc >= 2.33).
+cpu_level() {
+  local ld=/usr/lib/ld-linux-x86-64.so.2
+  if [[ ! -x $ld ]]; then
+    uname -m
+  elif "$ld" --help 2>/dev/null | grep -q 'x86-64-v3 (supported'; then
+    echo x86-64-v3
+  else
+    echo x86-64
+  fi
+}
+
+row() { printf '  %-9s %s\n' "$1" "$2"; }
+
+cmd_info() {
+  row os "$(os_field PRETTY_NAME "$(uname -s)")"
+  row kernel "$(uname -r) · $(cpu_level)"
+  row desktop "${XDG_CURRENT_DESKTOP:-none}"
+  if command -v powerprofilesctl >/dev/null; then
+    row profile "$(powerprofilesctl get 2>/dev/null || echo unknown)"
+  fi
+}
+
+cmd_version() {
+  printf 'kriss %s\n%s\n' "$KRISS_VERSION" "$(os_field PRETTY_NAME 'not running on KrissOS')"
+}
+
+cmd_kapcai() {
+  cat <<'EOF'
+
+                 __
+            ____/ _\___
+      _____/___________\___
+     (  @  )           (  @  )
+      `---'             `---'
+EOF
+  printf '   Modenas Kriss 110 · %s\n\n' "$(os_field PRETTY_NAME KrissOS)"
+}
+
+cmd_help() {
+  cat <<'EOF'
+Usage: kriss [command]
+
+Commands:
+  info       Show a summary of this system (default)
+  version    Show the kriss and KrissOS versions
+  help       Show this help
+EOF
+}
+
+main() {
+  case "${1:-info}" in
+    info) cmd_info ;;
+    version | --version | -V) cmd_version ;;
+    help | --help | -h) cmd_help ;;
+    --kapcai) cmd_kapcai ;;
+    *) die "unknown command '$1'. Run 'kriss help'." ;;
+  esac
+}
+
+main "$@"

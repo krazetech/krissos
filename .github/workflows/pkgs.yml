@@ -1,0 +1,75 @@
+name: packages
+
+on:
+  push:
+    branches: [main]
+    paths: ['pkgs/**', 'tools/**', '.github/workflows/pkgs.yml']
+  pull_request:
+    paths: ['pkgs/**', 'tools/**', '.github/workflows/pkgs.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pkgs-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    env:
+      RELEASE_TAG: repo-x86_64
+    steps:
+      - name: Install build tools
+        run: pacman -Syu --noconfirm --needed git github-cli shellcheck
+
+      - uses: actions/checkout@v4
+
+      - name: Lint tools
+        run: shellcheck tools/*
+
+      # makepkg refuses to run as root.
+      - name: Build packages
+        run: |
+          useradd -m builder
+          echo 'builder ALL=(ALL) NOPASSWD: /usr/bin/pacman' > /etc/sudoers.d/builder
+          chown -R builder "$GITHUB_WORKSPACE"
+          mkdir -p out && chown builder out
+          for dir in pkgs/*/; do
+            echo "::group::$dir"
+            su builder -c "cd '$dir' && PKGDEST='$GITHUB_WORKSPACE/out' makepkg --syncdeps --noconfirm --cleanbuild"
+            echo "::endgroup::"
+          done
+          ls -l out
+
+      # ponytail: every run rebuilds every package and replaces the whole repo db.
+      # Fine while [kriss] is small; switch to merging into the published db once the
+      # kernel gets its own workflow.
+      - name: Sign and publish
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          KRISS_GPG_KEY: ${{ secrets.KRISS_GPG_KEY }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -z "$KRISS_GPG_KEY" ]; then
+            echo "::warning::KRISS_GPG_KEY is not set; packages were built but not published."
+            exit 0
+          fi
+          printf '%s\n' "$KRISS_GPG_KEY" | gpg --batch --import
+          cd out
+          for pkg in *.pkg.tar.zst; do
+            gpg --batch --yes --detach-sign "$pkg"
+          done
+          repo-add --sign kriss.db.tar.zst ./*.pkg.tar.zst
+          # Release assets cannot be symlinks; pacman fetches kriss.db and kriss.files.
+          for f in kriss.db kriss.files; do
+            cp --remove-destination "$f.tar.zst" "$f"
+            cp --remove-destination "$f.tar.zst.sig" "$f.sig"
+          done
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          gh release view "$RELEASE_TAG" >/dev/null 2>&1 \
+            || gh release create "$RELEASE_TAG" --title 'KrissOS package repo (x86_64)' \
+                 --notes 'Signed [kriss] pacman repository. Updated by CI.' --latest=false
+          gh release upload "$RELEASE_TAG" ./* --clobber

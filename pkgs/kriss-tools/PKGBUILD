@@ -1,0 +1,15 @@
+# Maintainer: Kraze Tech
+pkgname=kriss-tools
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='KrissOS system tools'
+arch=('any')
+url='https://github.com/krissos/krissos'
+license=('GPL-3.0-or-later')
+depends=('bash' 'glibc')
+optdepends=('power-profiles-daemon: show the active power profile')
+
+# Sources live in this monorepo, so package straight from tools/.
+package() {
+  install -Dm755 "$startdir/../../tools/kriss" "$pkgdir/usr/bin/kriss"
+}
