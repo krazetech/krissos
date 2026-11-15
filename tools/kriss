@@ -102,8 +102,8 @@ cmd_tune() {
   command -v powerprofilesctl >/dev/null || die "tune needs power-profiles-daemon."
   powerprofilesctl set "$ppd"
   if command -v scxctl >/dev/null; then
-    # switch fails when no scheduler runs yet; start covers that and reports real errors.
-    scxctl switch -s "$sched" -m "$mode" 2>/dev/null || scxctl start -s "$sched" -m "$mode"
+    # switch also starts a scheduler when none is running.
+    scxctl switch -s "$sched" -m "$mode"
   else
     echo "kriss: scx-tools is not installed; only the power profile was set." >&2
   fi
