@@ -1,0 +1,56 @@
+# Kernel: iso/build.sh swaps this line for the [kriss] kernel.
+linux
+
+# Live boot
+base
+mkinitcpio
+mkinitcpio-archiso
+syslinux
+memtest86+
+memtest86+-efi
+amd-ucode
+intel-ucode
+linux-firmware
+sof-firmware
+
+# KrissOS
+kriss-keyring
+kriss-settings
+kriss-theme
+kriss-tools
+
+# KDE Plasma (Wayland only)
+plasma-desktop
+sddm
+breeze-gtk
+xdg-desktop-portal-kde
+plasma-nm
+plasma-pa
+powerdevil
+bluedevil
+kscreen
+konsole
+dolphin
+kate
+firefox
+noto-fonts
+noto-fonts-emoji
+qt6-multimedia-ffmpeg
+pipewire
+pipewire-alsa
+pipewire-pulse
+wireplumber
+
+# System
+networkmanager
+bluez
+sudo
+nano
+man-db
+arch-install-scripts
+btrfs-progs
+dosfstools
+e2fsprogs
+exfatprogs
+gptfdisk
+efibootmgr

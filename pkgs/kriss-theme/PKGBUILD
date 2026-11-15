@@ -1,8 +1,8 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-theme
-pkgver=0.2.0
+pkgver=0.3.0
 pkgrel=1
-pkgdesc='KrissOS colours, fonts, wallpaper, Plymouth and Limine theme'
+pkgdesc='KrissOS colours, fonts, wallpaper, Plasma, SDDM, Plymouth and Limine theme'
 arch=('any')
 url='https://github.com/krazetech/krissos'
 license=('GPL-3.0-or-later')
@@ -12,13 +12,18 @@ makedepends=('python' 'librsvg')
 # [kriss] carries a pinned build of it. Without it the UI falls back to the next sans.
 optdepends=('ttf-figtree: the KrissOS UI font (AUR)'
             'plymouth: boot splash'
-            'limine: boot menu')
+            'limine: boot menu'
+            'plasma-desktop: the KrissOS Plasma colour scheme and global theme'
+            'sddm: the KrissOS login screen background')
 
 # Sources live in this monorepo: every file is rendered from theme/tokens.json.
 _theme="$startdir/../../theme"
 
 build() {
   python "$_theme/generate.py" "$_theme/templates" "$srcdir/root"
+  # Plymouth cannot load SVG.
+  rsvg-convert -w 128 -h 128 -o "$srcdir/root/usr/share/plymouth/themes/kriss/logo.png" \
+    "$srcdir/root/usr/share/pixmaps/krissos.svg"
 
   # Plasma picks the closest WxH.png and switches images/ <-> images_dark/ with the
   # colour scheme. The SVGs crop to fill (preserveAspectRatio slice), so setting
