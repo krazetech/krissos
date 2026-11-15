@@ -1,12 +1,12 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-tools
-pkgver=0.1.0
+pkgver=0.2.0
 pkgrel=1
 pkgdesc='KrissOS system tools'
 arch=('any')
 url='https://github.com/krazetech/krissos'
 license=('GPL-3.0-or-later')
-depends=('bash' 'glibc')
+depends=('bash' 'coreutils' 'glibc' 'grep' 'sed')
 optdepends=('power-profiles-daemon: show the active power profile')
 
 # Sources live in this monorepo, so package straight from tools/.

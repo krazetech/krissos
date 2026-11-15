@@ -1,0 +1,9 @@
+# KrissOS Plasma defaults. The build appends the KrissOS colour scheme below, because
+# KDE apps read colours from kdeglobals, not from the scheme file it names.
+[Icons]
+Theme={{icon_theme}}
+
+[KDE]
+LookAndFeelPackage=org.krissos.desktop
+widgetStyle=Breeze
+

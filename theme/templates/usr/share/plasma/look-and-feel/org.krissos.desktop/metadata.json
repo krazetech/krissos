@@ -1,0 +1,12 @@
+{
+  "KPackageStructure": "Plasma/LookAndFeel",
+  "KPlugin": {
+    "Id": "org.krissos.desktop",
+    "Name": "KrissOS",
+    "Description": "KrissOS colours, icons and wallpaper on Breeze",
+    "Authors": [{ "Name": "Kraze Tech" }],
+    "License": "GPL-3.0-or-later",
+    "Website": "https://github.com/krazetech/krissos"
+  },
+  "X-Plasma-APIVersion": "2"
+}

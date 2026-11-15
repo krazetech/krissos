@@ -2,8 +2,10 @@
 # kriss: KrissOS system tool.
 set -euo pipefail
 
-readonly KRISS_VERSION="0.1.0"
+readonly KRISS_VERSION="0.2.0"
 readonly OS_RELEASE="${KRISS_OS_RELEASE:-/etc/os-release}"
+# Overridable so tests can point hwcheck at fixture trees.
+readonly PROC="${KRISS_PROC:-/proc}" SYS="${KRISS_SYS:-/sys}" DEV="${KRISS_DEV:-/dev}"
 
 die() { printf 'kriss: %s\n' "$*" >&2; exit 2; }
 
@@ -39,6 +41,42 @@ cmd_info() {
   fi
 }
 
+# GPU vendors from the PCI ids of every DRM card, as a JSON array.
+gpu_vendors() {
+  local f out=""
+  for f in "$SYS"/class/drm/card[0-9]*/device/vendor; do
+    [[ -r $f ]] || continue
+    case "$(cat "$f")" in
+      0x10de) out+='"nvidia",' ;;
+      0x1002) out+='"amd",' ;;
+      0x8086) out+='"intel",' ;;
+      *) out+='"other",' ;;
+    esac
+  done
+  # ponytail: hybrid laptops expose one card per GPU; duplicates are dropped by sort -u.
+  printf '[%s]' "$(tr ',' '\n' <<<"$out" | sed '/^$/d' | sort -u | paste -sd, -)"
+}
+
+# Hardware facts as JSON, read without root. kriss-welcome uses winboat_ok to
+# decide whether to offer WinBoat (a Windows VM): about 16 GB RAM, CPU
+# virtualisation, /dev/kvm and enough cores.
+cmd_hwcheck() {
+  local ram_mb cores virt="" kvm=false ok=true reasons=""
+  ram_mb=$(($(sed -n 's/^MemTotal: *\([0-9]*\) kB/\1/p' "$PROC/meminfo") / 1024))
+  cores=$(grep -c '^processor' "$PROC/cpuinfo" || true)
+  if grep -qw vmx "$PROC/cpuinfo"; then virt=vmx; elif grep -qw svm "$PROC/cpuinfo"; then virt=svm; fi
+  [[ -e $DEV/kvm ]] && kvm=true
+  # ponytail: 14 GiB, because a 16 GB PC reports less after firmware and iGPU
+  # reservations. 4 threads is WinBoat's own minimum.
+  ((ram_mb >= 14336)) || reasons+='"ram",'
+  [[ -n $virt ]] || reasons+='"virt",'
+  [[ $kvm == true ]] || reasons+='"kvm",'
+  ((cores >= 4)) || reasons+='"cores",'
+  [[ -z $reasons ]] || ok=false
+  printf '{"ram_mb": %d, "cores": %d, "virt": "%s", "kvm": %s, "gpus": %s, "winboat_ok": %s, "reasons": [%s]}\n' \
+    "$ram_mb" "$cores" "$virt" "$kvm" "$(gpu_vendors)" "$ok" "${reasons%,}"
+}
+
 cmd_version() {
   printf 'kriss %s\n%s\n' "$KRISS_VERSION" "$(os_field PRETTY_NAME 'not running on KrissOS')"
 }
@@ -62,6 +100,7 @@ Usage: kriss [command]
 Commands:
   info       Show a summary of this system (default)
   version    Show the kriss and KrissOS versions
+  hwcheck    Print hardware facts (RAM, CPU, GPU, VM support) as JSON
   help       Show this help
 EOF
 }
@@ -70,6 +109,7 @@ main() {
   case "${1:-info}" in
     info) cmd_info ;;
     version | --version | -V) cmd_version ;;
+    hwcheck) cmd_hwcheck ;;
     help | --help | -h) cmd_help ;;
     --kapcai) cmd_kapcai ;;
     *) die "unknown command '$1'. Run 'kriss help'." ;;

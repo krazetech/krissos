@@ -73,7 +73,8 @@ krissos/
     repo.
   - `kernel.yml`: runs on a schedule, checks for new CachyOS kernel patch releases, opens a
     version-bump PR, and builds both kernels.
-  - `iso.yml`: builds the live ISO on every tag (`110`, `115`, …) and nightly.
+  - `iso.yml`: builds the live ISO on every tag (`110`, `115`, …), nightly, and on PRs that
+    touch `iso/`, then boots it in QEMU until Plasma starts. Tags attach the ISO to a release.
 - **Repo hosting:** the pacman database and packages are uploaded as assets to a GitHub
   Release, and pacman fetches them over plain HTTPS. No server to run.
 - **Signing:** one GPG key, stored only in a GitHub Actions secret. Its public half ships in
@@ -81,11 +82,17 @@ krissos/
 
 ## 5. Desktop
 
+KDE first: the first ISO and the installer ship stock Plasma with the KrissOS theme, so
+the shell does not block them. KrissOS Shell becomes the default at `110`.
+
 | Option | What the user gets |
 |---|---|
-| **KrissOS Shell** (default) | Our own shell on `cosmic-comp`, fully themed |
-| KDE Plasma | Stock Plasma plus the KrissOS wallpapers. No full theme yet |
+| **KDE Plasma** (default until `110`) | Stock Plasma with the KrissOS colour scheme, global theme, wallpaper and SDDM look |
+| KrissOS Shell (default from `110`) | Our own shell on `cosmic-comp`, fully themed |
 
+- **Plasma theming:** `kriss-theme` ships the colour scheme, a look-and-feel package and
+  the wallpaper, all generated from `theme/tokens.json`. `kriss-settings` makes them the
+  default through `/etc/xdg` (kdeglobals, plasmarc, kcminputrc) and `/etc/sddm.conf.d`.
 - **KrissOS Shell:** runs as Wayland layer-shell clients on top of `cosmic-comp`. We don't fork
   the compositor, which keeps the maintenance cost low.
   - **Phase 1 test:** confirm that cosmic-comp's layer-shell and protocol support covers a
@@ -111,7 +118,7 @@ krissos/
 |---|---|
 | `bg` | `#000000` Obsidian |
 | `surface` | `#0B0D0F` |
-| `accent` | `#29B2E8` Sky Cyan (approximate; to confirm against the source logo) |
+| `accent` | `#24B1E6` Sky Cyan (sampled from the Kraze Tech logo) |
 | `fg` | `#E6EDF2` |
 | `muted` | `#6B7680` |
 
@@ -120,7 +127,8 @@ krissos/
   One bottom bar holds the launcher, apps and status. Sky Cyan is the only accent; no neon.
 - **Type:** Figtree + JetBrains Mono (OFL) proposed.
 - **Reference:** the concept mockup at https://claude.ai/artifact/Cye2G1TUoXHAGoNX3typoD.
-- **Logo:** the logo is redrawn as a vector file. All assets are generated from these tokens
+- **Logo:** the Kraze Tech emblem, a keris hilt on a Sky Cyan disc, redrawn as a vector at
+  `theme/templates/usr/share/pixmaps/krissos.svg`. All assets are generated from these tokens
   so a change in one place updates everything.
 
 ## 7. Windows apps
@@ -186,20 +194,21 @@ kriss-vm revert         # restore every file `kriss-vm` changed from its backups
 
 ## 11. Open decisions
 
-1. Final accent hex and the logo vector redraw.
-2. Font: confirm Figtree.
-3. License for the tooling: GPL-3.0-or-later (assumed) or MIT.
-4. ~~Results of the cosmic-comp layer-shell test.~~ Passed; see §5.
+1. Font: confirm Figtree.
+2. License for the tooling: GPL-3.0-or-later (assumed) or MIT.
+3. ~~Results of the cosmic-comp layer-shell test.~~ Passed; see §5.
 
 ## 12. Roadmap to `110`
 
 0. Repo, CI skeleton, signing key, `[kriss]` repo on GitHub Releases.
-1. cosmic-comp shell test. `linux-kriss` builds in CI and boots on the dev desktop.
-2. `kriss-theme`, `kriss-settings`, and an ISO that boots to the KrissOS Shell.
-3. Calamares installer with the desktop picker, btrfs + snapper, and sbctl.
+1. `linux-kriss` builds in CI and boots on the dev desktop.
+2. `kriss-theme`, `kriss-settings`, and a live ISO that boots to KDE Plasma with the theme.
+3. Calamares installer for Plasma, with btrfs + snapper and sbctl.
 4. `kriss-tune` and the gaming metapackage.
 5. `kriss-vm` (desktop first), then the laptop paths for systems with no MUX switch.
 6. WinBoat tier and the AI setup.
+7. `110`: the cosmic-comp shell test, then KrissOS Shell as the default desktop, with
+   Plasma kept as the installer's alternative.
 
 ## 13. Later: Apple Silicon image
 
@@ -211,3 +220,43 @@ A separate image, built after `110`, on Arch Linux ARM with the Asahi tooling.
   FEX + muvm.
 
 Shared code stays architecture-neutral from day one so this image costs as little as possible.
+
+## 14. Built for Windows switchers
+
+KrissOS's first audience is people leaving Windows: gamers, everyday home users, students and
+office users, and creators and AI tinkerers. Every default is checked against one question:
+*would someone fresh from Windows get stuck here?*
+
+| Area | Decision |
+|---|---|
+| Desktop | KDE Plasma with Windows habits in the KrissOS look: bottom taskbar, Start-style launcher, close button top-right, the Win key opens the menu. Not a Windows 11 clone |
+| Install | Dual-boot alongside Windows by default. The installer resizes Windows safely, detects BitLocker and stops with clear steps if it's on, and keeps Windows in the boot menu |
+| NVIDIA | The installer detects the GPU and installs the right driver (open modules on Turing and newer), so games work on first boot |
+| Apps | Discover with Flathub on by default, pacman underneath |
+| Updates | A tray notice; one click updates, after an automatic btrfs snapshot, so a bad update rolls back from the boot menu |
+| Windows apps | WinBoat up front, adapted to the hardware (see `kriss-welcome`). The Windows licence follows WinBoat's own approach; KrissOS adds no licence step |
+| Anti-cheat | Said upfront: gamers check their games before switching, on the website and in `kriss-welcome` |
+| Language | English and Bahasa Melayu from day one: installer, `kriss-welcome`, website |
+
+### `kriss-welcome`: the first-boot app
+
+A new `[kriss]` package. It opens on first login and stays in the menu.
+
+1. **Bring your apps.** The user picks the Windows apps they use. Each gets one answer: a native
+   alternative, Wine/Proton, or WinBoat. A hardware check decides what is offered: WinBoat only
+   when the PC can run a Windows VM well (about 16 GB RAM, CPU virtualisation on, enough cores);
+   otherwise Wine/Proton and native apps.
+2. **Game checker.** Search a game and see whether it runs, and whether its anti-cheat blocks
+   Linux. Data from a public anti-cheat database and ProtonDB ratings (licences to confirm),
+   bundled and refreshed with package updates. The website uses the same data.
+3. **Copy from Windows.** On dual-boot systems, copy Documents, Pictures, Desktop, Music, Videos
+   and browser bookmarks from the Windows partition. The partition is mounted read-only and never
+   written to; BitLocker-locked partitions are skipped with an explanation.
+4. **Drivers and extras.** Codecs, printers, the gaming pack (`kriss-meta-gaming`), and the local
+   AI setup (Ollama plus the AI CLIs from §9).
+
+- **Stack:** Qt/QML (Kirigami) to match KDE. Every system change goes through `kriss` / `pkexec`
+  commands, so the app holds no root logic of its own.
+- **Strings:** every string is translatable from the start, with English and Bahasa Melayu shipped.
+- **Roadmap:** `kriss-welcome` lands with the installer (§12 step 3); the game checker and
+  Bring your apps go first, because they decide whether people switch at all.

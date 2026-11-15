@@ -1,0 +1,79 @@
+/* KrissOS look for the Calamares window. Rendered from theme/tokens.json.
+   The KrissOS colour scheme in /etc/xdg/kdeglobals already colours the window when
+   Calamares runs with the KDE platform theme; this sheet makes it look the same when
+   it does not (pkexec drops the session environment) and adds the accent buttons.
+   #AARRGGBB colours are fg at low alpha, for borders and raised buttons. */
+
+QWidget { font-family: "{{font_sans}}"; }
+
+#mainApp, #viewManager, #viewManagerStack, QDialog, QMessageBox {
+    background-color: {{surface}};
+    color: {{fg}};
+}
+
+QLabel { color: {{fg}}; }
+QLabel:disabled { color: {{muted}}; }
+
+QLineEdit, QComboBox, QSpinBox, QListView, QTreeView, QTableView, QTextBrowser, QPlainTextEdit {
+    background-color: {{bg}};
+    color: {{fg}};
+    border: 1px solid #29{{fg.hex}};
+    border-radius: 6px;
+    padding: 4px 6px;
+    selection-background-color: {{accent}};
+    selection-color: {{bg}};
+}
+QLineEdit:focus, QComboBox:focus, QListView:focus, QTreeView:focus { border-color: {{accent}}; }
+QComboBox QAbstractItemView { background-color: {{bg}}; color: {{fg}}; }
+
+QPushButton, QToolButton {
+    background-color: #1A{{fg.hex}};
+    color: {{fg}};
+    border: none;
+    border-radius: 6px;
+    padding: 7px 16px;
+}
+QPushButton:hover, QToolButton:hover { background-color: #29{{fg.hex}}; }
+QPushButton:disabled, QToolButton:disabled { color: {{muted}}; }
+
+/* Next / Install is the one accent button. */
+#view-button-next {
+    background-color: {{accent}};
+    color: {{bg}};
+    font-weight: 600;
+}
+#view-button-next:hover { background-color: {{color14}}; }
+#view-button-next:disabled { background-color: #1A{{fg.hex}}; color: {{muted}}; }
+
+QCheckBox, QRadioButton { color: {{fg}}; spacing: 8px; }
+QCheckBox::indicator, QRadioButton::indicator {
+    width: 14px; height: 14px;
+    background-color: {{bg}};
+    border: 1px solid {{muted}};
+}
+QCheckBox::indicator { border-radius: 4px; }
+QRadioButton::indicator { border-radius: 8px; }
+QCheckBox::indicator:checked, QRadioButton::indicator:checked {
+    background-color: {{accent}};
+    border-color: {{accent}};
+}
+
+QProgressBar {
+    background-color: {{bg}};
+    color: {{fg}};
+    border: none;
+    border-radius: 4px;
+    text-align: center;
+}
+QProgressBar::chunk { background-color: {{accent}}; border-radius: 4px; }
+
+/* The install step: slideshow and log share a tab widget with no visible tabs. */
+QTabWidget::pane { border: none; }
+
+QScrollArea, #scrollAreaWidgetContents { background-color: transparent; }
+
+/* The step list sits straight on the sidebar, no frame. */
+#sidebarMenuApp { background-color: transparent; border: none; }
+
+/* Keep the welcome logo small and calm; it scales to fill whatever is left. */
+#welcomeLogo { margin: 90px; }

@@ -9,6 +9,7 @@ productivity, gaming and local AI. See [ARCHITECTURE.md](ARCHITECTURE.md) for th
 |---|---|
 | `pkgs/` | One PKGBUILD per package in the `[kriss]` repo |
 | `tools/` | Source for `kriss` and the other `kriss-*` tools |
+| `welcome/` | Source for `kriss-welcome`, the first-boot app, and its data |
 | `.github/workflows/` | CI that builds, signs and publishes the repo |
 
 ## Building a package locally
@@ -38,6 +39,30 @@ Then add this to `/etc/pacman.conf`:
 ```ini
 [kriss]
 Server = https://github.com/krazetech/krissos/releases/download/repo-x86_64
+```
+
+## Verify your download
+
+Each release ships the ISO with `sha256sums.txt` and a `.sig` signature for both. Put
+them in one folder, then check the hash:
+
+```bash
+sha256sum -c sha256sums.txt
+```
+
+Then check the signatures. Import the signing key, and make sure `gpg` reports a good
+signature from `7C92AE8B599AF81321666CA31317AA31B21C5F87`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/krazetech/krissos/main/pkgs/kriss-keyring/krissos.gpg | gpg --import
+```
+
+```bash
+gpg --verify sha256sums.txt.sig sha256sums.txt
+```
+
+```bash
+gpg --verify krissos-*.iso.sig krissos-*.iso
 ```
 
 ### Signing key

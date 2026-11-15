@@ -1,0 +1,142 @@
+name: kernel
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  push:
+    branches: [main]
+    paths: ['pkgs/linux-kriss/**', '.github/workflows/kernel.yml']
+  pull_request:
+    paths: ['pkgs/linux-kriss/**', '.github/workflows/kernel.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer commit supersedes a running build of the same ref. The scheduled check has its
+# own group so it never cancels a build on main.
+concurrency:
+  group: kernel-${{ github.event_name == 'schedule' && 'bump' || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Scheduled: open a version-bump PR when CachyOS tags a new kernel patch release.
+  bump:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync with upstream and open a PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tools/ci/kernel-sync.sh
+          if [ -z "$(git status --porcelain)" ]; then
+            exit 0
+          fi
+          tag=$(sed -n 's/^_upstream_tag=//p' pkgs/linux-kriss/PKGBUILD)
+          branch=kernel/$tag
+          if git ls-remote --exit-code origin "refs/heads/$branch" >/dev/null; then
+            echo "$branch already exists; its PR is waiting for review."
+            exit 0
+          fi
+          git config user.name 'KrissOS CI'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -b "$branch"
+          git add pkgs/linux-kriss
+          git commit -m "linux-kriss: update to $tag"
+          git push origin "$branch"
+          gh pr create --base main --head "$branch" --title "linux-kriss: update to $tag" \
+            --body "Automated sync with upstream tag \`$tag\`. Patch credits are in \`pkgs/linux-kriss/SOURCES.md\`. Merge once both kernel builds on this branch are green."
+          # A PR opened with GITHUB_TOKEN does not trigger pull_request workflows, so
+          # start the build of the branch explicitly.
+          gh workflow run kernel.yml --ref "$branch"
+
+  build:
+    if: github.event_name != 'schedule'
+    strategy:
+      fail-fast: false
+      matrix:
+        march: [v3, generic]
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    container:
+      image: archlinux:base-devel
+      volumes: ['/:/host']
+    steps:
+      # A full-config LTO build needs more than the ~14 GB a hosted runner leaves free.
+      # The container shares the host's disk, so drop the preinstalled SDKs.
+      - name: Free disk space
+        run: |
+          rm -rf /host/usr/local/lib/android /host/usr/share/dotnet /host/usr/share/swift \
+            /host/opt/ghc /host/usr/local/.ghcup /host/opt/hostedtoolcache/CodeQL
+          df -h /
+
+      - name: Install build tools
+        run: pacman -Syu --noconfirm --needed git ccache
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ccache-${{ matrix.march }}-${{ github.run_id }}
+          restore-keys: ccache-${{ matrix.march }}-
+
+      # makepkg refuses to run as root.
+      - name: Build linux-kriss (${{ matrix.march }})
+        run: |
+          useradd -m builder
+          echo 'builder ALL=(ALL) NOPASSWD: /usr/bin/pacman' > /etc/sudoers.d/builder
+          mkdir -p out .ccache
+          chown -R builder "$GITHUB_WORKSPACE"
+          sed -i 's/!ccache/ccache/' /etc/makepkg.conf
+          # kernel.org release keys, vendored: key lookups from the runner time out.
+          su builder -c "gpg --import pkgs/linux-kriss/keys/pgp/*.asc"
+          su builder -c "cd pkgs/linux-kriss && _march=${{ matrix.march }} \
+            CCACHE_DIR='$GITHUB_WORKSPACE/.ccache' CCACHE_MAXSIZE=4G \
+            PKGDEST='$GITHUB_WORKSPACE/out' makepkg --syncdeps --noconfirm"
+          ccache --dir .ccache --show-stats | head -n 20
+          ls -l out
+          df -h /
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-kriss-${{ matrix.march }}
+          path: out/*.pkg.tar.zst
+          compression-level: 0
+          retention-days: 7
+
+  publish:
+    needs: build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    permissions:
+      contents: write
+    # Shared with pkgs.yml; see the note there.
+    concurrency:
+      group: repo-x86_64
+      cancel-in-progress: false
+    steps:
+      - name: Install tools
+        run: pacman -Syu --noconfirm --needed git github-cli
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+
+      - name: Sign and publish
+        env:
+          KRISS_GPG_KEY: ${{ secrets.KRISS_GPG_KEY }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: tools/ci/publish.sh out
