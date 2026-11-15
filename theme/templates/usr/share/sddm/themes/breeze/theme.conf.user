@@ -3,3 +3,5 @@
 type=image
 background=/usr/share/backgrounds/kriss/default.svg
 color={{bg}}
+showlogo=shown
+logo=/usr/share/pixmaps/krissos.svg

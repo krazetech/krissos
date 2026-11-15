@@ -26,7 +26,7 @@ cp -a "$here/." "$profile"
 
 # Build the small [kriss] packages from this checkout and put them ahead of the
 # published repo, so an ISO from a branch carries that branch's theme and tools.
-pacman -S --noconfirm --needed base-devel python
+pacman -S --noconfirm --needed base-devel python librsvg
 id builder >/dev/null 2>&1 || useradd -m builder
 src="$work/src" local_repo="$work/kriss-local"
 rm -rf "$src" "$local_repo"
@@ -41,6 +41,15 @@ repo-add "$local_repo/kriss-local.db.tar.zst" "$local_repo"/*.pkg.tar.zst
 # only the published repo.
 sed -i "/^\[kriss\]/i [kriss-local]\nSigLevel = Optional TrustAll\nServer = file://$local_repo\n" \
   "$profile/pacman.conf"
+
+# BIOS boot menu background: the logo above the menu (systemd-boot shows no images).
+python "$here/../theme/generate.py" "$here/../theme/templates/usr/share/pixmaps" "$work/logo"
+{
+  echo '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480"><rect width="640" height="480"/>'
+  echo '<svg x="264" y="24" width="112" height="112" viewBox="0 0 569 569">'
+  sed '1,/<svg /d' "$work/logo/krissos.svg"  # the logo's shapes and its closing </svg>
+  echo '</svg>'
+} | rsvg-convert -o "$profile/syslinux/splash.png"
 
 sed -i "s/^linux\$/$kernel/" "$profile/packages.x86_64"
 sed -i "s/vmlinuz-linux/vmlinuz-$kernel/; s/initramfs-linux\./initramfs-$kernel./" \

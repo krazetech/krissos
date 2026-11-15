@@ -7,7 +7,7 @@ arch=('any')
 url='https://github.com/krazetech/krissos'
 license=('GPL-3.0-or-later')
 depends=('adw-gtk-theme' 'adwaita-cursors' 'papirus-icon-theme' 'qt6ct' 'ttf-jetbrains-mono')
-makedepends=('python')
+makedepends=('python' 'librsvg')
 # ponytail: Figtree is only in the AUR, so it cannot be a hard dependency until
 # [kriss] carries a pinned build of it. Without it the UI falls back to the next sans.
 optdepends=('ttf-figtree: the KrissOS UI font (AUR)'
@@ -21,6 +21,9 @@ _theme="$startdir/../../theme"
 
 build() {
   python "$_theme/generate.py" "$_theme/templates" "$srcdir/root"
+  # Plymouth cannot load SVG.
+  rsvg-convert -w 128 -h 128 -o "$srcdir/root/usr/share/plymouth/themes/kriss/logo.png" \
+    "$srcdir/root/usr/share/pixmaps/krissos.svg"
 }
 
 check() {
