@@ -1,0 +1,15 @@
+# filesystem owns /usr/lib/os-release (/etc/os-release links to it). Put KrissOS back
+# whenever filesystem or kriss-settings is installed or upgraded.
+# ponytail: `pacman -Qkk filesystem` reports the file as modified; a forked filesystem
+# package would avoid that, at the cost of tracking Arch's every release.
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Path
+Target = usr/lib/os-release
+Target = usr/share/kriss/os-release
+
+[Action]
+Description = Setting KrissOS os-release...
+When = PostTransaction
+Exec = /usr/bin/install -m644 /usr/share/kriss/os-release /usr/lib/os-release

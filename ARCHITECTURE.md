@@ -73,7 +73,8 @@ krissos/
     repo.
   - `kernel.yml`: runs on a schedule, checks for new CachyOS kernel patch releases, opens a
     version-bump PR, and builds both kernels.
-  - `iso.yml`: builds the live ISO on every tag (`110`, `115`, …) and nightly.
+  - `iso.yml`: builds the live ISO on every tag (`110`, `115`, …), nightly, and on PRs that
+    touch `iso/`, then boots it in QEMU until Plasma starts. Tags attach the ISO to a release.
 - **Repo hosting:** the pacman database and packages are uploaded as assets to a GitHub
   Release, and pacman fetches them over plain HTTPS. No server to run.
 - **Signing:** one GPG key, stored only in a GitHub Actions secret. Its public half ships in
@@ -81,11 +82,17 @@ krissos/
 
 ## 5. Desktop
 
+KDE first: the first ISO and the installer ship stock Plasma with the KrissOS theme, so
+the shell does not block them. KrissOS Shell becomes the default at `110`.
+
 | Option | What the user gets |
 |---|---|
-| **KrissOS Shell** (default) | Our own shell on `cosmic-comp`, fully themed |
-| KDE Plasma | Stock Plasma plus the KrissOS wallpapers. No full theme yet |
+| **KDE Plasma** (default until `110`) | Stock Plasma with the KrissOS colour scheme, global theme, wallpaper and SDDM look |
+| KrissOS Shell (default from `110`) | Our own shell on `cosmic-comp`, fully themed |
 
+- **Plasma theming:** `kriss-theme` ships the colour scheme, a look-and-feel package and
+  the wallpaper, all generated from `theme/tokens.json`. `kriss-settings` makes them the
+  default through `/etc/xdg` (kdeglobals, plasmarc, kcminputrc) and `/etc/sddm.conf.d`.
 - **KrissOS Shell:** runs as Wayland layer-shell clients on top of `cosmic-comp`. We don't fork
   the compositor, which keeps the maintenance cost low.
   - **Phase 1 test:** confirm that cosmic-comp's layer-shell and protocol support covers a
@@ -186,12 +193,14 @@ kriss-vm revert         # restore every file `kriss-vm` changed from its backups
 ## 12. Roadmap to `110`
 
 0. Repo, CI skeleton, signing key, `[kriss]` repo on GitHub Releases.
-1. cosmic-comp shell test. `linux-kriss` builds in CI and boots on the dev desktop.
-2. `kriss-theme`, `kriss-settings`, and an ISO that boots to the KrissOS Shell.
-3. Calamares installer with the desktop picker, btrfs + snapper, and sbctl.
+1. `linux-kriss` builds in CI and boots on the dev desktop.
+2. `kriss-theme`, `kriss-settings`, and a live ISO that boots to KDE Plasma with the theme.
+3. Calamares installer for Plasma, with btrfs + snapper and sbctl.
 4. `kriss-tune` and the gaming metapackage.
 5. `kriss-vm` (desktop first), then the laptop paths for systems with no MUX switch.
 6. WinBoat tier and the AI setup.
+7. `110`: the cosmic-comp shell test, then KrissOS Shell as the default desktop, with
+   Plasma kept as the installer's alternative.
 
 ## 13. Later: Apple Silicon image
 

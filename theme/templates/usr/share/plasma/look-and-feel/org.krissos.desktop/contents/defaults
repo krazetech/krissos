@@ -1,0 +1,23 @@
+# KrissOS global theme. Generated from theme/tokens.json; do not edit.
+# Anything not set here (splash, lock screen, layout) falls back to Breeze.
+[kdeglobals][General]
+ColorScheme=KrissOS
+
+[kdeglobals][Icons]
+Theme={{icon_theme}}
+
+[kdeglobals][KDE]
+widgetStyle=Breeze
+
+[plasmarc][Theme]
+name=breeze-dark
+
+[kcminputrc][Mouse]
+cursorTheme={{cursor_theme}}
+
+[kwinrc][org.kde.kdecoration2]
+library=org.kde.breeze
+theme=Breeze
+
+[Wallpaper]
+Image=KrissOS

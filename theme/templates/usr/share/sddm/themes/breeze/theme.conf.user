@@ -1,0 +1,5 @@
+# KrissOS look for the Breeze SDDM theme. Generated from theme/tokens.json; do not edit.
+[General]
+type=image
+background=/usr/share/backgrounds/kriss/default.svg
+color={{bg}}

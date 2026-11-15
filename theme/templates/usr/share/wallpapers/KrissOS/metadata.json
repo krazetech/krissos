@@ -1,0 +1,8 @@
+{
+  "KPlugin": {
+    "Id": "KrissOS",
+    "Name": "KrissOS",
+    "Authors": [{ "Name": "Kraze Tech" }],
+    "License": "GPL-3.0-or-later"
+  }
+}

@@ -1,0 +1,10 @@
+NAME="KrissOS"
+PRETTY_NAME="KrissOS"
+ID=krissos
+ID_LIKE=arch
+BUILD_ID=rolling
+VERSION_CODENAME=110
+ANSI_COLOR="0;36"
+HOME_URL="https://github.com/krazetech/krissos"
+DOCUMENTATION_URL="https://github.com/krazetech/krissos/blob/main/ARCHITECTURE.md"
+BUG_REPORT_URL="https://github.com/krazetech/krissos/issues"
