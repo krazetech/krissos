@@ -37,9 +37,8 @@ Singleton {
             id: config
             // Pinned apps, as desktop file ids, in taskbar order. Missing apps are skipped.
             property list<string> pinned: [
-                "firefox", "org.gnome.Nautilus", "org.kde.dolphin", "kitty", "org.wezfurlong.wezterm",
-                "code", "steam", "winboat", "thunderbird", "org.gnome.Calendar", "org.gnome.Loupe",
-                "org.kde.elisa", "com.github.th_ch.youtube_music", "org.gnome.Settings", "systemsettings"
+                "firefox", "com.system76.CosmicFiles", "com.system76.CosmicTerm", "code", "steam",
+                "winboat", "thunderbird", "com.github.th_ch.youtube_music", "com.system76.CosmicSettings"
             ]
             // Do not disturb: no toasts, notifications still collect behind the bell.
             property bool dnd: false

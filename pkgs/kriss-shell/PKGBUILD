@@ -12,7 +12,9 @@ makedepends=('python' 'python-pywayland' 'wayland' 'wayland-protocols')
 optdepends=('networkmanager: network status and Wi-Fi in quick settings'
             'bluez: Bluetooth in quick settings'
             'libnotify: a notification after a screenshot'
-            'dolphin: the file manager Windows+E opens'
+            'cosmic-files: the file manager Windows+E opens'
+            'cosmic-terminal: the terminal pinned to the bar'
+            'cosmic-settings: the settings app pinned to the bar'
             'pipewire: volume, microphone and sound output'
             'upower: battery in the bar'
             'power-profiles-daemon: power profile switch in the bar and quick settings')

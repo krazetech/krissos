@@ -71,7 +71,7 @@ bar to move it. Without the file, the defaults in `qml/Desktop.qml` apply.
 | Windows+A | Quick settings |
 | Windows+N | Notifications |
 | Windows+D | Show the desktop; again to bring the windows back |
-| Windows+E | Dolphin |
+| Windows+E | COSMIC Files |
 | Windows+L | Lock |
 | Windows+Left / Right | Snap the window to that half (Windows+Shift+Up / Down then makes it a quarter) |
 | Windows+Up / Down | Maximize / minimize |

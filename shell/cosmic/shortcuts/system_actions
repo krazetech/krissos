@@ -1,5 +1,5 @@
 {
-    HomeFolder: "dolphin",
+    HomeFolder: "cosmic-files",
     Launcher: "kriss-shell launcher",
     LockScreen: "kriss-shell lock",
     // Print Screen: the whole screen to ~/Pictures/Screenshots and the clipboard.
