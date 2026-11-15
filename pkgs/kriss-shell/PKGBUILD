@@ -1,0 +1,66 @@
+# Maintainer: Kraze Tech
+pkgname=kriss-shell
+pkgver=0.2.0
+pkgrel=1
+pkgdesc='KrissOS Shell: bar, launcher, quick settings, notifications and lock screen on cosmic-comp'
+arch=('any')
+url='https://github.com/krazetech/krissos'
+license=('GPL-3.0-or-later')
+depends=('cosmic-comp' 'quickshell' 'python-pywayland' 'glib2' 'dbus'
+         'grim' 'slurp' 'wl-clipboard' 'xdg-user-dirs' 'brightnessctl')
+makedepends=('python' 'python-pywayland' 'wayland' 'wayland-protocols')
+optdepends=('greetd: the KrissOS login screen'
+            'networkmanager: network status and Wi-Fi in quick settings'
+            'bluez: Bluetooth in quick settings'
+            'libnotify: a notification after a screenshot'
+            'cosmic-files: the file manager Windows+E opens'
+            'cosmic-terminal: the terminal pinned to the bar'
+            'cosmic-settings: the settings app pinned to the bar'
+            'pipewire: volume, microphone and sound output'
+            'upower: battery in the bar'
+            'power-profiles-daemon: power profile switch in the bar and quick settings')
+
+# Sources live in this monorepo. Colours and fonts in the QML and the COSMIC defaults
+# are rendered from theme/tokens.json, like kriss-theme.
+_shell="$startdir/../../shell"
+_theme="$startdir/../../theme"
+
+build() {
+  python "$_theme/generate.py" "$_shell/qml" "$srcdir/qml"
+  python "$_theme/generate.py" "$_shell/cosmic" "$srcdir/cosmic"
+
+  # Python bindings for the window-list protocols kriss-shell-toplevels speaks.
+  local wp=/usr/share/wayland-protocols/staging
+  python -m pywayland.scanner -o "$srcdir/kriss_protocols" -i \
+    /usr/share/wayland/wayland.xml \
+    "$wp/ext-foreign-toplevel-list/ext-foreign-toplevel-list-v1.xml" \
+    "$wp/ext-workspace/ext-workspace-v1.xml" \
+    "$_shell"/protocols/*.xml
+  touch "$srcdir/kriss_protocols/__init__.py"
+}
+
+check() {
+  sh -n "$_shell/session/kriss-shell"
+  # Every shell string has a Bahasa Melayu translation.
+  python "$_shell/i18n-check"
+  KRISS_SHELL_LIB="$srcdir" python -c '
+import os, sys
+sys.path.insert(0, os.environ["KRISS_SHELL_LIB"])
+import kriss_protocols.cosmic_toplevel_info_unstable_v1
+import kriss_protocols.cosmic_toplevel_management_unstable_v1
+import kriss_protocols.ext_foreign_toplevel_list_v1'
+  ! grep -rn '{{' "$srcdir/qml" "$srcdir/cosmic"
+}
+
+package() {
+  # ponytail: added here, not in the global array, for the same reason as kriss-settings:
+  # CI builds each package alone and --syncdeps cannot resolve [kriss] packages yet.
+  depends+=('kriss-theme' 'kriss-settings')
+
+  install -Dm755 "$_shell/session/kriss-shell" "$pkgdir/usr/bin/kriss-shell"
+  install -Dm755 "$_shell/kriss-shell-toplevels" "$pkgdir/usr/bin/kriss-shell-toplevels"
+  install -Dm644 "$_shell/session/kriss-shell.desktop" "$pkgdir/usr/share/wayland-sessions/kriss-shell.desktop"
+  install -d "$pkgdir/usr/share/kriss-shell" "$pkgdir/usr/lib/kriss-shell"
+  cp -r --no-preserve=ownership "$srcdir/qml" "$srcdir/cosmic" "$pkgdir/usr/share/kriss-shell/"
+  cp -r --no-preserve=ownership "$srcdir/kriss_protocols" "$pkgdir/usr/lib/kriss-shell/"
+}

@@ -1,0 +1,115 @@
+#!/bin/sh
+# KrissOS Shell.
+#   kriss-shell            start a session: cosmic-comp with the shell inside it (SDDM runs this)
+#   kriss-shell launcher   open or close the launcher (cosmic-comp runs this for the Windows key)
+#   kriss-shell quick      open or close quick settings (Windows+A)
+#   kriss-shell notifications
+#                          open or close the notification list (Windows+N)
+#   kriss-shell lock       lock the screen (Windows+L)
+#   kriss-shell greeter    the login screen, which greetd runs (see shell/README.md)
+#   kriss-shell desktop    show the desktop, or bring the windows back (Windows+D)
+#   kriss-shell screenshot [region]
+#                          the whole screen (Print Screen) or a dragged region
+#                          (Windows+Shift+S) to ~/Pictures/Screenshots and the clipboard
+set -u
+
+data=${KRISS_SHELL_DATA:-/usr/share/kriss-shell}
+qml=$data/qml
+
+case "${1:-}" in
+launcher)
+    # Fall back to COSMIC's own launcher when the KrissOS Shell is not running.
+    qs -p "$qml" ipc call launcher toggle 2>/dev/null || exec cosmic-launcher
+    ;;
+quick | notifications)
+    qs -p "$qml" ipc call "$1" toggle
+    ;;
+lock)
+    qs -p "$qml" ipc call lock lock 2>/dev/null || exec loginctl lock-session
+    ;;
+desktop)
+    qs -p "$qml" ipc call desktop toggle
+    ;;
+screenshot)
+    dir=$(xdg-user-dir PICTURES 2>/dev/null || echo "$HOME/Pictures")/Screenshots
+    file=$dir/Screenshot_$(date +%Y%m%d_%H%M%S).png
+    mkdir -p "$dir"
+    if [ "${2:-}" = region ]; then
+        area=$(slurp) || exit 0  # Escape cancels
+        grim -g "$area" "$file" || exit 1
+    else
+        grim "$file" || exit 1
+    fi
+    wl-copy --type image/png < "$file"
+    case ${LANGUAGE:-${LC_ALL:-${LANG:-}}} in
+    ms*) title="Tangkapan skrin disimpan" body="${file##*/} juga ada dalam papan keratan." ;;
+    *) title="Screenshot saved" body="${file##*/} is also on the clipboard." ;;
+    esac
+    notify-send -a Screenshot -i "$file" "$title" "$body" 2>/dev/null
+    ;;
+greeter)
+    # greetd's greeter user has no home, and cosmic-comp keeps running after its command
+    # exits, so give it one under the runtime dir and stop cosmic-comp once the login
+    # screen hands over to the session.
+    set -a; . /etc/locale.conf 2>/dev/null; set +a
+    export HOME="$XDG_RUNTIME_DIR/kriss-greeter"
+    mkdir -p "$HOME"
+    # shellcheck disable=SC2016 # $1 and $PPID belong to the inner shell
+    exec cosmic-comp sh -c 'qs -p "$1"; kill "$PPID"' sh "$qml/greeter.qml"
+    ;;
+--inside)
+    # The shell inside a running cosmic-comp. Also how to run it nested for development.
+    # ponytail: restart the shell after a crash so open apps survive it; a clean exit
+    # (Sign out in the launcher) ends the session. A crash loop retries once a second.
+    while :; do
+        qs -p "$qml" && exit 0
+        sleep 1
+    done
+    ;;
+"")
+    export XDG_CURRENT_DESKTOP=KrissOS:COSMIC XDG_SESSION_DESKTOP=KrissOS XDG_SESSION_TYPE=wayland
+    # The qt6ct config from kriss-settings only applies with this set (see its PKGBUILD).
+    export QT_QPA_PLATFORMTHEME=qt6ct
+
+    # COSMIC defaults: the Windows key opens our launcher, Windows+L locks, and the
+    # focused window gets a 3 px Sky Cyan ring with rounder corners. Copied only
+    # where the user has no value of their own, so their changes win.
+    cfg=${XDG_CONFIG_HOME:-$HOME/.config}/cosmic
+    seed() {
+        [ -d "$data/cosmic/$1" ] || return 0
+        mkdir -p "$cfg/$2"
+        for f in "$data/cosmic/$1"/*; do
+            [ -e "$cfg/$2/${f##*/}" ] || cp "$f" "$cfg/$2/"
+        done
+    }
+    seed shortcuts com.system76.CosmicSettings.Shortcuts/v1
+    seed theme com.system76.CosmicTheme.Dark/v2
+    seed theme com.system76.CosmicTheme.Light/v2
+
+    # Not `cosmic-comp COMMAND`: that is cosmic-comp's kiosk mode, which turns off every
+    # keyboard shortcut. Start it on its own; once it is ready it publishes
+    # WAYLAND_DISPLAY and DISPLAY to the systemd user environment, so wait for that.
+    systemctl --user unset-environment WAYLAND_DISPLAY DISPLAY
+    cosmic-comp &
+    comp=$!
+    tries=0
+    until env=$(systemctl --user show-environment | grep -E '^(WAYLAND_DISPLAY|DISPLAY)=') &&
+        echo "$env" | grep -q '^WAYLAND_DISPLAY='; do
+        kill -0 "$comp" 2>/dev/null || exit 1
+        tries=$((tries + 1))
+        [ "$tries" -lt 300 ] || { kill "$comp"; exit 1; }  # 30 s
+        sleep 0.1
+    done
+    # shellcheck disable=SC2086,SC2163 # one NAME=value per line; values are socket names, no spaces
+    export $env
+    dbus-update-activation-environment --systemd XDG_CURRENT_DESKTOP XDG_SESSION_TYPE QT_QPA_PLATFORMTHEME 2>/dev/null
+
+    "$0" --inside
+    kill "$comp" 2>/dev/null
+    wait "$comp"
+    ;;
+*)
+    echo "usage: kriss-shell [launcher|quick|notifications|lock|desktop|screenshot [region]|greeter]" >&2
+    exit 2
+    ;;
+esac

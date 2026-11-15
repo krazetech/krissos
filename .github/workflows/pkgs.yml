@@ -3,9 +3,9 @@ name: packages
 on:
   push:
     branches: [main]
-    paths: ['pkgs/**', '!pkgs/linux-kriss/**', 'tools/**', '.github/workflows/pkgs.yml']
+    paths: ['pkgs/**', '!pkgs/linux-kriss/**', 'tools/**', 'shell/**', 'theme/**', '.github/workflows/pkgs.yml']
   pull_request:
-    paths: ['pkgs/**', '!pkgs/linux-kriss/**', 'tools/**', '.github/workflows/pkgs.yml']
+    paths: ['pkgs/**', '!pkgs/linux-kriss/**', 'tools/**', 'shell/**', 'theme/**', '.github/workflows/pkgs.yml']
   workflow_dispatch:
 
 permissions:

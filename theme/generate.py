@@ -33,6 +33,9 @@ def variants(tokens):
             out[name + ".rgb"] = ",".join(str(int(value[i:i + 2], 16)) for i in (1, 3, 5))
             out[name + ".rgbf"] = ", ".join(
                 f"{int(value[i:i + 2], 16) / 255:.3f}" for i in (1, 3, 5))
+            # One channel at a time ({{accent.rf}}), for formats that name each field.
+            for ch, i in zip("rgb", (1, 3, 5)):
+                out[f"{name}.{ch}f"] = f"{int(value[i:i + 2], 16) / 255:.3f}"
     return out
 
 
@@ -71,6 +74,7 @@ def test():
     assert render("{{accent}} {{accent.hex}} {{font}}", v) == "#29B2E8 29B2E8 Figtree"
     assert v["accent.rgb"] == "41,178,232"
     assert v["accent.rgbf"] == "0.161, 0.698, 0.910"
+    assert (v["accent.rf"], v["accent.bf"]) == ("0.161", "0.910")
     assert "font.hex" not in v
     assert light({"bg": "#000000", "light_bg": "#FFFFFF"})["bg"] == "#FFFFFF"
     json.loads(TOKENS.read_text())

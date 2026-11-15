@@ -99,6 +99,14 @@ the shell does not block them. KrissOS Shell becomes the default at `110`.
     panel, dock, launcher, notifications and lock screen without running the rest of the
     COSMIC session.
   - **If it fails:** keep the shell and swap the compositor.
+  - **Result (cosmic-comp 1.11, Nov 2026):** it passes. cosmic-comp offers wlr-layer-shell,
+    ext-session-lock, ext-idle-notify, ext-workspace and ext-image-copy-capture to any
+    unsandboxed client. It lacks wlr-foreign-toplevel-management, which Quickshell uses to
+    list windows, so `kriss-shell-toplevels` (a small Python helper) reads windows through
+    COSMIC's own toplevel protocols instead.
+  - **Toolkit:** QML on Quickshell. It ships in Arch `extra`, covers every surface we need
+    (layer-shell windows, session lock, PAM, notifications, PipeWire, UPower, NetworkManager)
+    and needs no compiled code of ours.
 - **Display GPU on laptops:**
   - On laptops with no MUX switch, the compositor is pinned to the iGPU through the render
     device setting (`COSMIC_RENDER_DEVICE` / `KWIN_DRM_DEVICES`).
@@ -188,7 +196,7 @@ kriss-vm revert         # restore every file `kriss-vm` changed from its backups
 
 1. Font: confirm Figtree.
 2. License for the tooling: GPL-3.0-or-later (assumed) or MIT.
-3. Results of the cosmic-comp layer-shell test.
+3. ~~Results of the cosmic-comp layer-shell test.~~ Passed; see §5.
 
 ## 12. Roadmap to `110`
 
