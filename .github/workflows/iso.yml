@@ -38,8 +38,33 @@ jobs:
           sudo docker run --rm --privileged -v "$PWD:/src" -v "$RUNNER_TEMP:/work" archlinux:latest \
             /src/iso/build.sh /src/out /work
           sudo chown -R "$USER" out
-          cd out && sha256sum ./*.iso > "$(basename ./*.iso).sha256"
+          cd out && sha256sum -- *.iso > sha256sums.txt
           ls -lh && df -h /
+
+      # GitHub release assets max out at 2 GiB; the release step enforces it.
+      - name: Check ISO size
+        run: |
+          iso=$(ls out/*.iso)
+          size=$(stat -c %s "$iso")
+          echo "ISO size: $(basename "$iso") is $size bytes ($(numfmt --to=iec-i "$size"))" | tee -a "$GITHUB_STEP_SUMMARY"
+          if (( size > 1932735283 )); then
+            echo "::warning::The ISO is over 1.8 GiB and nearing the 2 GiB release asset limit."
+          fi
+
+      - name: Sign
+        if: github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/')
+        env:
+          KRISS_GPG_KEY: ${{ secrets.KRISS_GPG_KEY }}
+        run: |
+          if [ -z "$KRISS_GPG_KEY" ]; then
+            echo "::warning::KRISS_GPG_KEY is not set; the ISO was built but not signed."
+            exit 0
+          fi
+          printf '%s\n' "$KRISS_GPG_KEY" | gpg --batch --import
+          cd out
+          for f in *.iso sha256sums.txt; do
+            gpg --batch --yes --local-user 7C92AE8B599AF81321666CA31317AA31B21C5F87 --detach-sign "$f"
+          done
 
       - name: Boot test
         run: |
@@ -71,6 +96,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          size=$(stat -c %s out/*.iso)
+          if (( size > 2147483648 )); then
+            echo "::error::The ISO is $size bytes, over GitHub's 2 GiB release asset limit. It is still in the workflow artifact. Move ISO hosting off GitHub Releases (planned: Cloudflare R2) before tagging again."
+            exit 1
+          fi
           gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
             || gh release create "$GITHUB_REF_NAME" --verify-tag --title "KrissOS $GITHUB_REF_NAME" --notes ''
-          gh release upload "$GITHUB_REF_NAME" out/* --clobber
+          gh release upload "$GITHUB_REF_NAME" out/* --clobber  # the ISO, sha256sums.txt and their .sig files
