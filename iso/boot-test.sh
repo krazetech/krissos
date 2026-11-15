@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Boot the ISO in QEMU/KVM, screenshot the UEFI boot menu, then boot it again with a
-# serial console and wait until Plasma starts. Needs qemu-system-x86, ovmf,
+# serial console and wait until the KrissOS Shell starts. Needs qemu-system-x86, ovmf,
 # libarchive-tools (bsdtar) and socat.
 # usage: iso/boot-test.sh ISO OUT_DIR
 set -euo pipefail
@@ -30,11 +30,11 @@ rm -f "$out/mon"
 pid=$!
 ok=0
 for _ in $(seq 60); do
-  if grep -q 'Started.*KDE Plasma Workspace' "$out/serial.log"; then ok=1; break; fi
+  if grep -q 'kriss-shell.*KrissOS Shell started' "$out/serial.log"; then ok=1; break; fi
   sleep 5
 done
 sleep 20  # let the desktop draw
 shot desktop
 kill "$pid" && wait "$pid" || true
-grep -m1 'Started.*Simple Desktop Display Manager' "$out/serial.log" || true
-if (( ok )); then echo 'Plasma started.'; else echo 'Plasma did not start within 5 minutes.' >&2; exit 1; fi
+grep -m1 'Started.*Greeter daemon' "$out/serial.log" || true
+if (( ok )); then echo 'KrissOS Shell started.'; else echo 'The KrissOS Shell did not start within 5 minutes.' >&2; exit 1; fi

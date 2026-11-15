@@ -1,0 +1,12 @@
+[terminal]
+vt = 1
+
+# The live user has no password, so the live session starts straight away.
+# Signing out lands on the KrissOS login screen.
+[initial_session]
+command = "kriss-shell"
+user = "live"
+
+[default_session]
+command = "kriss-shell greeter"
+user = "greeter"
