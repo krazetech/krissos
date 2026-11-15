@@ -75,7 +75,7 @@ menu() {
         date=$(sed -n 's:.*<date>\(.*\)</date>.*:\1:p' "$snaps/$n/info.xml")
         desc=$(sed -n 's:.*<description>\(.*\)</description>.*:\1:p' "$snaps/$n/info.xml")
         entry '    ' "//${date%:*} ${desc:-snapshot} ($n)" "$kernel" "$initrd" \
-            "$(sed "s:subvol=[^ ,]*:subvol=@snapshots/$n/snapshot:" <<<"$cmdline") kriss_snapshot=1"
+            "${cmdline/subvol=@/subvol=@snapshots/$n/snapshot} kriss_snapshot=1"
     done
 }
 

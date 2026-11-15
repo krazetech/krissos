@@ -41,7 +41,8 @@ plasma) pkgs+=(plasma-meta sddm konsole dolphin discover) ;;
           xdg-desktop-portal-cosmic power-profiles-daemon upower libnotify) ;;
 esac
 
-pkgs+=($(/usr/lib/kriss-installer/nvidia "$kernel"))
+read -ra gpu < <(/usr/lib/kriss-installer/nvidia "$kernel") || true
+pkgs+=("${gpu[@]}")
 
 echo "kriss: installing ${pkgs[*]}"
 pacstrap -C "$conf" -K "$root" "${pkgs[@]}"
