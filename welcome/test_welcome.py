@@ -179,6 +179,7 @@ assert "pkexec" not in log, log  # dismissed: no update
 assert "Kemas kini tersedia" in notify("a\n", "", 0, "ms_MY.UTF-8")
 assert "did not finish" in notify("a\n", "update", 1)
 assert "did not finish" not in notify("a\n", "update", 126)  # password prompt cancelled
+assert "did not finish" in notify("a\n", "update", 127)  # no polkit agent: say so, not silence
 
 # Every qsTr string has a Bahasa Melayu translation.
 ts = ET.parse(ROOT / "i18n/kriss-welcome_ms.ts")

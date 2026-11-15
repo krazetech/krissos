@@ -77,6 +77,39 @@ cmd_hwcheck() {
     "$ram_mb" "$cores" "$virt" "$kvm" "$(gpu_vendors)" "$ok" "${reasons%,}"
 }
 
+# kriss tune [performance|balanced|powersave|kapcai|status|sync]
+# A profile sets the power-profiles-daemon profile and starts a sched_ext scheduler
+# through scx_loader (scx-tools). Both are D-Bus services guarded by polkit; kriss-tools
+# ships a polkit rule so active admin users switch schedulers without a password.
+# ponytail: governor and EPP are left to power-profiles-daemon, which sets EPP itself on
+# amd-pstate and intel_pstate. Write sysfs here only if a driver it skips matters.
+cmd_tune() {
+  local p="${1:-status}" ppd sched mode
+  case "$p" in
+    status)
+      row profile "$(powerprofilesctl get 2>/dev/null || echo unknown)"
+      row sched "$(scxctl get 2>/dev/null || echo none)"
+      return ;;
+    # Run at login: the power profile survives a reboot, the scheduler does not.
+    sync) p=$(powerprofilesctl get); [[ $p != power-saver ]] || p=powersave ;;
+  esac
+  case "$p" in
+    performance) ppd=performance sched=lavd mode=gaming ;;
+    balanced) ppd=balanced sched=bpfland mode=auto ;;
+    powersave | kapcai) ppd=power-saver sched=lavd mode=powersave ;;
+    *) die "unknown profile '$p'. Use performance, balanced, powersave or status." ;;
+  esac
+  command -v powerprofilesctl >/dev/null || die "tune needs power-profiles-daemon."
+  powerprofilesctl set "$ppd"
+  if command -v scxctl >/dev/null; then
+    # switch also starts a scheduler when none is running.
+    scxctl switch -s "$sched" -m "$mode"
+  else
+    echo "kriss: scx-tools is not installed; only the power profile was set." >&2
+  fi
+  printf 'kriss: %s (power: %s, scheduler: scx_%s %s)\n' "$p" "$ppd" "$sched" "$mode"
+}
+
 # Update everything, after a btrfs snapshot when snapper is set up, so a bad update rolls back
 # from the boot menu. Runs as root: the update notice calls it through pkexec.
 cmd_update() {
@@ -124,6 +157,7 @@ main() {
     update) cmd_update ;;
     version | --version | -V) cmd_version ;;
     hwcheck) cmd_hwcheck ;;
+    tune) cmd_tune "${@:2}" ;;
     help | --help | -h) cmd_help ;;
     --kapcai) cmd_kapcai ;;
     *) die "unknown command '$1'. Run 'kriss help'." ;;

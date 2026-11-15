@@ -36,6 +36,6 @@ action=$(notify-send --app-name=KrissOS --icon=system-software-update --wait \
 pkexec kriss update
 case $? in
 0) notify-send --app-name=KrissOS --icon=system-software-update "$t_done" ;;
-126 | 127) ;; # the password prompt was cancelled
+126) ;; # the password prompt was cancelled; 127 (no agent, not allowed) shows the failure
 *) notify-send --app-name=KrissOS --icon=dialog-warning --urgency=critical "$t_failed" ;;
 esac

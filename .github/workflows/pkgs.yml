@@ -24,8 +24,11 @@ jobs:
       group: ${{ github.ref == 'refs/heads/main' && 'repo-x86_64' || format('pkgs-{0}', github.ref) }}
       cancel-in-progress: false
     steps:
+      # multilib lets the metapackage check below resolve Steam and the lib32 packages.
       - name: Install build tools
-        run: pacman -Syu --noconfirm --needed git github-cli shellcheck
+        run: |
+          printf '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist\n' >> /etc/pacman.conf
+          pacman -Syu --noconfirm --needed git github-cli shellcheck
 
       - uses: actions/checkout@v4
 
@@ -34,6 +37,9 @@ jobs:
 
       - name: Test the publish script
         run: tools/ci/publish-test.sh
+
+      - name: Test kriss tune
+        run: tools/ci/tune-test.sh
 
       # makepkg refuses to run as root. The kernel is built by kernel.yml.
       - name: Build packages
@@ -45,7 +51,14 @@ jobs:
           for dir in pkgs/*/; do
             [ "$dir" = pkgs/linux-kriss/ ] && continue
             echo "::group::$dir"
-            su builder -c "cd '$dir' && PKGDEST='$GITHUB_WORKSPACE/out' makepkg --syncdeps --noconfirm --cleanbuild"
+            deps=--syncdeps
+            # Metapackages are only a dependency list: check every name resolves, then
+            # package without installing the lot.
+            case $dir in pkgs/kriss-meta-*)
+              (. "$dir/PKGBUILD" && pacman -Sp "${depends[@]}" >/dev/null)
+              deps=--nodeps ;;
+            esac
+            su builder -c "cd '$dir' && PKGDEST='$GITHUB_WORKSPACE/out' makepkg $deps --noconfirm --cleanbuild"
             echo "::endgroup::"
           done
           ls -l out
