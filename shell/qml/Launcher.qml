@@ -4,10 +4,13 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Widgets
+import "fuzzy.js" as Fuzzy
 
 // The launcher, laid out like the Windows Start menu so people coming from Windows
 // find their way: search on top, Pinned (or All apps), Recommended files, then the
-// account and power at the bottom. Typing searches straight away.
+// account and power at the bottom. Typing searches straight away, the way cmdk does:
+// one field, fuzzy results grouped into Apps, Actions and Files, the first one selected,
+// arrows to move, Enter to run, Esc to clear and then to close.
 PanelWindow {
     id: win
 
@@ -33,16 +36,59 @@ PanelWindow {
         .filter(e => !e.noDisplay)
         .sort((a, b) => a.name.localeCompare(b.name))
 
-    readonly property var shown: {
-        const q = query.trim().toLowerCase();
-        if (!q) return allApps ? everything : Desktop.pinnedEntries();
-        const hit = e => [e.name, e.genericName, ...e.keywords].some(s => s && s.toLowerCase().includes(q));
-        const starts = e => e.name.toLowerCase().startsWith(q);
-        return everything.filter(hit).sort((a, b) => starts(b) - starts(a)).slice(0, 18);
+    // The grid when nothing is typed.
+    readonly property var shown: allApps ? everything : Desktop.pinnedEntries()
+
+    readonly property var actions: [
+        ["lock", Tr.t("Lock"), () => { close(); Desktop.locked = true; }],
+        ["sleep", Tr.t("Sleep"), () => { close(); Quickshell.execDetached(["systemctl", "suspend"]); }],
+        ["restart", Tr.t("Restart"), () => Quickshell.execDetached(["systemctl", "reboot"])],
+        ["power", Tr.t("Shut down"), () => Quickshell.execDetached(["systemctl", "poweroff"])],
+        // Quitting the shell cleanly ends the session (see kriss-shell).
+        ["signout", Tr.t("Sign out"), () => Qt.quit()],
+        ["sun", Tr.t("Quick settings"), () => { close(); Desktop.quickOpen = true; }],
+        ["bell", Tr.t("Notifications"), () => { close(); Desktop.notificationsOpen = true; }]
+    ]
+
+    // Search results: rows of {header} or {kind, label, icon, run, sel}, where sel is the
+    // row's place among the rows that can be picked.
+    readonly property var results: {
+        const q = query.trim();
+        if (!q) return [];
+        const ranked = (list, limit) => list.filter(r => r.score > 0)
+            .sort((a, b) => b.score - a.score).slice(0, limit);
+        const groups = [
+            [Tr.t("Apps"), ranked(everything.map(e => ({
+                kind: "app", label: e.name, icon: e.icon, run: () => launch(e),
+                score: Fuzzy.best([e.name, e.genericName, ...e.keywords], q)
+            })), 7)],
+            [Tr.t("Actions"), ranked(actions.map(a => ({
+                kind: "action", label: a[1], glyph: a[0], run: a[2], score: Fuzzy.score(a[1], q)
+            })), 4)],
+            [Tr.t("Files"), ranked(recentAll.map(f => ({
+                kind: "file", label: f.name, detail: ago(f.when),
+                run: () => { Qt.openUrlExternally(f.href); close(); }, score: Fuzzy.score(f.name, q)
+            })), 4)]
+        ];
+        const rows = [];
+        let sel = 0;
+        for (const [title, items] of groups) {
+            if (!items.length) continue;
+            rows.push({ header: title });
+            for (const r of items) { r.sel = sel++; rows.push(r); }
+        }
+        return rows;
     }
+    readonly property int count: query.trim() ? results.filter(r => !r.header).length : shown.length
 
     function close() { Desktop.launcherOpen = false; }
     function launch(entry) { entry.execute(); close(); }
+    function run() {
+        if (!query.trim()) { if (shown[current]) launch(shown[current]); return; }
+        const r = results.find(r => r.sel === current);
+        if (r) r.run();
+    }
+    function move(by) { if (count) current = Math.max(0, Math.min(count - 1, current + by)); }
 
     onVisibleChanged: {
         if (!visible) return;
@@ -52,6 +98,7 @@ PanelWindow {
         recentFile.reload();
     }
     onShownChanged: current = 0
+    onResultsChanged: current = 0
 
     // Recently used files, from the list GTK and most other apps keep.
     FileView {
@@ -60,15 +107,17 @@ PanelWindow {
         printErrors: false
     }
 
-    readonly property var recent: {
+    readonly property var recentAll: {
         const text = recentFile.text() ?? "";
         const out = [];
         const re = /<bookmark\s[^>]*href="([^"]+)"[^>]*modified="([^"]+)"/g;
         let m;
-        while ((m = re.exec(text)) !== null) out.push({ href: m[1], when: new Date(m[2]) });
+        while ((m = re.exec(text)) !== null)
+            out.push({ href: m[1], when: new Date(m[2]), name: decodeURIComponent(m[1].split("/").pop()) });
         // ponytail: regex over the XBEL file; fine for the few hundred entries it holds.
-        return out.sort((a, b) => b.when - a.when).slice(0, 4);
+        return out.sort((a, b) => b.when - a.when).slice(0, 200);
     }
+    readonly property var recent: recentAll.slice(0, 4)
 
     function ago(d) {
         const min = Math.round((Date.now() - d) / 60000);
@@ -100,7 +149,9 @@ PanelWindow {
         clip: true
 
         opacity: win.visible ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: 140 } }
+        Behavior on opacity { NumberAnimation { duration: Theme.ms(140) } }
+        // The panel grows and shrinks with the results instead of jumping (cmdk does the same).
+        Behavior on height { NumberAnimation { duration: Theme.ms(160); easing.type: Easing.OutCubic } }
 
         MouseArea { anchors.fill: parent; onClicked: win.powerMenu = false }
 
@@ -140,27 +191,38 @@ PanelWindow {
                             color: Theme.soft
                             font: search.font
                         }
-                        Keys.onEscapePressed: win.close()
-                        Keys.onReturnPressed: if (win.shown[win.current]) win.launch(win.shown[win.current])
-                        Keys.onLeftPressed: win.current = Math.max(0, win.current - 1)
-                        Keys.onRightPressed: win.current = Math.min(win.shown.length - 1, win.current + 1)
-                        Keys.onUpPressed: win.current = Math.max(0, win.current - grid.columns)
-                        Keys.onDownPressed: win.current = Math.min(win.shown.length - 1, win.current + grid.columns)
+                        Keys.onEscapePressed: if (text) text = ""; else win.close()
+                        Keys.onReturnPressed: win.run()
+                        Keys.onEnterPressed: win.run()
+                        // In the grid, left and right step and up and down jump a row; the
+                        // result list only goes up and down, so left and right stay in the text.
+                        Keys.onLeftPressed: event => { if (win.query) event.accepted = false; else win.move(-1); }
+                        Keys.onRightPressed: event => { if (win.query) event.accepted = false; else win.move(1); }
+                        Keys.onUpPressed: win.move(win.query ? -1 : -grid.columns)
+                        Keys.onDownPressed: win.move(win.query ? 1 : grid.columns)
+                        Keys.onTabPressed: win.move(1)
+                        Keys.onBacktabPressed: win.move(-1)
+                        Keys.onPressed: event => {
+                            if (event.key === Qt.Key_Home && event.modifiers & Qt.ControlModifier) win.current = 0;
+                            else if (event.key === Qt.Key_End && event.modifiers & Qt.ControlModifier) win.current = win.count - 1;
+                            else return;
+                            event.accepted = true;
+                        }
                     }
                 }
             }
 
-            // Pinned / All apps / Best match header.
+            // Pinned / All apps header.
             RowLayout {
+                visible: !win.query
                 Layout.fillWidth: true
                 Text {
                     Layout.fillWidth: true
-                    text: win.query ? Tr.t("Best match") : win.allApps ? Tr.t("All apps") : Tr.t("Pinned")
+                    text: win.allApps ? Tr.t("All apps") : Tr.t("Pinned")
                     color: Theme.fg
                     font { family: Theme.sans; pixelSize: 15; weight: Font.DemiBold }
                 }
                 Chip {
-                    visible: !win.query
                     label: win.allApps ? Tr.t("Back") : Tr.t("All apps")
                     glyph: win.allApps ? "back" : "chevron"
                     onClicked: win.allApps = !win.allApps
@@ -171,7 +233,7 @@ PanelWindow {
                 id: grid
                 readonly property int columns: 6
                 Layout.fillWidth: true
-                visible: win.shown.length > 0
+                visible: !win.query && win.shown.length > 0
                 Layout.preferredHeight: Math.min(win.allApps ? 4 : 3, Math.ceil(win.shown.length / columns)) * cellHeight
                 cellWidth: width / columns
                 cellHeight: 92
@@ -187,6 +249,7 @@ PanelWindow {
                     width: grid.cellWidth
                     height: grid.cellHeight
                     hoverEnabled: true
+                    onEntered: win.current = index
                     cursorShape: Qt.PointingHandCursor
                     acceptedButtons: Qt.LeftButton | Qt.RightButton
                     onClicked: mouse => {
@@ -202,9 +265,8 @@ PanelWindow {
                         anchors.fill: parent
                         anchors.margins: 2
                         radius: Theme.radiusSmall
-                        color: cell.containsMouse || cell.index === win.current && win.query ? Theme.card : "transparent"
-                        border.width: cell.index === win.current && win.query ? 2 : 0
-                        border.color: Theme.accent
+                        color: cell.index === win.current ? Theme.card : "transparent"
+                        Behavior on color { ColorAnimation { duration: Theme.ms(90) } }
                     }
                     Column {
                         anchors.centerIn: parent
@@ -212,7 +274,7 @@ PanelWindow {
                         Rectangle {
                             anchors.horizontalCenter: parent.horizontalCenter
                             width: 50; height: 50; radius: 14
-                            color: cell.containsMouse ? Theme.win : Theme.card
+                            color: cell.index === win.current ? Theme.win : Theme.card
                             IconImage {
                                 anchors.centerIn: parent
                                 implicitSize: 32
@@ -232,13 +294,40 @@ PanelWindow {
                 }
             }
 
+            // Search results, grouped.
+            ListView {
+                id: list
+                Layout.fillWidth: true
+                visible: win.query && win.count > 0
+                Layout.preferredHeight: Math.min(contentHeight, 440)
+                clip: true
+                boundsBehavior: Flickable.StopAtBounds
+                interactive: contentHeight > height
+                model: win.results
+                // Keep the selected row in view.
+                Connections {
+                    target: win
+                    function onCurrentChanged() {
+                        const i = win.results.findIndex(r => r.sel === win.current);
+                        if (i >= 0) list.positionViewAtIndex(i, ListView.Contain);
+                    }
+                }
+
+                delegate: Loader {
+                    required property var modelData
+                    width: list.width
+                    sourceComponent: modelData.header ? groupHeader : resultRow
+                    readonly property var row: modelData
+                }
+            }
+
             Text {
-                visible: win.shown.length === 0
+                visible: win.count === 0
                 Layout.fillWidth: true
                 Layout.preferredHeight: 80
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
-                text: win.query ? Tr.t("No apps match that search.") : Tr.t("Right-click an app to pin it.")
+                text: win.query ? Tr.t("No results for “%1”.", win.query.trim()) : Tr.t("Right-click an app to pin it.")
                 color: Theme.soft
                 font { family: Theme.sans; pixelSize: 14 }
             }
@@ -382,14 +471,7 @@ PanelWindow {
                 anchors.centerIn: parent
                 width: parent.width - 12
                 Repeater {
-                    model: [
-                        ["lock", Tr.t("Lock"), () => { win.close(); Desktop.locked = true; }],
-                        ["sleep", Tr.t("Sleep"), () => { win.close(); Quickshell.execDetached(["systemctl", "suspend"]); }],
-                        ["restart", Tr.t("Restart"), () => Quickshell.execDetached(["systemctl", "reboot"])],
-                        ["power", Tr.t("Shut down"), () => Quickshell.execDetached(["systemctl", "poweroff"])],
-                        // Quitting the shell cleanly ends the session (see kriss-shell).
-                        ["signout", Tr.t("Sign out"), () => Qt.quit()]
-                    ]
+                    model: win.actions.slice(0, 5)
                     delegate: MouseArea {
                         id: item
                         required property var modelData
@@ -418,6 +500,91 @@ PanelWindow {
     }
 
     Menu { id: appMenu }
+
+    Component {
+        id: groupHeader
+        Text {
+            readonly property var row: parent.row
+            height: 30
+            verticalAlignment: Text.AlignBottom
+            bottomPadding: 6
+            leftPadding: 12
+            text: row.header
+            color: Theme.soft
+            font { family: Theme.sans; pixelSize: 12; weight: Font.DemiBold }
+        }
+    }
+
+    Component {
+        id: resultRow
+        MouseArea {
+            id: res
+            readonly property var row: parent.row
+            readonly property bool selected: row.sel === win.current
+            height: 46
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            // The pointer selects, as in cmdk, so there is only ever one highlight.
+            onEntered: win.current = row.sel
+            onClicked: row.run()
+
+            Rectangle {
+                anchors.fill: parent
+                radius: Theme.radiusSmall
+                color: res.selected ? Theme.card : "transparent"
+                Behavior on color { ColorAnimation { duration: Theme.ms(90) } }
+            }
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 12
+                anchors.rightMargin: 14
+                spacing: 12
+                Item {
+                    implicitWidth: 28; implicitHeight: 28
+                    IconImage {
+                        visible: row.kind === "app"
+                        anchors.centerIn: parent
+                        implicitSize: 26
+                        source: row.kind === "app" ? Quickshell.iconPath(row.icon, "application-x-executable") : ""
+                    }
+                    Glyph {
+                        visible: row.kind !== "app"
+                        anchors.centerIn: parent
+                        name: row.kind === "file" ? "file" : row.glyph
+                        size: 18
+                        color: res.selected ? Theme.accent : Theme.soft
+                    }
+                }
+                Text {
+                    Layout.fillWidth: true
+                    elide: Text.ElideMiddle
+                    text: row.label
+                    color: Theme.fg
+                    font { family: Theme.sans; pixelSize: 14; weight: Font.Medium }
+                }
+                Text {
+                    visible: !!row.detail && !res.selected
+                    text: row.detail ?? ""
+                    color: Theme.soft
+                    font { family: Theme.sans; pixelSize: 12 }
+                }
+                // Enter runs the selected row.
+                Rectangle {
+                    visible: res.selected
+                    implicitWidth: 26; implicitHeight: 22; radius: 6
+                    color: Theme.win
+                    border.width: 1
+                    border.color: Theme.line
+                    Text {
+                        anchors.centerIn: parent
+                        text: "↵"
+                        color: Theme.soft
+                        font { family: Theme.sans; pixelSize: 12; weight: Font.DemiBold }
+                    }
+                }
+            }
+        }
+    }
 
     component Chip: MouseArea {
         id: chip

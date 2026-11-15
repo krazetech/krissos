@@ -43,6 +43,11 @@ Singleton {
     readonly property int radius: 22
     readonly property int radiusSmall: 14
 
+    // Reduced motion: the desktop-wide "animations off" switch (GNOME's enable-animations,
+    // which COSMIC and GTK apps follow too). Every duration goes through ms().
+    property bool reduceMotion: false
+    function ms(duration) { return reduceMotion ? 0 : duration; }
+
     function alpha(c, a) {
         const q = Qt.color(c);
         return Qt.rgba(q.r, q.g, q.b, a);
@@ -62,5 +67,17 @@ Singleton {
         stdout: SplitParser {
             onRead: line => root.dark = line.indexOf("light") < 0 && line.indexOf("default") < 0
         }
+    }
+
+    Process {
+        command: ["gsettings", "get", "org.gnome.desktop.interface", "enable-animations"]
+        running: true
+        stdout: SplitParser { onRead: line => root.reduceMotion = line.trim() === "false" }
+    }
+
+    Process {
+        command: ["gsettings", "monitor", "org.gnome.desktop.interface", "enable-animations"]
+        running: true
+        stdout: SplitParser { onRead: line => root.reduceMotion = line.indexOf("false") >= 0 }
     }
 }

@@ -1,0 +1,16 @@
+#!/usr/bin/env node
+// Checks the launcher's fuzzy ranking in qml/fuzzy.js: node shell/fuzzy-check
+const fs = require("fs"), path = require("path"), assert = require("assert");
+const src = fs.readFileSync(path.join(__dirname, "qml/fuzzy.js"), "utf8").replace(".pragma library", "");
+const { score, best } = new Function(src + "; return { score, best };")();
+
+assert(score("Firefox", "firefox") > score("Firefox", "fire"));          // exact over prefix
+assert(score("Firefox", "fire") > score("COSMIC Files", "files"));       // prefix over word start
+assert(score("COSMIC Terminal", "term") > score("Determine", "term"));   // word start over inside
+assert(score("Firefox", "ffx") > 0);                                     // letters in order
+assert(score("COSMIC Files", "cf") > score("Configure", "cf"));          // word starts count
+assert.strictEqual(score("Firefox", "xyz"), 0);
+assert.strictEqual(score("Firefox", "xf"), 0);                           // order matters
+assert.strictEqual(score("", "a"), 0);
+assert.strictEqual(best(["Files", undefined, "explorer"], "expl"), score("explorer", "expl"));
+console.log("ok");
