@@ -96,7 +96,8 @@ jobs:
           mkdir -p out .ccache
           chown -R builder "$GITHUB_WORKSPACE"
           sed -i 's/!ccache/ccache/' /etc/makepkg.conf
-          su builder -c "gpg --auto-key-locate clear,wkd --locate-keys torvalds@kernel.org gregkh@kernel.org"
+          # kernel.org release keys, vendored: key lookups from the runner time out.
+          su builder -c "gpg --import pkgs/linux-kriss/keys/pgp/*.asc"
           su builder -c "cd pkgs/linux-kriss && _march=${{ matrix.march }} \
             CCACHE_DIR='$GITHUB_WORKSPACE/.ccache' CCACHE_MAXSIZE=4G \
             PKGDEST='$GITHUB_WORKSPACE/out' makepkg --syncdeps --noconfirm"
