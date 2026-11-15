@@ -19,6 +19,8 @@ ShellRoot {
     property var users: []      // [[login, name to show]]
     property int user: 0
     readonly property string userName: users.length ? users[user][1] : ""
+    // ponytail: only AccountsService's copy; the greeter user cannot read ~/.face in a private home.
+    readonly property var faces: users.length ? ["/var/lib/AccountsService/icons/" + users[user][0]] : []
     property var sessions: []   // [[name, command, desktop names]], the KrissOS Shell first
     property int session: 0
 

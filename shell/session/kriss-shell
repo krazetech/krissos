@@ -72,7 +72,7 @@ greeter)
     export QT_QPA_PLATFORMTHEME=qt6ct
 
     # COSMIC defaults: the Windows key opens our launcher, Windows+L locks, and the
-    # focused window gets a 3 px Sky Cyan ring with rounder corners. Copied only
+    # focused window gets a 4 px Sky Cyan ring with 20 px corners, as in the concept. Copied only
     # where the user has no value of their own, so their changes win.
     cfg=${XDG_CONFIG_HOME:-$HOME/.config}/cosmic
     seed() {

@@ -32,7 +32,8 @@ ShellRoot {
 
             Image {
                 anchors.fill: parent
-                source: "file:///usr/share/backgrounds/kriss/default.svg"
+                // kriss-theme's wallpaper for the current light or dark theme.
+                source: "file:///usr/share/backgrounds/kriss/kriss-" + (Theme.dark ? "dark" : "light") + ".svg"
                 sourceSize: Qt.size(parent.width, parent.height)
                 fillMode: Image.PreserveAspectCrop
             }
