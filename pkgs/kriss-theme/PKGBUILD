@@ -1,0 +1,32 @@
+# Maintainer: Kraze Tech
+pkgname=kriss-theme
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='KrissOS colours, fonts, wallpaper, Plymouth and Limine theme'
+arch=('any')
+url='https://github.com/krazetech/krissos'
+license=('GPL-3.0-or-later')
+depends=('adw-gtk-theme' 'adwaita-cursors' 'papirus-icon-theme' 'qt6ct' 'ttf-jetbrains-mono')
+makedepends=('python')
+# ponytail: Figtree is only in the AUR, so it cannot be a hard dependency until
+# [kriss] carries a pinned build of it. Without it the UI falls back to the next sans.
+optdepends=('ttf-figtree: the KrissOS UI font (AUR)'
+            'plymouth: boot splash'
+            'limine: boot menu')
+
+# Sources live in this monorepo: every file is rendered from theme/tokens.json.
+_theme="$startdir/../../theme"
+
+build() {
+  python "$_theme/generate.py" "$_theme/templates" "$srcdir/root"
+}
+
+check() {
+  python "$_theme/generate.py" --test
+}
+
+package() {
+  cp -r --no-preserve=ownership "$srcdir/root/." "$pkgdir/"
+  install -d "$pkgdir/usr/share/fontconfig/conf.default"
+  ln -s ../conf.avail/60-kriss.conf "$pkgdir/usr/share/fontconfig/conf.default/"
+}

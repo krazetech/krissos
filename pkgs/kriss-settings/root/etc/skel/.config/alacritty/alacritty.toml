@@ -1,0 +1,2 @@
+[general]
+import = ["/usr/share/kriss/theme/alacritty.toml"]

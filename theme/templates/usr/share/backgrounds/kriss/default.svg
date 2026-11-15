@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- KrissOS placeholder wallpaper. Generated from theme/tokens.json; do not edit. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="3840" height="2160" viewBox="0 0 3840 2160">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="115%" r="80%">
+      <stop offset="0" stop-color="{{accent}}" stop-opacity="0.28"/>
+      <stop offset="0.6" stop-color="{{surface}}" stop-opacity="0.6"/>
+      <stop offset="1" stop-color="{{bg}}" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="3840" height="2160" fill="{{bg}}"/>
+  <rect width="3840" height="2160" fill="url(#glow)"/>
+</svg>
