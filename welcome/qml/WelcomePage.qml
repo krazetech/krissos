@@ -7,10 +7,18 @@ Kirigami.ScrollablePage {
     ColumnLayout {
         spacing: Kirigami.Units.largeSpacing * 2
 
-        Kirigami.Heading {
-            Layout.fillWidth: true
-            text: qsTr("Welcome to KrissOS")
-            wrapMode: Text.WordWrap
+        RowLayout {
+            spacing: Kirigami.Units.largeSpacing * 2
+            Image {
+                source: logo
+                sourceSize.width: Kirigami.Units.gridUnit * 4
+                sourceSize.height: Kirigami.Units.gridUnit * 4
+            }
+            Kirigami.Heading {
+                Layout.fillWidth: true
+                text: qsTr("Welcome to KrissOS")
+                wrapMode: Text.WordWrap
+            }
         }
         QQC2.Label {
             Layout.fillWidth: true

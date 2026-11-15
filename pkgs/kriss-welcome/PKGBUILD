@@ -23,7 +23,7 @@ check() {
 
 package() {
   # Added here, not above: makepkg --syncdeps cannot resolve sibling [kriss] packages.
-  depends+=('kriss-tools>=0.2.0')
+  depends+=('kriss-theme>=0.2.0' 'kriss-tools>=0.2.0')
   local share="$pkgdir/usr/share/kriss-welcome"
   install -Dm644 -t "$share" "$_src"/kriss_welcome.py "$_src"/logic.py
   install -Dm644 -t "$share/qml" "$_src"/qml/*.qml

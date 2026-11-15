@@ -13,6 +13,7 @@ from PySide6.QtQml import QQmlApplicationEngine
 import logic
 
 HERE = pathlib.Path(__file__).resolve().parent
+LOGO = "/usr/share/pixmaps/krissos.svg"  # from kriss-theme
 AUTOSTART = pathlib.Path.home() / ".config/autostart/kriss-welcome.desktop"
 
 
@@ -88,11 +89,12 @@ def main():
     app = QGuiApplication(sys.argv)
     app.setApplicationName("kriss-welcome")
     app.setDesktopFileName("org.krissos.Welcome")
-    app.setWindowIcon(QIcon.fromTheme("start-here-kde"))
+    app.setWindowIcon(QIcon(LOGO))
     engine = QQmlApplicationEngine()
     backend = Backend(app, engine)
     backend.setLanguage("ms" if QLocale.system().name().startswith("ms") else "en")
     engine.rootContext().setContextProperty("backend", backend)
+    engine.rootContext().setContextProperty("logo", "file://" + LOGO)
     engine.load(str(HERE / "qml/Main.qml"))
     if not engine.rootObjects():
         return 1
