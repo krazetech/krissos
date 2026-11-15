@@ -1,0 +1,54 @@
+# KrissOS boot splash. Generated from theme/tokens.json; do not edit.
+# ponytail: the logo is the word "KrissOS" and the spinner dots are text glyphs, so
+# the theme needs no image files. Swap in Image("logo.png") once the logo is redrawn.
+Window.SetBackgroundTopColor({{bg.rgbf}});
+Window.SetBackgroundBottomColor({{bg.rgbf}});
+
+cx = Window.GetX() + Window.GetWidth() / 2;
+cy = Window.GetY() + Window.GetHeight() / 2;
+
+logo = Image.Text("KrissOS", {{fg.rgbf}}, 1, "{{font_sans}} 32");
+logo_sprite = Sprite(logo);
+logo_sprite.SetPosition(cx - logo.GetWidth() / 2, cy - logo.GetHeight() / 2 - 48, 1);
+
+n = 8;
+for (i = 0; i < n; i++) {
+  dot_image = Image.Text("●", {{accent.rgbf}}, 1, "Sans 12");
+  dot[i] = Sprite(dot_image);
+  a = i * 2 * Math.Pi / n;
+  dot[i].SetPosition(cx + 20 * Math.Sin(a) - dot_image.GetWidth() / 2,
+                     cy + 48 - 20 * Math.Cos(a) - dot_image.GetHeight() / 2, 2);
+}
+
+tick = 0;
+fun refresh_callback() {
+  global.tick++;
+  head = Math.Int(global.tick / 6) % global.n;
+  for (i = 0; i < global.n; i++) {
+    behind = (head - i + global.n) % global.n;
+    global.dot[i].SetOpacity(1 - 0.85 * behind / (global.n - 1));
+  }
+}
+Plymouth.SetRefreshFunction(refresh_callback);
+
+# Disk-encryption passphrase prompt.
+prompt_sprite = Sprite();
+bullet_sprite = Sprite();
+fun display_password_callback(prompt, bullets) {
+  text = Image.Text(prompt, {{fg.rgbf}}, 1, "{{font_sans}} 12");
+  global.prompt_sprite.SetImage(text);
+  global.prompt_sprite.SetPosition(global.cx - text.GetWidth() / 2, global.cy + 96, 3);
+  global.prompt_sprite.SetOpacity(1);
+  s = "";
+  for (i = 0; i < bullets; i++) s += "●";
+  mask = Image.Text(s, {{accent.rgbf}}, 1, "Sans 12");
+  global.bullet_sprite.SetImage(mask);
+  global.bullet_sprite.SetPosition(global.cx - mask.GetWidth() / 2, global.cy + 124, 3);
+  global.bullet_sprite.SetOpacity(1);
+}
+fun display_normal_callback() {
+  global.prompt_sprite.SetOpacity(0);
+  global.bullet_sprite.SetOpacity(0);
+}
+Plymouth.SetDisplayPasswordFunction(display_password_callback);
+Plymouth.SetDisplayNormalFunction(display_normal_callback);

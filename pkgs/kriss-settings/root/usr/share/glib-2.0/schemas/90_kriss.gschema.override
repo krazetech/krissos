@@ -1,0 +1,12 @@
+[org.gnome.desktop.interface]
+color-scheme='prefer-dark'
+gtk-theme='{{gtk_theme}}'
+icon-theme='{{icon_theme}}'
+cursor-theme='{{cursor_theme}}'
+font-name='{{font_sans}} 11'
+document-font-name='{{font_sans}} 11'
+monospace-font-name='{{font_mono}} 11'
+
+[org.gnome.desktop.background]
+picture-uri='file:///usr/share/backgrounds/kriss/default.svg'
+picture-uri-dark='file:///usr/share/backgrounds/kriss/default.svg'

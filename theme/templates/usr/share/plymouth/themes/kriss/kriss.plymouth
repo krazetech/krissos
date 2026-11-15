@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=KrissOS
+Description=Black background, logo placeholder and a Sky Cyan spinner.
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/kriss
+ScriptFile=/usr/share/plymouth/themes/kriss/kriss.script

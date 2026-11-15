@@ -1,0 +1,30 @@
+# Maintainer: Kraze Tech
+pkgname=kriss-settings
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='KrissOS default user configs and pacman hooks'
+arch=('any')
+url='https://github.com/krazetech/krissos'
+license=('GPL-3.0-or-later')
+# snap-pac provides the snapper pre/post snapshot hooks; it skips them when snapper
+# has no config.
+depends=('gsettings-desktop-schemas' 'snap-pac')
+makedepends=('python')
+optdepends=('sbctl: re-sign the kernel and bootloader for Secure Boot')
+
+# ponytail: the qt6ct config only takes effect with QT_QPA_PLATFORMTHEME=qt6ct. That is
+# left to the KrissOS Shell session; setting it globally would break Plasma's Qt theming.
+
+# root/ mirrors the installed filesystem. Font and theme names come from
+# theme/tokens.json, so it goes through the same generator as kriss-theme.
+build() {
+  python "$startdir/../../theme/generate.py" "$startdir/root" "$srcdir/root"
+}
+
+package() {
+  # ponytail: kriss-theme is added here, not in the global array, because CI builds each
+  # directory alone and `makepkg --syncdeps` cannot resolve [kriss] packages yet. Move it
+  # up once pkgs.yml installs sibling packages before building.
+  depends+=('kriss-theme')
+  cp -r --no-preserve=ownership "$srcdir/root/." "$pkgdir/"
+}

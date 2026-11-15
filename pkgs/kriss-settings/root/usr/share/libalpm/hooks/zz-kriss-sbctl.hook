@@ -1,0 +1,13 @@
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Path
+Target = usr/lib/modules/*/vmlinuz
+Target = usr/lib/initcpio/*
+Target = usr/share/limine/*
+Target = boot/*
+
+[Action]
+Description = Re-signing the kernel and bootloader for Secure Boot...
+When = PostTransaction
+Exec = /usr/share/libalpm/scripts/kriss-sbctl-resign

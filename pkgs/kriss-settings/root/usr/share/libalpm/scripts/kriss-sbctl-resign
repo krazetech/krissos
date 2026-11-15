@@ -1,0 +1,13 @@
+#!/bin/sh
+# Re-sign the kernel and bootloader after an update. Does nothing until sbctl is
+# installed and has keys, so it is safe on machines without Secure Boot set up.
+command -v sbctl >/dev/null 2>&1 || exit 0
+[ -d /var/lib/sbctl/keys ] || [ -d /usr/share/secureboot/keys ] || exit 0
+
+# ponytail: this signs the files sbctl already tracks (`sbctl sign -s`). Enrolling the
+# kernel and the Limine binary on the ESP, and copying a new Limine there after an
+# upgrade, belongs to the installer (Phase 3).
+sbctl sign-all -g || {
+  echo 'kriss: sbctl sign-all failed; fix this before rebooting with Secure Boot on' >&2
+  exit 1
+}
