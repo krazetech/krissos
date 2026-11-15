@@ -212,3 +212,43 @@ A separate image, built after `110`, on Arch Linux ARM with the Asahi tooling.
   FEX + muvm.
 
 Shared code stays architecture-neutral from day one so this image costs as little as possible.
+
+## 14. Built for Windows switchers
+
+KrissOS's first audience is people leaving Windows: gamers, everyday home users, students and
+office users, and creators and AI tinkerers. Every default is checked against one question:
+*would someone fresh from Windows get stuck here?*
+
+| Area | Decision |
+|---|---|
+| Desktop | KDE Plasma with Windows habits in the KrissOS look: bottom taskbar, Start-style launcher, close button top-right, the Win key opens the menu. Not a Windows 11 clone |
+| Install | Dual-boot alongside Windows by default. The installer resizes Windows safely, detects BitLocker and stops with clear steps if it's on, and keeps Windows in the boot menu |
+| NVIDIA | The installer detects the GPU and installs the right driver (open modules on Turing and newer), so games work on first boot |
+| Apps | Discover with Flathub on by default, pacman underneath |
+| Updates | A tray notice; one click updates, after an automatic btrfs snapshot, so a bad update rolls back from the boot menu |
+| Windows apps | WinBoat up front, adapted to the hardware (see `kriss-welcome`). The Windows licence follows WinBoat's own approach; KrissOS adds no licence step |
+| Anti-cheat | Said upfront: gamers check their games before switching, on the website and in `kriss-welcome` |
+| Language | English and Bahasa Melayu from day one: installer, `kriss-welcome`, website |
+
+### `kriss-welcome`: the first-boot app
+
+A new `[kriss]` package. It opens on first login and stays in the menu.
+
+1. **Bring your apps.** The user picks the Windows apps they use. Each gets one answer: a native
+   alternative, Wine/Proton, or WinBoat. A hardware check decides what is offered: WinBoat only
+   when the PC can run a Windows VM well (about 16 GB RAM, CPU virtualisation on, enough cores);
+   otherwise Wine/Proton and native apps.
+2. **Game checker.** Search a game and see whether it runs, and whether its anti-cheat blocks
+   Linux. Data from a public anti-cheat database and ProtonDB ratings (licences to confirm),
+   bundled and refreshed with package updates. The website uses the same data.
+3. **Copy from Windows.** On dual-boot systems, copy Documents, Pictures, Desktop, Music, Videos
+   and browser bookmarks from the Windows partition. The partition is mounted read-only and never
+   written to; BitLocker-locked partitions are skipped with an explanation.
+4. **Drivers and extras.** Codecs, printers, the gaming pack (`kriss-meta-gaming`), and the local
+   AI setup (Ollama plus the AI CLIs from §9).
+
+- **Stack:** Qt/QML (Kirigami) to match KDE. Every system change goes through `kriss` / `pkexec`
+  commands, so the app holds no root logic of its own.
+- **Strings:** every string is translatable from the start, with English and Bahasa Melayu shipped.
+- **Roadmap:** `kriss-welcome` lands with the installer (§12 step 3); the game checker and
+  Bring your apps go first, because they decide whether people switch at all.
