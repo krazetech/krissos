@@ -48,6 +48,17 @@ Singleton {
     property bool reduceMotion: false
     function ms(duration) { return reduceMotion ? 0 : duration; }
 
+    // Switches the shell, GTK and Qt apps (through the GNOME setting) and COSMIC apps and
+    // the compositor (through COSMIC's own theme mode) together.
+    function setDark(on) {
+        dark = on;
+        Quickshell.execDetached(["sh", "-c",
+            'gsettings set org.gnome.desktop.interface color-scheme "$1"; ' +
+            'd="${XDG_CONFIG_HOME:-$HOME/.config}/cosmic/com.system76.CosmicTheme.Mode/v1"; ' +
+            'mkdir -p "$d" && printf %s "$2" > "$d/is_dark"',
+            "sh", on ? "prefer-dark" : "default", on ? "true" : "false"]);
+    }
+
     function alpha(c, a) {
         const q = Qt.color(c);
         return Qt.rgba(q.r, q.g, q.b, a);

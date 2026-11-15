@@ -1,6 +1,6 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-shell
-pkgver=0.2.0
+pkgver=0.2.1
 pkgrel=1
 pkgdesc='KrissOS Shell: bar, launcher, quick settings, notifications and lock screen on cosmic-comp'
 arch=('any')
@@ -55,7 +55,7 @@ import kriss_protocols.ext_foreign_toplevel_list_v1'
 package() {
   # ponytail: added here, not in the global array, for the same reason as kriss-settings:
   # CI builds each package alone and --syncdeps cannot resolve [kriss] packages yet.
-  depends+=('kriss-theme' 'kriss-settings')
+  depends+=('kriss-theme>=0.3.0' 'kriss-settings')
 
   install -Dm755 "$_shell/session/kriss-shell" "$pkgdir/usr/bin/kriss-shell"
   install -Dm755 "$_shell/kriss-shell-toplevels" "$pkgdir/usr/bin/kriss-shell-toplevels"

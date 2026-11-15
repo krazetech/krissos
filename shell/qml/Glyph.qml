@@ -39,6 +39,8 @@ Item {
         signout: "M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10",
         file: "M6 3h8l4 4v14H6zM14 3v4h4",
         chevron: "M9 6l6 6-6 6",
+        down: "M7 10l5 5 5-5",
+        up: "M7 14l5-5 5 5",
         back: "M15 6l-6 6 6 6"
     })
 

@@ -4,11 +4,11 @@ import Quickshell
 import Quickshell.Services.UPower
 
 // What the lock screen and the login screen share: blurred wallpaper, the time, the
-// emblem, a name and a password field, plus sleep, restart and shut down. `host` holds
+// user's picture, a name and a password field, plus sleep, restart and shut down. `host` holds
 // the typed password (shared by every screen) and does the checking.
 FocusScope {
     id: face
-    // password, message, checking, hint, userName, submit()
+    // password, message, checking, hint, userName, faces (picture paths to try), submit()
     required property var host
     anchors.fill: parent
     focus: true  // a FocusScope, so the password field inside gets the keys
@@ -16,7 +16,8 @@ FocusScope {
     Image {
         id: wall
         anchors.fill: parent
-        source: "file:///usr/share/backgrounds/kriss/default.svg"
+        // Always the dark one: the lock screen is dark in both themes.
+        source: "file:///usr/share/backgrounds/kriss/kriss-dark.svg"
         sourceSize: Qt.size(width, height)
         fillMode: Image.PreserveAspectCrop
         visible: false
@@ -51,16 +52,48 @@ FocusScope {
 
         Item { width: 1; height: 40 }
 
+        // The user's picture, or their initial on an accent disc, as in the launcher.
         Rectangle {
+            id: avatar
             anchors.horizontalCenter: parent.horizontalCenter
-            width: 84; height: 84; radius: 42
-            // The accent disc shows only without kriss-theme's emblem.
-            color: lockLogo.status === Image.Ready ? "transparent" : Theme.accent
+            width: 96; height: 96; radius: 48
+            color: Theme.accent
+            border.width: 5
+            border.color: Theme.alpha(Theme.nightFg, 0.15)
+            // The next path in host.faces after each one that fails to load.
+            property int tried: 0
+            readonly property string path: host.faces[tried] ?? ""
+            Connections {
+                target: face.host
+                function onFacesChanged() { avatar.tried = 0; }
+            }
+
+            Text {
+                anchors.centerIn: parent
+                visible: pic.status !== Image.Ready
+                text: host.userName.charAt(0).toUpperCase()
+                color: Theme.accentInk
+                font { family: Theme.sans; pixelSize: 40; weight: Font.Bold }
+            }
             Image {
-                id: lockLogo
+                id: pic
                 anchors.fill: parent
-                source: "file:///usr/share/pixmaps/krissos.svg"
-                sourceSize: Qt.size(168, 168)
+                anchors.margins: avatar.border.width
+                source: avatar.path ? "file://" + avatar.path : ""
+                sourceSize: Qt.size(192, 192)
+                fillMode: Image.PreserveAspectCrop
+                visible: false
+                onStatusChanged: if (status === Image.Error) avatar.tried++
+            }
+            Rectangle { id: round; anchors.fill: pic; radius: width / 2; visible: false; layer.enabled: true }
+            MultiEffect {
+                anchors.fill: pic
+                visible: pic.status === Image.Ready
+                source: pic
+                maskEnabled: true
+                maskSource: round
+                maskThresholdMin: 0.5
+                maskSpreadAtMin: 1
             }
         }
         Text {

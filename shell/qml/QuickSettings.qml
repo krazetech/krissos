@@ -8,8 +8,8 @@ import Quickshell.Networking
 import Quickshell.Services.Pipewire
 import Quickshell.Services.UPower
 
-// Quick settings, like the Windows Action Center: Wi-Fi, Bluetooth, Do not disturb and
-// the power mode as tiles, then volume, microphone and brightness sliders. The arrow on a
+// Quick settings, like the Windows Action Center: Wi-Fi, Bluetooth, Do not disturb, light
+// or dark and the power mode as tiles, then volume, microphone and brightness sliders. The arrow on a
 // tile, or next to the volume, opens its list (networks, devices, speakers) in place.
 // It opens as a sheet, the way Vaul does: it slides up over a dimmed backdrop, and can be
 // dragged by its handle (or anywhere that isn't a control) down to a peek that shows only
@@ -202,7 +202,13 @@ PanelWindow {
                         onToggled: Desktop.dnd = !Desktop.dnd
                     }
                     Tile {
-                        // Only with power-profiles-daemon, as in the bar.
+                        glyph: Theme.dark ? "sleep" : "sun"
+                        label: Theme.dark ? Tr.t("Dark mode") : Tr.t("Light mode")
+                        on: Theme.dark
+                        onToggled: Theme.setDark(!Theme.dark)
+                    }
+                    Tile {
+                        // Only with power-profiles-daemon (or tuned-ppd), as in the bar.
                         visible: ppd.loaded
                         readonly property var order: PowerProfiles.hasPerformanceProfile
                             ? [PowerProfile.Balanced, PowerProfile.Performance, PowerProfile.PowerSaver]
@@ -394,7 +400,7 @@ PanelWindow {
             cursorShape: Qt.PointingHandCursor
             onClicked: win.page = win.page === tile.list ? "" : tile.list
             Rectangle { anchors.left: parent.left; anchors.verticalCenter: parent.verticalCenter; width: 1; height: 32; color: Theme.alpha(tile.ink, 0.2) }
-            Glyph { anchors.centerIn: parent; name: win.page === tile.list ? "back" : "chevron"; size: 14; color: tile.ink; rotation: 90 }
+            Glyph { anchors.centerIn: parent; name: win.page === tile.list ? "up" : "down"; size: 16; stroke: 1.75; color: tile.ink }
         }
     }
 
@@ -456,7 +462,7 @@ PanelWindow {
             implicitWidth: 24; implicitHeight: 32
             cursorShape: Qt.PointingHandCursor
             onClicked: win.page = win.page === sl.list ? "" : sl.list
-            Glyph { anchors.centerIn: parent; name: "chevron"; size: 14; rotation: win.page === sl.list ? -90 : 90 }
+            Glyph { anchors.centerIn: parent; name: win.page === sl.list ? "up" : "down"; size: 16; stroke: 1.75; color: Theme.soft }
         }
     }
 
