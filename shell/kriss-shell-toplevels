@@ -1,0 +1,135 @@
+#!/usr/bin/env python3
+"""Tell the KrissOS Shell which windows are open, and act on them.
+
+Quickshell lists windows through wlr-foreign-toplevel-management, which
+cosmic-comp does not offer. cosmic-comp has ext-foreign-toplevel-list plus its
+own cosmic-toplevel-info/-management instead, so this helper speaks those.
+
+stdout: one JSON array per change, e.g.
+  [{"id": 3, "appId": "firefox", "title": "Inbox", "active": true, "minimized": false}]
+stdin:  one command per line: "activate ID", "minimize ID" or "close ID".
+
+Bindings are generated at package build time into /usr/lib/kriss-shell
+(see pkgs/kriss-shell/PKGBUILD). KRISS_SHELL_LIB overrides that for development.
+"""
+import json
+import os
+import sys
+import threading
+
+sys.path.insert(0, os.environ.get("KRISS_SHELL_LIB", "/usr/lib/kriss-shell"))
+
+from pywayland.client import Display  # noqa: E402
+
+from kriss_protocols.cosmic_toplevel_info_unstable_v1 import ZcosmicToplevelInfoV1  # noqa: E402
+from kriss_protocols.cosmic_toplevel_management_unstable_v1 import ZcosmicToplevelManagerV1  # noqa: E402
+from kriss_protocols.ext_foreign_toplevel_list_v1 import ExtForeignToplevelListV1  # noqa: E402
+from kriss_protocols.wayland import WlSeat  # noqa: E402
+
+MINIMIZED, ACTIVATED = 1, 2  # zcosmic_toplevel_handle_v1.state entries
+
+
+def states(raw):
+    """The state event's array is packed native-endian uint32s."""
+    return {int.from_bytes(raw[i:i + 4], sys.byteorder) for i in range(0, len(raw), 4)}
+
+
+class Toplevels:
+    def __init__(self, display):
+        self.display = display
+        self.globals = {}
+        self.windows = {}  # id -> {"appId", "title", "active", "minimized", "cosmic"}
+        self.next_id = 1
+        self.lock = threading.Lock()
+
+    def on_global(self, registry, name, interface, version):
+        wanted = {
+            "ext_foreign_toplevel_list_v1": (ExtForeignToplevelListV1, 1),
+            "zcosmic_toplevel_info_v1": (ZcosmicToplevelInfoV1, 3),
+            "zcosmic_toplevel_manager_v1": (ZcosmicToplevelManagerV1, 4),
+            "wl_seat": (WlSeat, 1),
+        }
+        if interface in wanted and interface not in self.globals:
+            iface, ours = wanted[interface]
+            self.globals[interface] = registry.bind(name, iface, min(version, ours))
+
+    def start(self):
+        registry = self.display.get_registry()
+        registry.dispatcher["global"] = self.on_global
+        self.display.roundtrip()
+        missing = {"ext_foreign_toplevel_list_v1", "zcosmic_toplevel_info_v1",
+                   "zcosmic_toplevel_manager_v1", "wl_seat"} - self.globals.keys()
+        if missing:
+            sys.exit(f"kriss-shell-toplevels: compositor lacks {', '.join(sorted(missing))}")
+        self.globals["ext_foreign_toplevel_list_v1"].dispatcher["toplevel"] = self.on_toplevel
+
+    def on_toplevel(self, _list, handle):
+        wid = self.next_id
+        self.next_id += 1
+        win = {"appId": "", "title": "", "active": False, "minimized": False}
+        with self.lock:
+            self.windows[wid] = win
+        cosmic = self.globals["zcosmic_toplevel_info_v1"].get_cosmic_toplevel(handle)
+        win["cosmic"] = cosmic
+
+        def set_field(key):
+            return lambda _h, value: win.__setitem__(key, value)
+
+        def on_state(_h, raw):
+            s = states(raw)
+            win["active"], win["minimized"] = ACTIVATED in s, MINIMIZED in s
+            self.emit()
+
+        def on_closed(_h):
+            with self.lock:
+                self.windows.pop(wid, None)
+            cosmic.destroy()
+            handle.destroy()
+            self.emit()
+
+        handle.dispatcher["app_id"] = set_field("appId")
+        handle.dispatcher["title"] = set_field("title")
+        handle.dispatcher["done"] = lambda _h: self.emit()
+        handle.dispatcher["closed"] = on_closed
+        cosmic.dispatcher["state"] = on_state
+
+    def emit(self):
+        with self.lock:
+            out = [{k: v for k, v in w.items() if k != "cosmic"} | {"id": wid}
+                   for wid, w in self.windows.items()]
+        print(json.dumps(out), flush=True)
+
+    def command(self, line):
+        verb, _, arg = line.strip().partition(" ")
+        with self.lock:
+            win = self.windows.get(int(arg)) if arg.isdigit() else None
+        if not win:
+            return
+        manager = self.globals["zcosmic_toplevel_manager_v1"]
+        if verb == "activate":
+            manager.activate(win["cosmic"], self.globals["wl_seat"])
+        elif verb == "minimize":
+            manager.set_minimized(win["cosmic"])
+        elif verb == "close":
+            manager.close(win["cosmic"])
+        self.display.flush()
+
+
+def main():
+    with Display() as display:
+        tops = Toplevels(display)
+        tops.start()
+        tops.emit()
+
+        # libwayland lets another thread send requests while this one waits in dispatch.
+        def read_commands():
+            for line in sys.stdin:
+                tops.command(line)
+        threading.Thread(target=read_commands, daemon=True).start()
+
+        while display.dispatch(block=True) != -1:
+            pass
+
+
+if __name__ == "__main__":
+    main()
