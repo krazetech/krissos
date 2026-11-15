@@ -23,7 +23,7 @@ benchmark numbers. The desktop is a concept of KrissOS Shell, and is labelled as
 | 11 | 57.0–61.5 | WinBoat | **"Windows apps, on your desktop."** A Windows app window floats beside native ones. `kriss winapps setup`. | Coming in 110 |
 | 12 | 61.5–68.5 | Local AI | **"AI that stays on your machine."** Terminal: `ollama run` answers a question; a last line reads `gpu: detected · runs offline`. Then an opt-in checklist: Claude Code, Codex CLI, Gemini CLI, Antigravity. | Coming in 110 |
 | 13 | 68.5–73.0 | `[kriss]` | **"Every package. Signed."** The `[kriss]` block from `pacman.conf`. *Built in CI. Published on GitHub Releases.* | |
-| 14 | 73.0–78.0 | Close | **"KrissOS 110."** *Work. Play. Think.* Then `github.com/krazetech/krissos`. | |
+| 14 | 73.0–78.0 | Close | **"KrissOS 110."** *Work. Play. Think.* Then `krazetech.github.io/krissos` and `github.com/krazetech/krissos`. | |
 
 ## Audio
 
