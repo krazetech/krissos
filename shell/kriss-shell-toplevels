@@ -6,7 +6,8 @@ cosmic-comp does not offer. cosmic-comp has ext-foreign-toplevel-list plus its
 own cosmic-toplevel-info/-management instead, so this helper speaks those.
 
 stdout: one JSON array per change, e.g.
-  [{"id": 3, "appId": "firefox", "title": "Inbox", "active": true, "minimized": false}]
+  [{"id": 3, "appId": "firefox", "title": "Inbox", "active": true, "minimized": false,
+    "output": "DP-1"}]
 stdin:  one command per line: "activate ID", "minimize ID" or "close ID".
 
 Bindings are generated at package build time into /usr/lib/kriss-shell
@@ -24,7 +25,7 @@ from pywayland.client import Display  # noqa: E402
 from kriss_protocols.cosmic_toplevel_info_unstable_v1 import ZcosmicToplevelInfoV1  # noqa: E402
 from kriss_protocols.cosmic_toplevel_management_unstable_v1 import ZcosmicToplevelManagerV1  # noqa: E402
 from kriss_protocols.ext_foreign_toplevel_list_v1 import ExtForeignToplevelListV1  # noqa: E402
-from kriss_protocols.wayland import WlSeat  # noqa: E402
+from kriss_protocols.wayland import WlOutput, WlSeat  # noqa: E402
 
 MINIMIZED, ACTIVATED = 1, 2  # zcosmic_toplevel_handle_v1.state entries
 
@@ -38,7 +39,8 @@ class Toplevels:
     def __init__(self, display):
         self.display = display
         self.globals = {}
-        self.windows = {}  # id -> {"appId", "title", "active", "minimized", "cosmic"}
+        self.windows = {}  # id -> {"appId", "title", "active", "minimized", "output", "cosmic"}
+        self.outputs = {}  # wl_output proxy -> connector name, e.g. "DP-1"
         self.next_id = 1
         self.lock = threading.Lock()
 
@@ -49,7 +51,12 @@ class Toplevels:
             "zcosmic_toplevel_manager_v1": (ZcosmicToplevelManagerV1, 4),
             "wl_seat": (WlSeat, 1),
         }
-        if interface in wanted and interface not in self.globals:
+        if interface == "wl_output" and version >= 4:
+            # Every screen, including ones plugged in later. ponytail: unplugged ones
+            # are not forgotten; a stale name in the dict is harmless.
+            output = registry.bind(name, WlOutput, 4)
+            output.dispatcher["name"] = lambda o, n: self.outputs.__setitem__(o, n)
+        elif interface in wanted and interface not in self.globals:
             iface, ours = wanted[interface]
             self.globals[interface] = registry.bind(name, iface, min(version, ours))
 
@@ -66,7 +73,7 @@ class Toplevels:
     def on_toplevel(self, _list, handle):
         wid = self.next_id
         self.next_id += 1
-        win = {"appId": "", "title": "", "active": False, "minimized": False}
+        win = {"appId": "", "title": "", "active": False, "minimized": False, "output": ""}
         with self.lock:
             self.windows[wid] = win
         cosmic = self.globals["zcosmic_toplevel_info_v1"].get_cosmic_toplevel(handle)
@@ -87,11 +94,16 @@ class Toplevels:
             handle.destroy()
             self.emit()
 
+        def on_output(_h, output):
+            win["output"] = self.outputs.get(output, "")
+            self.emit()
+
         handle.dispatcher["app_id"] = set_field("appId")
         handle.dispatcher["title"] = set_field("title")
         handle.dispatcher["done"] = lambda _h: self.emit()
         handle.dispatcher["closed"] = on_closed
         cosmic.dispatcher["state"] = on_state
+        cosmic.dispatcher["output_enter"] = on_output
 
     def emit(self):
         with self.lock:

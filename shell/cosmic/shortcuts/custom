@@ -1,3 +1,15 @@
 {
     (modifiers: [Super], key: "l"): System(LockScreen),
+    // Windows habits.
+    (modifiers: [Super], key: "d"): Spawn("kriss-shell desktop"),
+    (modifiers: [Super], key: "e"): System(HomeFolder),
+    (modifiers: [Super], key: "a"): Spawn("kriss-shell quick"),
+    (modifiers: [Super], key: "n"): Spawn("kriss-shell notifications"),
+    // Snap the window to a half (cosmic-comp's Move on a floating window). Up maximizes and
+    // Down minimizes, as on Windows; COSMIC's Windows+Shift+arrows still snap to quarters.
+    (modifiers: [Super], key: "Left"): Move(Left),
+    (modifiers: [Super], key: "Right"): Move(Right),
+    (modifiers: [Super], key: "Up"): Maximize,
+    (modifiers: [Super], key: "Down"): Minimize,
+    (modifiers: [Super, Shift], key: "s"): Spawn("kriss-shell screenshot region"),
 }

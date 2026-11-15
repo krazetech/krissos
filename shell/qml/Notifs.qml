@@ -4,8 +4,9 @@ import QtQuick
 import Quickshell
 import Quickshell.Services.Notifications
 
-// The notification daemon. Toasts show for a few seconds; every notification stays
-// in the list behind the bell until it is dismissed.
+// The notification daemon. Toasts show for a few seconds on the focused screen; every
+// notification stays in the list behind the bell until it is dismissed. Do not disturb
+// stops the toasts, except critical ones (a low battery, say).
 Singleton {
     id: root
 
@@ -15,7 +16,8 @@ Singleton {
     property real now: Date.now()
 
     function isPopup(n) {
-        return n.urgency === NotificationUrgency.Critical || now - (arrived[n.id] ?? 0) < popupMs;
+        if (n.urgency === NotificationUrgency.Critical) return true;
+        return !Desktop.dnd && now - (arrived[n.id] ?? 0) < popupMs;
     }
 
     // Taking an action finishes a notification, as on Windows, unless the app asked
@@ -39,6 +41,9 @@ Singleton {
             n.tracked = true;
             root.arrived[n.id] = Date.now();
             root.now = Date.now();
+            // Follow the focused window's screen, unless a panel is open on another one.
+            if (!Desktop.launcherOpen && !Desktop.notificationsOpen && !Desktop.quickOpen)
+                Desktop.screen = Desktop.focusedScreen();
         }
     }
 

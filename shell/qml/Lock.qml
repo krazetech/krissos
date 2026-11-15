@@ -30,7 +30,7 @@ Scope {
             if (result === PamResult.Success) {
                 Desktop.locked = false;
             } else {
-                root.message = "That password didn't work. Try again.";
+                root.message = Tr.t("That password didn't work. Try again.");
             }
         }
     }
@@ -72,7 +72,7 @@ Scope {
                 }
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    text: Qt.formatDateTime(clock.date, "dddd, d MMMM")
+                    text: clock.date.toLocaleString(Qt.locale(), "dddd, d MMMM")
                     color: Theme.alpha(Theme.nightFg, 0.8)
                     font { family: Theme.sans; pixelSize: 24; weight: Font.Medium }
                 }
@@ -127,7 +127,7 @@ Scope {
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             visible: !field.text
-                            text: root.checking ? "Checking…" : "Password"
+                            text: root.checking ? Tr.t("Checking…") : Tr.t("Password")
                             color: Theme.alpha(Theme.nightFg, 0.6)
                             font { family: Theme.sans; pixelSize: 16 }
                         }
@@ -136,7 +136,7 @@ Scope {
 
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    text: root.message || "Press Enter to unlock"
+                    text: root.message || Tr.t("Press Enter to unlock")
                     color: root.message ? Theme.red : Theme.alpha(Theme.nightFg, 0.7)
                     font { family: Theme.sans; pixelSize: 14 }
                 }
@@ -151,15 +151,15 @@ Scope {
                 Text {
                     visible: UPower.displayDevice.isLaptopBattery
                     anchors.verticalCenter: parent.verticalCenter
-                    text: Math.round(UPower.displayDevice.percentage * 100) + "% battery"
+                    text: Tr.t("%1% battery", Math.round(UPower.displayDevice.percentage * 100))
                     color: Theme.alpha(Theme.nightFg, 0.8)
                     font { family: Theme.sans; pixelSize: 14 }
                 }
                 Repeater {
                     model: [
-                        ["sleep", "Sleep", ["systemctl", "suspend"]],
-                        ["restart", "Restart", ["systemctl", "reboot"]],
-                        ["power", "Shut down", ["systemctl", "poweroff"]]
+                        ["sleep", Tr.t("Sleep"), ["systemctl", "suspend"]],
+                        ["restart", Tr.t("Restart"), ["systemctl", "reboot"]],
+                        ["power", Tr.t("Shut down"), ["systemctl", "poweroff"]]
                     ]
                     delegate: MouseArea {
                         id: act

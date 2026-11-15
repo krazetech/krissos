@@ -1,17 +1,21 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-shell
-pkgver=0.1.0
+pkgver=0.2.0
 pkgrel=1
-pkgdesc='KrissOS Shell: bar, launcher, notifications and lock screen on cosmic-comp'
+pkgdesc='KrissOS Shell: bar, launcher, quick settings, notifications and lock screen on cosmic-comp'
 arch=('any')
 url='https://github.com/krazetech/krissos'
 license=('GPL-3.0-or-later')
-depends=('cosmic-comp' 'quickshell' 'python-pywayland' 'glib2' 'dbus')
+depends=('cosmic-comp' 'quickshell' 'python-pywayland' 'glib2' 'dbus'
+         'grim' 'slurp' 'wl-clipboard' 'xdg-user-dirs' 'brightnessctl')
 makedepends=('python' 'python-pywayland' 'wayland' 'wayland-protocols')
-optdepends=('networkmanager: network status in the bar'
-            'pipewire: volume in the bar'
+optdepends=('networkmanager: network status and Wi-Fi in quick settings'
+            'bluez: Bluetooth in quick settings'
+            'libnotify: a notification after a screenshot'
+            'dolphin: the file manager Windows+E opens'
+            'pipewire: volume, microphone and sound output'
             'upower: battery in the bar'
-            'power-profiles-daemon: power profile switch in the bar')
+            'power-profiles-daemon: power profile switch in the bar and quick settings')
 
 # Sources live in this monorepo. Colours and fonts in the QML and the COSMIC defaults
 # are rendered from theme/tokens.json, like kriss-theme.
@@ -34,6 +38,8 @@ build() {
 
 check() {
   sh -n "$_shell/session/kriss-shell"
+  # Every shell string has a Bahasa Melayu translation.
+  python "$_shell/i18n-check"
   KRISS_SHELL_LIB="$srcdir" python -c '
 import os, sys
 sys.path.insert(0, os.environ["KRISS_SHELL_LIB"])

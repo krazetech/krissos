@@ -2,20 +2,67 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import Quickshell.Io
 
-// What the bar, launcher, notifications and lock screen share.
+// What the bar, launcher, panels and lock screen share, and the user's shell settings.
 Singleton {
+    id: root
+
     property bool launcherOpen: false
     property bool notificationsOpen: false
+    property bool quickOpen: false
     property bool locked: false
 
-    // Pinned apps, as desktop file ids. The bar shows the first six, the launcher all of them.
-    // ponytail: fixed list, missing apps are skipped. Add pin/unpin from the menu when asked for.
-    readonly property var pinned: [
-        "firefox", "org.gnome.Nautilus", "org.kde.dolphin", "kitty", "org.wezfurlong.wezterm",
-        "code", "steam", "winboat", "thunderbird", "org.gnome.Calendar", "org.gnome.Loupe",
-        "org.kde.elisa", "com.github.th_ch.youtube_music", "org.gnome.Settings", "systemsettings"
-    ]
+    // The screen the launcher, notifications and quick settings open on. A click on a
+    // bar sets it to that bar's screen; a key press uses the screen of the focused window.
+    property var screen: Quickshell.screens[0]
+
+    function focusedScreen() {
+        const out = Windows.list.find(w => w.active && !w.minimized)?.output;
+        return Quickshell.screens.find(s => s.name === out) ?? screen ?? Quickshell.screens[0];
+    }
+
+    // ~/.config/kriss/shell.json. Missing keys keep the defaults below.
+    property alias pinned: config.pinned
+    property alias dnd: config.dnd
+
+    FileView {
+        path: (Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config") + "/kriss/shell.json"
+        watchChanges: true
+        printErrors: false
+        onFileChanged: reload()
+        onAdapterUpdated: writeAdapter()
+
+        JsonAdapter {
+            id: config
+            // Pinned apps, as desktop file ids, in taskbar order. Missing apps are skipped.
+            property list<string> pinned: [
+                "firefox", "org.gnome.Nautilus", "org.kde.dolphin", "kitty", "org.wezfurlong.wezterm",
+                "code", "steam", "winboat", "thunderbird", "org.gnome.Calendar", "org.gnome.Loupe",
+                "org.kde.elisa", "com.github.th_ch.youtube_music", "org.gnome.Settings", "systemsettings"
+            ]
+            // Do not disturb: no toasts, notifications still collect behind the bell.
+            property bool dnd: false
+        }
+    }
+
+    function isPinned(id) {
+        return pinned.indexOf(id) >= 0;
+    }
+
+    function togglePin(id) {
+        pinned = isPinned(id) ? pinned.filter(p => p !== id) : pinned.concat([id]);
+    }
+
+    // Drag to reorder: pinned app `id` takes the place of pinned app `target`.
+    function movePin(id, target) {
+        const list = pinned.slice();
+        const from = list.indexOf(id), to = list.indexOf(target);
+        if (from < 0 || to < 0 || from === to) return;
+        list.splice(from, 1);
+        list.splice(to, 0, id);
+        pinned = list;
+    }
 
     function pinnedEntries(limit) {
         // Read the app list so bindings that call this re-run once Quickshell has

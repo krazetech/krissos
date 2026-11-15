@@ -13,7 +13,7 @@ PanelWindow {
     readonly property var items: Desktop.notificationsOpen ? Notifs.all : Notifs.all.filter(n => Notifs.isPopup(n))
 
     visible: items.length > 0 || Desktop.notificationsOpen
-    screen: Quickshell.screens[0]
+    screen: Desktop.screen
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "kriss-notifications"
     exclusionMode: ExclusionMode.Ignore
@@ -43,7 +43,7 @@ PanelWindow {
             anchors.rightMargin: 10
             Text {
                 Layout.fillWidth: true
-                text: Notifs.all.length ? "Notifications" : "No new notifications"
+                text: Notifs.all.length ? Tr.t("Notifications") : Tr.t("No new notifications")
                 color: Theme.fg
                 font { family: Theme.sans; pixelSize: 14; weight: Font.DemiBold }
             }
@@ -57,7 +57,7 @@ PanelWindow {
                 Text {
                     id: clearText
                     anchors.centerIn: parent
-                    text: "Clear all"
+                    text: Tr.t("Clear all")
                     color: Theme.fg
                     font { family: Theme.sans; pixelSize: 12; weight: Font.DemiBold }
                 }

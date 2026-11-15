@@ -12,8 +12,7 @@ PanelWindow {
     id: win
 
     visible: Desktop.launcherOpen
-    // ponytail: opens on the first screen; follow the focused output once multi-monitor users ask.
-    screen: Quickshell.screens[0]
+    screen: Desktop.screen
 
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.namespace: "kriss-launcher"
@@ -36,7 +35,7 @@ PanelWindow {
 
     readonly property var shown: {
         const q = query.trim().toLowerCase();
-        if (!q) return allApps ? everything : Desktop.pinnedEntries(12);
+        if (!q) return allApps ? everything : Desktop.pinnedEntries();
         const hit = e => [e.name, e.genericName, ...e.keywords].some(s => s && s.toLowerCase().includes(q));
         const starts = e => e.name.toLowerCase().startsWith(q);
         return everything.filter(hit).sort((a, b) => starts(b) - starts(a)).slice(0, 18);
@@ -73,12 +72,12 @@ PanelWindow {
 
     function ago(d) {
         const min = Math.round((Date.now() - d) / 60000);
-        if (min < 1) return "Just now";
-        if (min < 60) return min + " min ago";
+        if (min < 1) return Tr.t("Just now");
+        if (min < 60) return Tr.t("%1 min ago", min);
         const today = new Date(); today.setHours(0, 0, 0, 0);
-        if (d >= today) return "Today at " + Qt.formatTime(d, "HH:mm");
-        if (d >= today - 86400000) return "Yesterday at " + Qt.formatTime(d, "HH:mm");
-        return Qt.formatDate(d, "d MMM");
+        if (d >= today) return Tr.t("Today at %1", Qt.formatTime(d, "HH:mm"));
+        if (d >= today - 86400000) return Tr.t("Yesterday at %1", Qt.formatTime(d, "HH:mm"));
+        return d.toLocaleString(Qt.locale(), "d MMM");
     }
 
     MouseArea {
@@ -137,7 +136,7 @@ PanelWindow {
                         onTextChanged: win.query = text
                         Text {
                             visible: !search.text
-                            text: "Search for apps, settings and files"
+                            text: Tr.t("Search for apps, settings and files")
                             color: Theme.soft
                             font: search.font
                         }
@@ -156,13 +155,13 @@ PanelWindow {
                 Layout.fillWidth: true
                 Text {
                     Layout.fillWidth: true
-                    text: win.query ? "Best match" : win.allApps ? "All apps" : "Pinned"
+                    text: win.query ? Tr.t("Best match") : win.allApps ? Tr.t("All apps") : Tr.t("Pinned")
                     color: Theme.fg
                     font { family: Theme.sans; pixelSize: 15; weight: Font.DemiBold }
                 }
                 Chip {
                     visible: !win.query
-                    label: win.allApps ? "Back" : "All apps"
+                    label: win.allApps ? Tr.t("Back") : Tr.t("All apps")
                     glyph: win.allApps ? "back" : "chevron"
                     onClicked: win.allApps = !win.allApps
                 }
@@ -189,7 +188,15 @@ PanelWindow {
                     height: grid.cellHeight
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: win.launch(modelData)
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+                    onClicked: mouse => {
+                        if (mouse.button === Qt.LeftButton) return win.launch(modelData);
+                        const id = modelData.id;
+                        appMenu.show(cell, [
+                            [Tr.t("Open"), () => win.launch(modelData)],
+                            [Desktop.isPinned(id) ? Tr.t("Unpin from taskbar") : Tr.t("Pin to taskbar"), () => Desktop.togglePin(id)]
+                        ]);
+                    }
 
                     Rectangle {
                         anchors.fill: parent
@@ -231,7 +238,7 @@ PanelWindow {
                 Layout.preferredHeight: 80
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
-                text: win.query ? "No apps match that search." : "Pin apps to see them here."
+                text: win.query ? Tr.t("No apps match that search.") : Tr.t("Right-click an app to pin it.")
                 color: Theme.soft
                 font { family: Theme.sans; pixelSize: 14 }
             }
@@ -243,7 +250,7 @@ PanelWindow {
                 Layout.topMargin: 4
                 Text {
                     Layout.fillWidth: true
-                    text: "Recommended"
+                    text: Tr.t("Recommended")
                     color: Theme.fg
                     font { family: Theme.sans; pixelSize: 15; weight: Font.DemiBold }
                 }
@@ -304,7 +311,7 @@ PanelWindow {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 52
                     verticalAlignment: Text.AlignVCenter
-                    text: "Files you open will show up here."
+                    text: Tr.t("Files you open will show up here.")
                     color: Theme.soft
                     font { family: Theme.sans; pixelSize: 13 }
                 }
@@ -376,12 +383,12 @@ PanelWindow {
                 width: parent.width - 12
                 Repeater {
                     model: [
-                        ["lock", "Lock", () => { win.close(); Desktop.locked = true; }],
-                        ["sleep", "Sleep", () => { win.close(); Quickshell.execDetached(["systemctl", "suspend"]); }],
-                        ["restart", "Restart", () => Quickshell.execDetached(["systemctl", "reboot"])],
-                        ["power", "Shut down", () => Quickshell.execDetached(["systemctl", "poweroff"])],
+                        ["lock", Tr.t("Lock"), () => { win.close(); Desktop.locked = true; }],
+                        ["sleep", Tr.t("Sleep"), () => { win.close(); Quickshell.execDetached(["systemctl", "suspend"]); }],
+                        ["restart", Tr.t("Restart"), () => Quickshell.execDetached(["systemctl", "reboot"])],
+                        ["power", Tr.t("Shut down"), () => Quickshell.execDetached(["systemctl", "poweroff"])],
                         // Quitting the shell cleanly ends the session (see kriss-shell).
-                        ["signout", "Sign out", () => Qt.quit()]
+                        ["signout", Tr.t("Sign out"), () => Qt.quit()]
                     ]
                     delegate: MouseArea {
                         id: item
@@ -409,6 +416,8 @@ PanelWindow {
             }
         }
     }
+
+    Menu { id: appMenu }
 
     component Chip: MouseArea {
         id: chip

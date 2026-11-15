@@ -1,16 +1,18 @@
 # KrissOS Shell
 
-The KrissOS desktop: one floating bottom bar, a Windows-style launcher, notifications and a
-lock screen, written in QML for [Quickshell](https://quickshell.org) and running on
+The KrissOS desktop: one floating bottom bar with a system tray, a Windows-style launcher,
+quick settings, notifications and a lock screen, written in QML for [Quickshell](https://quickshell.org) and running on
 `cosmic-comp`. Packaged as `pkgs/kriss-shell`; SDDM lists it as **KrissOS Shell**.
 
 | Path | What it is |
 |---|---|
 | `qml/` | The shell. `shell.qml` is the entry point. Colours and fonts are `{{token}}` placeholders filled from `theme/tokens.json` at build time |
-| `kriss-shell-toplevels` | Python helper that lists open windows and focuses, minimizes or closes them. Quickshell can't read windows from cosmic-comp directly |
+| `qml/i18n/` | Translations, one `<lang>.json` per language (`ms` is Bahasa Melayu). See below |
+| `i18n-check` | Checks every shell string has a translation; `--list` prints them all |
+| `kriss-shell-toplevels` | Python helper that lists open windows (and the screen each is on) and focuses, minimizes or closes them. Quickshell can't read windows from cosmic-comp directly |
 | `protocols/` | COSMIC protocol files the helper's bindings are generated from |
-| `session/kriss-shell` | Starts the session, and handles `kriss-shell launcher` / `kriss-shell lock` |
-| `cosmic/` | Defaults copied into `~/.config/cosmic` on first start: the Windows key opens the launcher, Windows+L locks, and the focused window gets the Sky Cyan ring. Existing user values are left alone |
+| `session/kriss-shell` | Starts the session, and handles the commands the shortcuts below run |
+| `cosmic/` | Defaults copied into `~/.config/cosmic` on first start: the shortcuts below, and the Sky Cyan ring on the focused window. Existing user values are left alone |
 | `mockup/index.html` | The approved concept |
 
 ## Run it nested for development
@@ -54,3 +56,36 @@ gsettings set org.gnome.desktop.interface color-scheme default
 ```
 
 The last one switches to the light variant; `prefer-dark` switches back.
+
+## Settings
+
+Pinned apps (in taskbar order) and Do not disturb are kept in `~/.config/kriss/shell.json`.
+Right-click an app on the bar or in the launcher to pin or unpin it; drag a pinned app along the
+bar to move it. Without the file, the defaults in `qml/Desktop.qml` apply.
+
+## Windows shortcuts
+
+| Keys | Does |
+|---|---|
+| Windows | Launcher |
+| Windows+A | Quick settings |
+| Windows+N | Notifications |
+| Windows+D | Show the desktop; again to bring the windows back |
+| Windows+E | Dolphin |
+| Windows+L | Lock |
+| Windows+Left / Right | Snap the window to that half (Windows+Shift+Up / Down then makes it a quarter) |
+| Windows+Up / Down | Maximize / minimize |
+| Windows+1…9 | Go to that workspace |
+| Windows+Shift+1…9 | Move the window to that workspace |
+| Print Screen | Screenshot of everything, to `~/Pictures/Screenshots` and the clipboard |
+| Windows+Shift+S | Screenshot of a dragged region |
+| Alt+Tab, Alt+F4 | cosmic-comp's own |
+
+## Translations
+
+Quickshell installs no Qt translator, so `qsTr()` would always return English. Shell strings go
+through `Tr.t("English text")` instead, which looks the text up in `qml/i18n/<lang>.json` for the
+language in `LANGUAGE`, `LC_ALL`, `LC_MESSAGES` or `LANG`. To add a language, save the output of
+`shell/i18n-check --list` as `qml/i18n/<lang>.json`, turn the list into
+`{"English": "translation"}`, and run `shell/i18n-check` until it is quiet (the package build
+runs it too).
