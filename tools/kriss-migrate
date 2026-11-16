@@ -349,7 +349,15 @@ packages() {
     printf '%s\n' "${rebuild[@]#*/}" | column -c 88 | sed 's/^/     | /' 
   else
     mapfile -t rebuild < <(arch_rebuilds)
-    if ((${#rebuild[@]})); then pac -S "${rebuild[@]}"; fi
+    if ((${#rebuild[@]})); then
+      # Same version means the same file name: the CachyOS build in pacman's cache would
+      # be checked against Arch's signature and refused. Drop it, so Arch's is fetched.
+      local url
+      while read -r url; do
+        rm -f "/var/cache/pacman/pkg/${url##*/}" "/var/cache/pacman/pkg/${url##*/}.sig"
+      done < <(pacman -Sp "${rebuild[@]}")
+      pac -S "${rebuild[@]}"
+    fi
   fi
 }
 
