@@ -15,6 +15,8 @@ PanelWindow {
 
     required property var modelData
     screen: modelData
+    // Gone while a fullscreen window is in front on this screen, as on Windows.
+    visible: !Windows.fullscreenOn(modelData)
 
     WlrLayershell.namespace: "kriss-bar"
     // Windows+T puts the keyboard on the app buttons (see focusStep). Otherwise on demand: a

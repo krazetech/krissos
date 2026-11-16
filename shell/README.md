@@ -11,7 +11,7 @@ SDDM lists it as **KrissOS Shell**.
 | `qml/i18n/` | Translations, one `<lang>.json` per language (`ms` is Bahasa Melayu). See below |
 | `fuzzy-check` | Tests the launcher's fuzzy ranking and the menus' type-ahead: `node shell/fuzzy-check` |
 | `i18n-check` | Checks every shell string has a translation; `--list` prints them all |
-| `kriss-shell-toplevels` | Python helper that lists open windows (and the screen each is on), focuses, minimizes or closes them, and captures the taskbar's window previews while they are shown. Quickshell can't read or capture windows from cosmic-comp directly |
+| `kriss-shell-toplevels` | Python helper that lists open windows (the screen each is on, and whether it is fullscreen), focuses, minimizes or closes them, and captures the taskbar's window previews while they are shown. Quickshell can't read or capture windows from cosmic-comp directly |
 | `toplevels-check` | Run inside a cosmic-comp session: checks `kriss-shell-toplevels` still sees a new window after Python's garbage collector runs (`shell/toplevels-check alacritty`; cosmic-term by default) |
 | `protocols/` | COSMIC protocol files the helper's bindings are generated from |
 | `session/kriss-shell` | Starts the session and the login screen, and handles the commands the shortcuts below run |
@@ -112,6 +112,11 @@ quick settings is a sheet like [Vaul](https://vaul.emilkowal.ski), and the clock
 volume digits roll like [NumberFlow](https://number-flow.barvian.me). Menus follow Radix's
 keyboard rules. Every animation goes through `Theme.ms()`, which is 0 when
 `org.gnome.desktop.interface enable-animations` is off.
+
+A fullscreen window in front on a screen (a game, a video) hides that screen's bar and holds
+toasts, as on Windows. What arrives meanwhile goes straight to the list behind the bell; critical
+ones still show. The bar comes back when the window leaves fullscreen or another window there
+takes focus.
 
 ## Settings
 
