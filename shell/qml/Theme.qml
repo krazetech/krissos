@@ -38,7 +38,14 @@ Singleton {
     readonly property string mono: "{{font_mono}}"
 
     // Geometry is not a token: it only lives here.
-    readonly property int barHeight: 60
+    // The taskbar, sized like Windows 11's: 48 tall, 40 px buttons, 24 px icons.
+    readonly property int barHeight: 48
+    readonly property int barButton: 40
+    readonly property int barIcon: 24
+    readonly property int barRadius: 10    // hover and active backgrounds in the bar
+    readonly property int trayIcon: 18
+    // Between the bar and the panels that open from it, and from the screen's edge.
+    readonly property int panelGap: 12
     readonly property int gap: 16
     readonly property int radius: 22
     readonly property int radiusSmall: 14

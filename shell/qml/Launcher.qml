@@ -151,8 +151,8 @@ PanelWindow {
         id: panel
         anchors.left: parent.left
         anchors.bottom: parent.bottom
-        anchors.leftMargin: Theme.gap * 1.5
-        anchors.bottomMargin: Theme.gap
+        anchors.leftMargin: Theme.panelGap
+        anchors.bottomMargin: Theme.panelGap
         width: 600
         height: body.implicitHeight + body.anchors.topMargin + body.anchors.bottomMargin + foot.height
         radius: Theme.radius + 4
