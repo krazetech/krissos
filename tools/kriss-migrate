@@ -327,11 +327,15 @@ packages() {
   # ponytail: nvidia-open-dkms only; a pre-Turing GPU wants kriss nvidia setup afterwards.
   if pacman -Qq | grep -q '^linux-cachyos.*nvidia'; then pkgs+=(nvidia-open-dkms); fi
   if pacman -Q dkms >/dev/null 2>&1 || [[ " ${pkgs[*]} " == *dkms* ]]; then pkgs+=("$kernel-headers"); fi
-  # The CachyOS kernel headers pin CachyOS's own pahole, which -Syuu downgrades. The
-  # kernels themselves stay until the KrissOS one boots from the new menu.
-  local headers
-  mapfile -t headers < <(pm -Qq | grep '^linux-cachyos.*-headers$' || true)
-  if ((${#headers[@]})); then pac -R "${headers[@]}"; fi
+  # First out: the CachyOS kernel headers, which pin CachyOS's own pahole that -Syuu
+  # downgrades, and CachyOS's config packages, whose /etc/skel files kriss-settings
+  # ships too. The kernels and the two Limine tools stay until the KrissOS menu is
+  # written, so the old menu keeps working.
+  local p early=()
+  while read -r p; do
+    if [[ $p == linux-cachyos*-headers ]] || { infra_pkg "$p" && [[ $p != limine-* ]]; }; then early+=("$p"); fi
+  done < <(pm -Qq)
+  if ((${#early[@]})); then pac -R "${early[@]}"; fi
   pac -Syuu --needed "${pkgs[@]}"
   if ((DRY)); then
     mapfile -t ASSUME < <(pm -Si "${pkgs[@]}" | awk -F' *: ' '/^Name/ { print $2 } /^Provides/ && $2 != "None" { n = split($2, a, / +/); for (i = 1; i <= n; i++) print a[i] }' | sed 's/^/--assume-installed=/')
