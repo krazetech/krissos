@@ -42,8 +42,15 @@ ShellRoot {
     }
 
     Variants {
+        id: bars
         model: Quickshell.screens
         Bar {}
+    }
+
+    // The bar on the focused window's screen, for the taskbar keys.
+    function bar() {
+        const s = Desktop.focusedScreen();
+        return bars.instances.find(b => b.screen === s) ?? bars.instances[0];
     }
 
     Launcher {}
@@ -109,6 +116,22 @@ ShellRoot {
     IpcHandler {
         target: "desktop"
         function toggle(): void { Windows.showDesktop(); }
+    }
+
+    // `kriss-shell taskbar ACTION [N]`: Windows+T steps through the app buttons, Windows+1…9
+    // opens or switches to the Nth app, Windows+Shift+1…9 opens a new window of it,
+    // Windows+Alt+1…9 opens its jump list, Windows+X the Start button's menu.
+    IpcHandler {
+        target: "taskbar"
+        function focus(): void {
+            const b = root.bar();
+            for (const o of bars.instances) if (o !== b) o.kbIndex = -1;
+            b.focusStep();
+        }
+        function open(n: int): void { root.bar().activate(n - 1, false); }
+        function newWindow(n: int): void { root.bar().newWindow(n - 1); }
+        function jumpList(n: int): void { root.bar().jumpList(n - 1, true); }
+        function startMenu(): void { root.bar().startMenu(true); }
     }
 
     IpcHandler {

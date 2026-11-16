@@ -42,17 +42,23 @@ Singleton {
         helper.write("activate " + id + "\n");
     }
 
+    // An app's windows, oldest first (the order a click steps through them).
     function forApp(appId) {
-        return list.filter(w => w.appId === appId);
+        const key = appId.toLowerCase();
+        return list.filter(w => w.appId.toLowerCase() === key).sort((a, b) => a.id - b.id);
     }
 
-    // Windows-taskbar behaviour: click a background app to bring it up, click the
-    // app in front to minimize it.
-    function toggle(appId) {
+    // A taskbar button's click, as on Windows. Nothing open: false, so the caller launches
+    // the app. One window: bring it up, or minimize it when it is already in front. Several:
+    // bring up the one used last, then, while one of them is in front, the next in turn.
+    // cycle (Ctrl+click) only ever steps, never minimizes.
+    function activateApp(appId, cycle) {
         const wins = forApp(appId);
         if (wins.length === 0) return false;
-        const front = wins.find(w => w.active && !w.minimized);
-        helper.write((front ? "minimize " + front.id : "activate " + wins[wins.length - 1].id) + "\n");
+        const front = wins.findIndex(w => w.active && !w.minimized);
+        if (front < 0) activate((byRecent.find(w => wins.indexOf(w) >= 0) ?? wins[0]).id);
+        else if (wins.length > 1) activate(wins[(front + 1) % wins.length].id);
+        else if (!cycle) helper.write("minimize " + wins[front].id + "\n");
         return true;
     }
 
@@ -71,6 +77,36 @@ Singleton {
 
     function close(id) {
         helper.write("close " + id + "\n");
+    }
+
+    // Progress, badge counts and "needs attention" that apps send the way Ubuntu's dock reads
+    // them (com.canonical.Unity.LauncherEntry, on the session bus), by lower-case desktop file
+    // id: {"firefox": {"progress": 0.4, "progress-visible": true, "count": 3, "urgent": false}}.
+    property var entries: ({})
+    property string entryApp: ""
+    property string entryKey: ""
+    // dbus-monitor prints each Update signal as an app URI, then key and variant lines.
+    function readEntry(line) {
+        const t = line.trim();
+        let m;
+        if (t.startsWith("signal ")) { entryApp = entryKey = ""; return; }
+        if (!entryApp) {
+            if ((m = /^string "application:\/\/(.+?)(\.desktop)?"$/.exec(t))) entryApp = m[1].toLowerCase();
+        } else if ((m = /^string "(.+)"$/.exec(t))) {
+            entryKey = m[1];
+        } else if (entryKey && (m = /^variant\s+\S+\s+(\S+)$/.exec(t))) {
+            const all = Object.assign({}, entries);
+            all[entryApp] = Object.assign({}, all[entryApp]);
+            all[entryApp][entryKey] = m[1] === "true" ? true : m[1] === "false" ? false : Number(m[1]);
+            entries = all;
+            entryKey = "";
+        }
+    }
+
+    Process {
+        command: ["dbus-monitor", "--session", "type='signal',interface='com.canonical.Unity.LauncherEntry',member='Update'"]
+        running: true
+        stdout: SplitParser { onRead: line => root.readEntry(line) }
     }
 
     Process {

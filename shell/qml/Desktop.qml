@@ -32,8 +32,9 @@ Singleton {
     property alias pinned: config.pinned
     property alias dnd: config.dnd
 
+    readonly property string configFile: (Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config") + "/kriss/shell.json"
     FileView {
-        path: (Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config") + "/kriss/shell.json"
+        path: root.configFile
         watchChanges: true
         printErrors: false
         onFileChanged: reload()
@@ -67,6 +68,43 @@ Singleton {
         list.splice(from, 1);
         list.splice(to, 0, id);
         pinned = list;
+    }
+
+    // Recently used files, newest first, from the list GTK and most other apps keep:
+    // [{href, when, name, mime, apps}], apps being the programs (command names) that used it.
+    readonly property var recent: {
+        const text = recentFile.text() ?? "";
+        const out = [];
+        // ponytail: regex over the XBEL file; fine for the few hundred entries it holds.
+        const re = /<bookmark\s[^>]*href="([^"]+)"[^>]*modified="([^"]+)"[^>]*>([\s\S]*?)<\/bookmark>/g;
+        let m;
+        while ((m = re.exec(text)) !== null) {
+            const apps = [];
+            const appRe = /<bookmark:application name="([^"]*)" exec="([^"]*)"/g;
+            let a;
+            while ((a = appRe.exec(m[3])) !== null) {
+                const cmd = a[2].replace(/&apos;|'|"/g, "").split(" ")[0];
+                apps.push(cmd.split("/").pop().toLowerCase(), a[1].toLowerCase());
+            }
+            out.push({ href: m[1], when: new Date(m[2]), name: decodeURIComponent(m[1].split("/").pop()),
+                       mime: /mime-type type="([^"]+)"/.exec(m[3])?.[1] ?? "", apps: apps });
+        }
+        return out.sort((a, b) => b.when - a.when).slice(0, 200);
+    }
+
+    FileView {
+        id: recentFile
+        path: Quickshell.env("HOME") + "/.local/share/recently-used.xbel"
+        watchChanges: true
+        printErrors: false
+        onFileChanged: reload()
+    }
+
+    // An app's recent files, for its jump list: those it opened, by command or app name.
+    function recentFor(entry, limit) {
+        if (!entry) return [];
+        const names = [entry.command[0]?.split("/").pop().toLowerCase(), entry.id.toLowerCase(), entry.name.toLowerCase()];
+        return recent.filter(f => f.href.startsWith("file:") && f.apps.some(a => a && names.indexOf(a) >= 0)).slice(0, limit);
     }
 
     function pinnedEntries(limit) {
