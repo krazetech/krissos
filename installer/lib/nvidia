@@ -1,0 +1,22 @@
+#!/bin/sh
+# Print the NVIDIA driver packages this PC needs, or nothing.
+# usage: nvidia KERNEL   (the kernel package, for its headers)
+# NVIDIA's open kernel modules support Turing (GTX 16xx / RTX 20xx) and newer, which
+# are the PCI device ids from 0x1e00 up. Older cards are no longer supported by any
+# driver in Arch's repos, so they keep nouveau.
+# ponytail: device-id threshold, not a table. It holds for every desktop and laptop
+# GPU NVIDIA has shipped; switch to the driver's supported-gpus.json if one slips.
+kernel=$1
+sys=${KRISS_SYSFS:-/sys}/bus/pci/devices
+
+for dev in "$sys"/*; do
+  [ "$(cat "$dev/vendor")" = 0x10de ] || continue
+  case $(cat "$dev/class") in 0x0300* | 0x0302*) ;; *) continue ;; esac
+  id=$(cat "$dev/device")
+  if [ $((id)) -ge $((0x1e00)) ]; then
+    echo "kriss: NVIDIA GPU $id, installing the open kernel modules" >&2
+    echo nvidia-open-dkms nvidia-utils "$kernel-headers"
+    exit 0
+  fi
+  echo "kriss: NVIDIA GPU $id is older than Turing; keeping nouveau" >&2
+done

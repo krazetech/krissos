@@ -4,9 +4,10 @@
 command -v sbctl >/dev/null 2>&1 || exit 0
 [ -d /var/lib/sbctl/keys ] || [ -d /usr/share/secureboot/keys ] || exit 0
 
-# ponytail: this signs the files sbctl already tracks (`sbctl sign -s`). Enrolling the
-# kernel and the Limine binary on the ESP, and copying a new Limine there after an
-# upgrade, belongs to the installer (Phase 3).
+# ponytail: this signs the files sbctl already tracks (`sbctl sign -s`). The installer
+# does not set up Secure Boot yet: Limine also needs its config enrolled
+# (`limine enroll-config`) and the kernels hashed in limine.conf before it is worth it.
+# kriss-limine-update already copies a new Limine to the ESP after an upgrade.
 sbctl sign-all -g || {
   echo 'kriss: sbctl sign-all failed; fix this before rebooting with Secure Boot on' >&2
   exit 1

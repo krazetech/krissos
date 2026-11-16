@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Install KrissOS
+Name[ms]=Pasang KrissOS
+Comment=Install KrissOS on this PC, next to Windows or on its own
+Comment[ms]=Pasang KrissOS pada PC ini, di sebelah Windows atau bersendirian
+Exec=kriss-install
+Icon=krissos
+Categories=System;
+Keywords=install;setup;dual boot;windows;
+Keywords[ms]=pasang;persediaan;dwi but;windows;

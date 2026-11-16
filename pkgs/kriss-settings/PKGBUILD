@@ -1,8 +1,8 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-settings
-pkgver=0.2.0
+pkgver=0.3.0
 pkgrel=1
-pkgdesc='KrissOS default configs (Plasma, SDDM, GTK, terminals), os-release and pacman hooks'
+pkgdesc='KrissOS default configs (Plasma, SDDM, GTK, terminals), os-release, Limine menu and pacman hooks'
 arch=('any')
 url='https://github.com/krazetech/krissos'
 license=('GPL-3.0-or-later')
@@ -10,7 +10,8 @@ license=('GPL-3.0-or-later')
 # has no config.
 depends=('gsettings-desktop-schemas' 'snap-pac')
 makedepends=('python')
-optdepends=('sbctl: re-sign the kernel and bootloader for Secure Boot')
+optdepends=('limine: the boot menu with bootable snapshots (kriss-limine-update)'
+            'sbctl: re-sign the kernel and bootloader for Secure Boot')
 
 # ponytail: the qt6ct config only takes effect with QT_QPA_PLATFORMTHEME=qt6ct. That is
 # left to the KrissOS Shell session; setting it globally would break Plasma's Qt theming.

@@ -1,0 +1,54 @@
+#!/bin/bash
+# Scripted install for CI: what Calamares does for "Erase disk" with the KrissOS Shell,
+# without the pages. It partitions /dev/vda like partition.conf and mount.conf, runs the
+# installer's own pacstrap and configure steps, and stands in for Calamares' fstab,
+# locale and users jobs. iso/install-test.sh hands it to the live ISO through QEMU's
+# fw_cfg and systemd.run=.
+set -euxo pipefail
+systemctl start pacman-init NetworkManager
+nm-online -s -q -t 120
+
+disk=/dev/vda t=/target
+sgdisk -Z -n1:0:+512M -t1:ef00 -n2:0:+2G -t2:ea00 -n3:0:0 -t3:8304 "$disk"
+udevadm settle
+mkfs.fat -F32 -n EFI "${disk}1"
+mkfs.fat -F32 -n KRISSBOOT "${disk}2"
+mkfs.btrfs -f -L KrissOS "${disk}3"
+mkdir -p "$t"
+mount "${disk}3" "$t"
+for s in @ @home @cache @log @snapshots; do btrfs subvolume create "$t/$s"; done
+umount "$t"
+o=noatime,compress=zstd:1
+mount -o "$o,subvol=@" "${disk}3" "$t"
+mkdir -p "$t"/{home,var/cache,var/log,.snapshots,efi,boot}
+mount -o "$o,subvol=@home" "${disk}3" "$t/home"
+mount -o "$o,subvol=@cache" "${disk}3" "$t/var/cache"
+mount -o "$o,subvol=@log" "${disk}3" "$t/var/log"
+mount -o "$o,subvol=@snapshots" "${disk}3" "$t/.snapshots"
+mount -o umask=0077 "${disk}1" "$t/efi"
+mount "${disk}2" "$t/boot"
+
+/usr/lib/kriss-installer/pacstrap "$t" shell
+
+# Calamares' machineid, fstab, locale and users jobs.
+systemd-machine-id-setup --root="$t"
+genfstab -U "$t" >>"$t/etc/fstab"
+sed -i 's/^#en_US.UTF-8/en_US.UTF-8/' "$t/etc/locale.gen"
+arch-chroot "$t" locale-gen
+echo LANG=en_US.UTF-8 >"$t/etc/locale.conf"
+echo krissos >"$t/etc/hostname"
+arch-chroot "$t" useradd -m -G wheel -c 'KrissOS Test' kriss
+echo kriss:kriss | arch-chroot "$t" chpasswd
+
+/usr/lib/kriss-installer/configure "$t" shell
+
+# Serial console for the test boot, and one snapshot to prove the Snapshots menu.
+sed -i 's/$/ console=ttyS0,115200 systemd.journald.forward_to_console=1/' "$t/etc/kernel/cmdline"
+arch-chroot "$t" snapper --no-dbus -c root create -d 'install test'
+arch-chroot "$t" kriss-limine-update
+cat "$t/efi/EFI/limine/limine.conf" "$t/etc/fstab"
+grep -q '^/Snapshots' "$t/efi/EFI/limine/limine.conf"
+grep -q 'kriss_snapshot=1' "$t/efi/EFI/limine/limine.conf"
+ls -l "$t/efi/EFI/BOOT" "$t/boot"
+umount -R "$t" || { fuser -vm "$t" || true; exit 1; }
+echo 'kriss-autoinstall: done'

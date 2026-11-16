@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Install KrissOS
+Name[ms]=Pasang KrissOS
+Comment=Opens the installer when the boot menu's Install KrissOS entry was chosen
+Exec=kriss-install --boot
+NoDisplay=true

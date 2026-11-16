@@ -103,10 +103,14 @@ greeter)
     # shellcheck disable=SC2086,SC2163 # one NAME=value per line; values are socket names, no spaces
     export $env
     dbus-update-activation-environment --systemd XDG_CURRENT_DESKTOP XDG_SESSION_TYPE QT_QPA_PLATFORMTHEME 2>/dev/null
+    # Apps in /etc/xdg/autostart and ~/.config/autostart, such as kriss-welcome on first
+    # login, through systemd's XDG autostart units.
+    systemctl --user --no-block start kriss-shell-session.target
     # The ISO boot test waits for this line.
     logger -t kriss-shell "KrissOS Shell started on $WAYLAND_DISPLAY" 2>/dev/null
 
     "$0" --inside
+    systemctl --user stop kriss-shell-session.target graphical-session.target
     kill "$comp" 2>/dev/null
     wait "$comp"
     ;;

@@ -1,6 +1,6 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-shell
-pkgver=0.2.2
+pkgver=0.2.3
 pkgrel=1
 pkgdesc='KrissOS Shell: bar, launcher, quick settings, notifications and lock screen on cosmic-comp'
 arch=('any')
@@ -60,6 +60,7 @@ package() {
   install -Dm755 "$_shell/session/kriss-shell" "$pkgdir/usr/bin/kriss-shell"
   install -Dm755 "$_shell/kriss-shell-toplevels" "$pkgdir/usr/bin/kriss-shell-toplevels"
   install -Dm644 "$_shell/session/kriss-shell.desktop" "$pkgdir/usr/share/wayland-sessions/kriss-shell.desktop"
+  install -Dm644 -t "$pkgdir/usr/lib/systemd/user" "$_shell/session/kriss-shell-session.target"
   install -d "$pkgdir/usr/share/kriss-shell" "$pkgdir/usr/lib/kriss-shell"
   cp -r --no-preserve=ownership "$srcdir/qml" "$srcdir/cosmic" "$pkgdir/usr/share/kriss-shell/"
   cp -r --no-preserve=ownership "$srcdir/kriss_protocols" "$pkgdir/usr/lib/kriss-shell/"

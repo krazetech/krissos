@@ -1,0 +1,8 @@
+# The running KrissOS Shell session. kriss-shell starts it once the compositor is up and
+# stops it at sign-out. It brings up graphical-session.target and the XDG autostart apps
+# (both refuse a manual start, so they need a session target like this one).
+[Unit]
+Description=KrissOS Shell session
+BindsTo=graphical-session.target
+Wants=xdg-desktop-autostart.target
+Before=xdg-desktop-autostart.target

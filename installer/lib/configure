@@ -1,0 +1,101 @@
+#!/bin/bash
+# Finish the installed system: pacman config, initramfs, snapper, Limine (with Windows
+# and the snapshots in its menu), zram and services. Calamares runs this on the live
+# system after its own users, locale and network steps.
+# usage: configure ROOT DESKTOP   (DESKTOP: shell or plasma)
+set -euo pipefail
+
+root=$1 desktop=${2:-shell}
+chr() { arch-chroot "$root" "$@"; }
+
+# The live config lists only the published repos (pacstrap may have used the ISO's own).
+cp /etc/pacman.conf "$root/etc/pacman.conf"
+# Steam and the lib32 packages (kriss-meta-gaming) need [multilib]; ARCHITECTURE §gaming.
+sed -i "/^#\[multilib\]/,/^#Include/ s/^#//" "$root/etc/pacman.conf"
+
+# --- initramfs -------------------------------------------------------------------
+# busybox hooks, not systemd, so kriss-snapshot (kriss-settings) can put a RAM overlay
+# over a read-only snapshot booted from the Limine menu. kms pulls nouveau in early,
+# which the NVIDIA driver must not race with.
+kms=kms
+if chr pacman -Q nvidia-utils >/dev/null 2>&1; then kms=; fi
+mkdir -p "$root/etc/mkinitcpio.conf.d"
+cat >"$root/etc/mkinitcpio.conf.d/kriss.conf" <<EOF
+# Written by the KrissOS installer.
+HOOKS=(base udev autodetect microcode modconf $kms keyboard keymap consolefont block filesystems fsck kriss-snapshot)
+EOF
+
+# --- snapper ---------------------------------------------------------------------
+# snapper wants to create /.snapshots itself; the installer mounted the @snapshots
+# subvolume there, so swap it back in afterwards.
+snapdev=$(findmnt -nvo SOURCE "$root/.snapshots")
+umount "$root/.snapshots"
+rmdir "$root/.snapshots"
+chr snapper --no-dbus -c root create-config /
+btrfs subvolume delete "$root/.snapshots"
+mkdir "$root/.snapshots"
+mount -o subvol=@snapshots "$snapdev" "$root/.snapshots"
+chmod 750 "$root/.snapshots"
+# snap-pac takes a pair before and after every pacman run; no hourly timeline.
+chr snapper --no-dbus -c root set-config TIMELINE_CREATE=no NUMBER_LIMIT=10 NUMBER_LIMIT_IMPORTANT=5
+
+# --- zram instead of a swap partition ----------------------------------------------
+printf '[zram0]\nzram-size = min(ram / 2, 8192)\ncompression-algorithm = zstd\n' \
+  >"$root/etc/systemd/zram-generator.conf"
+
+# --- Limine ----------------------------------------------------------------------
+esp=$root/efi
+uuid=$(findmnt -nvo UUID "$root")
+echo "root=UUID=$uuid rootflags=subvol=@ rw quiet zswap.enabled=0" >"$root/etc/kernel/cmdline"
+
+install -Dm644 "$root/usr/share/limine/BOOTX64.EFI" "$esp/EFI/limine/BOOTX64.EFI"
+# Firmware that forgets boot entries (and QEMU without saved NVRAM) falls back to
+# EFI/BOOT/BOOTX64.EFI. Take that path only when nothing else, like Windows, owns it.
+if [ ! -e "$esp/EFI/BOOT/BOOTX64.EFI" ]; then
+  install -Dm644 "$root/usr/share/limine/BOOTX64.EFI" "$esp/EFI/BOOT/BOOTX64.EFI"
+  touch "$esp/EFI/BOOT/limine.conf"  # kriss-limine-update keeps this copy current too
+fi
+espdev=$(findmnt -nvo SOURCE "$esp")
+disk=/dev/$(lsblk -no PKNAME "$espdev")
+part=$(cat "/sys/class/block/${espdev##*/}/partition")
+efibootmgr --create --disk "$disk" --part "$part" --label KrissOS --loader '\EFI\limine\BOOTX64.EFI' ||
+  echo 'kriss: could not add a firmware boot entry; the fallback path still boots' >&2
+
+# Keep Windows in the menu: look for its boot manager on every FAT partition.
+mkdir -p "$root/etc/kriss/limine.d"
+tmp=$(mktemp -d)
+while read -r dev partuuid; do
+  # Our own ESP is already mounted; look at the others read-only.
+  mnt=$(findmnt -nfo TARGET --source "$dev" || true)
+  if [ -z "$mnt" ]; then
+    mount -o ro "$dev" "$tmp" 2>/dev/null || continue
+    mnt=$tmp
+  fi
+  if [ -f "$mnt/EFI/Microsoft/Boot/bootmgfw.efi" ]; then
+    printf '/Windows\n    protocol: efi\n    path: guid(%s):/EFI/Microsoft/Boot/bootmgfw.efi\n' \
+      "$partuuid" >"$root/etc/kriss/limine.d/50-windows.conf"
+    echo "kriss: Windows boot manager found on $dev"
+  fi
+  if [ "$mnt" = "$tmp" ]; then umount "$tmp"; fi
+  if [ -f "$root/etc/kriss/limine.d/50-windows.conf" ]; then break; fi
+done < <(lsblk -lnpo PATH,PARTUUID,FSTYPE | awk '$3 == "vfat" {print $1, $2}')
+rmdir "$tmp"
+
+# --- services --------------------------------------------------------------------
+chr systemctl enable NetworkManager bluetooth fstrim.timer snapper-cleanup.timer kriss-limine-update.path
+case $desktop in
+plasma)
+  chr systemctl enable sddm
+  ;;
+*)
+  # The KrissOS login screen (as on the live ISO, without its autologin).
+  printf '[terminal]\nvt = 1\n\n[default_session]\ncommand = "kriss-shell greeter"\nuser = "greeter"\n' \
+    >"$root/etc/greetd/config.toml"
+  chr systemctl enable greetd
+  ;;
+esac
+
+chr mkinitcpio -P
+chr kriss-limine-update
+echo 'kriss: boot menu:'
+cat "$esp/EFI/limine/limine.conf"

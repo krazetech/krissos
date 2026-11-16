@@ -4,7 +4,7 @@ on:
   push:
     tags: ['[0-9]*', 'MR*']   # release codenames: 110, 115, MR3
   pull_request:
-    paths: ['iso/**', '.github/workflows/iso.yml']
+    paths: ['iso/**', 'installer/**', 'pkgs/calamares/**', 'pkgs/kriss-installer/**', '.github/workflows/iso.yml']
   schedule:
     - cron: '30 3 * * *'      # nightly
   workflow_dispatch:
@@ -19,7 +19,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
 
@@ -33,6 +33,7 @@ jobs:
 
       # mkarchiso needs mounts, so the container must be privileged.
       - name: Build ISO
+        id: build
         run: |
           mkdir -p out
           sudo docker run --rm --privileged -v "$PWD:/src" -v "$RUNNER_TEMP:/work" archlinux:latest \
@@ -69,7 +70,7 @@ jobs:
       - name: Boot test
         run: |
           sudo apt-get update -q
-          sudo apt-get install -y -q --no-install-recommends qemu-system-x86 ovmf libarchive-tools socat
+          sudo apt-get install -y -q --no-install-recommends qemu-system-x86 qemu-utils ovmf libarchive-tools socat
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
             | sudo tee /etc/udev/rules.d/99-kvm.rules
           sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
@@ -83,7 +84,27 @@ jobs:
           path: boot-test/
           if-no-files-found: ignore
 
+      # Unattended install onto a QEMU disk with the installer's own scripts, then boot it.
+      - name: Install test
+        if: always() && steps.build.outcome == 'success'
+        run: |
+          sudo rm -rf "$RUNNER_TEMP"/{mkarchiso,profile,src,kriss-local,logo}
+          df -h /
+          iso/install-test.sh out/*.iso install-test
+
+      - name: Upload install test
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: install-test
+          path: |
+            install-test/*.log
+            install-test/*.png
+          if-no-files-found: ignore
+
+      # Also when a test fails, so the ISO can be tried by hand.
       - name: Upload ISO
+        if: always() && steps.build.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: krissos-iso

@@ -19,6 +19,13 @@ kriss-settings
 kriss-theme
 kriss-tools
 
+# Installer: Calamares with the KrissOS sequence. os-prober finds Windows, ntfs-3g
+# resizes it.
+calamares
+kriss-installer
+os-prober
+ntfs-3g
+
 # KrissOS Shell on cosmic-comp, with the KrissOS login screen on greetd
 kriss-shell
 greetd

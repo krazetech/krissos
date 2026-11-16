@@ -1,0 +1,11 @@
+# Keep the old kernel for snapshots taken with it (see kriss-limine-update).
+[Trigger]
+Operation = Upgrade
+Operation = Remove
+Type = Path
+Target = usr/lib/modules/*/vmlinuz
+
+[Action]
+Description = Keeping the current kernel for boot snapshots...
+When = PreTransaction
+Exec = /usr/bin/kriss-limine-update --keep

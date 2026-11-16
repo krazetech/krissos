@@ -33,7 +33,8 @@ distro team's workload, and it is out of scope.
 | `kriss-shell` | The KrissOS Shell (panel, dock, launcher, notifications, lock screen) |
 | `kriss-theme` | Wallpapers, icons, cursors, GTK/Qt/terminal colors, Plymouth, Limine, SDDM/greeter |
 | `kriss-settings` | Default configs in `/etc/skel` and `/usr/share/kriss`, plus pacman/snapper/sbctl hooks |
-| `kriss-installer` | Calamares branding, modules and the desktop picker |
+| `kriss-installer` | The Calamares sequence, module configs, desktop picker and install scripts (branding ships in `kriss-theme`) |
+| `calamares` | A pinned build of upstream Calamares, which Arch does not package |
 | `kriss-keyring` | The public key for signing packages |
 | `kriss-meta-*` | Metapackages: `-base`, `-gaming`, `-ai`, `-winapps`, `-vfio` |
 
@@ -48,6 +49,29 @@ comes from Arch or a pinned AUR build, and the AUR builds are kept to a minimum.
   built from source in our CI.
 - KrissOS tooling is licensed GPL-3.0-or-later (subject to the open decision in §11).
 
+### The installer
+
+Calamares on the live ISO (`kriss-install`, also the boot menu's *Install KrissOS* entry).
+It downloads the system with `pacstrap`, so it needs the internet; that keeps the ISO small
+and lets it pick the kernel, GPU driver and desktop at install time.
+
+- **Disk:** GPT and UEFI only. Dual-boot alongside Windows is the default, erase disk the
+  other choice; manual partitioning and disk encryption are off for now. `kriss-install`
+  stops before the installer with steps to follow when BitLocker is on, or when the USB
+  started in legacy BIOS mode.
+- **Layout:** the ESP at `/efi` holds only Limine, so Windows' small ESP is enough. The
+  kernels go on a 2 GiB FAT32 `/boot` (XBOOTLDR), because Limine reads only FAT. btrfs
+  root with `@`, `@home`, `@cache`, `@log` and `@snapshots`; zram, no swap partition.
+- **Boot menu:** `kriss-limine-update` (`kriss-settings`) writes `limine.conf`: KrissOS,
+  Windows when the installer found its boot manager, and the 15 newest snapper snapshots.
+  A snapshot boots with the kernel it was taken with (old kernels are kept under
+  `/boot/kriss/`) and a RAM overlay from the `kriss-snapshot` initramfs hook.
+- **Kernel:** `linux-kriss` on x86-64-v3 CPUs, `linux-kriss-generic` otherwise.
+- **NVIDIA:** `nvidia-open-dkms` on Turing and newer. Older cards keep nouveau, since
+  no driver in Arch's repos supports them any more.
+- **Secure Boot:** not set up by the installer yet. Limine needs `limine enroll-config`
+  and hashed kernel paths before an `sbctl` signature means anything.
+
 ## 3. Repository layout (monorepo, public GitHub org)
 
 ```
@@ -57,7 +81,7 @@ krissos/
 ├── tools/           # kriss, kriss-ctl, kriss-vm (source)
 ├── shell/           # KrissOS Shell source
 ├── theme/           # design tokens + generated assets
-├── installer/       # Calamares config/branding
+├── installer/       # Calamares sequence, module configs and install scripts
 ├── iso/             # archiso profile
 └── .github/workflows/
 ```
