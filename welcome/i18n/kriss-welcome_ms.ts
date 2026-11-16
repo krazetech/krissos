@@ -447,6 +447,26 @@ Menjalankan: %1</translation>
         <source>Install</source>
         <translation>Pasang</translation>
     </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="14"/>
+        <source>Install the NVIDIA 580 driver (needs internet)</source>
+        <translation>Pasang pemacu NVIDIA 580 (perlu internet)</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="15"/>
+        <source>Install the NVIDIA 580 driver?</source>
+        <translation>Pasang pemacu NVIDIA 580?</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="16"/>
+        <source>Your NVIDIA graphics card is older than the GeForce 16 series, so it uses the open nouveau driver. NVIDIA&apos;s own 580 driver is faster for games. NVIDIA keeps it in long-term maintenance: it gets fixes but no new features. If you skip this, nouveau stays and everything keeps working. On laptops, the screen stays on the built-in graphics; start an app with prime-run to use the NVIDIA card. This driver cannot switch an older NVIDIA card off when it is idle, as nouveau does. On our test laptop, idle power went from about 4.7 W to 6.8 W, so the battery lasts about a third less when idle (about 1.5 hours less on that laptop). Removing the nvidia-580xx-dkms and nvidia-580xx-utils packages brings nouveau back. Restart after it installs.</source>
+        <translation>Kad grafik NVIDIA anda lebih lama daripada siri GeForce 16, jadi ia menggunakan pemacu terbuka nouveau. Pemacu 580 NVIDIA sendiri lebih laju untuk permainan. NVIDIA menyelenggara pemacu ini untuk jangka panjang: ia menerima pembaikan tetapi tiada ciri baharu. Jika anda langkau, nouveau kekal dan semuanya terus berfungsi. Pada komputer riba, skrin kekal pada grafik terbina dalam; mulakan aplikasi dengan prime-run untuk menggunakan kad NVIDIA. Pemacu ini tidak dapat mematikan kad NVIDIA yang lebih lama semasa ia tidak digunakan, seperti yang dilakukan oleh nouveau. Pada komputer riba ujian kami, penggunaan kuasa semasa melahu naik daripada kira-kira 4.7 W kepada 6.8 W, jadi bateri bertahan kira-kira satu pertiga lebih singkat semasa melahu (kira-kira 1.5 jam kurang pada komputer riba itu). Membuang pakej nvidia-580xx-dkms dan nvidia-580xx-utils akan mengembalikan nouveau. Mulakan semula selepas ia dipasang.</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="85"/>
+        <source>Needs internet</source>
+        <translation>Perlu internet</translation>
+    </message>
 </context>
 <context>
     <name>GamesPage</name>

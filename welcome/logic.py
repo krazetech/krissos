@@ -194,6 +194,9 @@ EXTRAS = {
     "ai-clis": {"packages": ["openai-codex", "gemini-cli"]},
     # Claude Code is not in the Arch repos; its official installer puts it in ~/.local/bin, no root.
     "claude-code": {"user": "curl -fsSL https://claude.ai/install.sh | bash", "binary": "claude"},
+    # Pre-Turing NVIDIA GPUs (hwcheck's nvidia_legacy). kriss nvidia setup also adds the kernel
+    # headers, the initramfs and command line changes and, on hybrid laptops, prime-run.
+    "nvidia-legacy": {"root": ["kriss", "nvidia", "setup"], "packages": ["nvidia-580xx-dkms", "nvidia-580xx-utils"]},
 }
 
 
@@ -214,6 +217,8 @@ def extra_command(extra_id, gpus):
     e = EXTRAS[extra_id]
     if "user" in e:
         return ["sh", "-c", e["user"]]
+    if "root" in e:
+        return ["pkexec", *e["root"]]
     script = 'pacman -S --needed --noconfirm "$@"'
     if "enable" in e:
         script += " && systemctl enable --now " + e["enable"]
