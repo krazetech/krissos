@@ -1,0 +1,147 @@
+# Maintainer: Kraze Tech
+#
+# The Asahi Linux kernel for Apple Silicon Macs, for the KrissOS Apple Silicon image
+# (ARCHITECTURE §13). Derived from asahi-alarm's linux-asahi PKGBUILD, originally by:
+# Contributor: Jos Dehaes <jos.dehaes@gmail.com>
+# Contributor: Matthias Kurz <m.kurz@irregular.at>
+#
+# No CachyOS patches and no x86-64-v3 here: this is Asahi's tree with Asahi's config.
+# config, the patch and rust-toolchain.toml are unmodified copies; SOURCES.md says from
+# where and how to update them.
+
+_asahiver=7.2.12
+_asahirel=3
+_m1n1_version=1.9.9
+
+pkgbase=linux-kriss-asahi
+pkgver=${_asahiver}.asahi${_asahirel}
+pkgrel=1
+_tag=asahi-${_asahiver}-${_asahirel}
+_srcname=linux-${_tag}
+pkgdesc='Asahi Linux kernel for Apple Silicon Macs, built for KrissOS'
+arch=('aarch64')
+url='https://github.com/krazetech/krissos'
+license=('GPL-2.0-only')
+options=('!strip' '!debug' '!lto')
+makedepends=(base-devel bc dtc kmod libelf pahole cpio perl rustup rust-bindgen tar xz xmlto python)
+source=(
+  "https://github.com/AsahiLinux/linux/archive/${_tag}.tar.gz"
+  config
+  0001-tools-add-128-bit-integer-types.patch
+  rust-toolchain.toml
+)
+sha256sums=('1b88834ee374f649d1240718900a87bad1f7266b1deadfa3c187c835c3a29106'
+            '653ac121b5a3a34356f10cc0c4aa3286f4e9be4a5927a5267efec0f3f38c1f41'
+            '30b45a34e029aee8cd57123300a83ab1dfe473cb6c88d87ad1b3cccd891e0648'
+            '5e3b21a87fa891807f6947384fb5a6ec35b71edc9cfbdcad1ae27485d663e3c3')
+
+export KBUILD_BUILD_HOST=krissos
+export KBUILD_BUILD_USER=$pkgbase
+export KBUILD_BUILD_TIMESTAMP="$(date -Ru${SOURCE_DATE_EPOCH:+d @$SOURCE_DATE_EPOCH})"
+
+prepare() {
+  # The Rust toolchain Asahi's GPU driver is tested with, from rust-toolchain.toml.
+  rustup toolchain install
+
+  cd $_srcname
+  echo "-$_asahirel-$pkgrel" > localversion.10-pkgrel
+  patch -Np1 < ../0001-tools-add-128-bit-integer-types.patch
+
+  mkdir -p build/base
+  cp ../config build/base/.config
+  # Our own release name, so this kernel's modules never collide with linux-asahi's.
+  sed -i 's/^CONFIG_LOCALVERSION=.*/CONFIG_LOCALVERSION="-kriss-asahi"/' build/base/.config
+  make olddefconfig prepare O=$PWD/build/base
+  diff -u ../config build/base/.config || :
+  # Without a working Rust toolchain Kconfig drops CONFIG_RUST, and the GPU driver with it,
+  # without an error.
+  grep -qx 'CONFIG_DRM_ASAHI=y' build/base/.config || { echo 'CONFIG_DRM_ASAHI got dropped; check rustup and rust-bindgen' >&2; return 1; }
+  make -s kernelrelease O=$PWD/build/base > build/base/version
+  echo "Prepared $pkgbase version $(<build/base/version)"
+}
+
+build() {
+  cd $_srcname
+  make all O=$PWD/build/base -j "$(nproc)"
+}
+
+_package() {
+  pkgdesc="The $pkgdesc kernel and modules"
+  depends=(coreutils kmod initramfs "m1n1>=$_m1n1_version")
+  optdepends=('linux-firmware: firmware images needed for some devices')
+  # linux-asahi satisfies asahi-meta; a different release name lets both be installed.
+  provides=(WIREGUARD-MODULE "linux=$pkgver" "linux-asahi=$pkgver")
+
+  cd $_srcname
+  local O=$PWD/build/base
+  local kernver="$(<$O/version)"
+  local modulesdir="$pkgdir/usr/lib/modules/$kernver"
+
+  # systemd expects the kernel here (hibernation); mkinitcpio's hook copies it to /boot.
+  install -Dm644 "$O"/arch/arm64/boot/Image "$modulesdir/vmlinuz"
+  echo "$pkgbase" | install -Dm644 /dev/stdin "$modulesdir/pkgbase"
+  make O="$O" INSTALL_MOD_PATH="$pkgdir/usr" INSTALL_MOD_STRIP=1 modules_install
+  # m1n1 hands these to the kernel (asahi-scripts' update-m1n1).
+  install -Dt "$modulesdir/dtbs" "$O"/arch/arm64/boot/dts/apple/*.dtb
+  rm -f "$modulesdir"/{source,build}
+}
+
+_package-headers() {
+  pkgdesc="Headers and scripts for building modules for the $pkgdesc kernel"
+  depends=(pahole)
+  provides=("linux-asahi-headers=$pkgver")
+
+  local KARCH=arm64
+  cd $_srcname
+  local O=build/base
+  local builddir="$pkgdir/usr/lib/modules/$(<${O}/version)/build"
+
+  install -Dt "$builddir" -m644 $O/.config Makefile $O/Module.symvers $O/System.map \
+    localversion.* $O/version $O/vmlinux
+  install -Dt "$builddir/kernel" -m644 kernel/Makefile
+  cp -t "$builddir" -a scripts $O/scripts
+  install -Dt "$builddir/tools/bpf/resolve_btfids" $O/tools/bpf/resolve_btfids/resolve_btfids
+  cp -t "$builddir" -a include $O/include
+  install -Dt "$builddir/arch/$KARCH" -m644 arch/$KARCH/Makefile
+  install -Dt "$builddir/arch/$KARCH/kernel" -m644 $O/arch/$KARCH/kernel/asm-offsets.s
+  cp -t "$builddir/arch/$KARCH" -a arch/$KARCH/include $O/arch/$KARCH/include
+  install -Dt "$builddir/drivers/md" -m644 drivers/md/*.h
+  install -Dt "$builddir/net/mac80211" -m644 net/mac80211/*.h
+  install -Dt "$builddir/drivers/media/i2c" -m644 drivers/media/i2c/msp3400-driver.h
+  install -Dt "$builddir/drivers/media/usb/dvb-usb" -m644 drivers/media/usb/dvb-usb/*.h
+  install -Dt "$builddir/drivers/media/dvb-frontends" -m644 drivers/media/dvb-frontends/*.h
+  install -Dt "$builddir/drivers/media/tuners" -m644 drivers/media/tuners/*.h
+  install -Dt "$builddir/drivers/iio/common/hid-sensors" -m644 drivers/iio/common/hid-sensors/*.h
+  find . -name 'Kconfig*' -exec install -Dm644 {} "$builddir/{}" \;
+  make O="$O" INSTALL_MOD_PATH="$pkgdir/usr" vdso_install link=
+
+  local arch
+  for arch in "$builddir"/arch/*/; do
+    [[ $arch = */$KARCH/ ]] || rm -r "$arch"
+  done
+  rm -r "$builddir/Documentation"
+  find -L "$builddir" -type l -delete
+  find "$builddir" -type f \( -name '*.o' -o -name '*.cmd' \) -delete
+
+  local file
+  while read -rd '' file; do
+    case "$(file --no-sandbox -bi "$file")" in
+      application/x-sharedlib\;*) strip $STRIP_SHARED "$file" ;;
+      application/x-archive\;*) strip $STRIP_STATIC "$file" ;;
+      application/x-executable\;*) strip $STRIP_BINARIES "$file" ;;
+      application/x-pie-executable\;*) strip $STRIP_SHARED "$file" ;;
+    esac
+  done < <(find "$builddir" -type f -perm -u+x ! -name vmlinux -print0)
+  strip $STRIP_STATIC "$builddir/vmlinux"
+
+  mkdir -p "$pkgdir/usr/src"
+  ln -sr "$builddir" "$pkgdir/usr/src/$pkgbase"
+}
+
+pkgname=("$pkgbase" "$pkgbase-headers")
+for _p in "${pkgname[@]}"; do
+  eval "package_$_p() {
+    $(declare -f "_package${_p#$pkgbase}")
+    _package${_p#$pkgbase}
+  }"
+done

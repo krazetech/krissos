@@ -246,6 +246,8 @@ cmd_winapps_setup() {
 }
 
 cmd_winapps() {
+  # WinBoat runs x86 Windows in a KVM VM; ARCHITECTURE §13 leaves it off Apple Silicon.
+  [[ $(uname -m) == x86_64 ]] || die "Windows apps through WinBoat need an x86_64 PC; this is $(uname -m)."
   case "${1:-check}" in
     check) winapps_check ;;
     setup) cmd_winapps_setup ;;

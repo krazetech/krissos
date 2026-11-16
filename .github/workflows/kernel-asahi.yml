@@ -1,0 +1,73 @@
+name: kernel-asahi
+
+# linux-kriss-asahi for the Apple Silicon image (ARCHITECTURE §13), built natively on
+# GitHub's free arm64 runners in an Arch Linux ARM container.
+on:
+  push:
+    branches: [main]
+    paths: ['pkgs/linux-kriss-asahi/**', '.github/workflows/kernel-asahi.yml']
+  pull_request:
+    paths: ['pkgs/linux-kriss-asahi/**', '.github/workflows/kernel-asahi.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A PR re-runs this on every push (paths filters see the whole PR diff). Queue instead of
+# cancelling, so pushes that do not touch the kernel never throw away hours of build.
+concurrency:
+  group: kernel-asahi-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Make the Arch Linux ARM container
+        run: tools/ci/alarm.sh
+
+      - name: Build linux-kriss-asahi
+        run: |
+          nproc && df -h /
+          docker run --rm -v "$PWD:/src" -w /src alarm tools/ci/build-pkgs.sh out pkgs/linux-kriss-asahi
+          df -h /
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-kriss-asahi
+          path: out/*.pkg.tar.zst
+          compression-level: 0
+          retention-days: 7
+
+  publish:
+    needs: build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: write
+    # Shared with pkgs.yml's build-aarch64 job: one writer to the repo db at a time.
+    concurrency:
+      group: repo-aarch64
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-kriss-asahi
+          path: out
+
+      - name: Make the Arch Linux ARM container
+        run: tools/ci/alarm.sh
+
+      - name: Sign and publish
+        env:
+          KRISS_GPG_KEY: ${{ secrets.KRISS_GPG_KEY }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          docker run --rm -v "$PWD:/src" -w /src -e KRISS_GPG_KEY -e GH_TOKEN -e GH_REPO -e RELEASE_TAG=repo-aarch64 \
+            alarm sh -c 'pacman -S --noconfirm --needed github-cli && tools/ci/publish.sh out'
