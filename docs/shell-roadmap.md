@@ -17,6 +17,7 @@ These are the base the items below build on.
 - Toasts stacked like Sonner, a bell that lists them, Do not disturb, and a clock calendar.
 - Start: a grid of pinned apps and recent files, and cmdk-style search across apps and recent
   files.
+- Blur behind the bar, launcher, quick settings and Alt+Tab switcher (`BackgroundEffect`).
 - A light shell variant, which follows `color-scheme`.
 - A bar on every screen.
 
@@ -45,13 +46,24 @@ These are the base the items below build on.
 Size: S is about a day, M a few days, L a week or more. Items in the same wave can run in
 parallel sessions when they touch different files.
 
+### Wave 0: boot and the taskbar, exactly like Windows
+
+| # | Item | Branch | Size | Done when |
+|---|---|---|---|---|
+| A | Plymouth theme fix | `kz/boot-plymouth` | S | `kriss-settings` makes `kriss` the Plymouth theme and rebuilds the initramfs; `kriss migrate` replaces a leftover `Theme=` (such as `cachyos`) in `/etc/plymouth/plymouthd.conf`; no Arch or CachyOS logo shows at boot |
+| B | Boot animation | `kz/boot-animation` | M | The keris emblem reveals (disc fades and scales in, the hilt draws on), then breathes slowly until the system is up, and fades into the login screen; the password prompt for an encrypted disk uses the same look; no animation with reduced motion |
+| C | Taskbar shape | `kz/shell-taskbar-shape` | S | Full width and attached to the bottom edge, 48 px like Windows 11, with a soft top rim and blur; maximized windows stop at it |
+| D | Taskbar behaviour | `kz/shell-taskbar-behaviour` | L | Windows of one app grouped on one button; click focuses, minimizes, or cycles; Ctrl+click cycles; Shift+click and middle click open a new window; running dot and active pill; attention flash and progress; jump lists on right-click (recent files, app actions, pin, close); far-right sliver shows the desktop; Win+T steps through the buttons; Win+1…9 opens or switches to that button's app |
+| E | Hover thumbnails | `kz/shell-taskbar-previews` | M | Hovering a button shows a live preview of each of its windows; click one to focus it, close it from its preview |
+| F | Search box and taskbar options | `kz/shell-taskbar-options` | M | A search box next to Start opens Start in search mode; options saved in `shell.json`: alignment (centre or left), auto-hide, combine buttons (always, when full, never, with labels when not combined), and the taskbar on all screens with each screen's bar showing its own windows |
+
 ### Wave 1: the biggest wins
 
 | # | Item | Branch | Size | Done when |
 |---|---|---|---|---|
 | 0 | Perf check | `kz/shell-perf-check` | S | `shell/perf-check` prints idle CPU, RSS and dropped frames for a scripted open and close of each surface |
 | 1 | System tray, finished | `kz/shell-tray` | M | Win11-style overflow flyout (^) for hidden icons, drag icons between bar and overflow, tooltips, KrissOS-styled menus that work by keyboard, choice saved in `shell.json` |
-| 2 | Acrylic surfaces | `kz/shell-acrylic` | S | Bar, launcher, flyouts, toasts, OSD and switcher blur what's behind them through `BackgroundEffect`, with tints from tokens; solid fallback when blur is off or reduced transparency is on |
+| 2 | Acrylic surfaces | `kz/shell-acrylic` | S | Toasts, notification center, OSD, menus and lock screen blur too, like the bar and launcher; tints from tokens; solid fallback when blur is off or reduced transparency is on |
 | 3 | Fullscreen focus | `kz/shell-fullscreen` | S | A fullscreen window on a screen hides that screen's bar and holds toasts until it leaves fullscreen; held toasts land in the notification center |
 | 4 | Notification center | `kz/shell-notif-center` | M | Win+N panel: history grouped by app, clear one, clear all, Do not disturb, calendar with today's date; history survives a shell restart |
 
@@ -87,7 +99,13 @@ parallel sessions when they touch different files.
 
 ## Order and dependencies
 
-- **0 first:** every later PR reports against the budget.
+- **Wave 0 first.** A and B touch only boot files, so they run alongside the taskbar items.
+  C, D, E and F all change `Bar.qml`, so they run one after another, in that order.
+- **Win+1…9 changes meaning.** They open taskbar apps now, as in Windows. Workspaces move to
+  Win+Ctrl+Left/Right (item 5), and Win+Shift+1…9 stops moving windows.
+- **E and 5 share code:** both need window thumbnails through `ext-image-copy-capture`. E builds
+  it and 5 reuses it.
+- **0 runs alongside Wave 0:** every later PR reports against the budget.
 - **1–4 together:** they can run at once. 1, 3 and 4 all touch `Bar.qml`, so they merge one
   after another.
 - **2:** touches `Theme.qml` and every surface's window, so run it alone or rebase the others
