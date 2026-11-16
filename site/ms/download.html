@@ -46,12 +46,12 @@
 <main id="main">
 <section class="center">
     <div class="wrap">
-      <h1 class="rise d1">Dapatkan KrissOS.</h1>
+      <h1 class="rise d1">Jom, ambik KrissOS.</h1>
       <div id="release" class="rise d2">
-        <p class="lede">ISO preview dibina dari <code>main</code> tiap-tiap malam, dan keluar kalau lulus test boot dalam CI ja. Terus boot masuk KrissOS Shell.</p>
+        <p class="lede">ISO preview masak baru tiap-tiap malam dari <code>main</code>, dan keluar kalau lulus test boot dalam CI ja. Boot terus masuk KrissOS Shell, tak payah login.</p>
         <div class="actions">
-          <a class="btn" href="https://sourceforge.net/projects/krissos/files/preview/">Dapatkan ISO preview</a>
-          <a class="btn ghost" href="install.html">Guna repo pada Arch</a>
+          <a class="btn" href="https://sourceforge.net/projects/krissos/files/preview/">Download ISO preview</a>
+          <a class="btn ghost" href="install.html">Dah ada Arch? Guna repo</a>
         </div>
       </div>
     </div>
@@ -61,13 +61,13 @@
     <div class="wrap split">
       <div class="reveal">
         <h2>Sebelum install, baca ni.</h2>
-        <p class="lede">KrissOS masih baru. Cuba dulu dalam VM atau PC spare, jangan terus pada PC utama anda. Belum masa lagi.</p>
+        <p class="lede">KrissOS masih baby lagi. Cuba dulu dalam VM atau PC spare, jangan terus hentam PC utama anda. Belum masa lagi, sabar.</p>
       </div>
       <ul class="list reveal">
-        <li><span>PC anda<small>PC Intel dan AMD 64-bit. Mac Apple Silicon nanti, dengan imej sendiri.</small></span></li>
-        <li><span>Desktop<small>KrissOS Shell by default. Installer ada pilihan KDE Plasma sekali.</small></span></li>
-        <li><span>Update<small>Update kecik-kecik selalu, terus dari Arch, campur pakej signed kami. Setiap update ambil snapshot dulu, jadi boleh patah balik.</small></span></li>
-        <li><span>Keluaran<small>Build tiap malam masuk <code>preview</code>. Keluaran rasmi pakai nama kod: <code>110</code>, <code>115</code>, dan seterusnya.</small></span></li>
+        <li><span>PC anda<small>PC Intel dan AMD 64-bit. Geng Mac Apple Silicon, tunggu sat, nanti ada imej sendiri.</small></span></li>
+        <li><span>Desktop<small>KrissOS Shell by default. Nak KDE Plasma? Pilih ja dalam installer.</small></span></li>
+        <li><span>Update<small>Update kecik-kecik selalu, terus mai dari Arch, campur pakej signed kami. Setiap update ambil snapshot dulu, jadi kalau buat hal, patah balik ja.</small></span></li>
+        <li><span>Keluaran<small>Build tiap malam masuk <code>preview</code>. Keluaran rasmi pakai nama motor Kriss: <code>110</code>, <code>115</code>, dan seterusnya.</small></span></li>
       </ul>
     </div>
   </section>
@@ -77,9 +77,9 @@
       <div class="card note reveal">
         <h2>Dua setting ja, lepas tu boot.</h2>
         <ul class="list">
-          <li><span>Hidupkan firmware UEFI<small>Dalam virt-manager, GNOME Boxes, VirtualBox atau VMware, pilih UEFI (OVMF) sebelum boot pertama. Installer perlu UEFI, dan itu yang CI test.</small></span></li>
-          <li><span>RAM 4 GB atau lebih<small>Sesi live jalan dari RAM. Bagi dua core CPU dan on 3D acceleration, baru smooth.</small></span></li>
-          <li><span>Tak perlu log masuk<small>Sesi live terus masuk KrissOS Shell. Tekan kekunci Windows, launcher terbuka.</small></span></li>
+          <li><span>On UEFI dulu<small>Dalam virt-manager, GNOME Boxes, VirtualBox atau VMware, pilih UEFI (OVMF) sebelum boot pertama. Installer perlu UEFI, dan itu yang CI test hari-hari.</small></span></li>
+          <li><span>RAM 4 GB atau lebih<small>Sesi live jalan dari RAM. Bagi dua core CPU dan on 3D acceleration, baru smooth. Kedekut RAM, lembab la.</small></span></li>
+          <li><span>Tak payah login<small>Sesi live terus masuk KrissOS Shell. Tekan kekunci Windows, launcher terus keluar.</small></span></li>
         </ul>
       </div>
     </div>
@@ -88,23 +88,23 @@
   <section>
     <div class="wrap">
       <div class="head reveal">
-        <h2>Check dulu imej tu.</h2>
-        <p class="lede">Download ISO, <code>sha256sums.txt</code> dan <code>sha256sums.txt.sig</code> dalam satu folder, lepas tu check dua-dua sebelum burn ISO ke USB.</p>
+        <h2>Check dulu, jangan main hentam.</h2>
+        <p class="lede">Download ISO, <code>sha256sums.txt</code> dan <code>sha256sums.txt.sig</code> dalam satu folder, lepas tu check dua-dua sebelum burn ISO ke USB. Lima minit ja, tapi selamat.</p>
       </div>
       <ol class="steps">
         <li class="reveal">
           <h3>Check checksum</h3>
-          <p>Kena keluar <code>OK</code> sebelah nama ISO.</p>
+          <p>Kena keluar <code>OK</code> sebelah nama ISO. Kalau tak, download semula.</p>
           <div class="code"><pre><code>sha256sum -c sha256sums.txt</code></pre></div>
         </li>
         <li class="reveal">
-          <h3>Import kunci tandatangan</h3>
-          <p>Kunci yang sama sign pakej kami.</p>
+          <h3>Import kunci</h3>
+          <p>Kunci yang sama sign semua pakej kami.</p>
           <div class="code"><pre><code>curl -fsSL https://raw.githubusercontent.com/krazetech/krissos/main/pkgs/kriss-keyring/krissos.gpg | gpg --import</code></pre></div>
         </li>
         <li class="reveal">
           <h3>Check tandatangan</h3>
-          <p>Cari <b>Good signature from "KrissOS Packages"</b> dan cap jari ni. Setiap ISO pun ada <code>.sig</code> sendiri kalau nak check terus.</p>
+          <p>Cari <b>Good signature from "KrissOS Packages"</b> dan cap jari ni. Sama? Settle. Setiap ISO pun ada <code>.sig</code> sendiri kalau nak check terus.</p>
           <div class="code"><pre><code>gpg --verify sha256sums.txt.sig sha256sums.txt</code></pre></div>
           <div class="code"><pre><code>7C92 AE8B 599A F813 2166  6CA3 1317 AA31 B21C 5F87</code></pre></div>
         </li>
@@ -130,11 +130,11 @@ fetch('https://api.github.com/repos/krazetech/krissos/releases?per_page=20')
       const box = document.getElementById('release');
       const p = document.createElement('p');
       p.className = 'lede';
-      p.textContent = `${rel.prerelease ? 'Build preview' : rel.name || rel.tag_name} dari ${when}.${size} live ISO untuk x86_64.`;
+      p.textContent = `${rel.prerelease ? 'Build preview' : rel.name || rel.tag_name} dari ${when}.${size} live ISO untuk PC 64-bit.`;
       const link = (cls, href, text) => Object.assign(document.createElement('a'), { className: cls, href, textContent: text });
       const actions = document.createElement('div');
       actions.className = 'actions';
-      actions.append(link('btn', href, 'Muat turun ISO'));
+      actions.append(link('btn', href, 'Download ISO'));
       actions.append(link('btn ghost', sums.browser_download_url, 'sha256sums.txt'));
       actions.append(link('btn ghost', rel.html_url, 'Checksum dan tandatangan'));
       box.replaceChildren(p, actions);
