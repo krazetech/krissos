@@ -129,6 +129,10 @@ host_res() {
 bootloader() {
   local f
   if [[ -f $ROOT/etc/default/limine ]]; then echo "limine $ROOT/etc/default/limine"; return; fi
+  # Limine before the UKI check: KrissOS's kriss-limine-update reads /etc/kernel/cmdline too.
+  if [[ -d $ROOT/usr/share/limine && -f $ROOT/etc/kernel/cmdline ]]; then
+    echo "limine-cmdline $ROOT/etc/kernel/cmdline"; return
+  fi
   if [[ -f $ROOT/etc/default/grub ]]; then echo "grub $ROOT/etc/default/grub"; return; fi
   if [[ -f $ROOT/etc/kernel/cmdline ]]; then echo "sdboot-uki $ROOT/etc/kernel/cmdline"; return; fi
   for f in "$ROOT"/boot/limine.conf "$ROOT"/boot/limine/limine.conf "$ROOT"/boot/EFI/limine/limine.conf; do
@@ -161,7 +165,7 @@ add_params() {
     # CachyOS and Omarchy append to the default entry the same way.
     limine) printf 'KERNEL_CMDLINE[default]+="%s"\n' "$add" >>"$f" ;;
     grub) sed -i "s|^\(GRUB_CMDLINE_LINUX_DEFAULT=\"[^\"]*\)\"|\1$add\"|" "$f" ;;
-    sdboot-uki) sed -i "1s|\$|$add|" "$f" ;;
+    sdboot-uki | limine-cmdline) sed -i "1s|\$|$add|" "$f" ;;
     sdboot) sed -i "s|^\(options[[:space:]].*\)\$|\1$add|" "$f" ;;
     limine-conf) sed -i -E "s|^([[:space:]]*(kernel_)?cmdline:.*)\$|\1$add|" "$f" ;;
     *) die "cannot edit the kernel command line for bootloader '$kind'." ;;
@@ -179,6 +183,10 @@ regen_boot() {
   case $kind in
     limine) if command -v limine-mkinitcpio >/dev/null; then limine-mkinitcpio; else mkinitcpio -P && limine-update; fi ;;
     grub) mkinitcpio -P && grub-mkconfig -o /boot/grub/grub.cfg ;;
+    limine-cmdline)
+      mkinitcpio -P
+      if command -v kriss-limine-update >/dev/null; then kriss-limine-update
+      else say "update your Limine menu by hand so it picks up /etc/kernel/cmdline."; fi ;;
     *) mkinitcpio -P ;;
   esac
 }
@@ -628,6 +636,15 @@ self_test() (
   echo 'root=UUID=x rw' >"$f"
   add_params sdboot-uki "$f" amd_iommu=on
   t_eq "$(cat "$f")" 'root=UUID=x rw amd_iommu=on' "systemd-boot UKI cmdline"
+
+  # Detection: a Limine system with /etc/kernel/cmdline (KrissOS) is Limine, not a UKI.
+  mkdir -p "$t/root/etc/kernel" "$t/root/usr/share/limine"
+  echo 'root=UUID=x rw' >"$t/root/etc/kernel/cmdline"
+  t_eq "$(ROOT=$t/root bootloader)" "limine-cmdline $t/root/etc/kernel/cmdline" "Limine with /etc/kernel/cmdline"
+  rmdir "$t/root/usr/share/limine"
+  t_eq "$(ROOT=$t/root bootloader)" "sdboot-uki $t/root/etc/kernel/cmdline" "UKI cmdline without Limine"
+  add_params limine-cmdline "$t/root/etc/kernel/cmdline" intel_iommu=on iommu=pt
+  t_eq "$(cat "$t/root/etc/kernel/cmdline")" 'root=UUID=x rw intel_iommu=on iommu=pt' "Limine /etc/kernel/cmdline"
 
   f=$t/limine.conf
   printf '%s\n' '/Arch' '    protocol: linux' '    kernel_cmdline: root=UUID=x rw' >"$f"
