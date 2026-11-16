@@ -1,0 +1,22 @@
+#!/bin/sh
+# Push the shell's QML from this checkout to a test machine running the KrissOS Shell.
+# Quickshell reloads changed files on its own, so edits show up within seconds.
+# usage: shell/dev-push [user@host]   (or set KRISS_DEV_HOST)
+#
+# One-time setup on the test machine (greetd sources ~/.profile at login), then log out and in:
+#   echo '[ -d ~/.local/share/kriss-shell-dev ] && export KRISS_SHELL_DATA=~/.local/share/kriss-shell-dev' >> ~/.profile
+# Remove ~/.local/share/kriss-shell-dev to go back to the installed shell at the next login.
+set -eu
+host=${1:-${KRISS_DEV_HOST:?usage: shell/dev-push user@host}}
+here=$(cd "$(dirname "$0")/.." && pwd)
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+# Same rendering as pkgs/kriss-shell/PKGBUILD's build().
+python3 "$here/theme/generate.py" "$here/shell/qml" "$tmp/qml"
+python3 "$here/theme/generate.py" "$here/shell/cosmic" "$tmp/cosmic"
+# ponytail: extracts over the old copy so the file watches survive; a file deleted from the
+# checkout lingers there until the dev dir is wiped.
+# --no-xattrs/COPYFILE_DISABLE: macOS tar otherwise adds xattr headers GNU tar warns about.
+COPYFILE_DISABLE=1 tar --no-xattrs -C "$tmp" -cf - qml cosmic |
+    ssh "$host" 'd=$HOME/.local/share/kriss-shell-dev; mkdir -p "$d" && tar -C "$d" -xf - && echo "$d"' |
+    sed "s|^|kriss: pushed to $host:|"
