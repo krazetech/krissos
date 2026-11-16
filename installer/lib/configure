@@ -15,9 +15,10 @@ sed -i "/^#\[multilib\]/,/^#Include/ s/^#//" "$root/etc/pacman.conf"
 
 # --- initramfs -------------------------------------------------------------------
 # busybox hooks, not systemd, so kriss-snapshot (kriss-settings) can put a RAM overlay
-# over a read-only snapshot booted from the Limine menu. kms pulls nouveau in early,
-# which the NVIDIA driver must not race with.
-kms=kms
+# over a read-only snapshot booted from the Limine menu. kriss-kms (kriss-settings) is
+# kms without nouveau, which would add ~105 MB of firmware that older cards never use.
+# The NVIDIA driver gets no early KMS at all, so nothing races with it.
+kms=kriss-kms
 if chr pacman -Q nvidia-utils >/dev/null 2>&1; then kms=; fi
 mkdir -p "$root/etc/mkinitcpio.conf.d"
 cat >"$root/etc/mkinitcpio.conf.d/kriss.conf" <<EOF
