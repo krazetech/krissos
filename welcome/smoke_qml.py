@@ -41,6 +41,15 @@ for i in range(5):  # the pages in Main.qml
     show(i)
     if shots:
         root.grabWindow().save(f"{shots}/page{i}.png")
+# The Local AI model list, as shown once Ollama is installed.
+e = QQmlExpression(engine.contextForObject(root), root, 'pageStack.currentItem.installs = { ollama: "installed" };'
+                   ' pageStack.currentItem.pulls = { "llama3.2:3b": "pulled" }')
+e.evaluate()
+assert not e.hasError(), e.error().toString()
+for _ in range(20):
+    QCoreApplication.processEvents()
+if shots:
+    root.grabWindow().save(f"{shots}/ai-models.png")
 # The Install dialog's text calls backend. It used to fail once you switched pages or
 # closed the app with an install picked.
 QQmlExpression(engine.contextForObject(root), root,

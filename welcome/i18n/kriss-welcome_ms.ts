@@ -467,6 +467,71 @@ Menjalankan: %1</translation>
         <source>Needs internet</source>
         <translation>Perlu internet</translation>
     </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="131"/>
+        <source>Your graphics card has %1 GB of memory. Models that fit in it run fast.</source>
+        <translation>Kad grafik anda ada %1 GB memori. Model yang muat di dalamnya berjalan laju.</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="132"/>
+        <source>No graphics card memory found, so models run on the processor and share your %1 GB of RAM. Answers come slower than on a graphics card.</source>
+        <translation>Tiada memori kad grafik dijumpai, jadi model berjalan pada pemproses dan berkongsi %1 GB RAM anda. Jawapan lebih perlahan berbanding pada kad grafik.</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="148"/>
+        <source>Coding</source>
+        <translation>Pengekodan</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="148"/>
+        <source>General chat</source>
+        <translation>Sembang umum</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="149"/>
+        <source>%1 GB download</source>
+        <translation>Muat turun %1 GB</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="150"/>
+        <source>Fits</source>
+        <translation>Muat</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="151"/>
+        <source>Too big for this PC</source>
+        <translation>Terlalu besar untuk PC ini</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="152"/>
+        <source>Tight: part of it runs on the processor, so it is slower</source>
+        <translation>Ketat: sebahagiannya berjalan pada pemproses, jadi lebih perlahan</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="153"/>
+        <source>Tight: close other apps while you use it</source>
+        <translation>Ketat: tutup aplikasi lain semasa menggunakannya</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="158"/>
+        <source>Downloading…</source>
+        <translation>Memuat turun…</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="159"/>
+        <source>Downloaded</source>
+        <translation>Sudah dimuat turun</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="161"/>
+        <source>Download</source>
+        <translation>Muat turun</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="172"/>
+        <source>Downloading a model is the only step that needs internet. Then chat with it in a terminal: ollama run followed by the model name.</source>
+        <translation>Memuat turun model ialah satu-satunya langkah yang memerlukan internet. Kemudian bersembang dengannya dalam terminal: ollama run diikuti nama model.</translation>
+    </message>
 </context>
 <context>
     <name>GamesPage</name>

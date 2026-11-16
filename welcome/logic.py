@@ -234,3 +234,38 @@ def extra_installed(extra_id, gpus):
                               timeout=10).returncode == 0
     except (OSError, subprocess.SubprocessError):
         return False
+
+
+# --- Local AI models -----------------------------------------------------------------------
+# Shown after Ollama is installed, so the user knows what runs well here before downloading.
+# size_gb is the download from the Ollama library; need_mb adds room for the conversation and
+# the runtime. ponytail: rough numbers for the default 4-bit builds; check them when the list
+# changes, or read real sizes from the Ollama library once there is a reason to go online.
+OLLAMA_MODELS = [
+    {"name": "llama3.2:3b", "kind": "general", "size_gb": 2.0, "need_mb": 3584},
+    {"name": "llama3.1:8b", "kind": "general", "size_gb": 4.9, "need_mb": 7168},
+    {"name": "gemma3:12b", "kind": "general", "size_gb": 8.1, "need_mb": 10240},
+    {"name": "gemma3:27b", "kind": "general", "size_gb": 17, "need_mb": 20480},
+    {"name": "qwen2.5-coder:1.5b", "kind": "coding", "size_gb": 1.0, "need_mb": 2560},
+    {"name": "qwen2.5-coder:7b", "kind": "coding", "size_gb": 4.7, "need_mb": 6656},
+    {"name": "qwen2.5-coder:32b", "kind": "coding", "size_gb": 20, "need_mb": 23552},
+]
+
+
+def model_fits(hw):
+    """Which OLLAMA_MODELS run well on this PC (from `kriss hwcheck`).
+    fits: all of it sits in graphics memory or, without a graphics card, in RAM with 4 GB left
+    for everything else. tight: it runs, but part of it moves to the processor (slower) or
+    there is little RAM left for other apps. too_big: it will not run well."""
+    # Under 2 GB is an APU's carve-out, not a graphics card worth sizing for.
+    vram = hw.get("vram_mb", 0) if hw.get("vram_mb", 0) >= 2048 else 0
+    ram = hw.get("ram_mb", 0)
+    budget = vram or ram - 4096
+    models = [{**m, "fit": "fits" if m["need_mb"] <= budget else "tight" if m["need_mb"] <= ram - 2048
+               else "too_big"} for m in OLLAMA_MODELS]
+    return {"gpu": bool(vram), "memory_mb": vram or ram, "models": models}
+
+
+def ollama_names(ollama_list):
+    """Model names from `ollama list` (a header row, then one model per line)."""
+    return [line.split()[0] for line in ollama_list.splitlines()[1:] if line.strip()]
