@@ -77,8 +77,13 @@ greeter)
     # The shell inside a running cosmic-comp. Also how to run it nested for development.
     # ponytail: restart the shell after a crash so open apps survive it; a clean exit
     # (Sign out in the launcher) ends the session. A crash loop retries once a second.
+    # The kernel backs memory with 2 MB huge pages for every process (THP "always"), which
+    # adds about 110 MB to the shell's half-used heap for no speed it needs. Turn them off for
+    # qs and its helpers only (prctl PR_SET_THP_DISABLE, kept across exec); python3 comes with
+    # python-pywayland.
+    nothp='import ctypes, os, sys; ctypes.CDLL(None).prctl(41, 1, 0, 0, 0); os.execvp(sys.argv[1], sys.argv[1:])'
     while :; do
-        qs -p "$qml" && exit 0
+        python3 -c "$nothp" qs -p "$qml" && exit 0
         sleep 1
     done
     ;;
