@@ -81,6 +81,9 @@ and installs KDE Plasma, which is not on the ISO. Offline, Plasma falls back to 
 - **Kernel:** the ISO's kernel offline; `linux-kriss` on x86-64-v3 CPUs when online.
 - **NVIDIA:** `nvidia-open-dkms` on Turing and newer, on the ISO so the live session uses
   it too. Older cards keep nouveau, since no driver in Arch's repos supports them any more.
+  For Maxwell, Pascal and Volta, kriss-welcome offers NVIDIA's 580 driver afterwards as an
+  optional online extra (`kriss nvidia setup`, pinned AUR builds in `[kriss]`; see
+  `pkgs/nvidia-580xx-utils/SOURCES.md`).
 - **Secure Boot:** not set up by the installer yet. Once `sbctl` has keys,
   `kriss-limine-update` hashes every path in `limine.conf` (BLAKE2b), enrolls the config's
   hash into Limine with `limine enroll-config` and signs it with `sbctl`; the pacman hook

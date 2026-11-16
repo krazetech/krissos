@@ -10,6 +10,11 @@ Kirigami.ScrollablePage {
     property var pending: null
 
     readonly property var extras: [
+        // Only for NVIDIA GPUs older than Turing, which the installer leaves on nouveau.
+        { id: "nvidia-legacy", icon: "video-display", show: backend.hw.nvidia_legacy === true,
+          name: qsTr("Install the NVIDIA 580 driver (needs internet)"),
+          ask: qsTr("Install the NVIDIA 580 driver?"),
+          text: qsTr("Your NVIDIA graphics card is older than the GeForce 16 series, so it uses the open nouveau driver. NVIDIA's own 580 driver is faster for games. NVIDIA keeps it in long-term maintenance: it gets fixes but no new features. If you skip this, nouveau stays and everything keeps working. On laptops, the screen stays on the built-in graphics; start an app with prime-run to use the NVIDIA card. This driver cannot switch an older NVIDIA card off when it is idle, as nouveau does. On our test laptop, idle power went from about 4.7 W to 6.8 W, so the battery lasts about a third less when idle (about 1.5 hours less on that laptop). Removing the nvidia-580xx-dkms and nvidia-580xx-utils packages brings nouveau back. Restart after it installs.") },
         { id: "codecs", icon: "applications-multimedia", name: qsTr("Video and music codecs"),
           text: qsTr("Play MP4, MKV, MP3, AAC and other common formats in every app.") },
         { id: "printers", icon: "printer", name: qsTr("Printers"),
@@ -47,7 +52,7 @@ Kirigami.ScrollablePage {
 
     Kirigami.PromptDialog {
         id: confirm
-        title: page.pending ? qsTr("Install %1?").arg(page.pending.name) : ""
+        title: page.pending ? page.pending.ask || qsTr("Install %1?").arg(page.pending.name) : ""
         subtitle: page.pending ? qsTr("You may be asked for your password.\n\nRuns: %1").arg(backend.extraCommand(page.pending.id)) : ""
         standardButtons: Kirigami.Dialog.Ok | Kirigami.Dialog.Cancel
         onAccepted: { page.setInstall(page.pending.id, "installing"); backend.installExtra(page.pending.id) }
@@ -56,7 +61,7 @@ Kirigami.ScrollablePage {
     ColumnLayout {
         spacing: Kirigami.Units.largeSpacing
         Repeater {
-            model: page.extras
+            model: page.extras.filter(e => e.show !== false)
             delegate: Kirigami.AbstractCard {
                 required property var modelData
                 readonly property string installState: page.installs[modelData.id] || ""
@@ -77,9 +82,13 @@ Kirigami.ScrollablePage {
                         text: modelData.url ? qsTr("Website")
                             : installState === "installing" ? qsTr("Installing…")
                             : installState === "installed" ? qsTr("Installed")
+                            : !backend.online ? qsTr("Needs internet")
                             : installState === "failed" ? qsTr("Failed, try again") : qsTr("Install")
-                        icon.name: modelData.url ? "internet-services" : "download"
+                        icon.name: modelData.url ? "internet-services"
+                            : !backend.online && !installState ? "network-offline" : "download"
+                        // Offline is not an error: every extra is optional, so it just waits.
                         enabled: installState !== "installing" && installState !== "installed"
+                            && (backend.online || !!modelData.url)
                         onClicked: {
                             if (modelData.url) return Qt.openUrlExternally(modelData.url)
                             page.pending = modelData
