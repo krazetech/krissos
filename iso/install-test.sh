@@ -35,22 +35,46 @@ if ! grep -q 'kriss-autoinstall: done' "$out/install.log"; then
 fi
 grep 'kriss: ' "$out/install.log" || true
 
+# boot NAME [QEMU ARGS]: boot the installed disk, screenshot the Limine menu as NAME.png
+# and wait up to 5 minutes for the login screen (NAME-login.png). Serial log: NAME.log.
+boot() {
+  local name=$1 ok=0; shift
+  rm -f "$out/mon"
+  "${qemu[@]}" -bios "$ovmf" -serial "file:$out/$name.log" "$@" &
+  pid=$!
+  sleep 4
+  shot "$name"
+  for _ in $(seq 60); do
+    if grep -q 'Started.*Greeter daemon' "$out/$name.log"; then ok=1; break; fi
+    sleep 5
+  done
+  sleep 30  # let the login screen draw
+  shot "$name-login"
+  kill "$pid" && wait "$pid" || true
+  grep -m3 'Linux version\|Failed to start' "$out/$name.log" || true
+  (( ok )) || { echo "$name: no login screen within 5 minutes." >&2; return 1; }
+}
+
 # 2. The installed disk, as firmware boots it: Limine from EFI/BOOT, then KrissOS.
-rm -f "$out/mon"
-"${qemu[@]}" -bios "$ovmf" -serial "file:$out/installed.log" &
-pid=$!
-sleep 3
-shot limine
-ok=0
-for _ in $(seq 60); do
-  if grep -q 'Started.*Greeter daemon' "$out/installed.log"; then ok=1; break; fi
-  sleep 5
-done
-sleep 30  # let the login screen draw
-shot login
-kill "$pid" && wait "$pid" || true
-grep -m3 'Linux version\|Failed to start' "$out/installed.log" || true
+boot limine
 # X11 apps (Steam, most games) need Xwayland under cosmic-comp.
-if grep -q 'Failed to start Xwayland' "$out/installed.log"; then echo 'cosmic-comp could not start Xwayland.' >&2; ok=0; fi
-if (( ok )); then echo 'The installed system started its login screen.'; else
-  echo 'The installed system did not reach the login screen within 5 minutes.' >&2; exit 1; fi
+if grep -q 'Failed to start Xwayland' "$out/limine.log"; then echo 'cosmic-comp could not start Xwayland.' >&2; exit 1; fi
+echo 'The installed system started its login screen.'
+
+# 3. The snapshot entry. Limine reads a config from SMBIOS before the one on disk, so this
+#    boots the limine.conf the installer wrote with only default_entry changed to the
+#    snapshot. The kriss-snapshot initramfs hook says when it boots one.
+sed -n 's/.*kriss-limine-conf: //p' "$out/install.log" | tail -n1 | tr -d '\r' | base64 -d >"$out/limine.conf"
+title=$(sed -n 's|^ *///||p' "$out/limine.conf" | head -n1)
+esc=${title//\\/\\\\}; esc=${esc//\//\\/}; esc=${esc//#/\\#}
+{
+  printf 'limine:config:'
+  while IFS= read -r line; do
+    [[ $line == default_entry:* ]] && line="default_entry: KrissOS/Snapshots/$esc"
+    printf '%s\n' "$line"
+  done <"$out/limine.conf"
+} >"$out/smbios.conf"
+boot snapshot -smbios "type=11,path=$out/smbios.conf"
+grep -q 'booting a read-only snapshot' "$out/snapshot.log" || {
+  echo 'The snapshot entry did not boot the snapshot.' >&2; exit 1; }
+echo "The snapshot \"$title\" booted read-only to its login screen."

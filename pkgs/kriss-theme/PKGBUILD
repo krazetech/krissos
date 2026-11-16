@@ -1,6 +1,6 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-theme
-pkgver=0.3.0
+pkgver=0.4.0
 pkgrel=1
 pkgdesc='KrissOS colours, fonts, wallpaper, Plasma, SDDM, Plymouth and Limine theme'
 arch=('any')
@@ -24,6 +24,10 @@ build() {
   # Plymouth cannot load SVG.
   rsvg-convert -w 128 -h 128 -o "$srcdir/root/usr/share/plymouth/themes/kriss/logo.png" \
     "$srcdir/root/usr/share/pixmaps/krissos.svg"
+  # The Limine menu background (kriss-limine-update copies it to the ESP). Limine cannot
+  # load SVG either; 1920x1080 keeps it small enough for Windows' 100 MB ESP.
+  rsvg-convert -w 1920 -h 1080 -o "$srcdir/root/usr/share/kriss/theme/limine-wallpaper.png" \
+    "$srcdir/root/usr/share/backgrounds/kriss/kriss-dark.svg"
 
   # Plasma picks the closest WxH.png and switches images/ <-> images_dark/ with the
   # colour scheme. The SVGs crop to fill (preserveAspectRatio slice), so setting

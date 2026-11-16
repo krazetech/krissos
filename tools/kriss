@@ -126,6 +126,45 @@ cmd_update() {
   fi
 }
 
+# kriss rollback: make the snapshot booted from the Limine menu (KrissOS > Snapshots) the
+# system for good. It becomes @ again; the system it replaces is kept as @.old-DATE.
+# Runs from the snapshot itself, so its kernel (kept under /boot/kriss/ by
+# kriss-limine-update when it is older) goes back into /boot with it.
+# kriss rollback --notice: at login, say so when a snapshot is running.
+in_snapshot() { grep -qw kriss_snapshot=1 "$PROC/cmdline"; }
+
+cmd_rollback() {
+  if [[ ${1:-} == --notice ]]; then
+    in_snapshot || return 0
+    notify-send -a KrissOS -i krissos -u critical 'Running a snapshot' \
+      'Changes are lost at reboot. To keep this snapshot as your system, run: kriss rollback'
+    return
+  fi
+  in_snapshot || die "rollback starts from a snapshot. Reboot, pick one under KrissOS > Snapshots in the boot menu, then run kriss rollback."
+  ((EUID == 0)) || exec sudo "$0" rollback "$@"
+  local n top old ver base ok
+  n=$(sed -n 's|.*subvol=@snapshots/\([0-9]*\)/snapshot.*|\1|p' "$PROC/cmdline")
+  [[ -n $n ]] || die "cannot tell which snapshot is running."
+  read -rp "Make snapshot $n your system? The current one is kept as a backup. [y/N] " ok
+  [[ $ok == [yY]* ]] || return 1
+  top=$(mktemp -d)
+  mount -o subvolid=5 "$(findmnt -nvo SOURCE /.snapshots)" "$top"
+  old=@.old-$(date +%Y%m%d-%H%M%S)
+  btrfs subvolume snapshot "$top/@snapshots/$n/snapshot" "$top/@.new"
+  mv "$top/@" "$top/$old"
+  mv "$top/@.new" "$top/@"
+  umount "$top" && rmdir "$top"
+  while read -r ver base; do
+    [[ -f /boot/kriss/$ver/vmlinuz-$base ]] || continue
+    cp "/boot/kriss/$ver/vmlinuz-$base" "/boot/kriss/$ver/initramfs-$base.img" /boot/
+  done < <(for f in /usr/lib/modules/*/pkgbase; do echo "$(basename "${f%/pkgbase}") $(<"$f")"; done)
+  KRISS_ROLLBACK=1 kriss-limine-update
+  printf 'kriss: snapshot %s is now your system. Reboot to start it.\n' "$n"
+  printf 'kriss: the old system is kept as %s. Once you are happy, free its space with:\n' "$old"
+  printf '  sudo mount -o subvolid=5 %s /mnt && sudo btrfs subvolume delete /mnt/%s && sudo umount /mnt\n' \
+    "$(findmnt -nvo SOURCE /.snapshots)" "$old"
+}
+
 # kriss winapps check|setup: Windows apps in WinBoat (ARCHITECTURE §7, tier 1).
 # check only reads. setup offers the fixes that are safe to make, asks before each one,
 # then opens WinBoat, which downloads and installs Windows itself.
@@ -277,6 +316,7 @@ Commands:
   info       Show a summary of this system (default)
   version    Show the kriss and KrissOS versions
   hwcheck    Print hardware facts (RAM, CPU, GPU, VM support) as JSON
+  rollback   Keep the snapshot booted from the boot menu as your system
   winapps check   Check this PC is ready for Windows apps in WinBoat (read-only)
   winapps setup   Fix what is missing (asks first), then open WinBoat
   help       Show this help
@@ -291,6 +331,7 @@ main() {
     hwcheck) cmd_hwcheck ;;
     tune) cmd_tune "${@:2}" ;;
     winapps) cmd_winapps "${@:2}" ;;
+    rollback) cmd_rollback "${@:2}" ;;
     help | --help | -h) cmd_help ;;
     --kapcai) cmd_kapcai ;;
     *) die "unknown command '$1'. Run 'kriss help'." ;;

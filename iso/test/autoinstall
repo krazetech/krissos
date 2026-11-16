@@ -46,9 +46,21 @@ echo kriss:kriss | arch-chroot "$t" chpasswd
 sed -i 's/$/ console=ttyS0,115200 systemd.journald.forward_to_console=1/' "$t/etc/kernel/cmdline"
 arch-chroot "$t" snapper --no-dbus -c root create -d 'install test'
 arch-chroot "$t" kriss-limine-update
-cat "$t/efi/EFI/limine/limine.conf" "$t/etc/fstab"
-grep -q '^/Snapshots' "$t/efi/EFI/limine/limine.conf"
-grep -q 'kriss_snapshot=1' "$t/efi/EFI/limine/limine.conf"
+conf=$t/efi/EFI/limine/limine.conf
+cat "$conf" "$t/etc/fstab"
+# The menu: themed, versioned kernel entries under KrissOS, the snapshot under Snapshots.
+grep -q '^interface_branding: KrissOS' "$conf"
+grep -q '^wallpaper: boot():/EFI/limine/kriss-wallpaper.png' "$conf"
+test -s "$t/efi/EFI/limine/kriss-wallpaper.png"
+grep -q '^/+KrissOS' "$conf"
+grep -Eq '^//linux-kriss(-generic)? [0-9]+\.[0-9]+' "$conf"
+grep -Eq '^default_entry: KrissOS/linux-kriss(-generic)? [0-9]' "$conf"
+grep -q '^//Snapshots' "$conf"
+grep -q '^    ///.* install test (#[0-9]*)$' "$conf"
+grep -q 'subvol=@snapshots/[0-9]*/snapshot.* kriss_snapshot=1' "$conf"
+cmp -s "$conf" "$t/efi/EFI/BOOT/limine.conf"
+# One line, so install-test.sh can boot the snapshot entry from it.
+echo "kriss-limine-conf: $(base64 -w0 "$conf")"
 ls -l "$t/efi/EFI/BOOT" "$t/boot"
 umount -R "$t" || { fuser -vm "$t" || true; exit 1; }
 echo 'kriss-autoinstall: done'
