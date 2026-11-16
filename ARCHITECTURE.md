@@ -66,18 +66,28 @@ and installs KDE Plasma, which is not on the ISO. Offline, Plasma falls back to 
 - **Layout:** the ESP at `/efi` holds only Limine, so Windows' small ESP is enough. The
   kernels go on a 2 GiB FAT32 `/boot` (XBOOTLDR), because Limine reads only FAT. btrfs
   root with `@`, `@home`, `@cache`, `@log` and `@snapshots`; zram, no swap partition.
-- **Boot menu:** `kriss-limine-update` (`kriss-settings`) writes `limine.conf`: KrissOS,
-  Windows when the installer found its boot manager, and the 15 newest snapper snapshots.
+- **Boot menu:** `kriss-limine-update` (`kriss-settings`) writes `limine.conf` after every
+  kernel, initramfs or Limine change (pacman hook and mkinitcpio post hook) and whenever
+  `/.snapshots` changes (path unit): a `KrissOS` directory with one versioned entry per
+  kernel (`linux-kriss 7.3.4`, the default, plus a fallback entry when that initramfs
+  exists) and a `Snapshots` submenu with the 15 newest snapper snapshots (date,
+  description, pre/post), then Windows when the installer found its boot manager. The
+  theme (wallpaper, colours, margins, branding) comes from `kriss-theme`.
   A snapshot boots with the kernel it was taken with (old kernels are kept under
-  `/boot/kriss/`) and a RAM overlay from the `kriss-snapshot` initramfs hook.
+  `/boot/kriss/`) and a RAM overlay from the `kriss-snapshot` initramfs hook, so it starts
+  normally but forgets changes at reboot; a login notification says so. `kriss rollback`,
+  run from the booted snapshot, makes it `@` again and keeps the replaced system as
+  `@.old-DATE`.
 - **Kernel:** the ISO's kernel offline; `linux-kriss` on x86-64-v3 CPUs when online.
 - **NVIDIA:** `nvidia-open-dkms` on Turing and newer, on the ISO so the live session uses
   it too. Older cards keep nouveau, since no driver in Arch's repos supports them any more.
   For Maxwell, Pascal and Volta, kriss-welcome offers NVIDIA's 580 driver afterwards as an
   optional online extra (`kriss nvidia setup`, pinned AUR builds in `[kriss]`; see
   `pkgs/nvidia-580xx-utils/SOURCES.md`).
-- **Secure Boot:** not set up by the installer yet. Limine needs `limine enroll-config`
-  and hashed kernel paths before an `sbctl` signature means anything.
+- **Secure Boot:** not set up by the installer yet. Once `sbctl` has keys,
+  `kriss-limine-update` hashes every path in `limine.conf` (BLAKE2b), enrolls the config's
+  hash into Limine with `limine enroll-config` and signs it with `sbctl`; the pacman hook
+  re-signs the rest. Untested on real firmware.
 
 ## 3. Repository layout (monorepo, public GitHub org)
 

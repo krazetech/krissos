@@ -1,26 +1,42 @@
 #!/bin/bash
-# Write the Limine boot menu: KrissOS, Windows (when the installer found it) and, under
-# Snapshots, the newest snapper snapshots of /. Runs after kernel and Limine updates
-# and whenever /.snapshots changes. Does nothing on systems the KrissOS installer did
-# not set up (no /etc/kernel/cmdline or no Limine on the ESP at /efi).
+# Write the Limine boot menu:
+#   KrissOS
+#     linux-kriss 7.3.4            (and a fallback entry when that initramfs exists)
+#     linux-kriss-generic 7.3.4
+#     Snapshots                    the 15 newest snapper snapshots of /
+#   Windows                        (when the installer found it)
+# Runs after kernel, initramfs and Limine updates (pacman hook, mkinitcpio post hook)
+# and whenever /.snapshots changes (kriss-limine-update.path). Does nothing on systems
+# the KrissOS installer did not set up (no /etc/kernel/cmdline or no Limine on the ESP
+# at /efi), or while a snapshot is booted: that root's kernels are not the ones in /boot.
 #   kriss-limine-update          write the menu
 #   kriss-limine-update --keep   before pacman replaces a kernel: copy it to
 #                                /boot/kriss/VERSION so snapshots made with it still boot
 # Inputs: /etc/kernel/cmdline (with rootflags=subvol=@), /etc/kriss/limine.d/*.conf
-# (extra entries, such as Windows), /usr/share/kriss/theme/limine.conf (kriss-theme).
+# (extra entries, such as Windows), /usr/share/kriss/theme/limine.conf and
+# limine-wallpaper.png (kriss-theme).
+# Secure Boot: once sbctl has keys, every path gets a BLAKE2b hash, the config's hash is
+# enrolled into Limine (limine enroll-config) and Limine is signed again.
 set -euo pipefail
 shopt -s nullglob
 
 esp=/efi/EFI
 [ -f /etc/kernel/cmdline ] && [ -f "$esp/limine/BOOTX64.EFI" ] || exit 0
+[ -n "${KRISS_ROLLBACK:-}" ] || ! grep -qw kriss_snapshot=1 /proc/cmdline || exit 0
 snaps=${KRISS_SNAPSHOTS:-/.snapshots}
+theme=/usr/share/kriss/theme
+sb=0
+if command -v sbctl >/dev/null && { [ -d /var/lib/sbctl/keys ] || [ -d /usr/share/secureboot/keys ]; }; then
+    sb=1
+fi
 
-# "VERSION PKGBASE" for each kernel installed under the root given.
+# "VERSION PKGBASE" for each kernel installed under the root given; linux-kriss first,
+# so it is the default entry.
 kernels() {
     local f
     for f in "$1"/usr/lib/modules/*/pkgbase; do
         echo "$(basename "$(dirname "$f")") $(<"$f")"
-    done
+    done | sort -k2,2 | awk '{print ($2 ~ /^linux-kriss/ ? 0 : 1), $0}' | sort -s -k1,1n | cut -d' ' -f2-
 }
 
 if [ "${1:-}" = --keep ]; then
@@ -35,48 +51,75 @@ fi
 boot=$(findmnt -nfo PARTUUID /boot)
 cmdline=$(</etc/kernel/cmdline)
 declare -A current=() keep=()
-while read -r ver base; do current[$base]=$ver; done < <(kernels "")
+order=()
+while read -r ver base; do current[$base]=$ver; order+=("$base"); done < <(kernels "")
 
-entry() {  # entry INDENT NAME KERNEL INITRAMFS CMDLINE
+# PATH, with "#BLAKE2b" appended when Secure Boot is set up. Limine refuses (panics on)
+# a hashed file that changed, which is why mkinitcpio's post hook reruns this script.
+hashed() {
+    if (( sb )); then printf '%s#%s' "$1" "$(b2sum "$2" | cut -d' ' -f1)"; else printf '%s' "$1"; fi
+}
+
+entry() {  # entry INDENT NAME KERNEL INITRAMFS CMDLINE [COMMENT]  (KERNEL, INITRAMFS under /boot)
     printf '%s%s\n' "$1" "$2"
+    [ -z "${6:-}" ] || printf '%s    comment: %s\n' "$1" "$6"
     printf '%s    protocol: linux\n' "$1"
-    printf '%s    path: guid(%s):/%s\n' "$1" "$boot" "$3"
-    printf '%s    module_path: guid(%s):/%s\n' "$1" "$boot" "$4"
+    printf '%s    path: %s\n' "$1" "$(hashed "guid($boot):/$3" "/boot/$3")"
+    printf '%s    module_path: %s\n' "$1" "$(hashed "guid($boot):/$4" "/boot/$4")"
     printf '%s    cmdline: %s\n' "$1" "$5"
 }
 
+# XML text of TAG in snapper's info.xml FILE, unescaped.
+xml() {
+    sed -n "s:.*<$1>\(.*\)</$1>.*:\1:p" "$2" |
+        sed 's/&lt;/</g; s/&gt;/>/g; s/&quot;/"/g; s/&apos;/'"'"'/g; s/&amp;/\&/g'
+}
+
 menu() {
-    cat /usr/share/kriss/theme/limine.conf 2>/dev/null || true
+    cat "$theme/limine.conf" 2>/dev/null || true
+    if [ -f "$theme/limine-wallpaper.png" ]; then
+        echo "wallpaper: $(hashed 'boot():/EFI/limine/kriss-wallpaper.png' "$theme/limine-wallpaper.png")"
+    fi
     echo 'timeout: 5'
+    local base first=${order[0]:-}
+    [ -z "$first" ] || echo "default_entry: KrissOS/$first ${current[$first]%%-*}"
     echo
-    local base name=KrissOS
-    for base in "${!current[@]}"; do
-        entry '' "/$name" "vmlinuz-$base" "initramfs-$base.img" "$cmdline"
-        name="KrissOS ($base)"
+    echo '/+KrissOS'
+    for base in "${order[@]}"; do
+        entry '' "//$base ${current[$base]%%-*}" "vmlinuz-$base" "initramfs-$base.img" "$cmdline"
+        if [ -f "/boot/initramfs-$base-fallback.img" ]; then
+            entry '' "//$base ${current[$base]%%-*} (fallback)" "vmlinuz-$base" \
+                "initramfs-$base-fallback.img" "$cmdline"
+        fi
     done
-    cat /etc/kriss/limine.d/*.conf 2>/dev/null || true
 
     # Newest first. A snapshot boots with the kernel it was taken with: the installed
     # one, or the copy --keep made before an update. Snapshots with neither are left out.
-    local dirs=() d n ver date desc kernel initrd
+    local dirs=() d n ver date desc type kernel initrd
     for d in "$snaps"/*/info.xml; do dirs+=("$(basename "$(dirname "$d")")"); done
-    [ ${#dirs[@]} -gt 0 ] || return 0
-    echo '/Snapshots'
-    for n in $(printf '%s\n' "${dirs[@]}" | sort -rn | head -n 15); do
-        read -r ver base < <(kernels "$snaps/$n/snapshot") || continue
-        if [ "${current[$base]:-}" = "$ver" ]; then
-            kernel=vmlinuz-$base initrd=initramfs-$base.img
-        elif [ -f "/boot/kriss/$ver/vmlinuz-$base" ]; then
-            kernel=kriss/$ver/vmlinuz-$base initrd=kriss/$ver/initramfs-$base.img
-            keep[$ver]=1
-        else
-            continue
-        fi
-        date=$(sed -n 's:.*<date>\(.*\)</date>.*:\1:p' "$snaps/$n/info.xml")
-        desc=$(sed -n 's:.*<description>\(.*\)</description>.*:\1:p' "$snaps/$n/info.xml")
-        entry '    ' "//${date%:*} ${desc:-snapshot} ($n)" "$kernel" "$initrd" \
-            "${cmdline/subvol=@/subvol=@snapshots/$n/snapshot} kriss_snapshot=1"
-    done
+    if [ ${#dirs[@]} -gt 0 ]; then
+        echo '//Snapshots'
+        echo '    comment: Read-only, with changes kept in RAM until reboot. To keep one: kriss rollback'
+        for n in $(printf '%s\n' "${dirs[@]}" | sort -rn | head -n 15); do
+            read -r ver base < <(kernels "$snaps/$n/snapshot") || continue
+            if [ "${current[$base]:-}" = "$ver" ]; then
+                kernel=vmlinuz-$base initrd=initramfs-$base.img
+            elif [ -f "/boot/kriss/$ver/vmlinuz-$base" ]; then
+                kernel=kriss/$ver/vmlinuz-$base initrd=kriss/$ver/initramfs-$base.img
+                keep[$ver]=1
+            else
+                continue
+            fi
+            date=$(xml date "$snaps/$n/info.xml")
+            desc=$(xml description "$snaps/$n/info.xml")
+            type=$(xml type "$snaps/$n/info.xml")
+            case $type in single | '') type= ;; *) type=" [$type]" ;; esac
+            entry '    ' "///${date%:*} ${desc:-snapshot}$type (#$n)" "$kernel" "$initrd" \
+                "${cmdline/subvol=@/subvol=@snapshots/$n/snapshot} kriss_snapshot=1" \
+                "$base ${ver%%-*}, snapshot $n, taken ${date%:*} UTC"
+        done
+    fi
+    cat /etc/kriss/limine.d/*.conf 2>/dev/null || true
 }
 
 # Not $(menu): that subshell would lose the keep list.
@@ -86,10 +129,22 @@ menu >"$conf"
 for d in "$esp/limine" "$esp/BOOT"; do
     # EFI/BOOT is ours only when the installer put Limine there (and a limine.conf).
     [ -f "$d/limine.conf" ] || [ "$d" = "$esp/limine" ] || continue
-    cmp -s /usr/share/limine/BOOTX64.EFI "$d/BOOTX64.EFI" || cp /usr/share/limine/BOOTX64.EFI "$d/BOOTX64.EFI"
+    if (( sb )); then
+        # Start from a fresh copy, so the enrolled hash and signature are this config's.
+        cp /usr/share/limine/BOOTX64.EFI "$d/BOOTX64.EFI"
+        limine enroll-config "$d/BOOTX64.EFI" "$(b2sum "$conf" | cut -d' ' -f1)"
+        sbctl sign -s "$d/BOOTX64.EFI"
+    elif ! cmp -s /usr/share/limine/BOOTX64.EFI "$d/BOOTX64.EFI"; then
+        cp /usr/share/limine/BOOTX64.EFI "$d/BOOTX64.EFI"
+    fi
     cp "$conf" "$d/limine.conf.new"
     mv "$d/limine.conf.new" "$d/limine.conf"
 done
+# A missing wallpaper only costs the background, so a full ESP is not an error.
+if [ -f "$theme/limine-wallpaper.png" ] && ! cmp -s "$theme/limine-wallpaper.png" "$esp/limine/kriss-wallpaper.png"; then
+    cp "$theme/limine-wallpaper.png" "$esp/limine/kriss-wallpaper.png" ||
+        echo 'kriss: could not copy the boot menu wallpaper to the ESP' >&2
+fi
 
 # Drop kernel copies no listed snapshot needs any more.
 for d in /boot/kriss/*/; do
