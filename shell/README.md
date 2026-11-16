@@ -13,7 +13,8 @@ quick settings, notifications and a lock screen, written in QML for [Quickshell]
 | `kriss-shell-toplevels` | Python helper that lists open windows (and the screen each is on) and focuses, minimizes or closes them. Quickshell can't read windows from cosmic-comp directly |
 | `protocols/` | COSMIC protocol files the helper's bindings are generated from |
 | `session/kriss-shell` | Starts the session and the login screen, and handles the commands the shortcuts below run |
-| `cosmic/` | Defaults copied into `~/.config/cosmic` on first start: the shortcuts below, and the Sky Cyan ring on the focused window. Existing user values are left alone |
+| `cosmic/` | Defaults copied key by key into `~/.config/cosmic` (same layout) on first start: the shortcuts below, the KrissOS theme builder keys (accent, backgrounds, corners, the Sky Cyan ring on the focused window), Papirus icons and the COSMIC Terminal colours. Existing user values are left alone |
+| `cosmic-theme/` | Builds the full COSMIC dark and light themes from those builder keys with libcosmic's own ThemeBuilder, at package build time |
 | `mockup/index.html` | The approved concept |
 
 ## Run it nested for development
@@ -24,7 +25,9 @@ You need `cosmic-comp quickshell python-pywayland wayland-protocols` installed.
 ```bash
 dev=/tmp/kriss-shell-dev
 python theme/generate.py shell/qml "$dev/qml"
-python theme/generate.py shell/cosmic "$dev/cosmic"
+python theme/generate.py shell/cosmic "$dev/config/cosmic"
+XDG_CONFIG_HOME=$dev/config cargo run --release --manifest-path shell/cosmic-theme/Cargo.toml
+ln -sfn config/cosmic "$dev/cosmic"
 python -m pywayland.scanner -o "$dev/lib/kriss_protocols" -i /usr/share/wayland/wayland.xml \
   /usr/share/wayland-protocols/staging/ext-foreign-toplevel-list/ext-foreign-toplevel-list-v1.xml \
   /usr/share/wayland-protocols/staging/ext-workspace/ext-workspace-v1.xml shell/protocols/*.xml

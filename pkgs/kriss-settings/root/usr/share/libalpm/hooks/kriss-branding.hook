@@ -1,0 +1,17 @@
+# The console login banner (/etc/issue, from filesystem) and the new-user ~/.bashrc
+# (/etc/skel/.bashrc, from bash) get the KrissOS versions: name, console colours and
+# prompt. Both are backup files, so later upgrades of those packages leave a .pacnew
+# instead of putting the Arch ones back.
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Path
+Target = etc/issue
+Target = etc/skel/.bashrc
+Target = usr/share/kriss/issue
+Target = usr/share/kriss/bashrc
+
+[Action]
+Description = Setting the KrissOS login banner and prompt...
+When = PostTransaction
+Exec = /bin/sh -c 'install -m644 /usr/share/kriss/issue /etc/issue && install -m644 /usr/share/kriss/bashrc /etc/skel/.bashrc'

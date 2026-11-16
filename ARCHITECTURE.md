@@ -13,7 +13,7 @@ Release codenames follow the Modenas Kriss line: `110` (1.0), `115`, `MR3`.
 
 | Decision | Choice |
 |---|---|
-| Base | Arch Linux, x86_64 only at 1.0. Apple Silicon comes later as a separate image (§13) |
+| Base | Arch Linux, x86_64 only at 1.0. Apple Silicon is a separate image, in preview (§13) |
 | Update model | Rolling. Upstream Arch packages come straight from Arch mirrors |
 | Our packages | A single `[kriss]` repo, ideally fewer than 25 packages |
 | Rollback | btrfs + snapper, with snapshots bootable from the Limine menu |
@@ -29,6 +29,7 @@ distro team's workload, and it is out of scope.
 |---|---|
 | `linux-kriss` | Kernel for x86-64-v3, built with CachyOS patches (EEVDF/BORE, sched_ext) and LTO |
 | `linux-kriss-generic` | The same kernel for baseline x86-64. The installer picks it when the CPU lacks v3 |
+| `linux-kriss-asahi` | The Asahi kernel for Apple Silicon Macs (aarch64 only, §13) |
 | `kriss-tools` | `kriss` (with `kriss tune`), `kriss-ctl`, `kriss-vm` |
 | `kriss-shell` | The KrissOS Shell (panel, dock, launcher, notifications, lock screen) |
 | `kriss-theme` | Wallpapers, icons, cursors, GTK/Qt/terminal colors, Plymouth, Limine, SDDM/greeter |
@@ -86,6 +87,7 @@ krissos/
 ├── theme/           # design tokens + generated assets
 ├── installer/       # Calamares sequence, module configs and install scripts
 ├── iso/             # archiso profile
+├── aarch64/         # Apple Silicon image (§13)
 └── .github/workflows/
 ```
 
@@ -153,6 +155,11 @@ available as the installer's alternative.
   the focused window ringed in Sky Cyan. Light and dark window themes over a dark wallpaper.
   One bottom bar holds the launcher, apps and status. Sky Cyan is the only accent; no neon.
 - **Type:** Figtree + JetBrains Mono (OFL) proposed.
+- **Apps:** COSMIC Files, Terminal and Settings get KrissOS dark and light COSMIC themes, built
+  from the tokens by libcosmic's own ThemeBuilder (`shell/cosmic-theme/`), and a matching
+  COSMIC Terminal scheme. Icons are Papirus-Dark and the cursor is Vimix white, both from
+  Arch. Flathub apps see the GTK colours through a global `flatpak override`, and Flatpak
+  pulls the matching adw-gtk3 theme from Flathub.
 - **Reference:** the concept mockup at https://claude.ai/artifact/Cye2G1TUoXHAGoNX3typoD.
 - **Behaviour and motion references:** every UI surface (shell, `kriss-welcome`, installer,
   website) copies how these behave. They are rebuilt in QML, never added as dependencies.
@@ -260,12 +267,20 @@ kriss-vm revert         # restore every file `kriss-vm` changed from its backups
 6. WinBoat tier and the AI setup.
 7. `110`: the first tagged release.
 
-## 13. Later: Apple Silicon image
+## 13. Apple Silicon image
 
-A separate image, built after `110`, on Arch Linux ARM with the Asahi tooling.
+A separate image on Arch Linux ARM with the Asahi tooling. It was planned for after `110`;
+work started early, in November 2026, by decision of the maintainer. It stays a preview
+until `110` ships. Details: `docs/apple-silicon.md`.
 - **Reused as-is:** the shell, theme, `kriss` (with `kriss tune`) and the AI setup.
-- **New:** `linux-kriss-asahi`, installed through the Asahi installer from macOS. It needs
-  aarch64 CI runners.
+- **New:** `linux-kriss-asahi` (Asahi's tree and config, KrissOS naming), installed through
+  the Asahi installer from macOS. `[asahi-alarm]` provides m1n1, U-Boot and the firmware tools.
+- **CI:** GitHub's free arm64 runners, natively, in an Arch Linux ARM container.
+  `pkgs.yml` publishes the architecture-neutral packages to a second signed repo,
+  `repo-aarch64`, with the same key; `kernel-asahi.yml` builds the kernel; `image-aarch64.yml`
+  builds the image and boots it in a QEMU `virt` VM (UEFI) until the KrissOS Shell starts.
+- **Boot:** a unified kernel image at the ESP's fallback path, started directly by U-Boot (or
+  edk2 in a VM). Root is ext4 for now.
 - **Not on this image:** the CachyOS kernel, x86-64-v3, WinBoat and `kriss-vm`. Games go through
   FEX + muvm.
 

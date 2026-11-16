@@ -68,6 +68,7 @@ greeter)
     set -a; . /etc/locale.conf 2>/dev/null; set +a
     export HOME="$XDG_RUNTIME_DIR/kriss-greeter"
     mkdir -p "$HOME"
+    cp -r /etc/skel/.icons "$HOME/" 2>/dev/null  # the KrissOS cursor (kriss-settings)
     # shellcheck disable=SC2016 # $1 and $PPID belong to the inner shell
     exec cosmic-comp sh -c 'qs -p "$1"; kill "$PPID"' sh "$qml/greeter.qml"
     ;;
@@ -85,9 +86,10 @@ greeter)
     # The qt6ct config from kriss-settings only applies with this set (see its PKGBUILD).
     export QT_QPA_PLATFORMTHEME=qt6ct
 
-    # COSMIC defaults: the Windows key opens our launcher, Windows+L locks, and the
-    # focused window gets a 4 px Sky Cyan ring with 20 px corners, as in the concept. Copied only
-    # where the user has no value of their own, so their changes win.
+    # COSMIC defaults: the Windows key opens our launcher, Windows+L locks, the KrissOS
+    # dark and light themes (accent, backgrounds, corners, a 4 px Sky Cyan ring on the
+    # focused window), Papirus icons, the KrissOS fonts and terminal colours. Copied key by key
+    # only where the user has no value of their own, so their changes win.
     cfg=${XDG_CONFIG_HOME:-$HOME/.config}/cosmic
     merge() {
         # shellcheck disable=SC2016 # awk's own $0
@@ -102,27 +104,25 @@ greeter)
                 for (i = 1; i <= NR; i++) { if (i == last) print ENVIRON["add"]; print l[i] }
             }' "$2" > "$2.new" && mv "$2.new" "$2"
     }
-    seed() {
-        [ -d "$data/cosmic/$1" ] || return 0
-        mkdir -p "$cfg/$2"
-        for f in "$data/cosmic/$1"/*; do
-            [ -e "$cfg/$2/${f##*/}" ] || cp "$f" "$cfg/$2/"
+    for dir in "$data"/cosmic/*/v*; do
+        rel=${dir#"$data/cosmic/"}
+        mkdir -p "$cfg/$rel"
+        for f in "$dir"/*; do
+            [ -e "$cfg/$rel/${f##*/}" ] || cp "$f" "$cfg/$rel/"
         done
-    }
-    seed shortcuts com.system76.CosmicSettings.Shortcuts/v1
+    done
     # A newer kriss-shell can bring new shortcuts (Alt+Tab and the media keys came in 0.2.5):
     # add each entry whose key the user's file lacks, keeping theirs as they are. Entries are
-    # one per line, as in shell/cosmic/shortcuts.
-    for f in "$data"/cosmic/shortcuts/*; do
-        merge "$f" "$cfg/com.system76.CosmicSettings.Shortcuts/v1/${f##*/}"
+    # one per line, as in shell/cosmic/com.system76.CosmicSettings.Shortcuts.
+    sc=com.system76.CosmicSettings.Shortcuts/v1
+    for f in "$data/cosmic/$sc"/*; do
+        merge "$f" "$cfg/$sc/${f##*/}"
     done
     # The brightness keys used to call brightnessctl directly, which shows no level.
     # Move the old defaults over; a key the user changed is left alone.
     # ponytail: drop this once installs from before kriss-shell 0.2.4 are gone.
     sed -i 's|"brightnessctl -q -c backlight set \(5%[-+]\)"|"kriss-shell brightness \1"|' \
-        "$cfg/com.system76.CosmicSettings.Shortcuts/v1/system_actions" 2>/dev/null || true
-    seed theme com.system76.CosmicTheme.Dark/v2
-    seed theme com.system76.CosmicTheme.Light/v2
+        "$cfg/$sc/system_actions" 2>/dev/null || true
 
     # Not `cosmic-comp COMMAND`: that is cosmic-comp's kiosk mode, which turns off every
     # keyboard shortcut. Start it on its own; once it is ready it publishes
@@ -141,6 +141,10 @@ greeter)
     # shellcheck disable=SC2086,SC2163 # one NAME=value per line; values are socket names, no spaces
     export $env
     dbus-update-activation-environment --systemd XDG_CURRENT_DESKTOP XDG_SESSION_TYPE QT_QPA_PLATFORMTHEME 2>/dev/null
+    # Switches light and dark (by hand or at sunset) and keeps the gsettings icon theme and
+    # fonts in step with COSMIC's, so COSMIC apps and the terminal follow the mode live.
+    cosmic-settings-daemon &
+    daemon=$!
     # Apps in /etc/xdg/autostart and ~/.config/autostart, such as kriss-welcome on first
     # login, through systemd's XDG autostart units.
     systemctl --user --no-block start kriss-shell-session.target
@@ -149,7 +153,7 @@ greeter)
 
     "$0" --inside
     systemctl --user stop kriss-shell-session.target graphical-session.target
-    kill "$comp" 2>/dev/null
+    kill "$daemon" "$comp" 2>/dev/null
     wait "$comp"
     ;;
 *)

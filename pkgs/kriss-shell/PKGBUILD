@@ -6,9 +6,9 @@ pkgdesc='KrissOS Shell: bar, launcher, quick settings, notifications and lock sc
 arch=('any')
 url='https://github.com/krazetech/krissos'
 license=('GPL-3.0-or-later')
-depends=('cosmic-comp' 'xorg-xwayland' 'quickshell' 'python-pywayland' 'glib2' 'dbus'
+depends=('cosmic-comp' 'cosmic-settings-daemon' 'xorg-xwayland' 'quickshell' 'python-pywayland' 'glib2' 'dbus'
          'grim' 'slurp' 'wl-clipboard' 'xdg-user-dirs' 'brightnessctl')
-makedepends=('python' 'python-pywayland' 'wayland' 'wayland-protocols')
+makedepends=('python' 'python-pywayland' 'wayland' 'wayland-protocols' 'cargo')
 optdepends=('greetd: the KrissOS login screen'
             'networkmanager: network status and Wi-Fi in quick settings'
             'bluez: Bluetooth in quick settings'
@@ -27,7 +27,11 @@ _theme="$startdir/../../theme"
 
 build() {
   python "$_theme/generate.py" "$_shell/qml" "$srcdir/qml"
-  python "$_theme/generate.py" "$_shell/cosmic" "$srcdir/cosmic"
+  # COSMIC defaults, laid out as ~/.config/cosmic. The theme builder keys come from the
+  # tokens; kriss-cosmic-theme turns them into the full COSMIC dark and light themes.
+  python "$_theme/generate.py" "$_shell/cosmic" "$srcdir/config/cosmic"
+  XDG_CONFIG_HOME="$srcdir/config" cargo run --release --locked \
+    --manifest-path "$_shell/cosmic-theme/Cargo.toml" --target-dir "$srcdir/target"
 
   # Python bindings for the window-list protocols kriss-shell-toplevels speaks.
   local wp=/usr/share/wayland-protocols/staging
@@ -49,13 +53,13 @@ sys.path.insert(0, os.environ["KRISS_SHELL_LIB"])
 import kriss_protocols.cosmic_toplevel_info_unstable_v1
 import kriss_protocols.cosmic_toplevel_management_unstable_v1
 import kriss_protocols.ext_foreign_toplevel_list_v1'
-  ! grep -rn '{{' "$srcdir/qml" "$srcdir/cosmic"
+  ! grep -rn '{{' "$srcdir/qml" "$srcdir/config/cosmic"
 }
 
 package() {
   # ponytail: added here, not in the global array, for the same reason as kriss-settings:
   # CI builds each package alone and --syncdeps cannot resolve [kriss] packages yet.
-  depends+=('kriss-theme>=0.3.0' 'kriss-settings')
+  depends+=('kriss-theme>=0.3.1' 'kriss-settings>=0.3.1')
 
   install -Dm755 "$_shell/session/kriss-shell" "$pkgdir/usr/bin/kriss-shell"
   install -Dm755 "$_shell/kriss-shell-toplevels" "$pkgdir/usr/bin/kriss-shell-toplevels"
@@ -63,6 +67,6 @@ package() {
   install -Dm644 -t "$pkgdir/usr/lib/systemd/user" "$_shell/session/kriss-shell-session.target"
   install -Dm644 "$_shell/session/logind.conf" "$pkgdir/usr/lib/systemd/logind.conf.d/50-kriss-shell.conf"
   install -d "$pkgdir/usr/share/kriss-shell" "$pkgdir/usr/lib/kriss-shell"
-  cp -r --no-preserve=ownership "$srcdir/qml" "$srcdir/cosmic" "$pkgdir/usr/share/kriss-shell/"
+  cp -r --no-preserve=ownership "$srcdir/qml" "$srcdir/config/cosmic" "$pkgdir/usr/share/kriss-shell/"
   cp -r --no-preserve=ownership "$srcdir/kriss_protocols" "$pkgdir/usr/lib/kriss-shell/"
 }
