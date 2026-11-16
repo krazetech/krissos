@@ -47,28 +47,24 @@ done
 drawn=0
 if ((ok)); then
   for _ in $(seq "$((tries / 2))"); do
-    echo "screendump $out/shell.png -f png" | socat - "UNIX-CONNECT:$out/mon" >/dev/null || true
+    echo "screendump $out/scanout.png -f png" | socat - "UNIX-CONNECT:$out/mon" >/dev/null || true
     sleep 2
-    if [ "$(wc -c <"$out/shell.png" 2>/dev/null || echo 0)" -gt 50000 ]; then drawn=1; break; fi
+    if [ "$(wc -c <"$out/scanout.png" 2>/dev/null || echo 0)" -gt 50000 ]; then drawn=1; break; fi
     sleep 8
   done
-  # The wallpaper lands first; under TCG the bar follows some seconds later. Keep the
-  # settled frame for the artifact.
-  if ((drawn)); then
-    sleep 30
-    echo "screendump $out/shell.png -f png" | socat - "UNIX-CONNECT:$out/mon" >/dev/null || true
-    sleep 2
-  fi
-  # Quickshell keeps its log in the user's runtime dir, not the journal. Log in on the
-  # serial console (getty on ttyAMA0) and dump it into serial.log.
+fi
+# QEMU's virtio-gpu scanout sticks at an early frame (the wallpaper alone), though cosmic-comp
+# goes on drawing the bar and windows. So for the record, log in on the serial console (getty
+# on ttyAMA0), save Quickshell's log (kept in the runtime dir, not the journal) and grab what
+# the compositor shows with grim, sent back as base64 over serial.
+if ((drawn)); then
   for line in kriss kriss 'export WAYLAND_DISPLAY=wayland-1; qs log -p /usr/share/kriss-shell/qml 2>&1 | tail -150' \
     'grim -s 0.5 - | base64 -w 76 | sed s/^/B64:/'; do
     printf '%s\r' "$line" | socat - "UNIX-CONNECT:$out/ser" >/dev/null || true
     sleep 20
   done
   sleep 40
-  # What the compositor itself sees, to compare with the scanout in shell.png.
-  tr -d '\r' <"$out/serial.log" | grep -o 'B64:[A-Za-z0-9+/=]*' | cut -c5- | base64 -d >"$out/compositor.png" 2>/dev/null || true
+  tr -d '\r' <"$out/serial.log" | sed -n 's/^B64://p' | base64 -d >"$out/shell.png" 2>/dev/null || true
 fi
 kill "$pid" 2>/dev/null && wait "$pid" || true
 rm -f "$out/disk.img"
@@ -82,4 +78,4 @@ if ((!ok)); then
 fi
 echo 'KrissOS Shell started.'
 if ((!drawn)); then echo 'The KrissOS Shell did not draw anything.' >&2; exit 1; fi
-echo 'KrissOS Shell drawn (see shell.png).'
+echo 'KrissOS Shell drawn (see shell.png; scanout.png is QEMU'"'"'s stale view).'
