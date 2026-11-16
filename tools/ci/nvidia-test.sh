@@ -50,6 +50,4 @@ nvidia_configure
   fail "second run changed something"
 [[ $(<"$t/etc/environment") == $'LANG=ms_MY.UTF-8\nCOSMIC_RENDER_DEVICE=/dev/dri/by-path/pci-0000:00:02.0-render' ]] ||
   fail "environment: $(<"$t/etc/environment")"
-grep -q 'NVreg_DynamicPowerManagement=0x02' "$t/etc/modprobe.d/kriss-nvidia-pm.conf" || fail "no runtime PM option"
-grep -q 'power/control}="auto"' "$t/etc/udev/rules.d/80-kriss-nvidia-pm.rules" || fail "no runtime PM rule"
 echo 'nvidia: ok'

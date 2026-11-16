@@ -14,7 +14,7 @@ Kirigami.ScrollablePage {
         { id: "nvidia-legacy", icon: "video-display", show: backend.hw.nvidia_legacy === true,
           name: qsTr("Install the NVIDIA 580 driver (needs internet)"),
           ask: qsTr("Install the NVIDIA 580 driver?"),
-          text: qsTr("Your NVIDIA graphics card is older than the GeForce 16 series, so it uses the open nouveau driver. NVIDIA's own 580 driver is faster for games. NVIDIA keeps it in long-term maintenance: it gets fixes but no new features. If you skip this, nouveau stays and everything keeps working. On laptops, the screen stays on the built-in graphics; start an app with prime-run to use the NVIDIA card. The NVIDIA card may not switch fully off with this driver, so the battery can run down faster. Restart after it installs.") },
+          text: qsTr("Your NVIDIA graphics card is older than the GeForce 16 series, so it uses the open nouveau driver. NVIDIA's own 580 driver is faster for games. NVIDIA keeps it in long-term maintenance: it gets fixes but no new features. If you skip this, nouveau stays and everything keeps working. On laptops, the screen stays on the built-in graphics; start an app with prime-run to use the NVIDIA card. This driver cannot switch an older NVIDIA card off when it is idle, as nouveau does, so a laptop battery runs down faster. Restart after it installs.") },
         { id: "codecs", icon: "applications-multimedia", name: qsTr("Video and music codecs"),
           text: qsTr("Play MP4, MKV, MP3, AAC and other common formats in every app.") },
         { id: "printers", icon: "printer", name: qsTr("Printers"),

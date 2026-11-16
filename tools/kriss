@@ -128,22 +128,15 @@ nvidia_configure() {
   fi
 
   igpu=$(nvidia_igpu) || return 0
-  # Hybrid laptop: the compositor stays on the iGPU (ARCHITECTURE §5) and the NVIDIA GPU only
-  # wakes for apps started with prime-run. NVIDIA's runtime power management setup follows;
-  # its README supports it on Turing and newer only, so an older GPU may stay powered.
+  # Hybrid laptop: the compositor stays on the iGPU (ARCHITECTURE §5); apps use the NVIDIA
+  # GPU through prime-run.
+  # ponytail: no runtime power management setup. NVIDIA supports runtime D3 on Turing and
+  # newer only; on an MX150 the driver reports "Runtime D3 status: Not supported" and the
+  # card stays powered (about 2 W more at idle than nouveau, which lets it suspend).
   f=$ETC/environment
   touch "$f"
   sed -i '/^COSMIC_RENDER_DEVICE=/d' "$f"
   echo "COSMIC_RENDER_DEVICE=/dev/dri/by-path/pci-$igpu-render" >>"$f"
-  mkdir -p "$ETC/modprobe.d" "$ETC/udev/rules.d"
-  printf '# Written by kriss nvidia setup.\noptions nvidia NVreg_DynamicPowerManagement=0x02\n' \
-    >"$ETC/modprobe.d/kriss-nvidia-pm.conf"
-  cat >"$ETC/udev/rules.d/80-kriss-nvidia-pm.rules" <<'EOF'
-# Written by kriss nvidia setup: let the NVIDIA GPU suspend when idle (NVIDIA README,
-# "PCI-Express Runtime D3 (RTD3) Power Management").
-ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x03[0-9]*", TEST=="power/control", ATTR{power/control}="auto"
-ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x03[0-9]*", TEST=="power/control", ATTR{power/control}="on"
-EOF
 }
 
 cmd_nvidia_check() {
@@ -169,7 +162,16 @@ cmd_nvidia_setup() {
   kernel=$(<"/usr/lib/modules/$(uname -r)/pkgbase") || die "cannot tell which kernel package is running."
   pkgs=(nvidia-580xx-dkms nvidia-580xx-utils "$kernel-headers")
   if grep -q '^\[multilib\]' "$ETC/pacman.conf"; then pkgs+=(lib32-nvidia-580xx-utils); fi
-  if nvidia_igpu >/dev/null; then pkgs+=(nvidia-prime); fi  # prime-run
+  local igpu
+  if igpu=$(nvidia_igpu); then
+    # prime-run, and Vulkan for the iGPU with Mesa's device-select layer listing it first.
+    # Without them every Vulkan app (GTK 4 included) lands on the NVIDIA GPU.
+    pkgs+=(nvidia-prime vulkan-mesa-implicit-layers)
+    case $(cat "$SYS/bus/pci/devices/$igpu/vendor") in
+      0x8086) pkgs+=(vulkan-intel) ;;
+      0x1002) pkgs+=(vulkan-radeon) ;;
+    esac
+  fi
   pacman -S --needed --noconfirm "${pkgs[@]}" || die "installing the driver failed. Nothing else was changed."
   nvidia_configure
   mkinitcpio -P
