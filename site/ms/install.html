@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tambah repo KrissOS pada Arch</title>
+<meta name="description" content="Guna pakej KrissOS pada Arch biasa: percaya kunci tandatangan, tambah repo [kriss], install.">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="../logo.svg" type="image/svg+xml">
+<link rel="icon" href="../favicon.ico" sizes="32x32">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="alternate" hreflang="en" href="https://krazetech.github.io/krissos/install.html">
+<link rel="alternate" hreflang="ms" href="https://krazetech.github.io/krissos/ms/install.html">
+<meta property="og:title" content="Tambah repo KrissOS pada Arch">
+<meta property="og:description" content="Guna pakej KrissOS pada Arch biasa: percaya kunci tandatangan, tambah repo [kriss], install.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="KrissOS">
+<meta property="og:locale" content="ms_MY">
+<meta property="og:image" content="https://krazetech.github.io/krissos/og.jpg">
+<meta property="og:image:alt" content="The KrissOS logo, a keris hilt on a Sky Cyan disc, over the KrissOS wallpaper.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<a class="skip" href="#main">Langkau ke kandungan</a>
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="./"><img src="../logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
+    <nav aria-label="Main">
+      <ul>
+        <li><a href="shell.html">Shell</a></li>
+        <li><a href="download.html">Muat turun</a></li>
+        <li><a href="install.html" aria-current="page">Repo Arch</a></li>
+        <li><a href="roadmap.html">Hala tuju</a></li>
+        <li class="gh"><a href="https://github.com/krazetech/krissos">GitHub</a></li>
+        <li><a class="lang" href="../install.html" hreflang="en" lang="en">EN</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+<section>
+    <div class="wrap">
+      <div class="head">
+        <h1 class="rise d1">Tambah repo <code>[kriss]</code>.</h1>
+        <p class="lede rise d2">Nak pakej KrissOS atas Arch biasa? Semua pakej dibina dalam CI, di-sign, dan keluar di GitHub release. Kalau install KrissOS, semua ni dah siap set.</p>
+      </div>
+
+      <ol class="steps">
+        <li class="reveal">
+          <h2>Percaya kunci tandatangan</h2>
+          <p>Import kunci awam, lepas tu sign secara lokal.</p>
+          <div class="code"><pre><code>curl -fsSL https://raw.githubusercontent.com/krazetech/krissos/main/pkgs/kriss-keyring/krissos.gpg | sudo pacman-key --add -</code></pre></div>
+          <div class="code"><pre><code>sudo pacman-key --lsign-key 7C92AE8B599AF81321666CA31317AA31B21C5F87</code></pre></div>
+        </li>
+        <li class="reveal">
+          <h2>Tambah repo</h2>
+          <p>Tambah ni kat hujung <code>/etc/pacman.conf</code>.</p>
+          <div class="code"><pre><code>[kriss]
+Server = https://github.com/krazetech/krissos/releases/download/repo-x86_64</code></pre></div>
+        </li>
+        <li class="reveal">
+          <h2>Sync dan install</h2>
+          <p>Refresh database, lepas tu install apa yang anda nak. Lepas ni <code>kriss-keyring</code> jaga kunci supaya sentiasa terkini.</p>
+          <div class="code"><pre><code>sudo pacman -Syu kriss-keyring</code></pre></div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap split">
+      <div class="reveal">
+        <h2>Check dulu, baru percaya.</h2>
+        <p class="lede">Pakej di-sign oleh <b>KrissOS Packages</b>. Kunci peribadi cuma ada dalam secret CI dan backup offline, tak merata.</p>
+      </div>
+      <div class="reveal">
+        <p class="muted">Cap jari</p>
+        <div class="code"><pre><code>7C92 AE8B 599A F813 2166  6CA3 1317 AA31 B21C 5F87</code></pre></div>
+        <p class="muted">Lihat <a href="https://github.com/krazetech/krissos#signing-key">README</a> untuk cara kunci ditukar.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="head reveal">
+        <h2>Apa ada dalam repo.</h2>
+      </div>
+      <ul class="list reveal">
+        <li><span><code>kriss-keyring</code><small>Kunci tandatangan awam</small></span><span class="tag live">Dah ada</span></li>
+        <li><span><code>kriss-theme</code><small>Warna, font, wallpaper, dan tema Plasma, SDDM, Plymouth dan Limine</small></span><span class="tag live">Dah ada</span></li>
+        <li><span><code>kriss-settings</code><small>Config asal, os-release, menu Limine dan hook pacman</small></span><span class="tag live">Dah ada</span></li>
+        <li><span><code>kriss-shell</code><small>KrissOS Shell dan skrin log masuknya, atas <code>cosmic-comp</code></small></span><span class="tag live">Dah ada</span></li>
+        <li><span><code>kriss-tools</code><small>Arahan <code>kriss</code>: <code>kriss tune</code>, <code>kriss update</code> dan <code>kriss-vm</code></small></span><span class="tag live">Dah ada</span></li>
+        <li><span><code>kriss-welcome</code><small>App mula-mula: game checker, app, Copy from Windows, driver dan tambahan</small></span><span class="tag live">Dah ada</span></li>
+        <li><span><code>kriss-meta-gaming</code><small>Steam, GameMode, Gamescope, MangoHud, Mesa dan Vulkan dalam satu install</small></span><span class="tag live">Dah ada</span></li>
+        <li><span><code>linux-kriss</code><small>Kernel x86-64-v3, berserta <code>linux-kriss-generic</code> untuk CPU lama</small></span><span class="tag wip">Tengah test</span></li>
+        <li><span><code>kriss-installer</code><small>Installer Calamares untuk live ISO, dengan <code>calamares</code></small></span><span class="tag wip">Tengah test</span></li>
+      </ul>
+    </div>
+  </section>
+
+<script>
+// Copy buttons for code blocks. Purely additive: without JS the text is still selectable.
+for (const box of document.querySelectorAll('.code')) {
+  const b = document.createElement('button');
+  b.className = 'copy';
+  b.type = 'button';
+  b.textContent = 'Salin';
+  b.onclick = () => navigator.clipboard.writeText(box.querySelector('pre').textContent)
+    .then(() => { b.textContent = 'Disalin'; setTimeout(() => b.textContent = 'Salin', 1500); });
+  box.append(b);
+}
+</script>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>KrissOS oleh Kraze Tech, dibuat di Malaysia dengan banyak kopi. Perisian bebas di bawah <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>.<br>Tiada kaitan dengan Arch Linux.</p>
+    <nav aria-label="Footer">
+      <a href="shell.html">Shell</a>
+      <a href="download.html">Muat turun</a>
+      <a href="install.html">Repo Arch</a>
+      <a href="roadmap.html">Hala tuju</a>
+      <a href="https://github.com/krazetech/krissos">GitHub</a>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>

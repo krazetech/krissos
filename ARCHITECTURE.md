@@ -7,6 +7,38 @@ packages and configs on top of upstream Arch. We do not fork the Arch repos.
 
 Release codenames follow the Modenas Kriss line: `110` (1.0), `115`, `MR3`.
 
+## 0. What KrissOS is
+
+**Arch Linux made ready for everyday people: offline install, Windows-familiar, built for
+work, gaming and local AI.**
+
+- **Audience:** people switching from Windows come first. Gamers, local-AI users and Malaysian
+  users (Bahasa Melayu throughout) are served too, but when their needs conflict, the switcher
+  wins.
+- **Shell:** familiar, not a clone. Windows habits (a Start-style launcher on the Windows key, a
+  taskbar, close at the top right, Win+E for files) in KrissOS's own soft, rounded Obsidian and
+  Sky Cyan look (§5, §6). An optional Mac layout (top bar, centred dock, window buttons on the
+  left) in the same look is coming.
+
+### Promises
+
+1. **Never needs internet to install.** Online is only for extras (§2, the installer).
+2. **Everything can be undone.** Bootable snapshots, `kriss rollback`, and `revert` in our tools.
+3. **One calm look.** One visual language from the boot menu to our apps (§6).
+4. **Arch underneath, untouched.** A thin signed overlay that two people can keep alive (§1, §2).
+5. **Your hardware, handled.** Drivers picked for you, older NVIDIA cards included, with honest
+   numbers.
+
+### What it isn't
+
+Not an Arch fork, not a Windows clone, not a ricing distro, not for servers.
+
+### The decision rule
+
+When a choice is unclear, ask: *would someone fresh from Windows get stuck here?* (§14). If yes,
+fix that first. Then check it against the promises: a change that breaks one of them does not
+ship.
+
 ---
 
 ## 1. Base and update model

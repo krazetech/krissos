@@ -3,16 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Add the [kriss] repo to Arch Linux</title>
-<meta name="description" content="Use KrissOS packages on a plain Arch Linux install.">
-<meta name="theme-color" content="#000000">
+<title>Add the KrissOS repo to Arch</title>
+<meta name="description" content="Use KrissOS packages on a plain Arch install: trust the signing key, add the [kriss] repo, install.">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="icon" href="favicon.ico" sizes="32x32">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta property="og:title" content="Add the [kriss] repo to Arch Linux">
-<meta property="og:description" content="Use KrissOS packages on a plain Arch Linux install.">
+<link rel="alternate" hreflang="en" href="https://krazetech.github.io/krissos/install.html">
+<link rel="alternate" hreflang="ms" href="https://krazetech.github.io/krissos/ms/install.html">
+<meta property="og:title" content="Add the KrissOS repo to Arch">
+<meta property="og:description" content="Use KrissOS packages on a plain Arch install: trust the signing key, add the [kriss] repo, install.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KrissOS">
+<meta property="og:locale" content="en_MY">
 <meta property="og:image" content="https://krazetech.github.io/krissos/og.jpg">
 <meta property="og:image:alt" content="The KrissOS logo, a keris hilt on a Sky Cyan disc, over the KrissOS wallpaper.">
 <meta name="twitter:card" content="summary_large_image">
@@ -32,36 +36,36 @@
         <li><a href="download.html">Download</a></li>
         <li><a href="install.html" aria-current="page">Arch repo</a></li>
         <li><a href="roadmap.html">Roadmap</a></li>
-        <li><a href="https://github.com/krazetech/krissos">GitHub</a></li>
+        <li class="gh"><a href="https://github.com/krazetech/krissos">GitHub</a></li>
+        <li><a class="lang" href="ms/install.html" hreflang="ms" lang="ms">BM</a></li>
       </ul>
     </nav>
   </div>
 </header>
 
 <main id="main">
-  <section>
+<section>
     <div class="wrap">
       <div class="head">
-        <p class="eyebrow rise">Already on Arch?</p>
         <h1 class="rise d1">Add the <code>[kriss]</code> repo.</h1>
         <p class="lede rise d2">Use KrissOS packages on a plain Arch install. Packages are built in CI, signed, and published to a GitHub release. KrissOS installs come with this set up already.</p>
       </div>
 
       <ol class="steps">
         <li class="reveal">
-          <h3>Trust the signing key</h3>
+          <h2>Trust the signing key</h2>
           <p>Import the public key, then locally sign it.</p>
           <div class="code"><pre><code>curl -fsSL https://raw.githubusercontent.com/krazetech/krissos/main/pkgs/kriss-keyring/krissos.gpg | sudo pacman-key --add -</code></pre></div>
           <div class="code"><pre><code>sudo pacman-key --lsign-key 7C92AE8B599AF81321666CA31317AA31B21C5F87</code></pre></div>
         </li>
         <li class="reveal">
-          <h3>Add the repo</h3>
+          <h2>Add the repo</h2>
           <p>Append this to <code>/etc/pacman.conf</code>.</p>
           <div class="code"><pre><code>[kriss]
 Server = https://github.com/krazetech/krissos/releases/download/repo-x86_64</code></pre></div>
         </li>
         <li class="reveal">
-          <h3>Sync and install</h3>
+          <h2>Sync and install</h2>
           <p>Refresh the databases, then install what you want. <code>kriss-keyring</code> keeps the key current from now on.</p>
           <div class="code"><pre><code>sudo pacman -Syu kriss-keyring</code></pre></div>
         </li>
@@ -72,7 +76,6 @@ Server = https://github.com/krazetech/krissos/releases/download/repo-x86_64</cod
   <section>
     <div class="wrap split">
       <div class="reveal">
-        <p class="eyebrow">Signing key</p>
         <h2>Check before you trust.</h2>
         <p class="lede">Packages are signed by <b>KrissOS Packages</b>. The private key lives only in a CI secret and an offline backup.</p>
       </div>
@@ -87,7 +90,6 @@ Server = https://github.com/krazetech/krissos/releases/download/repo-x86_64</cod
   <section>
     <div class="wrap">
       <div class="head reveal">
-        <p class="eyebrow">In the repo today</p>
         <h2>What you get.</h2>
       </div>
       <ul class="list reveal">
@@ -103,7 +105,6 @@ Server = https://github.com/krazetech/krissos/releases/download/repo-x86_64</cod
       </ul>
     </div>
   </section>
-</main>
 
 <script>
 // Copy buttons for code blocks. Purely additive: without JS the text is still selectable.
@@ -121,7 +122,7 @@ for (const box of document.querySelectorAll('.code')) {
 
 <footer>
   <div class="wrap">
-    <p>KrissOS by Kraze Tech. Free software under the <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>.<br>Not affiliated with Arch Linux.</p>
+    <p>KrissOS by Kraze Tech, made in Malaysia with a lot of kopi. Free software under the <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>.<br>Not affiliated with Arch Linux.</p>
     <nav aria-label="Footer">
       <a href="shell.html">Shell</a>
       <a href="download.html">Download</a>
