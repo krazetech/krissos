@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KrissOS roadmap</title>
+<meta name="description" content="Where KrissOS stands on the road to release 110.">
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta property="og:title" content="KrissOS roadmap">
+<meta property="og:description" content="Where KrissOS stands on the road to release 110.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="KrissOS">
+<meta property="og:image" content="https://krazetech.github.io/krissos/og.jpg">
+<meta property="og:image:alt" content="The KrissOS logo, a keris hilt on a Sky Cyan disc, over the KrissOS wallpaper.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="./"><img src="logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
+    <nav aria-label="Main">
+      <ul>
+        <li><a href="shell.html">Shell</a></li>
+        <li><a href="download.html">Download</a></li>
+        <li><a href="install.html">Arch repo</a></li>
+        <li><a href="roadmap.html" aria-current="page">Roadmap</a></li>
+        <li><a href="https://github.com/krazetech/krissos">GitHub</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <section>
+    <div class="wrap">
+      <div class="head">
+        <p class="eyebrow rise">Roadmap</p>
+        <h1 class="rise d1">The road to 110.</h1>
+        <p class="lede rise d2">Releases follow the Kriss line: <code>110</code> is 1.0, then <code>115</code> and <code>MR3</code>. This is where each phase stands today.</p>
+      </div>
+
+      <ol class="phases">
+        <li class="done reveal">
+          <span class="n">0</span>
+          <div>
+            <h3>Foundations <span class="tag live">Done</span></h3>
+            <p>Repo, CI skeleton, signing key, and the signed <code>[kriss]</code> repo on GitHub Releases.</p>
+          </div>
+        </li>
+        <li class="done reveal">
+          <span class="n">1</span>
+          <div>
+            <h3>Kernel <span class="tag live">Done</span></h3>
+            <p><code>linux-kriss</code> builds in CI and boots on the dev desktop. It is in the <code>[kriss]</code> repo for testing.</p>
+          </div>
+        </li>
+        <li class="done reveal">
+          <span class="n">2</span>
+          <div>
+            <h3>Theme, settings and a live ISO <span class="tag live">Done</span></h3>
+            <p><code>kriss-theme</code>, <code>kriss-settings</code>, and a live ISO that boots to the KrissOS Shell on <code>cosmic-comp</code>, checked by a boot test in CI.</p>
+          </div>
+        </li>
+        <li class="now reveal">
+          <span class="n">3</span>
+          <div>
+            <h3>Installer <span class="tag wip">In progress</span></h3>
+            <ul>
+              <li>Calamares with the desktop picker (KrissOS Shell or Plasma), dual boot, btrfs and snapper, and Limine. Tested by an unattended install in CI.</li>
+              <li>Secure Boot through <code>sbctl</code>. Not started.</li>
+            </ul>
+          </div>
+        </li>
+        <li class="done reveal">
+          <span class="n">4</span>
+          <div>
+            <h3>Gaming <span class="tag live">Done</span></h3>
+            <p><code>kriss tune</code> power profiles with sched_ext schedulers, and <code>kriss-meta-gaming</code>: Steam, GameMode, Gamescope, MangoHud and current drivers.</p>
+          </div>
+        </li>
+        <li class="done reveal">
+          <span class="n">5</span>
+          <div>
+            <h3>GPU passthrough <span class="tag live">Done</span></h3>
+            <p><code>kriss-vm</code> on desktops. Laptops with no MUX switch come next.</p>
+          </div>
+        </li>
+        <li class="reveal">
+          <span class="n">6</span>
+          <div>
+            <h3>Windows apps and local AI <span class="tag plan">Planned</span></h3>
+            <p>WinBoat for Windows productivity apps, and the AI setup: Ollama with GPU detection plus optional coding agents.</p>
+          </div>
+        </li>
+        <li class="reveal">
+          <span class="n">110</span>
+          <div>
+            <h3>KrissOS 1.0 <span class="tag plan">Goal</span></h3>
+            <p>The first tagged release.</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap split">
+      <div class="reveal">
+        <p class="eyebrow">After 110</p>
+        <h2>Apple Silicon.</h2>
+      </div>
+      <p class="lede reveal">A separate image on Arch Linux ARM with the Asahi tooling. The shell, theme, tools and AI setup carry over; the x86 kernel, WinBoat and <code>kriss-vm</code> do not.</p>
+    </div>
+  </section>
+</main>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>KrissOS by Kraze Tech. Free software under the <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>.<br>Not affiliated with Arch Linux.</p>
+    <nav aria-label="Footer">
+      <a href="shell.html">Shell</a>
+      <a href="download.html">Download</a>
+      <a href="install.html">Arch repo</a>
+      <a href="roadmap.html">Roadmap</a>
+      <a href="https://github.com/krazetech/krissos">GitHub</a>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>

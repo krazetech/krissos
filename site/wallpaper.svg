@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- KrissOS wallpaper. Rendered by theme/generate.py from theme/tokens.json; edit this file, not the output. -->
+<!-- Gradients only, no filters: Qt's SVG renderer (SDDM, Plasma) ignores blur. Soft edges come
+     from gradients that fade to nothing where a shape ends. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="3840" height="2160" viewBox="0 0 3840 2160" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <radialGradient id="pool-low" gradientUnits="userSpaceOnUse" cx="600" cy="2050" r="1900">
+      <stop offset="0" stop-color="#24B1E6" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="#24B1E6" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="pool-high" gradientUnits="userSpaceOnUse" cx="3400" cy="250" r="1700">
+      <stop offset="0" stop-color="#24B1E6" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#24B1E6" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="halo" gradientUnits="userSpaceOnUse" cx="1920" cy="760" r="1000">
+      <stop offset="0" stop-color="#24B1E6" stop-opacity="0.20"/>
+      <stop offset="1" stop-color="#24B1E6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="wave-far" gradientUnits="userSpaceOnUse" x1="0" y1="1520" x2="0" y2="2160">
+      <stop offset="0" stop-color="#24B1E6" stop-opacity="0"/>
+      <stop offset="1" stop-color="#24B1E6" stop-opacity="0.26"/>
+    </linearGradient>
+    <linearGradient id="wave-near" gradientUnits="userSpaceOnUse" x1="0" y1="1790" x2="0" y2="2160">
+      <stop offset="0" stop-color="#24B1E6" stop-opacity="0"/>
+      <stop offset="1" stop-color="#24B1E6" stop-opacity="0.32"/>
+    </linearGradient>
+    <linearGradient id="wave-front" gradientUnits="userSpaceOnUse" x1="0" y1="2000" x2="0" y2="2160">
+      <stop offset="0" stop-color="#6FCBF0" stop-opacity="0"/>
+      <stop offset="1" stop-color="#6FCBF0" stop-opacity="0.28"/>
+    </linearGradient>
+    <!-- Bounding-box units in the traced path's own space, which is y-up: 0 is the foot. -->
+    <linearGradient id="keris" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#24B1E6" stop-opacity="0"/>
+      <stop offset="0.45" stop-color="#24B1E6" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#24B1E6" stop-opacity="0.30"/>
+    </linearGradient>
+  </defs>
+  <rect x="-2000" y="-2000" width="7840" height="6160" fill="#000000"/>
+  <rect x="-2000" y="-2000" width="7840" height="6160" fill="url(#pool-low)"/>
+  <rect x="-2000" y="-2000" width="7840" height="6160" fill="url(#pool-high)"/>
+  <rect x="-2000" y="-2000" width="7840" height="6160" fill="url(#halo)"/>
+  <path fill="url(#wave-far)" d="M -400 1420 C 500 1220 1300 1640 2150 1470 S 3500 1180 4300 1380 L 4300 2600 L -400 2600 Z"/>
+  <path fill="url(#wave-near)" d="M -400 1720 C 700 1560 1500 1900 2450 1740 S 3600 1540 4300 1720 L 4300 2600 L -400 2600 Z"/>
+  <path fill="url(#wave-front)" d="M -400 1960 C 900 1840 1700 2080 2700 1960 S 3700 1860 4300 1960 L 4300 2600 L -400 2600 Z"/>
+  <!-- The emblem's keris, large and faint, fading into the waves at its foot. -->
+  <g transform="translate(1039 104) scale(2.6)" fill="url(#keris)"><path transform="translate(0.000000,569.000000) scale(0.100000,-0.100000)" d="M2183 4629 c-187 -31 -293 -144 -293 -312 0 -144 91 -231 263 -251 120 -13 154 -42 251 -206 151 -255 192 -498 125 -732 -24 -83 -17 -152 17 -165 24 -9 226 30 231 45 3 7 -13 205 -36 440 -45 466 -45 470 -32 457 5 -6 32 -194 61 -420 29 -225 56 -426 61 -446 l9 -36 72 -7 c40 -3 85 -9 100 -12 71 -16 66 141 -9 301 -66 140 -71 162 -83 385 -19 368 -48 445 -281 761 -135 183 -249 232 -456 198z M4954 3930 c13 -119 -40 -334 -113 -459 -156 -265 -527 -506 -1021 -666 -539 -173 -1215 -214 -1575 -94 -345 115 -455 411 -210 566 63 39 56 45 -27 22 -246 -68 -279 -199 -133 -524 68 -150 113 -282 140 -410 32 -146 110 -253 223 -305 123 -57 159 -78 204 -119 131 -117 128 -90 128 -1098 l0 -843 254 0 255 0 5 52 c7 68 37 970 52 1576 8 318 10 326 87 354 52 20 227 48 439 72 270 31 258 22 689 546 520 631 535 652 595 827 59 173 68 399 19 505 l-15 33 4 -35z M3694 2994 c-250 -92 -761 -231 -780 -211 -9 9 18 71 36 84 21 15 29 86 11 98 -10 5 -314 -21 -338 -30 -17 -6 15 -83 41 -97 28 -15 36 -28 36 -60 l0 -28 -130 0 c-133 0 -173 -12 -77 -24 290 -34 640 -10 1017 70 206 44 242 61 296 141 32 47 73 129 61 122 -1 -1 -79 -30 -173 -65z"/></g>
+</svg>

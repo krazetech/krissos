@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Add the [kriss] repo to Arch Linux</title>
+<meta name="description" content="Use KrissOS packages on a plain Arch Linux install.">
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta property="og:title" content="Add the [kriss] repo to Arch Linux">
+<meta property="og:description" content="Use KrissOS packages on a plain Arch Linux install.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="KrissOS">
+<meta property="og:image" content="https://krazetech.github.io/krissos/og.jpg">
+<meta property="og:image:alt" content="The KrissOS logo, a keris hilt on a Sky Cyan disc, over the KrissOS wallpaper.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="./"><img src="logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
+    <nav aria-label="Main">
+      <ul>
+        <li><a href="shell.html">Shell</a></li>
+        <li><a href="download.html">Download</a></li>
+        <li><a href="install.html" aria-current="page">Arch repo</a></li>
+        <li><a href="roadmap.html">Roadmap</a></li>
+        <li><a href="https://github.com/krazetech/krissos">GitHub</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <section>
+    <div class="wrap">
+      <div class="head">
+        <p class="eyebrow rise">Already on Arch?</p>
+        <h1 class="rise d1">Add the <code>[kriss]</code> repo.</h1>
+        <p class="lede rise d2">Use KrissOS packages on a plain Arch install. Packages are built in CI, signed, and published to a GitHub release. KrissOS installs come with this set up already.</p>
+      </div>
+
+      <ol class="steps">
+        <li class="reveal">
+          <h3>Trust the signing key</h3>
+          <p>Import the public key, then locally sign it.</p>
+          <div class="code"><pre><code>curl -fsSL https://raw.githubusercontent.com/krazetech/krissos/main/pkgs/kriss-keyring/krissos.gpg | sudo pacman-key --add -</code></pre></div>
+          <div class="code"><pre><code>sudo pacman-key --lsign-key 7C92AE8B599AF81321666CA31317AA31B21C5F87</code></pre></div>
+        </li>
+        <li class="reveal">
+          <h3>Add the repo</h3>
+          <p>Append this to <code>/etc/pacman.conf</code>.</p>
+          <div class="code"><pre><code>[kriss]
+Server = https://github.com/krazetech/krissos/releases/download/repo-x86_64</code></pre></div>
+        </li>
+        <li class="reveal">
+          <h3>Sync and install</h3>
+          <p>Refresh the databases, then install what you want. <code>kriss-keyring</code> keeps the key current from now on.</p>
+          <div class="code"><pre><code>sudo pacman -Syu kriss-keyring</code></pre></div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap split">
+      <div class="reveal">
+        <p class="eyebrow">Signing key</p>
+        <h2>Check before you trust.</h2>
+        <p class="lede">Packages are signed by <b>KrissOS Packages</b>. The private key lives only in a CI secret and an offline backup.</p>
+      </div>
+      <div class="reveal">
+        <p class="muted">Fingerprint</p>
+        <div class="code"><pre><code>7C92 AE8B 599A F813 2166  6CA3 1317 AA31 B21C 5F87</code></pre></div>
+        <p class="muted">See the <a href="https://github.com/krazetech/krissos#signing-key">README</a> for how the key is rotated.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="head reveal">
+        <p class="eyebrow">In the repo today</p>
+        <h2>What you get.</h2>
+      </div>
+      <ul class="list reveal">
+        <li><span><code>kriss-keyring</code><small>The public signing key</small></span><span class="tag live">Live</span></li>
+        <li><span><code>kriss-theme</code><small>Colours, fonts, wallpaper, and the Plasma, SDDM, Plymouth and Limine theme</small></span><span class="tag live">Live</span></li>
+        <li><span><code>kriss-settings</code><small>Default configs, os-release, the Limine menu and pacman hooks</small></span><span class="tag live">Live</span></li>
+        <li><span><code>kriss-shell</code><small>The KrissOS Shell and its login screen, on <code>cosmic-comp</code></small></span><span class="tag live">Live</span></li>
+        <li><span><code>kriss-tools</code><small>The <code>kriss</code> command: <code>kriss tune</code>, <code>kriss update</code> and <code>kriss-vm</code></small></span><span class="tag live">Live</span></li>
+        <li><span><code>kriss-welcome</code><small>The first-boot app: game checker, apps, copy from Windows, drivers and extras</small></span><span class="tag live">Live</span></li>
+        <li><span><code>kriss-meta-gaming</code><small>Steam, GameMode, Gamescope, MangoHud, Mesa and Vulkan in one install</small></span><span class="tag live">Live</span></li>
+        <li><span><code>linux-kriss</code><small>The x86-64-v3 kernel, plus <code>linux-kriss-generic</code> for older CPUs</small></span><span class="tag wip">Testing</span></li>
+        <li><span><code>kriss-installer</code><small>The Calamares installer for the live ISO, with <code>calamares</code></small></span><span class="tag wip">Testing</span></li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<script>
+// Copy buttons for code blocks. Purely additive: without JS the text is still selectable.
+for (const box of document.querySelectorAll('.code')) {
+  const b = document.createElement('button');
+  b.className = 'copy';
+  b.type = 'button';
+  b.textContent = 'Copy';
+  b.onclick = () => navigator.clipboard.writeText(box.querySelector('pre').textContent)
+    .then(() => { b.textContent = 'Copied'; setTimeout(() => b.textContent = 'Copy', 1500); });
+  box.append(b);
+}
+</script>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>KrissOS by Kraze Tech. Free software under the <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>.<br>Not affiliated with Arch Linux.</p>
+    <nav aria-label="Footer">
+      <a href="shell.html">Shell</a>
+      <a href="download.html">Download</a>
+      <a href="install.html">Arch repo</a>
+      <a href="roadmap.html">Roadmap</a>
+      <a href="https://github.com/krazetech/krissos">GitHub</a>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>
