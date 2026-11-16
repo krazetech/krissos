@@ -13,7 +13,7 @@ quick settings, notifications and a lock screen, written in QML for [Quickshell]
 | `kriss-shell-toplevels` | Python helper that lists open windows (and the screen each is on) and focuses, minimizes or closes them. Quickshell can't read windows from cosmic-comp directly |
 | `protocols/` | COSMIC protocol files the helper's bindings are generated from |
 | `session/kriss-shell` | Starts the session and the login screen, and handles the commands the shortcuts below run |
-| `cosmic/` | Defaults copied key by key into `~/.config/cosmic` (same layout) on first start: the shortcuts below, the KrissOS theme builder keys (accent, backgrounds, corners, the Sky Cyan ring on the focused window), Papirus icons and the COSMIC Terminal colours. Existing user values are left alone |
+| `cosmic/` | Defaults copied key by key into `~/.config/cosmic` (same layout) on first start: the shortcuts below, the KrissOS theme builder keys (accent, backgrounds, corners), no coloured ring around the focused window, Papirus icons and the COSMIC Terminal colours. Existing user values are left alone |
 | `cosmic-theme/` | Builds the full COSMIC dark and light themes from those builder keys with libcosmic's own ThemeBuilder, at package build time |
 | `mockup/index.html` | The approved concept |
 
@@ -99,6 +99,7 @@ bar to move it. Without the file, the defaults in `qml/Desktop.qml` apply.
 | Windows | Launcher |
 | Windows+A | Quick settings |
 | Windows+N | Notifications |
+| Windows+Alt+D | Calendar |
 | Windows+D | Show the desktop; again to bring the windows back |
 | Windows+E | COSMIC Files |
 | Windows+L | Lock |

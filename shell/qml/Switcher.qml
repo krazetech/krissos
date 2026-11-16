@@ -19,7 +19,7 @@ PanelWindow {
             wins = Windows.byRecent.slice();
             if (wins.length === 0) return;
             current = 0;
-            Desktop.launcherOpen = Desktop.notificationsOpen = Desktop.quickOpen = false;
+            Desktop.launcherOpen = Desktop.notificationsOpen = Desktop.quickOpen = Desktop.calendarOpen = false;
             Desktop.screen = Desktop.focusedScreen();
             open = true;
             settle.restart();
@@ -64,8 +64,8 @@ PanelWindow {
 
         opacity: win.open ? 1 : 0
         scale: win.open || Theme.reduceMotion ? 1 : 0.96
-        Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.fast) } }
-        Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Easing.OutCubic } }
+        Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+        Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
 
         Keys.onPressed: event => {
             settle.stop();

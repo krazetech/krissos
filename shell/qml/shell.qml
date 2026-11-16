@@ -14,7 +14,7 @@ ShellRoot {
     // Open one panel on the focused window's screen, closing the others.
     function toggle(panel) {
         const open = !Desktop[panel];
-        Desktop.launcherOpen = Desktop.notificationsOpen = Desktop.quickOpen = false;
+        Desktop.launcherOpen = Desktop.notificationsOpen = Desktop.quickOpen = Desktop.calendarOpen = false;
         if (open) Desktop.screen = Desktop.focusedScreen();
         Desktop[panel] = open;
     }
@@ -49,12 +49,43 @@ ShellRoot {
     Launcher {}
     Notifications {}
     QuickSettings {}
+    Calendar {}
     Lock {}
     Switcher { id: switcher }
     Osd {}
 
+    // KRISS_SHELL_FPS=1: for a second after a panel opens or closes, counts the frames and
+    // logs the rate and the slowest frame (read it with `qs log`), to check motion on real hardware.
+    FrameAnimation {
+        id: fps
+        readonly property bool wanted: Quickshell.env("KRISS_SHELL_FPS") === "1"
+        property string what
+        property real worst: 0
+        onTriggered: worst = Math.max(worst, frameTime)
+        function measure(name) {
+            if (!wanted) return;
+            what = name; worst = 0;
+            reset(); start(); fpsDone.restart();
+        }
+    }
+    Timer {
+        id: fpsDone
+        interval: 1000
+        onTriggered: {
+            fps.stop();
+            console.log("fps:", fps.what, Math.round(fps.currentFrame / fps.elapsedTime), "fps,",
+                fps.currentFrame, "frames, slowest", Math.round(fps.worst * 1000), "ms");
+        }
+    }
+    Connections {
+        target: Desktop
+        function onLauncherOpenChanged() { fps.measure("launcher " + (Desktop.launcherOpen ? "open" : "close")); }
+        function onQuickOpenChanged() { fps.measure("quick " + (Desktop.quickOpen ? "open" : "close")); }
+        function onNotificationsOpenChanged() { fps.measure("notifications " + (Desktop.notificationsOpen ? "open" : "close")); }
+    }
+
     // cosmic-comp runs `kriss-shell COMMAND` for the Windows-key shortcuts, which calls these.
-    // `kriss-shell launcher|quick|notifications`: Windows, Windows+A and Windows+N.
+    // `kriss-shell launcher|quick|notifications`: Windows, Windows+A and Windows+N; `calendar`: Windows+Alt+D.
     IpcHandler {
         target: "launcher"
         function toggle(): void { root.toggle("launcherOpen"); }
@@ -68,6 +99,11 @@ ShellRoot {
     IpcHandler {
         target: "notifications"
         function toggle(): void { root.toggle("notificationsOpen"); }
+    }
+
+    IpcHandler {
+        target: "calendar"
+        function toggle(): void { root.toggle("calendarOpen"); }
     }
 
     IpcHandler {

@@ -8,13 +8,20 @@ import Quickshell.Services.Notifications
 // Toasts stack above the tray, bottom right, the way Sonner stacks them: the newest in
 // front, older ones peeking out behind it, smaller. Hovering fans the stack out and
 // pauses the timers; a swipe to the right dismisses one. The bell opens the same cards,
-// fanned out, with everything not yet dismissed.
+// fanned out, with everything not yet dismissed, grouped by app.
 PanelWindow {
     id: win
 
     readonly property bool open: Desktop.notificationsOpen
-    // Ids of the cards on show, newest first; a card's place in it is its depth.
-    readonly property var shownIds: Notifs.all.filter(n => open || Notifs.isPopup(n)).map(n => n.id).reverse()
+    // The cards on show, newest first; a card's place in it is its depth. In the open list
+    // each app's cards sit together, the app with the newest one first, as on Windows.
+    readonly property var shown: {
+        const list = Notifs.all.filter(n => open || Notifs.isPopup(n)).reverse();
+        if (!open) return list;
+        const apps = [...new Set(list.map(n => n.appName))];
+        return apps.reduce((out, app) => out.concat(list.filter(n => n.appName === app)), []);
+    }
+    readonly property var shownIds: shown.map(n => n.id)
     readonly property bool expanded: open || hover.hovered
     readonly property int gap: 10
     readonly property int peek: 14
@@ -39,9 +46,13 @@ PanelWindow {
         : heightAt(0) + Math.min(shownIds.length - 1, 2) * peek
 
     // Sonner's own curve: quick out, a touch of settle at the end.
-    readonly property var curve: [0.21, 1.02, 0.73, 1, 1, 1]
+    readonly property var curve: Theme.settleCurve
 
-    visible: shownIds.length > 0 || open
+    // Stays up while the last cards slide away.
+    readonly property bool wanted: shownIds.length > 0 || open
+    onWantedChanged: if (!wanted) linger.restart()
+    Timer { id: linger; interval: Theme.ms(Theme.slow) }
+    visible: wanted || linger.running
     screen: Desktop.screen
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "kriss-notifications"
@@ -85,7 +96,9 @@ PanelWindow {
 
         // Header while the list is open.
         Rectangle {
-            visible: win.open
+            visible: opacity > 0
+            opacity: win.open ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
             width: parent.width
             height: 48
             radius: Theme.radius
@@ -103,12 +116,21 @@ PanelWindow {
                     font { family: Theme.sans; pixelSize: 14; weight: Font.DemiBold }
                 }
                 MouseArea {
+                    id: clearAll
                     visible: Notifs.all.length > 0
                     implicitWidth: clearText.implicitWidth + 20
                     implicitHeight: 28
+                    hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: Notifs.clear()
-                    Rectangle { anchors.fill: parent; radius: 14; color: Theme.card }
+                    scale: pressed ? Theme.pressScale : 1
+                    Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: 14
+                        color: clearAll.containsMouse ? Theme.cardHover : Theme.card
+                        Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+                    }
                     Text {
                         id: clearText
                         anchors.centerIn: parent
@@ -124,7 +146,7 @@ PanelWindow {
             id: stack
             width: parent.width
             height: win.stackHeight
-            Behavior on height { NumberAnimation { duration: Theme.ms(400); easing.type: Easing.BezierSpline; easing.bezierCurve: win.curve } }
+            Behavior on height { NumberAnimation { duration: Theme.ms(Theme.slow); easing.type: Easing.BezierSpline; easing.bezierCurve: win.curve } }
 
             Repeater {
                 model: Notifs.model
@@ -136,6 +158,10 @@ PanelWindow {
                     readonly property int depth: win.shownIds.indexOf(n.id)
                     readonly property bool shown: depth >= 0
                     readonly property bool front: depth === 0 || win.expanded
+                    // The top card of an app's group in the open list carries its Clear (the list
+                    // grows upwards, so that is the group's oldest).
+                    readonly property bool groupHead: win.open && shown && (depth === win.shown.length - 1 || win.shown[depth + 1].appName !== n.appName)
+                    readonly property int groupSize: groupHead ? win.shown.filter(m => m.appName === n.appName).length : 0
                     readonly property real naturalHeight: content.implicitHeight + 28
                     onNaturalHeightChanged: win.setHeight(n.id, naturalHeight)
 
@@ -154,10 +180,10 @@ PanelWindow {
                     z: -depth
                     enabled: shown
 
-                    Behavior on y { NumberAnimation { duration: Theme.ms(400); easing.type: Easing.BezierSpline; easing.bezierCurve: win.curve } }
-                    Behavior on height { NumberAnimation { duration: Theme.ms(400); easing.type: Easing.BezierSpline; easing.bezierCurve: win.curve } }
-                    Behavior on scale { NumberAnimation { duration: Theme.ms(400); easing.type: Easing.BezierSpline; easing.bezierCurve: win.curve } }
-                    Behavior on opacity { NumberAnimation { duration: Theme.ms(200) } }
+                    Behavior on y { NumberAnimation { duration: Theme.ms(Theme.slow); easing.type: Easing.BezierSpline; easing.bezierCurve: win.curve } }
+                    Behavior on height { NumberAnimation { duration: Theme.ms(Theme.slow); easing.type: Easing.BezierSpline; easing.bezierCurve: win.curve } }
+                    Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.slow); easing.type: Easing.BezierSpline; easing.bezierCurve: win.curve } }
+                    Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
 
                     // Swipe right to dismiss; a click takes the default action.
                     MouseArea {
@@ -177,7 +203,7 @@ PanelWindow {
                     NumberAnimation {
                         id: away
                         target: face; property: "x"; to: card.width + 24
-                        duration: Theme.ms(200); easing.type: Easing.OutCubic
+                        duration: Theme.ms(Theme.fast); easing.type: Theme.ease
                         onFinished: card.n.dismiss()
                     }
 
@@ -188,7 +214,7 @@ PanelWindow {
                         opacity: 1 - Math.max(0, x) / card.width
                         Behavior on x {
                             enabled: !swipe.drag.active && !away.running
-                            NumberAnimation { duration: Theme.ms(300); easing.type: Easing.BezierSpline; easing.bezierCurve: win.curve }
+                            NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Easing.BezierSpline; easing.bezierCurve: win.curve }
                         }
 
                         Rectangle {
@@ -205,7 +231,7 @@ PanelWindow {
                             clip: true
                             // Cards behind the front one show only their edge.
                             opacity: card.front ? 1 : 0
-                            Behavior on opacity { NumberAnimation { duration: Theme.ms(200) } }
+                            Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
 
                             RowLayout {
                                 id: content
@@ -229,6 +255,34 @@ PanelWindow {
                                 ColumnLayout {
                                     Layout.fillWidth: true
                                     spacing: 3
+                                    // App name and when, like the header of a Windows notification.
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        spacing: 8
+                                        Text {
+                                            Layout.fillWidth: true
+                                            text: [card.n.appName, Notifs.ago(card.n)].filter(s => s).join(" · ")
+                                            elide: Text.ElideRight
+                                            color: Theme.soft
+                                            font { family: Theme.sans; pixelSize: 12 }
+                                        }
+                                        Text {
+                                            id: clearGroup
+                                            visible: card.groupSize > 1
+                                            text: Tr.t("Clear %1", card.groupSize)
+                                            color: groupHit.containsMouse ? Theme.fg : Theme.accent
+                                            font { family: Theme.sans; pixelSize: 12; weight: Font.DemiBold }
+                                            Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+                                            MouseArea {
+                                                id: groupHit
+                                                anchors.fill: parent
+                                                anchors.margins: -6
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: Notifs.clear(card.n.appName)
+                                            }
+                                        }
+                                    }
                                     RowLayout {
                                         Layout.fillWidth: true
                                         Text {
@@ -271,10 +325,19 @@ PanelWindow {
                                                 required property int index
                                                 width: actText.implicitWidth + 26
                                                 height: 30
+                                                hoverEnabled: true
                                                 cursorShape: Qt.PointingHandCursor
                                                 onClicked: Notifs.invoke(card.n, modelData)
+                                                scale: pressed ? Theme.pressScale : 1
+                                                Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                                                 // The first action is the one most apps expect you to take.
-                                                Rectangle { anchors.fill: parent; radius: 15; color: act.index === 0 ? Theme.accent : Theme.card }
+                                                Rectangle {
+                                                    anchors.fill: parent
+                                                    radius: 15
+                                                    color: act.index === 0 ? (act.containsMouse ? Qt.lighter(Theme.accent, 1.08) : Theme.accent)
+                                                        : act.containsMouse ? Theme.cardHover : Theme.card
+                                                    Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+                                                }
                                                 Text {
                                                     id: actText
                                                     anchors.centerIn: parent

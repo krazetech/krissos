@@ -87,8 +87,8 @@ Scope {
             border.color: Theme.rim
             opacity: root.shown ? 1 : 0
             y: root.shown || Theme.reduceMotion ? 0 : 8
-            Behavior on opacity { NumberAnimation { duration: Theme.ms(140) } }
-            Behavior on y { NumberAnimation { duration: Theme.ms(160); easing.type: Easing.OutCubic } }
+            Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+            Behavior on y { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
 
             Glyph {
                 id: icon
@@ -112,7 +112,7 @@ Scope {
                     height: parent.height
                     radius: parent.radius
                     color: Theme.accent
-                    Behavior on width { NumberAnimation { duration: Theme.ms(90) } }
+                    Behavior on width { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                 }
             }
             Text {
