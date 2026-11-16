@@ -61,7 +61,7 @@ if ((ok)); then
   fi
   # Quickshell keeps its log in the user's runtime dir, not the journal. Log in on the
   # serial console (getty on ttyAMA0) and dump it into serial.log.
-  for line in kriss kriss 'qs log -p /usr/share/kriss-shell/qml 2>&1 | tail -150; qs list --all'; do
+  for line in kriss kriss 'export WAYLAND_DISPLAY=wayland-1; qs log -p /usr/share/kriss-shell/qml 2>&1 | tail -150'; do
     printf '%s\r' "$line" | socat - "UNIX-CONNECT:$out/ser" >/dev/null || true
     sleep 20
   done
