@@ -19,8 +19,10 @@ import Quickshell.Services.UPower
 PanelWindow {
     id: win
 
-    // Stays up while the sheet slides away.
+    // Stays up while the sheet slides away, but lets clicks through to what is behind it.
     visible: Desktop.quickOpen || panel.y < sheet.closed - 0.5
+    mask: Desktop.quickOpen ? null : noInput
+    Region { id: noInput }
     screen: Desktop.screen
 
     WlrLayershell.layer: WlrLayer.Top
@@ -117,7 +119,7 @@ PanelWindow {
             y: dragger.dragging ? dragger.pos : win.target
             Behavior on y {
                 enabled: !dragger.dragging
-                NumberAnimation { duration: Theme.ms(500); easing.type: Easing.BezierSpline; easing.bezierCurve: [0.32, 0.72, 0, 1, 1, 1] }
+                NumberAnimation { duration: Theme.ms(Theme.slow); easing.type: Easing.BezierSpline; easing.bezierCurve: Theme.sheetCurve }
             }
             width: 400
             height: body.implicitHeight + 50
@@ -246,8 +248,8 @@ PanelWindow {
                                     anchors.fill: parent
                                     radius: width / 2
                                     color: mb.primary ? Theme.accent : mb.containsMouse ? Theme.alpha(Theme.fg, 0.08) : "transparent"
-                                    scale: mb.pressed ? 0.92 : 1
-                                    Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Easing.OutCubic } }
+                                    scale: mb.pressed ? Theme.pressScale : 1
+                                    Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                                 }
                                 Glyph {
                                     anchors.centerIn: parent
@@ -473,10 +475,16 @@ PanelWindow {
         Layout.preferredWidth: 1
         implicitHeight: 64
         radius: Theme.radiusSmall
-        color: on ? Theme.accent : Theme.card
+        readonly property bool hovered: main.containsMouse || arrow.containsMouse
+        color: on ? (hovered ? Qt.lighter(Theme.accent, 1.08) : Theme.accent) : hovered ? Theme.cardHover : Theme.card
         readonly property color ink: on ? Theme.accentInk : Theme.fg
+        scale: main.pressed || arrow.pressed ? Theme.pressScale : 1
+        Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+        Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
 
         MouseArea {
+            id: main
+            hoverEnabled: true
             anchors.fill: parent
             anchors.rightMargin: tile.list ? 30 : 0
             cursorShape: Qt.PointingHandCursor
@@ -498,6 +506,8 @@ PanelWindow {
             }
         }
         MouseArea {
+            id: arrow
+            hoverEnabled: true
             visible: tile.list !== ""
             anchors { right: parent.right; top: parent.top; bottom: parent.bottom }
             width: 30
@@ -624,7 +634,12 @@ PanelWindow {
         height: 44
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
-        Rectangle { anchors.fill: parent; radius: 10; color: row.containsMouse ? Theme.card : "transparent" }
+        Rectangle {
+            anchors.fill: parent
+            radius: 10
+            color: row.pressed ? Theme.cardHover : row.containsMouse ? Theme.card : "transparent"
+            Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+        }
         RowLayout {
             anchors.fill: parent
             anchors.leftMargin: 10

@@ -91,8 +91,8 @@ PopupWindow {
                     Rectangle {
                         anchors.fill: parent
                         radius: 10
-                        color: row.index === menu.current ? Theme.win : "transparent"
-                        Behavior on color { ColorAnimation { duration: Theme.ms(80) } }
+                        color: row.pressed ? Theme.cardHover : row.index === menu.current ? Theme.win : "transparent"
+                        Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                     }
                     Text {
                         anchors.left: parent.left

@@ -77,8 +77,8 @@ PanelWindow {
                     anchors.fill: parent
                     source: "file:///usr/share/pixmaps/krissos.svg"
                     sourceSize: Qt.size(76, 76)
-                    scale: parent.containsMouse ? 1.05 : 1
-                    Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutQuart } }
+                    scale: parent.pressed ? Theme.pressScale : parent.containsMouse ? 1.05 : 1
+                    Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                 }
                 hoverEnabled: true
             }
@@ -106,7 +106,7 @@ PanelWindow {
                             radius: 4.5
                             color: modelData.active ? Theme.accent : (modelData.urgent ? Theme.red : Theme.soft)
                             opacity: modelData.active ? 1 : 0.6
-                            Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutQuart } }
+                            Behavior on width { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
                         }
                     }
                 }
@@ -145,10 +145,13 @@ PanelWindow {
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: bar.toggle("quickOpen")
+                scale: pressed ? Theme.pressScale : 1
+                Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                 Rectangle {
                     anchors.fill: parent
                     radius: height / 2
                     color: quick.containsMouse || Desktop.quickOpen && Desktop.screen === bar.screen ? Theme.card : "transparent"
+                    Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                 }
                 Row {
                     id: status
@@ -161,10 +164,21 @@ PanelWindow {
             }
 
             MouseArea {
+                id: bell
                 Layout.preferredWidth: 30
                 Layout.preferredHeight: 30
+                hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: bar.toggle("notificationsOpen")
+                scale: pressed ? Theme.pressScale : 1
+                Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+                Rectangle {
+                    anchors.fill: parent
+                    anchors.margins: -2
+                    radius: width / 2
+                    color: bell.containsMouse || Desktop.notificationsOpen && Desktop.screen === bar.screen ? Theme.card : "transparent"
+                    Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+                }
                 Glyph { anchors.centerIn: parent; name: Desktop.dnd ? "bellOff" : "bell" }
                 Rectangle {
                     visible: Notifs.all.length > 0
@@ -262,7 +276,9 @@ PanelWindow {
             radius: 12
             color: Theme.card
             y: btn.containsMouse ? -3 : 0
-            Behavior on y { NumberAnimation { duration: 150; easing.type: Easing.OutQuart } }
+            scale: btn.pressed && !btn.dragging ? Theme.pressScale : 1
+            Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+            Behavior on y { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
             IconImage {
                 anchors.centerIn: parent
                 implicitSize: 28
@@ -278,7 +294,7 @@ PanelWindow {
             height: 4
             radius: 2
             color: btn.front ? Theme.accent : Theme.soft
-            Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutQuart } }
+            Behavior on width { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
         }
     }
 }

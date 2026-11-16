@@ -21,7 +21,10 @@ MouseArea {
 
     implicitWidth: pill.width
     implicitHeight: 34
+    hoverEnabled: true
     cursorShape: Qt.PointingHandCursor
+    scale: pressed ? Theme.pressScale : 1
+    Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
     onClicked: PowerProfiles.profile = order[(order.indexOf(p) + 1) % order.length]
 
     Rectangle {
@@ -29,7 +32,8 @@ MouseArea {
         height: parent.height
         width: row.implicitWidth + 26
         radius: height / 2
-        color: Theme.card
+        color: pp.containsMouse ? Theme.cardHover : Theme.card
+        Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
         border.width: pp.p === PowerProfile.Performance ? 2 : 0
         border.color: Theme.accent
         Row {

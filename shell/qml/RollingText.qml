@@ -28,7 +28,7 @@ Row {
             Column {
                 visible: slot.digit
                 y: -(slot.digit ? Number(slot.ch) : 0) * fm.height
-                Behavior on y { NumberAnimation { duration: Theme.ms(450); easing.type: Easing.BezierSpline; easing.bezierCurve: [0.21, 1.02, 0.73, 1, 1, 1] } }
+                Behavior on y { NumberAnimation { duration: Theme.ms(Theme.slow); easing.type: Easing.BezierSpline; easing.bezierCurve: Theme.settleCurve } }
                 Repeater {
                     model: 10
                     Text { required property int index; height: fm.height; text: index; font: root.font; color: root.color }

@@ -52,6 +52,14 @@ Singleton {
     readonly property int fast: 140    // hover, press, fades, small moves
     readonly property int normal: 220  // a panel opening, a list growing
     readonly property int slow: 500    // the quick settings sheet (Vaul's length)
+    // And one set of curves: an ease out for anything arriving, hover and press; Vaul's
+    // long soft ease out for the sheet; Sonner's, with a touch of settle, for the toasts.
+    readonly property int ease: Easing.OutCubic
+    readonly property var sheetCurve: [0.32, 0.72, 0, 1, 1, 1]
+    readonly property var settleCurve: [0.21, 1.02, 0.73, 1, 1, 1]
+    // Hover and press: a control lights up a little and gives slightly under the pointer.
+    readonly property color cardHover: Qt.tint(card, alpha(fg, 0.12))
+    readonly property real pressScale: 0.95
 
     // Switches the shell, GTK and Qt apps (through the GNOME setting) and COSMIC apps and
     // the compositor (through COSMIC's own theme mode) together.

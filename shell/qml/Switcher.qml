@@ -64,8 +64,8 @@ PanelWindow {
 
         opacity: win.open ? 1 : 0
         scale: win.open || Theme.reduceMotion ? 1 : 0.96
-        Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.fast) } }
-        Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Easing.OutCubic } }
+        Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+        Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
 
         Keys.onPressed: event => {
             settle.stop();
