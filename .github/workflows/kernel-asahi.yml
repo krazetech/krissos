@@ -13,9 +13,11 @@ on:
 permissions:
   contents: read
 
+# A PR re-runs this on every push (paths filters see the whole PR diff). Queue instead of
+# cancelling, so pushes that do not touch the kernel never throw away hours of build.
 concurrency:
   group: kernel-asahi-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
