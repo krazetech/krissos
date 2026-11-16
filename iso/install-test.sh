@@ -50,5 +50,7 @@ sleep 30  # let the login screen draw
 shot login
 kill "$pid" && wait "$pid" || true
 grep -m3 'Linux version\|Failed to start' "$out/installed.log" || true
+# X11 apps (Steam, most games) need Xwayland under cosmic-comp.
+if grep -q 'Failed to start Xwayland' "$out/installed.log"; then echo 'cosmic-comp could not start Xwayland.' >&2; ok=0; fi
 if (( ok )); then echo 'The installed system started its login screen.'; else
   echo 'The installed system did not reach the login screen within 5 minutes.' >&2; exit 1; fi
