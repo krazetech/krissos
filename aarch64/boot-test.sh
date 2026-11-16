@@ -33,10 +33,10 @@ qemu-system-aarch64 -machine virt -accel "$ACCEL" -cpu "$cpu" -smp 4 -m 4096 -bi
 pid=$!
 trap 'kill $pid 2>/dev/null || true' EXIT
 
-ok=0
+ok=0 died=0
 for _ in $(seq "$tries"); do
   if grep -q 'kriss-shell.*KrissOS Shell started' "$out/serial.log" 2>/dev/null; then ok=1; break; fi
-  kill -0 "$pid" 2>/dev/null || break
+  kill -0 "$pid" 2>/dev/null || { died=1; break; }
   sleep 5
 done
 sleep 30 # let the Shell draw
@@ -47,7 +47,8 @@ rm -f "$out/disk.img"
 grep -m3 'Linux version\|Failed to start\|Kernel panic' "$out/serial.log" || true
 if ((!ok)); then
   tail -40 "$out/serial.log" >&2
-  echo "The KrissOS Shell did not start within $((tries * 5 / 60)) minutes." >&2
+  if ((died)); then echo 'QEMU exited before the KrissOS Shell started.' >&2
+  else echo "The KrissOS Shell did not start within $((tries * 5 / 60)) minutes." >&2; fi
   exit 1
 fi
 echo 'KrissOS Shell started.'

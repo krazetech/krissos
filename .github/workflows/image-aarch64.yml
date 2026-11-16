@@ -46,7 +46,7 @@ jobs:
         if: matrix.flavour == 'generic'
         run: |
           sudo apt-get update -q
-          sudo apt-get install -y -q --no-install-recommends qemu-system-arm qemu-efi-aarch64 socat
+          sudo apt-get install -y -q --no-install-recommends qemu-system-arm qemu-efi-aarch64 ipxe-qemu socat
           if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
           aarch64/boot-test.sh out/krissos-aarch64-generic.img boot-test
 
