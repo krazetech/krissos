@@ -10,6 +10,8 @@ chr() { arch-chroot "$root" "$@"; }
 
 # The live config lists only the published repos (pacstrap may have used the ISO's own).
 cp /etc/pacman.conf "$root/etc/pacman.conf"
+# Steam and the lib32 packages (kriss-meta-gaming) need [multilib]; ARCHITECTURE §gaming.
+sed -i "/^#\[multilib\]/,/^#Include/ s/^#//" "$root/etc/pacman.conf"
 
 # --- initramfs -------------------------------------------------------------------
 # busybox hooks, not systemd, so kriss-snapshot (kriss-settings) can put a RAM overlay

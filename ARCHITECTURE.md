@@ -29,7 +29,7 @@ distro team's workload, and it is out of scope.
 |---|---|
 | `linux-kriss` | Kernel for x86-64-v3, built with CachyOS patches (EEVDF/BORE, sched_ext) and LTO |
 | `linux-kriss-generic` | The same kernel for baseline x86-64. The installer picks it when the CPU lacks v3 |
-| `kriss-tools` | `kriss`, `kriss-ctl`, `kriss-tune`, `kriss-vm` |
+| `kriss-tools` | `kriss` (with `kriss tune`), `kriss-ctl`, `kriss-vm` |
 | `kriss-shell` | The KrissOS Shell (panel, dock, launcher, notifications, lock screen) |
 | `kriss-theme` | Wallpapers, icons, cursors, GTK/Qt/terminal colors, Plymouth, Limine, SDDM/greeter |
 | `kriss-settings` | Default configs in `/etc/skel` and `/usr/share/kriss`, plus pacman/snapper/sbctl hooks |
@@ -78,7 +78,7 @@ and lets it pick the kernel, GPU driver and desktop at install time.
 krissos/
 ├── ARCHITECTURE.md
 ├── pkgs/            # one PKGBUILD directory per [kriss] package
-├── tools/           # kriss, kriss-ctl, kriss-tune, kriss-vm (source)
+├── tools/           # kriss, kriss-ctl, kriss-vm (source)
 ├── shell/           # KrissOS Shell source
 ├── theme/           # design tokens + generated assets
 ├── installer/       # Calamares sequence, module configs and install scripts
@@ -202,20 +202,30 @@ kriss-vm revert         # restore every file `kriss-vm` changed from its backups
 
 ## 8. Gaming
 
-- **Packages:** `kriss-meta-gaming` installs Steam, GameMode, Gamescope, MangoHud, and the
-  current Mesa and Vulkan drivers.
+- **Packages:** `kriss-meta-gaming` installs Steam, GameMode, Gamescope, MangoHud, the
+  current Mesa and Vulkan drivers (with lib32), power-profiles-daemon and `scx-tools`.
+- **multilib:** Steam and the lib32 packages are in Arch's `[multilib]`, which must be
+  enabled before the metapackage installs. The installer (or kriss-welcome, before it installs
+  the gaming pack) runs the same step as doing it by hand:
+  `sudo sed -i '/^#\[multilib\]/,/^#Include/ s/^#//' /etc/pacman.conf && sudo pacman -Sy`.
 - **NVIDIA:** the NVIDIA open kernel modules are used on Turing and newer GPUs.
-- **`kriss-tune` profiles:**
+- **`kriss tune` profiles:**
 
-  | Profile | Use |
-  |---|---|
-  | `performance` | gaming |
-  | `balanced` | default |
-  | `powersave` | battery |
-  | `kapcai` | quiet alias for `powersave` |
+  | Profile | Use | power-profiles-daemon | sched_ext (scx_loader mode) |
+  |---|---|---|---|
+  | `performance` | gaming | `performance` | `scx_lavd` (gaming) |
+  | `balanced` | default | `balanced` | `scx_bpfland` (auto) |
+  | `powersave` | battery | `power-saver` | `scx_lavd` (powersave) |
+  | `kapcai` | quiet alias for `powersave` | | |
 
-- **Scheduler:** sched_ext schedulers come from the `scx` packages; `kriss-tune` chooses one per
-  profile.
+  `kriss tune status` shows the active profile and scheduler.
+- **How it applies:** no daemon of our own. power-profiles-daemon sets the profile (and EPP on
+  amd-pstate and intel_pstate, so `kriss tune` does not touch the governor). Schedulers start
+  through `scx_loader` from Arch's `scx-tools`. Both are D-Bus services checked by polkit;
+  `kriss-tools` ships a polkit rule that lets active local `wheel` users switch schedulers
+  without a password, as power-profiles-daemon already allows for profiles.
+- **After a reboot:** power-profiles-daemon restores the profile. An XDG autostart entry runs
+  `kriss tune sync` at login to start the matching scheduler.
 
 ## 9. Local AI
 
@@ -242,7 +252,7 @@ kriss-vm revert         # restore every file `kriss-vm` changed from its backups
 2. `kriss-theme`, `kriss-settings`, and a live ISO that boots to the KrissOS Shell.
 3. Calamares installer with the desktop picker (KrissOS Shell or Plasma), btrfs + snapper and
    sbctl.
-4. `kriss-tune` and the gaming metapackage.
+4. `kriss tune` and the gaming metapackage.
 5. `kriss-vm` (desktop first), then the laptop paths for systems with no MUX switch.
 6. WinBoat tier and the AI setup.
 7. `110`: the first tagged release.
@@ -250,7 +260,7 @@ kriss-vm revert         # restore every file `kriss-vm` changed from its backups
 ## 13. Later: Apple Silicon image
 
 A separate image, built after `110`, on Arch Linux ARM with the Asahi tooling.
-- **Reused as-is:** the shell, theme, `kriss`, `kriss-tune` and the AI setup.
+- **Reused as-is:** the shell, theme, `kriss` (with `kriss tune`) and the AI setup.
 - **New:** `linux-kriss-asahi`, installed through the Asahi installer from macOS. It needs
   aarch64 CI runners.
 - **Not on this image:** the CachyOS kernel, x86-64-v3, WinBoat and `kriss-vm`. Games go through
@@ -266,11 +276,11 @@ office users, and creators and AI tinkerers. Every default is checked against on
 
 | Area | Decision |
 |---|---|
-| Desktop | KDE Plasma with Windows habits in the KrissOS look: bottom taskbar, Start-style launcher, close button top-right, the Win key opens the menu. Not a Windows 11 clone |
+| Desktop | The KrissOS Shell (§5) with Windows habits in the KrissOS look: bottom taskbar, Start-style launcher, close button top-right, the Win key opens the menu. Not a Windows 11 clone. KDE Plasma is the installer's alternative |
 | Install | Dual-boot alongside Windows by default. The installer resizes Windows safely, detects BitLocker and stops with clear steps if it's on, and keeps Windows in the boot menu |
 | NVIDIA | The installer detects the GPU and installs the right driver (open modules on Turing and newer), so games work on first boot |
 | Apps | Discover with Flathub on by default, pacman underneath |
-| Updates | A tray notice; one click updates, after an automatic btrfs snapshot, so a bad update rolls back from the boot menu |
+| Updates | A desktop notification with an Update button (`kriss-update-notify.timer`). One click runs `kriss update`, which takes a btrfs snapshot through snapper first, so a bad update rolls back from the boot menu |
 | Windows apps | WinBoat up front, adapted to the hardware (see `kriss-welcome`). The Windows licence follows WinBoat's own approach; KrissOS adds no licence step |
 | Anti-cheat | Said upfront: gamers check their games before switching, on the website and in `kriss-welcome` |
 | Language | English and Bahasa Melayu from day one: installer, `kriss-welcome`, website |
@@ -293,7 +303,8 @@ A new `[kriss]` package. It opens on first login and stays in the menu.
    AI setup (Ollama plus the AI CLIs from §9).
 
 - **Stack:** Qt/QML (Kirigami) to match KDE. Every system change goes through `kriss` / `pkexec`
-  commands, so the app holds no root logic of its own.
+  commands, or through udisks and Flatpak, which ask polkit themselves, so the app holds no root
+  logic of its own.
 - **Strings:** every string is translatable from the start, with English and Bahasa Melayu shipped.
 - **Roadmap:** `kriss-welcome` lands with the installer (§12 step 3); the game checker and
   Bring your apps go first, because they decide whether people switch at all.

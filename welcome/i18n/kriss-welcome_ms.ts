@@ -199,6 +199,256 @@ Arahan: flatpak install flathub %1</translation>
     </message>
 </context>
 <context>
+    <name>CopyPage</name>
+    <message>
+        <location filename="../qml/CopyPage.qml" line="179"/>
+        <source>Copying stopped because of an error. Files copied so far are kept.</source>
+        <translation>Penyalinan terhenti kerana ralat. Fail yang sudah disalin disimpan.</translation>
+    </message>
+    <message>
+        <location filename="../qml/CopyPage.qml" line="19"/>
+        <source>%1 GB</source>
+        <translation>%1 GB</translation>
+    </message>
+    <message>
+        <location filename="../qml/CopyPage.qml" line="21"/>
+        <source>Desktop</source>
+        <translation>Desktop</translation>
+    </message>
+    <message>
+        <location filename="../qml/CopyPage.qml" line="21"/>
+        <source>Documents</source>
+        <translation>Dokumen</translation>
+    </message>
+    <message>
+        <location filename="../qml/CopyPage.qml" line="21"/>
+        <source>Pictures</source>
+        <translation>Gambar</translation>
+    </message>
+    <message>
+        <location filename="../qml/CopyPage.qml" line="22"/>
+        <source>Music</source>
+        <translation>Muzik</translation>
+    </message>
+    <message>
+        <location filename="../qml/CopyPage.qml" line="22"/>
+        <source>Videos</source>
+        <translation>Video</translation>
+    </message>
+    <message>
+        <location filename="../qml/CopyPage.qml" line="45"/>
+        <source>KrissOS opens Windows read-only, so nothing on Windows changes. Files you already have here are kept, never replaced.</source>
+        <translation>KrissOS membuka Windows secara baca sahaja, jadi tiada apa-apa dalam Windows berubah. Fail yang sudah ada di sini disimpan, tidak sekali-kali diganti.</translation>
+    </message>
+    <message>
+        <location filename="../qml/CopyPage.qml" line="56"/>
+        <source>No Windows found on this PC</source>
+        <translation>Tiada Windows ditemui pada PC ini</translation>
+    </message>
+    <message>
+        <location filename="../qml/CopyPage.qml" line="57"/>
+        <source>Copy from Windows works when Windows is installed next to KrissOS. You can still copy files from a USB drive in the file manager.</source>
+        <translation>Salin dari Windows berfungsi apabila Windows dipasang bersebelahan KrissOS. Anda masih boleh menyalin fail dari pemacu USB dalam pengurus fail.</translation>
+    </message>
+    <message>
+        <location filename="../qml/CopyPage.qml" line="71"/>
+        <source>Windows</source>
+        <translation>Windows</translation>
+    </message>
+    <message>
+        <location filename="../qml/CopyPage.qml" line="77"/>
+        <source>This drive is locked with BitLocker, so KrissOS cannot read it. To copy from it, start Windows and turn off BitLocker (Settings, Privacy and security, Device encryption), or copy your files to a USB drive from Windows.</source>
+        <translation>Pemacu ini dikunci dengan BitLocker, jadi KrissOS tidak dapat membacanya. Untuk menyalin daripadanya, mulakan Windows dan matikan BitLocker (Settings, Privacy and security, Device encryption), atau salin fail anda ke pemacu USB dari Windows.</translation>
+    </message>
+    <message>
+        <location filename="../qml/CopyPage.qml" line="83"/>
+        <source>Opening…</source>
+        <translation>Membuka…</translation>
+    </message>
+    <message>
+        <location filename="../qml/CopyPage.qml" line="83"/>
+        <source>Open</source>
+        <translation>Buka</translation>
+    </message>
+    <message>
+        <location filename="../qml/CopyPage.qml" line="96"/>
+        <source>Windows could not be opened. If Windows uses Fast Startup, start Windows, hold Shift while you choose Shut down, then try again.</source>
+        <translation>Windows tidak dapat dibuka. Jika Windows menggunakan Fast Startup, mulakan Windows, tahan Shift semasa memilih Shut down, kemudian cuba lagi.</translation>
+    </message>
+    <message>
+        <location filename="../qml/CopyPage.qml" line="105"/>
+        <source>Windows user:</source>
+        <translation>Pengguna Windows:</translation>
+    </message>
+    <message>
+        <location filename="../qml/CopyPage.qml" line="109"/>
+        <source>Copy:</source>
+        <translation>Salin:</translation>
+    </message>
+    <message>
+        <location filename="../qml/CopyPage.qml" line="122"/>
+        <source>Edge and Chrome bookmarks</source>
+        <translation>Penanda buku Edge dan Chrome</translation>
+    </message>
+    <message>
+        <location filename="../qml/CopyPage.qml" line="126"/>
+        <source>Copy to KrissOS</source>
+        <translation>Salin ke KrissOS</translation>
+    </message>
+    <message>
+        <location filename="../qml/CopyPage.qml" line="136"/>
+        <source>%1 bookmarks.html</source>
+        <translation>Penanda buku %1.html</translation>
+    </message>
+    <message>
+        <location filename="../qml/CopyPage.qml" line="144"/>
+        <source>This drive has no Windows user folders.</source>
+        <translation>Pemacu ini tiada folder pengguna Windows.</translation>
+    </message>
+    <message>
+        <location filename="../qml/CopyPage.qml" line="152"/>
+        <source>Copying… %1 of %2</source>
+        <translation>Menyalin… %1 daripada %2</translation>
+    </message>
+    <message>
+        <location filename="../qml/CopyPage.qml" line="153"/>
+        <source>Finding your files…</source>
+        <translation>Mencari fail anda…</translation>
+    </message>
+    <message>
+        <location filename="../qml/CopyPage.qml" line="174"/>
+        <source>There is not enough free space here to copy these folders. Free up space or choose fewer folders.</source>
+        <translation>Ruang kosong tidak mencukupi untuk menyalin folder ini. Kosongkan ruang atau pilih lebih sedikit folder.</translation>
+    </message>
+    <message>
+        <location filename="../qml/CopyPage.qml" line="175"/>
+        <source>Copied %1 files.</source>
+        <translation>%1 fail disalin.</translation>
+    </message>
+    <message>
+        <location filename="../qml/CopyPage.qml" line="176"/>
+        <source>%1 files could not be read and were skipped (OneDrive files that are only online cannot be copied).</source>
+        <translation>%1 fail tidak dapat dibaca dan dilangkau (fail OneDrive yang hanya ada dalam talian tidak boleh disalin).</translation>
+    </message>
+    <message>
+        <location filename="../qml/CopyPage.qml" line="182"/>
+        <source>Your bookmarks are saved in %1. To add them to Firefox, open Bookmarks, Manage bookmarks, Import and Backup, Import Bookmarks from HTML.</source>
+        <translation>Penanda buku anda disimpan dalam %1. Untuk menambahnya ke Firefox, buka Bookmarks, Manage bookmarks, Import and Backup, Import Bookmarks from HTML.</translation>
+    </message>
+</context>
+<context>
+    <name>ExtrasPage</name>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="13"/>
+        <source>Video and music codecs</source>
+        <translation>Codec video dan muzik</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="14"/>
+        <source>Play MP4, MKV, MP3, AAC and other common formats in every app.</source>
+        <translation>Mainkan MP4, MKV, MP3, AAC dan format biasa lain dalam setiap aplikasi.</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="15"/>
+        <source>Printers</source>
+        <translation>Pencetak</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="16"/>
+        <source>Printing support, plus a tool to add your printer. Most printers from the last ten years work without a driver.</source>
+        <translation>Sokongan pencetakan, serta alat untuk menambah pencetak anda. Kebanyakan pencetak dari sepuluh tahun kebelakangan berfungsi tanpa pemacu.</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="17"/>
+        <source>Gaming pack</source>
+        <translation>Pek permainan</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="18"/>
+        <source>Steam, GameMode, Gamescope, MangoHud and the latest graphics drivers.</source>
+        <translation>Steam, GameMode, Gamescope, MangoHud dan pemacu grafik terkini.</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="19"/>
+        <source>Local AI (Ollama)</source>
+        <translation>AI tempatan (Ollama)</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="20"/>
+        <source>Run AI models on this PC, using your graphics card when it can. Nothing leaves your computer.</source>
+        <translation>Jalankan model AI pada PC ini, menggunakan kad grafik anda apabila boleh. Tiada apa-apa keluar dari komputer anda.</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="21"/>
+        <source>Codex CLI and Gemini CLI</source>
+        <translation>Codex CLI dan Gemini CLI</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="22"/>
+        <source>AI coding assistants for the terminal, from OpenAI and Google.</source>
+        <translation>Pembantu pengekodan AI untuk terminal, daripada OpenAI dan Google.</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="23"/>
+        <source>Claude Code</source>
+        <translation>Claude Code</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="24"/>
+        <source>Anthropic&apos;s AI coding assistant for the terminal. Installs for your user only, so no password is needed.</source>
+        <translation>Pembantu pengekodan AI Anthropic untuk terminal. Dipasang untuk pengguna anda sahaja, jadi kata laluan tidak diperlukan.</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="26"/>
+        <source>Antigravity</source>
+        <translation>Antigravity</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="27"/>
+        <source>Google&apos;s AI code editor. Download it from its website.</source>
+        <translation>Editor kod AI Google. Muat turun dari laman webnya.</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="50"/>
+        <source>Install %1?</source>
+        <translation>Pasang %1?</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="51"/>
+        <source>You may be asked for your password.
+
+Runs: %1</source>
+        <translation>Anda mungkin diminta kata laluan.
+
+Menjalankan: %1</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="77"/>
+        <source>Website</source>
+        <translation>Laman web</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="78"/>
+        <source>Installing…</source>
+        <translation>Memasang…</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="79"/>
+        <source>Installed</source>
+        <translation>Dipasang</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="80"/>
+        <source>Failed, try again</source>
+        <translation>Gagal, cuba lagi</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="80"/>
+        <source>Install</source>
+        <translation>Pasang</translation>
+    </message>
+</context>
+<context>
     <name>GamesPage</name>
     <message>
         <location filename="../qml/GamesPage.qml" line="17"/>
@@ -333,19 +583,14 @@ Arahan: flatpak install flathub %1</translation>
         <source>Drivers and extras</source>
         <translation>Pemacu dan tambahan</translation>
     </message>
-    <message>
-        <location filename="../qml/Main.qml" line="56"/>
-        <source>Coming soon</source>
-        <translation>Akan datang</translation>
-    </message>
-    <message>
-        <location filename="../qml/Main.qml" line="57"/>
-        <source>This part of KrissOS Welcome arrives in a later update.</source>
-        <translation>Bahagian KrissOS Welcome ini akan tiba dalam kemas kini akan datang.</translation>
-    </message>
 </context>
 <context>
     <name>WelcomePage</name>
+    <message>
+        <location filename="../qml/WelcomePage.qml" line="43"/>
+        <source>Copy my files</source>
+        <translation>Salin fail saya</translation>
+    </message>
     <message>
         <location filename="../qml/WelcomePage.qml" line="12"/>
         <source>Welcome to KrissOS</source>

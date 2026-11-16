@@ -1,0 +1,23 @@
+# Maintainer: Kraze Tech
+pkgname=kriss-meta-gaming
+pkgver=1
+pkgrel=1
+pkgdesc='KrissOS gaming pack: Steam, GameMode, Gamescope, MangoHud, Mesa and Vulkan'
+arch=('any')
+url='https://github.com/krazetech/krissos'
+license=('GPL-3.0-or-later')
+# Steam and the lib32 packages live in [multilib]. Enable it before installing:
+#   sudo sed -i '/^#\[multilib\]/,/^#Include/ s/^#//' /etc/pacman.conf && sudo pacman -Sy
+# ponytail: both Mesa Vulkan drivers are listed so Steam's vulkan-driver prompt never
+# shows; the loader ignores the one with no GPU. NVIDIA comes from kriss-welcome's
+# driver step.
+depends=('steam'
+         'gamemode' 'lib32-gamemode'
+         'gamescope'
+         'mangohud' 'lib32-mangohud'
+         'mesa' 'lib32-mesa'
+         'vulkan-icd-loader' 'lib32-vulkan-icd-loader'
+         'vulkan-radeon' 'lib32-vulkan-radeon'
+         'vulkan-intel' 'lib32-vulkan-intel'
+         # kriss tune performance
+         'power-profiles-daemon' 'scx-tools')

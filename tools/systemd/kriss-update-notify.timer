@@ -1,0 +1,10 @@
+[Unit]
+Description=Check for KrissOS updates every few hours
+
+[Timer]
+OnStartupSec=15min
+OnUnitInactiveSec=6h
+RandomizedDelaySec=10min
+
+[Install]
+WantedBy=timers.target
