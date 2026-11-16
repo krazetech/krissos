@@ -111,7 +111,7 @@ greeter)
             [ -e "$cfg/$rel/${f##*/}" ] || cp "$f" "$cfg/$rel/"
         done
     done
-    # A newer kriss-shell can bring new shortcuts (Alt+Tab and the media keys came in 0.2.5):
+    # A newer kriss-shell can bring new shortcuts (Alt+Tab and the media keys came in 0.2.7):
     # add each entry whose key the user's file lacks, keeping theirs as they are. Entries are
     # one per line, as in shell/cosmic/com.system76.CosmicSettings.Shortcuts.
     sc=com.system76.CosmicSettings.Shortcuts/v1
@@ -120,7 +120,7 @@ greeter)
     done
     # The brightness keys used to call brightnessctl directly, which shows no level.
     # Move the old defaults over; a key the user changed is left alone.
-    # ponytail: drop this once installs from before kriss-shell 0.2.4 are gone.
+    # ponytail: drop this once installs from before kriss-shell 0.2.6 are gone.
     sed -i 's|"brightnessctl -q -c backlight set \(5%[-+]\)"|"kriss-shell brightness \1"|' \
         "$cfg/$sc/system_actions" 2>/dev/null || true
 
