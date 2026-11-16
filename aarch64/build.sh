@@ -89,6 +89,7 @@ for p in "$root"/etc/mkinitcpio.d/*.preset; do
   mv "$p.new" "$p"
 done
 rm -f "$root"/boot/initramfs-*.img
+mkdir -p "$root/boot/efi/EFI/BOOT"
 chr mkinitcpio -P
 if [ "$flavour" = asahi ]; then chr update-m1n1 /boot/efi/m1n1/boot.bin; else rmdir "$root/boot/efi/m1n1"; fi
 
