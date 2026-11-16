@@ -60,8 +60,8 @@ grep -q '^interface_branding: KrissOS' "$conf"
 grep -q '^wallpaper: boot():/EFI/limine/kriss-wallpaper.png' "$conf"
 test -s "$t/efi/EFI/limine/kriss-wallpaper.png"
 grep -q '^/+KrissOS' "$conf"
-grep -Eq '^//linux[a-z-]* [0-9]+\.[0-9]+' "$conf"  # linux-kriss online, linux from the USB offline
-grep -Eq '^default_entry: KrissOS/linux[a-z-]* [0-9]' "$conf"
+grep -Eq '^//linux-kriss[a-z-]* [0-9]+\.[0-9]+' "$conf"  # linux-kriss online, linux-kriss-generic from the USB offline
+grep -Eq '^default_entry: KrissOS/linux-kriss[a-z-]* [0-9]' "$conf"
 grep -q '^//Snapshots' "$conf"
 grep -q '^    ///.* install test (#[0-9]*)$' "$conf"
 grep -q 'subvol=@snapshots/[0-9]*/snapshot.* kriss_snapshot=1' "$conf"

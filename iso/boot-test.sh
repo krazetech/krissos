@@ -23,6 +23,8 @@ kill $! && wait $! || true
 # 2. Same kernel, initramfs and options, plus a serial console with the journal on it.
 tmp=$(mktemp -d)
 bsdtar -xf "$iso" -C "$tmp" loader/entries/02-krissos-install.conf 'kriss/boot/x86_64/*'
+# The [kriss] kernel, not Arch's: its version string (uname -r) ends in -kriss-generic.
+file "$tmp"/kriss/boot/x86_64/vmlinuz-* | grep -o 'version [^ ]*' | tee /dev/stderr | grep -q -- '-kriss'
 opts=$(sed -n 's/^options *//p' "$tmp/loader/entries/02-krissos-install.conf")
 rm -f "$out/mon"
 "${qemu[@]}" -bios "$ovmf" -kernel "$tmp"/kriss/boot/x86_64/vmlinuz-* -initrd "$tmp"/kriss/boot/x86_64/initramfs-*.img \

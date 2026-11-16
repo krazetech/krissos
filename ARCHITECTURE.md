@@ -28,7 +28,7 @@ distro team's workload, and it is out of scope.
 | Package | Purpose |
 |---|---|
 | `linux-kriss` | Kernel for x86-64-v3, built with CachyOS patches (EEVDF/BORE, sched_ext) and LTO |
-| `linux-kriss-generic` | The same kernel for baseline x86-64. The installer picks it when the CPU lacks v3 |
+| `linux-kriss-generic` | The same kernel for baseline x86-64: the live ISO's kernel, kept on CPUs without v3 |
 | `linux-kriss-asahi` | The Asahi kernel for Apple Silicon Macs (aarch64 only, §13) |
 | `kriss-tools` | `kriss` (with `kriss tune`), `kriss-ctl`, `kriss-vm` |
 | `kriss-shell` | The KrissOS Shell (panel, dock, launcher, notifications, lock screen) |
@@ -78,7 +78,7 @@ and installs KDE Plasma, which is not on the ISO. Offline, Plasma falls back to 
   normally but forgets changes at reboot; a login notification says so. `kriss rollback`,
   run from the booted snapshot, makes it `@` again and keeps the replaced system as
   `@.old-DATE`.
-- **Kernel:** the ISO's kernel offline; `linux-kriss` on x86-64-v3 CPUs when online.
+- **Kernel:** the ISO's `linux-kriss-generic` offline; `linux-kriss` on x86-64-v3 CPUs when online.
 - **NVIDIA:** `nvidia-open-dkms` on Turing and newer, on the ISO so the live session uses
   it too. Older cards keep nouveau, since no driver in Arch's repos supports them any more.
   For Maxwell, Pascal and Volta, kriss-welcome offers NVIDIA's 580 driver afterwards as an

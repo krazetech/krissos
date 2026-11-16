@@ -4,11 +4,6 @@
 # usage: iso/build.sh OUT_DIR WORK_DIR
 set -euo pipefail
 
-# ponytail: Arch's kernel until linux-kriss-generic is published in [kriss]; then set
-# this to linux-kriss-generic. The live image takes the baseline x86-64 build so it
-# boots on CPUs without x86-64-v3.
-kernel=linux
-
 here=$(cd "$(dirname "$0")" && pwd)
 out=$1 work=$2
 mkdir -p "$out" "$work"
@@ -61,7 +56,4 @@ python "$here/../theme/generate.py" "$here/../theme/templates/usr/share/pixmaps"
   echo '</svg>'
 } | rsvg-convert -o "$profile/syslinux/splash.png"
 
-sed -i "s/^linux\(-headers\)\?\$/$kernel\1/" "$profile/packages.x86_64"
-sed -i "s/vmlinuz-linux/vmlinuz-$kernel/; s/initramfs-linux\./initramfs-$kernel./" \
-  "$profile"/efiboot/loader/entries/*.conf "$profile"/syslinux/*.cfg
 mkarchiso -v -r -w "$work/mkarchiso" -o "$out" "$profile"
