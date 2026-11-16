@@ -1,0 +1,3 @@
+\e[0m\e]P0{{color0.hex}}\e]P1{{color1.hex}}\e]P2{{color2.hex}}\e]P3{{color3.hex}}\e]P4{{color4.hex}}\e]P5{{color5.hex}}\e]P6{{color6.hex}}\e]P7{{color7.hex}}\e]P8{{color8.hex}}\e]P9{{color9.hex}}\e]PA{{color10.hex}}\e]PB{{color11.hex}}\e]PC{{color12.hex}}\e]PD{{color13.hex}}\e]PE{{color14.hex}}\e]PF{{color15.hex}}
+\e[1;{{accent.ansi}}m\S\e[0m on \l
+

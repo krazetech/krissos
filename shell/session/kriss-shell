@@ -54,6 +54,7 @@ greeter)
     set -a; . /etc/locale.conf 2>/dev/null; set +a
     export HOME="$XDG_RUNTIME_DIR/kriss-greeter"
     mkdir -p "$HOME"
+    cp -r /etc/skel/.icons "$HOME/" 2>/dev/null  # the KrissOS cursor (kriss-settings)
     # shellcheck disable=SC2016 # $1 and $PPID belong to the inner shell
     exec cosmic-comp sh -c 'qs -p "$1"; kill "$PPID"' sh "$qml/greeter.qml"
     ;;
@@ -71,20 +72,18 @@ greeter)
     # The qt6ct config from kriss-settings only applies with this set (see its PKGBUILD).
     export QT_QPA_PLATFORMTHEME=qt6ct
 
-    # COSMIC defaults: the Windows key opens our launcher, Windows+L locks, and the
-    # focused window gets a 4 px Sky Cyan ring with 20 px corners, as in the concept. Copied only
-    # where the user has no value of their own, so their changes win.
+    # COSMIC defaults: the Windows key opens our launcher, Windows+L locks, the KrissOS
+    # dark and light themes (accent, backgrounds, corners, a 4 px Sky Cyan ring on the
+    # focused window), Papirus icons and the KrissOS terminal colours. Copied key by key
+    # only where the user has no value of their own, so their changes win.
     cfg=${XDG_CONFIG_HOME:-$HOME/.config}/cosmic
-    seed() {
-        [ -d "$data/cosmic/$1" ] || return 0
-        mkdir -p "$cfg/$2"
-        for f in "$data/cosmic/$1"/*; do
-            [ -e "$cfg/$2/${f##*/}" ] || cp "$f" "$cfg/$2/"
+    for dir in "$data"/cosmic/*/v*; do
+        rel=${dir#"$data/cosmic/"}
+        mkdir -p "$cfg/$rel"
+        for f in "$dir"/*; do
+            [ -e "$cfg/$rel/${f##*/}" ] || cp "$f" "$cfg/$rel/"
         done
-    }
-    seed shortcuts com.system76.CosmicSettings.Shortcuts/v1
-    seed theme com.system76.CosmicTheme.Dark/v2
-    seed theme com.system76.CosmicTheme.Light/v2
+    done
 
     # Not `cosmic-comp COMMAND`: that is cosmic-comp's kiosk mode, which turns off every
     # keyboard shortcut. Start it on its own; once it is ready it publishes
