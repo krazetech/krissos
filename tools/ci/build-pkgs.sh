@@ -21,7 +21,8 @@ for dir; do
     (. "$dir/PKGBUILD" && pacman -Sp "${depends[@]}" >/dev/null)
     deps=--nodeps ;;
   esac
-  su builder -c "cd '$dir' && PKGDEST='$out' makepkg $deps --noconfirm --cleanbuild"
+  # Arch Linux ARM's makepkg.conf defaults to .pkg.tar.xz; the repo tooling expects zst.
+  su builder -c "cd '$dir' && PKGDEST='$out' PKGEXT=.pkg.tar.zst makepkg $deps --noconfirm --cleanbuild"
   echo "::endgroup::"
 done
 ls -l "$out"
