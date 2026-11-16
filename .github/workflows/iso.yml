@@ -115,6 +115,30 @@ jobs:
           compression-level: 0
           retention-days: 14
 
+      # ISO hosting: SourceForge's file release system, whatever the ISO size. preview/ holds
+      # only the latest build (--delete drops older ones); tags go to releases/<tag>/. Forks and
+      # PRs have no SF_SSH_KEY, so they skip. The key goes to a 0600 file, never to the log.
+      - name: Upload to SourceForge
+        if: startsWith(github.ref, 'refs/tags/') || (github.ref == 'refs/heads/main' && github.event_name != 'pull_request')
+        env:
+          SF_SSH_KEY: ${{ secrets.SF_SSH_KEY }}
+        run: |
+          if [ -z "$SF_SSH_KEY" ]; then
+            echo "::notice::SF_SSH_KEY is not set; skipping the SourceForge upload."
+            exit 0
+          fi
+          install -d -m 700 ~/.ssh
+          (umask 077 && printf '%s\n' "$SF_SSH_KEY" >~/.ssh/sourceforge)
+          ssh-keyscan frs.sourceforge.net >>~/.ssh/known_hosts 2>/dev/null
+          export RSYNC_RSH="ssh -i $HOME/.ssh/sourceforge -o IdentitiesOnly=yes -o BatchMode=yes"
+          dest=krazetech@frs.sourceforge.net:/home/frs/project/krissos
+          if [[ $GITHUB_REF == refs/tags/* ]]; then dir=releases/$GITHUB_REF_NAME; else dir=preview; fi
+          # rsync creates only the last directory level, so make the folders first.
+          mkdir -p "$RUNNER_TEMP/sf/$dir"
+          rsync -rtO "$RUNNER_TEMP/sf/" "$dest/"
+          rsync -rtO --delete --progress out/ "$dest/$dir/"
+          echo "SourceForge: https://sourceforge.net/projects/krissos/files/$dir/" | tee -a "$GITHUB_STEP_SUMMARY"
+
       - name: Attach to release
         if: startsWith(github.ref, 'refs/tags/')
         env:
@@ -123,7 +147,7 @@ jobs:
           shopt -s extglob
           files=(out/*)  # the ISO, sha256sums.txt and their .sig files
           if [ "${ISO_OVER_2GIB:-}" = 1 ]; then
-            echo "::notice::The ISO is over GitHub's 2 GiB release asset limit, so this release gets only sha256sums.txt and the .sig files. The ISO is in the workflow artifact; it is hosted on SourceForge."
+            echo "::notice::The ISO is over GitHub's 2 GiB release asset limit, so this release gets only sha256sums.txt and the .sig files. The ISO is on SourceForge and in the workflow artifact."
             files=(out/!(*.iso))
           fi
           gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
@@ -141,7 +165,7 @@ jobs:
           shopt -s extglob
           files=(out/*)  # the ISO, sha256sums.txt and their .sig files
           if [ "${ISO_OVER_2GIB:-}" = 1 ]; then
-            echo "::notice::The ISO is over GitHub's 2 GiB release asset limit, so this release gets only sha256sums.txt and the .sig files. The ISO is in the workflow artifact; it is hosted on SourceForge."
+            echo "::notice::The ISO is over GitHub's 2 GiB release asset limit, so this release gets only sha256sums.txt and the .sig files. The ISO is on SourceForge and in the workflow artifact."
             files=(out/!(*.iso))
           fi
           if ! gh release view preview >/dev/null 2>&1; then
