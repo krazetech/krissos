@@ -87,7 +87,7 @@ greeter)
     export QT_QPA_PLATFORMTHEME=qt6ct
 
     # COSMIC defaults: the Windows key opens our launcher, Windows+L locks, the KrissOS
-    # dark and light themes (accent, backgrounds, corners, a 4 px Sky Cyan ring on the
+    # dark and light themes (accent, backgrounds, corners; no coloured ring around the
     # focused window), Papirus icons, the KrissOS fonts and terminal colours. Copied key by key
     # only where the user has no value of their own, so their changes win.
     cfg=${XDG_CONFIG_HOME:-$HOME/.config}/cosmic

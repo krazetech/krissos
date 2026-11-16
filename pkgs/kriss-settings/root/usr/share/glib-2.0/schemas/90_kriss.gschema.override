@@ -7,6 +7,11 @@ font-name='{{font_sans}} 11'
 document-font-name='{{font_sans}} 11'
 monospace-font-name='{{font_mono}} 11'
 
+# Minimise, maximise and close on GTK apps that draw their own title bar (Firefox,
+# GNOME apps), as on Windows. GNOME's default is close only.
+[org.gnome.desktop.wm.preferences]
+button-layout='appmenu:minimize,maximize,close'
+
 [org.gnome.desktop.background]
 picture-uri='file:///usr/share/backgrounds/kriss/kriss-light.svg'
 picture-uri-dark='file:///usr/share/backgrounds/kriss/kriss-dark.svg'

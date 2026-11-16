@@ -152,7 +152,7 @@ available as the installer's alternative.
 | `muted` | `#6B7680` |
 
 - **Style:** soft and rounded. Floating windows with large corner radii and a light rim, and
-  the focused window ringed in Sky Cyan. Light and dark window themes over a dark wallpaper.
+  no coloured ring around the focused window. Light and dark window themes over a dark wallpaper.
   One bottom bar holds the launcher, apps and status. Sky Cyan is the only accent; no neon.
 - **Type:** Figtree + JetBrains Mono (OFL) proposed.
 - **Apps:** COSMIC Files, Terminal and Settings get KrissOS dark and light COSMIC themes, built
