@@ -42,15 +42,18 @@ jobs:
           cd out && sha256sum -- *.iso > sha256sums.txt
           ls -lh && df -h /
 
-      # GitHub release assets max out at 2 GiB; the release step enforces it.
+      # ISO hosting is SourceForge (no size limit that matters here). GitHub release assets
+      # max out at 2 GiB, so the release steps skip the ISO itself when it is bigger.
       - name: Check ISO size
         run: |
           iso=$(ls out/*.iso)
           size=$(stat -c %s "$iso")
           echo "ISO size: $(basename "$iso") is $size bytes ($(numfmt --to=iec-i "$size"))" | tee -a "$GITHUB_STEP_SUMMARY"
-          if (( size > 1932735283 )); then
-            echo "::warning::The ISO is over 1.8 GiB and nearing the 2 GiB release asset limit."
+          if (( size > 4294967296 )); then
+            echo "::warning::The ISO is over 4 GiB. Check what grew before it gets harder to download."
           fi
+          # The release steps then upload everything but the ISO.
+          if (( size > 2147483648 )); then echo ISO_OVER_2GIB=1 >>"$GITHUB_ENV"; fi
 
       - name: Sign
         if: startsWith(github.ref, 'refs/tags/') || (github.ref == 'refs/heads/main' && github.event_name != 'pull_request')
@@ -117,14 +120,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          size=$(stat -c %s out/*.iso)
-          if (( size > 2147483648 )); then
-            echo "::error::The ISO is $size bytes, over GitHub's 2 GiB release asset limit. It is still in the workflow artifact. Move ISO hosting off GitHub Releases (planned: Cloudflare R2) before tagging again."
-            exit 1
+          shopt -s extglob
+          files=(out/*)  # the ISO, sha256sums.txt and their .sig files
+          if [ "${ISO_OVER_2GIB:-}" = 1 ]; then
+            echo "::notice::The ISO is over GitHub's 2 GiB release asset limit, so this release gets only sha256sums.txt and the .sig files. The ISO is in the workflow artifact; it is hosted on SourceForge."
+            files=(out/!(*.iso))
           fi
           gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
             || gh release create "$GITHUB_REF_NAME" --verify-tag --title "KrissOS $GITHUB_REF_NAME" --notes ''
-          gh release upload "$GITHUB_REF_NAME" out/* --clobber  # the ISO, sha256sums.txt and their .sig files
+          gh release upload "$GITHUB_REF_NAME" "${files[@]}" --clobber
 
       # Nightly and manual runs on main refresh the public `preview` pre-release that the website's
       # Download page links to. Only after the boot and install tests pass (steps stop on failure).
@@ -134,10 +138,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          size=$(stat -c %s out/*.iso)
-          if (( size > 2147483648 )); then
-            echo "::error::The ISO is $size bytes, over GitHub's 2 GiB release asset limit."
-            exit 1
+          shopt -s extglob
+          files=(out/*)  # the ISO, sha256sums.txt and their .sig files
+          if [ "${ISO_OVER_2GIB:-}" = 1 ]; then
+            echo "::notice::The ISO is over GitHub's 2 GiB release asset limit, so this release gets only sha256sums.txt and the .sig files. The ISO is in the workflow artifact; it is hosted on SourceForge."
+            files=(out/!(*.iso))
           fi
           if ! gh release view preview >/dev/null 2>&1; then
             gh release create preview --prerelease --target main --title 'KrissOS preview' \
@@ -146,4 +151,4 @@ jobs:
           for a in $(gh release view preview --json assets -q '.assets[].name'); do
             gh release delete-asset preview "$a" --yes
           done
-          gh release upload preview out/* --clobber
+          gh release upload preview "${files[@]}" --clobber
