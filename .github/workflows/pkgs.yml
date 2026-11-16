@@ -41,6 +41,9 @@ jobs:
       - name: Test kriss tune
         run: tools/ci/tune-test.sh
 
+      - name: Test kriss nvidia
+        run: tools/ci/nvidia-test.sh
+
       # The kernels are built by kernel.yml and kernel-asahi.yml, the compositor by cosmic-comp.yml.
       - name: Build packages
         run: tools/ci/build-pkgs.sh out $(ls -d pkgs/*/ | grep -v -e '^pkgs/linux-kriss' -e '^pkgs/cosmic-comp-kriss')

@@ -94,6 +94,12 @@ done
 rm -f "$root"/boot/initramfs-*.img
 mkdir -p "$root/boot/efi/EFI/BOOT"
 chr mkinitcpio -P
+# update-m1n1 looks for device trees under linux-asahi's *-ARCH modules only; point it at ours.
+if [ "${kernel:-}" = linux-kriss-asahi ]; then
+  mkdir -p "$root/etc/default"
+  # shellcheck disable=SC2016 # expanded by update-m1n1, which sources this file
+  echo 'DTBS=$(ls -d /lib/modules/*-kriss-asahi | sort -rV | head -1)/dtbs/*.dtb' >"$root/etc/default/update-m1n1"
+fi
 if [ "$flavour" = asahi ]; then chr update-m1n1 /boot/efi/m1n1/boot.bin; else rmdir "$root/boot/efi/m1n1"; fi
 
 # ponytail: preview login, password `kriss`; see rootfs/etc/greetd/config.toml.

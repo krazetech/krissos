@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
+import Quickshell.Widgets
 import Quickshell.Bluetooth
 import Quickshell.Networking
 import Quickshell.Services.Pipewire
@@ -39,6 +40,8 @@ PanelWindow {
     // "" or the open list: "wifi", "bluetooth" or "output".
     property string page: ""
     property var askPsk: null
+    // The password just tried for askPsk didn't work.
+    property bool pskFailed: false
 
     readonly property var wifi: Networking.devices.values.find(d => d.type === DeviceType.Wifi) ?? null
     readonly property var adapter: Bluetooth.defaultAdapter
@@ -46,6 +49,12 @@ PanelWindow {
     readonly property var source: Pipewire.defaultAudioSource
 
     function close() { Desktop.quickOpen = false; }
+
+    // Seconds as "2 h 5 min" or "40 min".
+    function span(sec) {
+        const h = Math.floor(sec / 3600), m = Math.round(sec % 3600 / 60);
+        return h > 0 ? Tr.t("%1 h %2 min", h, m) : Tr.t("%1 min", Math.max(1, m));
+    }
 
     // Snap points: the whole sheet, or a peek with only the tiles showing.
     property bool peek: false
@@ -58,6 +67,7 @@ PanelWindow {
             if (!Desktop.quickOpen) return;
             win.page = "";
             win.askPsk = null;
+            win.pskFailed = false;
             win.peek = false;
             backlight.running = true;
         }
@@ -172,6 +182,84 @@ PanelWindow {
                 anchors { left: parent.left; right: parent.right; top: parent.top; margins: 20; topMargin: 30 }
                 spacing: 14
 
+                // What's playing, with the controls the media keys also reach.
+                ClippingRectangle {
+                    id: media
+                    readonly property var p: Desktop.player
+                    visible: p !== null && p.trackTitle !== ""
+                    Layout.fillWidth: true
+                    implicitHeight: 72
+                    radius: Theme.radiusSmall
+                    color: Theme.card
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: 10
+                        spacing: 12
+                        ClippingRectangle {
+                            implicitWidth: 52
+                            implicitHeight: 52
+                            radius: 10
+                            color: Theme.win
+                            Glyph { anchors.centerIn: parent; name: "music"; color: Theme.soft; visible: art.status !== Image.Ready }
+                            Image {
+                                id: art
+                                anchors.fill: parent
+                                source: media.p?.trackArtUrl ?? ""
+                                sourceSize: Qt.size(104, 104)
+                                fillMode: Image.PreserveAspectCrop
+                                asynchronous: true
+                            }
+                        }
+                        Column {
+                            Layout.fillWidth: true
+                            spacing: 3
+                            Text {
+                                width: parent.width
+                                elide: Text.ElideRight
+                                text: media.p?.trackTitle ?? ""
+                                color: Theme.fg
+                                font { family: Theme.sans; pixelSize: 13; weight: Font.DemiBold }
+                            }
+                            Text {
+                                width: parent.width
+                                elide: Text.ElideRight
+                                text: media.p?.trackArtist || media.p?.identity || ""
+                                color: Theme.soft
+                                font { family: Theme.sans; pixelSize: 12 }
+                            }
+                        }
+                        Repeater {
+                            model: ["prev", "play", "next"]
+                            delegate: MouseArea {
+                                id: mb
+                                required property string modelData
+                                readonly property bool primary: modelData === "play"
+                                implicitWidth: 36
+                                implicitHeight: 36
+                                hoverEnabled: true
+                                enabled: modelData === "prev" ? media.p?.canGoPrevious ?? false
+                                    : modelData === "next" ? media.p?.canGoNext ?? false : media.p?.canTogglePlaying ?? false
+                                cursorShape: Qt.PointingHandCursor
+                                opacity: enabled ? 1 : 0.35
+                                onClicked: modelData === "prev" ? media.p.previous() : modelData === "next" ? media.p.next() : media.p.togglePlaying()
+                                Rectangle {
+                                    anchors.fill: parent
+                                    radius: width / 2
+                                    color: mb.primary ? Theme.accent : mb.containsMouse ? Theme.alpha(Theme.fg, 0.08) : "transparent"
+                                    scale: mb.pressed ? 0.92 : 1
+                                    Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Easing.OutCubic } }
+                                }
+                                Glyph {
+                                    anchors.centerIn: parent
+                                    name: mb.primary && media.p?.isPlaying ? "pause" : mb.modelData
+                                    size: 16
+                                    color: mb.primary ? Theme.accentInk : Theme.fg
+                                }
+                            }
+                        }
+                    }
+                }
+
                 GridLayout {
                     id: tiles
                     Layout.fillWidth: true
@@ -238,6 +326,15 @@ PanelWindow {
                         required property var modelData
                         width: parent?.width ?? 0
                         readonly property bool secured: modelData.security !== WifiSecurityType.Open && modelData.security !== WifiSecurityType.Owe
+                        // A wrong or changed password: ask for it (again), and say why.
+                        Connections {
+                            target: net.modelData
+                            function onConnectionFailed(reason) {
+                                if (!net.secured) return;
+                                win.askPsk = net.modelData;
+                                win.pskFailed = true;
+                            }
+                        }
                         Row_ {
                             glyph: "wifi"
                             text: net.modelData.name
@@ -248,7 +345,7 @@ PanelWindow {
                             onClicked: {
                                 if (net.modelData.connected) net.modelData.disconnect();
                                 else if (net.modelData.known || !net.secured) net.modelData.connect();
-                                else win.askPsk = net.modelData;
+                                else { win.askPsk = net.modelData; win.pskFailed = false; }
                             }
                         }
                         // Password for a new secured network.
@@ -270,13 +367,13 @@ PanelWindow {
                                 color: Theme.fg
                                 font { family: Theme.sans; pixelSize: 14 }
                                 onVisibleChanged: { text = ""; if (visible) forceActiveFocus(); }
-                                Keys.onReturnPressed: { net.modelData.connectWithPsk(text); win.askPsk = null; }
+                                Keys.onReturnPressed: { if (text) { net.modelData.connectWithPsk(text); win.askPsk = null; } }
                                 Keys.onEscapePressed: win.askPsk = null
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
                                     visible: !psk.text
-                                    text: Tr.t("Network password, then Enter")
-                                    color: Theme.soft
+                                    text: win.pskFailed ? Tr.t("Wrong password. Try again, then Enter") : Tr.t("Network password, then Enter")
+                                    color: win.pskFailed ? Theme.red : Theme.soft
                                     font: psk.font
                                 }
                             }
@@ -348,7 +445,14 @@ PanelWindow {
                 Text {
                     visible: UPower.displayDevice.isLaptopBattery
                     Layout.fillWidth: true
-                    text: Tr.t("%1% battery", Math.round(UPower.displayDevice.percentage * 100))
+                    text: {
+                        const d = UPower.displayDevice, pct = Math.round(d.percentage * 100);
+                        if (d.state === UPowerDeviceState.FullyCharged) return Tr.t("%1% battery, fully charged", pct);
+                        if (d.state === UPowerDeviceState.Charging)
+                            return d.timeToFull > 0 ? Tr.t("%1% battery, full in %2", pct, win.span(d.timeToFull)) : Tr.t("%1% battery, charging", pct);
+                        if (!UPower.onBattery) return Tr.t("%1% battery, plugged in", pct);
+                        return d.timeToEmpty > 0 ? Tr.t("%1% battery, %2 left", pct, win.span(d.timeToEmpty)) : Tr.t("%1% battery", pct);
+                    }
                     color: Theme.soft
                     font { family: Theme.sans; pixelSize: 12; weight: Font.Medium }
                 }
