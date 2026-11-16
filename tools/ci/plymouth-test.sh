@@ -31,4 +31,10 @@ KRISS_ROOT=$t sh "$script" >/dev/null
 [[ $(cat "$t/etc/plymouth/plymouthd.conf") == $'[Daemon]\nTheme=kriss' ]] || fail "no file"
 files=("$t"/etc/plymouth/*)
 ((${#files[@]} == 1)) || fail "stray files: ${files[*]}"
+# When to rebuild the initramfs, as the hook runs it (matched paths on stdin).
+rb() { printf '[Daemon]\nTheme=%s\n' "$1" >"$t/etc/plymouth/plymouthd.conf"; printf '%s\n' "$2" | KRISS_ROOT=$t sh "$script" --hook | grep -c 'would rebuild' || true; }
+[[ $(rb kriss usr/share/plymouth/themes/kriss/kriss.script) == 1 ]] || fail "kriss-theme update: no rebuild"
+[[ $(rb kriss usr/share/plymouth/plymouthd.defaults) == 0 ]] || fail "plymouth update: rebuilt twice"
+[[ $(rb kriss usr/share/libalpm/scripts/kriss-plymouth) == 0 ]] || fail "kriss-settings update: rebuilt twice"
+[[ $(rb cachyos usr/share/libalpm/scripts/kriss-plymouth) == 1 ]] || fail "theme fixed: no rebuild"
 echo "plymouth-test: ok"

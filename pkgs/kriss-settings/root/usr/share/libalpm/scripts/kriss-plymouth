@@ -7,6 +7,7 @@
 # installed (a migrated system's cachyos), or names another distro's theme. Every other
 # line in the file, and a stock theme the admin picked (spinner, fade-in, bgrt...), stays.
 # plymouth-set-default-theme is not used: its `sed -ie` leaves a plymouthd.confe behind.
+# --hook: the pacman hook's matched paths are on stdin (NeedsTargets).
 # KRISS_ROOT points it at another root (tools/ci/plymouth-test.sh).
 root=${KRISS_ROOT:-}
 conf=$root/etc/plymouth/plymouthd.conf
@@ -32,9 +33,17 @@ if [ "$fix" = 1 ]; then
   echo "kriss: Plymouth theme ${cur:-(unset)} -> kriss"
 fi
 
-# The initramfs carries its own copy of the theme. Rebuild only when it has Plymouth
-# in it and the theme is ours (kriss-theme updates change the splash).
-[ -z "$root" ] || exit 0
+# The initramfs carries its own copy of the theme. Rebuild when it has Plymouth in it,
+# the theme is ours, and the theme or its files changed. From the hook, a plymouth or
+# kriss-settings update alone needs nothing: 90-mkinitcpio-install.hook already rebuilt
+# for their initcpio files, with this theme. (When the Theme= line changed here, that
+# rebuild had the old theme, so this second one is needed, once.)
+rebuild=1
+if [ "${1:-}" = --hook ] && [ "$fix" = 0 ]; then
+  grep -q '^usr/share/plymouth/themes/kriss/' || rebuild=0
+fi
+[ "$rebuild" = 1 ] || exit 0
+[ -z "$root" ] || { echo "kriss: would rebuild the initramfs"; exit 0; }
 [ "$(theme)" = kriss ] || exit 0
 grep -Eqs '^[^#]*HOOKS.*[( ]plymouth[ )]' /etc/mkinitcpio.conf /etc/mkinitcpio.conf.d/*.conf || exit 0
 command -v mkinitcpio >/dev/null || exit 0
