@@ -2,22 +2,24 @@
 # Finish the installed system: pacman config, initramfs, snapper, Limine (with Windows
 # and the snapshots in its menu), zram and services. Calamares runs this on the live
 # system after its own users, locale and network steps.
-# usage: configure ROOT DESKTOP   (DESKTOP: shell or plasma)
+# usage: configure ROOT
 set -euo pipefail
 
-root=$1 desktop=${2:-shell}
+root=$1
 chr() { arch-chroot "$root" "$@"; }
+# KDE Plasma when the online step could install it, otherwise the KrissOS Shell.
+desktop=shell
+if chr pacman -Q plasma-desktop >/dev/null 2>&1; then desktop=plasma; fi
 
-# The live config lists only the published repos (pacstrap may have used the ISO's own).
-cp /etc/pacman.conf "$root/etc/pacman.conf"
 # Steam and the lib32 packages (kriss-meta-gaming) need [multilib]; ARCHITECTURE §gaming.
 sed -i "/^#\[multilib\]/,/^#Include/ s/^#//" "$root/etc/pacman.conf"
 
 # --- initramfs -------------------------------------------------------------------
 # busybox hooks, not systemd, so kriss-snapshot (kriss-settings) can put a RAM overlay
-# over a read-only snapshot booted from the Limine menu. kms pulls nouveau in early,
-# which the NVIDIA driver must not race with.
-kms=kms
+# over a read-only snapshot booted from the Limine menu. kriss-kms (kriss-settings) is
+# kms without nouveau, which would add ~105 MB of firmware that older cards never use.
+# The NVIDIA driver gets no early KMS at all, so nothing races with it.
+kms=kriss-kms
 if chr pacman -Q nvidia-utils >/dev/null 2>&1; then kms=; fi
 mkdir -p "$root/etc/mkinitcpio.conf.d"
 cat >"$root/etc/mkinitcpio.conf.d/kriss.conf" <<EOF

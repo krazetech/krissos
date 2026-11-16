@@ -1,0 +1,23 @@
+#!/bin/bash
+# mkinitcpio's kms hook without nouveau. KrissOS gives Turing and newer the NVIDIA
+# driver, so nouveau only ever runs older cards, which need no GSP firmware. But kms
+# copies nouveau's whole firmware list, about 105 MB of GSP blobs, into the early
+# image, and the boot loader reads all of it on every boot. nouveau still loads from
+# the root filesystem a moment later.
+
+build() {
+    local major minor
+
+    map add_checked_modules '/drivers/char/agp/'
+    add_checked_modules -f '/nouveau/' '/drivers/gpu/drm/'
+
+    # Privacy screen drivers, as kms adds them.
+    IFS=.- read -r major minor _ <<<"$KERNELVERSION"
+    if (( major > 5 || (major == 5 && minor >= 17) )); then
+        add_checked_modules_from_symbol 'drm_privacy_screen_register' '=drivers/platform'
+    fi
+}
+
+help() {
+    echo 'Adds KMS and privacy screen drivers like kms, except nouveau and its firmware.'
+}

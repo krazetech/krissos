@@ -735,6 +735,10 @@ EOF
 SELF=$(realpath "$0")
 
 main() {
+  case "${1:-help}" in --self-test | version | --version | -V | help | --help | -h) ;; *)
+    # GPU passthrough to a Windows VM is x86 only (ARCHITECTURE §13).
+    [[ $(uname -m) == x86_64 ]] || die "GPU passthrough needs an x86_64 PC; this is $(uname -m)." ;;
+  esac
   case "${1:-help}" in
     check) cmd_check ;;
     setup) cmd_setup "${@:2}" ;;

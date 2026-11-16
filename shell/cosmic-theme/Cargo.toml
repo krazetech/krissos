@@ -1,0 +1,11 @@
+[package]
+name = "kriss-cosmic-theme"
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0-or-later"
+publish = false
+
+# Pinned so the computed theme only changes when we bump it.
+[dependencies]
+cosmic-theme = { git = "https://github.com/pop-os/libcosmic", rev = "dfc68d1e1a1ff39ae4fd61bec570e79700a111dd", default-features = false }
+cosmic-config = { git = "https://github.com/pop-os/libcosmic", rev = "dfc68d1e1a1ff39ae4fd61bec570e79700a111dd", default-features = false }
