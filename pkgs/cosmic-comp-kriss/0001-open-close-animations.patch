@@ -1,4 +1,4 @@
-From 0c390e132cee42ae03e9a909645604793a243106 Mon Sep 17 00:00:00 2001
+From 4d4c1442ac0a189acab84c864ad29fa2119d7705 Mon Sep 17 00:00:00 2001
 From: Razman Zaidi <100824525+idiazraz@users.noreply.github.com>
 Date: Mon, 16 Nov 2026 22:21:56 +0800
 Subject: [PATCH] Open and close animations for toplevel windows
@@ -12,12 +12,12 @@ shrink. Both follow org.gnome.desktop.interface enable-animations.
  src/shell/layout/floating/mod.rs      |  39 ++-
  src/shell/layout/tiling/mod.rs        |  11 +
  src/shell/mod.rs                      |   4 +
- src/shell/open_close.rs               | 337 ++++++++++++++++++++++++++
+ src/shell/open_close.rs               | 346 ++++++++++++++++++++++++++
  src/shell/workspace.rs                |  20 ++
  src/wayland/handlers/compositor.rs    |  14 ++
  src/wayland/handlers/xdg_shell/mod.rs |   1 +
  src/xwayland.rs                       |   5 +
- 10 files changed, 424 insertions(+), 11 deletions(-)
+ 10 files changed, 433 insertions(+), 11 deletions(-)
  create mode 100644 src/shell/open_close.rs
 
 diff --git a/src/lib.rs b/src/lib.rs
@@ -163,10 +163,10 @@ index 108307b1..59e7019f 100644
          if is_dialog || floating_exception || !workspace.tiling_enabled {
 diff --git a/src/shell/open_close.rs b/src/shell/open_close.rs
 new file mode 100644
-index 00000000..e7a29822
+index 00000000..f4c099db
 --- /dev/null
 +++ b/src/shell/open_close.rs
-@@ -0,0 +1,337 @@
+@@ -0,0 +1,346 @@
 +// SPDX-License-Identifier: GPL-3.0-only
 +
 +//! Open and close animations for toplevel windows.
@@ -191,7 +191,10 @@ index 00000000..e7a29822
 +};
 +
 +use anyhow::Context;
-+use keyframe::{ease, functions::EaseOutCubic};
++use keyframe::{
++    EasingFunction, ease,
++    functions::{EaseInOutCubic, EaseOutCubic},
++};
 +use smithay::{
 +    backend::{
 +        allocator::Fourcc,
@@ -258,9 +261,9 @@ index 00000000..e7a29822
 +    });
 +}
 +
-+fn progress(start: Instant, duration: Duration) -> Option<f64> {
++fn progress(curve: impl EasingFunction, start: Instant, duration: Duration) -> Option<f64> {
 +    let t = start.elapsed().as_secs_f64() / duration.as_secs_f64();
-+    (t < 1.0).then(|| ease(EaseOutCubic, 0.0, 1.0, t))
++    (t < 1.0).then(|| ease(curve, 0.0, 1.0, t))
 +}
 +
 +/// `rect` scaled by `scale` around its centre.
@@ -287,7 +290,7 @@ index 00000000..e7a29822
 +    /// Alpha and scale while the window is opening.
 +    pub fn open_animation(&self) -> Option<(f32, f64)> {
 +        let start = (*self.opened_at.lock().unwrap())?;
-+        let e = progress(start, OPEN_DURATION)?;
++        let e = progress(EaseOutCubic, start, OPEN_DURATION)?;
 +        Some((e as f32, MIN_SCALE + (1.0 - MIN_SCALE) * e))
 +    }
 +
@@ -331,8 +334,10 @@ index 00000000..e7a29822
 +        renderer: &mut R,
 +        output_scale: f64,
 +    ) -> Option<TextureRenderElement<GlesTexture>> {
-+        let e = progress(self.start, CLOSE_DURATION)?;
-+        let geometry = scale_rect(self.geometry.to_f64(), 1.0 - (1.0 - MIN_SCALE) * e);
++        // Ease-in-out: with ease-out the window is mostly gone after a third of the time.
++        let e = progress(EaseInOutCubic, self.start, CLOSE_DURATION)?;
++        // Whole pixels: a fractional position leaves a 1 px trail when the damage is rounded.
++        let geometry = scale_rect(self.geometry, 1.0 - (1.0 - MIN_SCALE) * e);
 +
 +        let glow = renderer.glow_renderer_mut();
 +        let context = glow.context_id();
@@ -353,7 +358,11 @@ index 00000000..e7a29822
 +            // A new id every frame: the element changes size and alpha every frame anyway.
 +            Id::new(),
 +            context,
-+            geometry.loc.as_logical().to_physical(output_scale),
++            geometry
++                .loc
++                .as_logical()
++                .to_physical_precise_round::<_, i32>(output_scale)
++                .to_f64(),
 +            texture,
 +            1,
 +            Transform::Normal,
@@ -361,7 +370,7 @@ index 00000000..e7a29822
 +            Some(Rectangle::from_size(
 +                self.size.to_logical(1, Transform::Normal).to_f64(),
 +            )),
-+            Some(geometry.size.as_logical().to_i32_round()),
++            Some(geometry.size.as_logical()),
 +            None,
 +            Kind::Unspecified,
 +        ))
@@ -499,8 +508,8 @@ index 00000000..e7a29822
 +    #[test]
 +    fn progress_ends() {
 +        let start = Instant::now() - CLOSE_DURATION;
-+        assert!(progress(start, CLOSE_DURATION).is_none());
-+        let p = progress(Instant::now(), CLOSE_DURATION).unwrap();
++        assert!(progress(EaseOutCubic, start, CLOSE_DURATION).is_none());
++        let p = progress(EaseOutCubic, Instant::now(), CLOSE_DURATION).unwrap();
 +        assert!((0.0..0.1).contains(&p));
 +    }
 +}
