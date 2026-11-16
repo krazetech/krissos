@@ -5,6 +5,7 @@
 #   kriss-shell quick      open or close quick settings (Windows+A)
 #   kriss-shell notifications
 #                          open or close the notification list (Windows+N)
+#   kriss-shell calendar   open or close the calendar under the clock (Windows+Alt+D)
 #   kriss-shell lock       lock the screen (Windows+L)
 #   kriss-shell greeter    the login screen, which greetd runs (see shell/README.md)
 #   kriss-shell desktop    show the desktop, or bring the windows back (Windows+D)
@@ -27,7 +28,7 @@ launcher)
     # Fall back to COSMIC's own launcher when the KrissOS Shell is not running.
     qs -p "$qml" ipc call launcher toggle 2>/dev/null || exec cosmic-launcher
     ;;
-quick | notifications)
+quick | notifications | calendar)
     qs -p "$qml" ipc call "$1" toggle
     ;;
 lock)
@@ -157,7 +158,7 @@ greeter)
     wait "$comp"
     ;;
 *)
-    echo "usage: kriss-shell [launcher|quick|notifications|lock|desktop|switcher next|media playPause|brightness STEP|screenshot [region]|greeter]" >&2
+    echo "usage: kriss-shell [launcher|quick|notifications|calendar|lock|desktop|switcher next|media playPause|brightness STEP|screenshot [region]|greeter]" >&2
     exit 2
     ;;
 esac

@@ -195,20 +195,40 @@ PanelWindow {
                 }
             }
 
-            Column {
-                Layout.leftMargin: 4
-                SystemClock { id: clock; precision: SystemClock.Minutes }
-                RollingText {
-                    anchors.right: parent.right
-                    text: Qt.formatDateTime(clock.date, "HH:mm")
-                    color: Theme.fg
-                    font { family: Theme.sans; pixelSize: 15; weight: Font.DemiBold; features: { "tnum": 1 } }
+            // The clock opens the calendar, as on Windows.
+            MouseArea {
+                id: clockArea
+                // The hover pill reaches past the text, not the text in from the bar's edge.
+                Layout.rightMargin: -8
+                implicitWidth: clockText.implicitWidth + 16
+                implicitHeight: 42
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: bar.toggle("calendarOpen")
+                scale: pressed ? Theme.pressScale : 1
+                Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+                Rectangle {
+                    anchors.fill: parent
+                    radius: 12
+                    color: clockArea.containsMouse || Desktop.calendarOpen && Desktop.screen === bar.screen ? Theme.card : "transparent"
+                    Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                 }
-                Text {
-                    anchors.right: parent.right
-                    text: clock.date.toLocaleString(Qt.locale(), "ddd d MMM")
-                    color: Theme.soft
-                    font { family: Theme.sans; pixelSize: 11 }
+                Column {
+                    id: clockText
+                    anchors.centerIn: parent
+                    SystemClock { id: clock; precision: SystemClock.Minutes }
+                    RollingText {
+                        anchors.right: parent.right
+                        text: Qt.formatDateTime(clock.date, "HH:mm")
+                        color: Theme.fg
+                        font { family: Theme.sans; pixelSize: 15; weight: Font.DemiBold; features: { "tnum": 1 } }
+                    }
+                    Text {
+                        anchors.right: parent.right
+                        text: clock.date.toLocaleString(Qt.locale(), "ddd d MMM")
+                        color: Theme.soft
+                        font { family: Theme.sans; pixelSize: 11 }
+                    }
                 }
             }
         }
@@ -217,7 +237,7 @@ PanelWindow {
     // Open or close one of the panels on this bar's screen (closing the others).
     function toggle(panel) {
         const open = !(Desktop[panel] && Desktop.screen === bar.screen);
-        Desktop.launcherOpen = Desktop.notificationsOpen = Desktop.quickOpen = false;
+        Desktop.launcherOpen = Desktop.notificationsOpen = Desktop.quickOpen = Desktop.calendarOpen = false;
         Desktop.screen = bar.screen;
         Desktop[panel] = open;
     }

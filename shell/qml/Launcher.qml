@@ -69,7 +69,7 @@ PanelWindow {
                 kind: "action", label: a[1], glyph: a[0], run: a[2], score: Fuzzy.score(a[1], q)
             })), 4)],
             [Tr.t("Files"), ranked(recentAll.map(f => ({
-                kind: "file", label: f.name, detail: ago(f.when),
+                kind: "file", label: f.name, detail: Tr.ago(f.when),
                 run: () => { Qt.openUrlExternally(f.href); close(); }, score: Fuzzy.score(f.name, q)
             })), 4)]
         ];
@@ -141,16 +141,6 @@ PanelWindow {
         return out.sort((a, b) => b.when - a.when).slice(0, 200);
     }
     readonly property var recent: recentAll.slice(0, 4)
-
-    function ago(d) {
-        const min = Math.round((Date.now() - d) / 60000);
-        if (min < 1) return Tr.t("Just now");
-        if (min < 60) return Tr.t("%1 min ago", min);
-        const today = new Date(); today.setHours(0, 0, 0, 0);
-        if (d >= today) return Tr.t("Today at %1", Qt.formatTime(d, "HH:mm"));
-        if (d >= today - 86400000) return Tr.t("Yesterday at %1", Qt.formatTime(d, "HH:mm"));
-        return d.toLocaleString(Qt.locale(), "d MMM");
-    }
 
     MouseArea {
         anchors.fill: parent
@@ -415,7 +405,7 @@ PanelWindow {
                                     font { family: Theme.sans; pixelSize: 13; weight: Font.DemiBold }
                                 }
                                 Text {
-                                    text: win.ago(rec.modelData.when)
+                                    text: Tr.ago(rec.modelData.when)
                                     color: Theme.soft
                                     font { family: Theme.sans; pixelSize: 11 }
                                 }

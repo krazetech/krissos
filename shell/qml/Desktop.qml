@@ -12,6 +12,7 @@ Singleton {
     property bool launcherOpen: false
     property bool notificationsOpen: false
     property bool quickOpen: false
+    property bool calendarOpen: false
     property bool locked: false
 
     // The screen the launcher, notifications and quick settings open on. A click on a

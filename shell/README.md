@@ -99,6 +99,7 @@ bar to move it. Without the file, the defaults in `qml/Desktop.qml` apply.
 | Windows | Launcher |
 | Windows+A | Quick settings |
 | Windows+N | Notifications |
+| Windows+Alt+D | Calendar |
 | Windows+D | Show the desktop; again to bring the windows back |
 | Windows+E | COSMIC Files |
 | Windows+L | Lock |
