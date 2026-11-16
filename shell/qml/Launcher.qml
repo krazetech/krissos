@@ -14,12 +14,15 @@ import "fuzzy.js" as Fuzzy
 PanelWindow {
     id: win
 
-    visible: Desktop.launcherOpen
+    // Stays up while the menu fades away, but lets go of the keyboard and the pointer at once.
+    visible: Desktop.launcherOpen || panel.opacity > 0
     screen: Desktop.screen
 
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.namespace: "kriss-launcher"
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+    WlrLayershell.keyboardFocus: Desktop.launcherOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    mask: Desktop.launcherOpen ? null : noInput
+    Region { id: noInput }
     // Cover the screen above the bar, so a click anywhere else closes the menu.
     exclusionMode: ExclusionMode.Normal
     exclusiveZone: 0
@@ -107,8 +110,11 @@ PanelWindow {
     }
     function move(by) { if (count) current = Math.max(0, Math.min(count - 1, current + by)); }
 
-    onVisibleChanged: {
-        if (!visible) return;
+    Connections {
+        target: Desktop
+        function onLauncherOpenChanged() { if (Desktop.launcherOpen) win.reset(); }
+    }
+    function reset() {
         query = ""; allApps = false; powerMenu = false; current = 0;
         search.text = "";
         search.forceActiveFocus();
@@ -165,10 +171,15 @@ PanelWindow {
         border.color: Theme.rim
         clip: true
 
-        opacity: win.visible ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: Theme.ms(140) } }
+        // Fades in and rises a few pixels; going away it does the same backwards.
+        opacity: Desktop.launcherOpen ? 1 : 0
+        transform: Translate {
+            y: Desktop.launcherOpen || Theme.reduceMotion ? 0 : 12
+            Behavior on y { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
+        }
+        Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
         // The panel grows and shrinks with the results instead of jumping (cmdk does the same).
-        Behavior on height { NumberAnimation { duration: Theme.ms(160); easing.type: Easing.OutCubic } }
+        Behavior on height { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
 
         MouseArea { anchors.fill: parent; onClicked: win.powerMenu = false }
 
@@ -279,8 +290,8 @@ PanelWindow {
                         anchors.fill: parent
                         anchors.margins: 2
                         radius: Theme.radiusSmall
-                        color: cell.index === win.current ? Theme.card : "transparent"
-                        Behavior on color { ColorAnimation { duration: Theme.ms(90) } }
+                        color: cell.pressed ? Theme.cardHover : cell.index === win.current ? Theme.card : "transparent"
+                        Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                     }
                     Column {
                         anchors.centerIn: parent
@@ -378,7 +389,12 @@ PanelWindow {
                         cursorShape: Qt.PointingHandCursor
                         onClicked: { Qt.openUrlExternally(modelData.href); win.close(); }
 
-                        Rectangle { anchors.fill: parent; radius: Theme.radiusSmall; color: rec.containsMouse ? Theme.card : "transparent" }
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: Theme.radiusSmall
+                            color: rec.pressed ? Theme.cardHover : rec.containsMouse ? Theme.card : "transparent"
+                            Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+                        }
                         RowLayout {
                             anchors.fill: parent
                             anchors.leftMargin: 10
@@ -461,7 +477,14 @@ PanelWindow {
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: win.powerMenu = !win.powerMenu
-                Rectangle { anchors.fill: parent; radius: 19; color: powerBtn.containsMouse || win.powerMenu ? Theme.card : "transparent" }
+                scale: pressed ? Theme.pressScale : 1
+                Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+                Rectangle {
+                    anchors.fill: parent
+                    radius: 19
+                    color: powerBtn.containsMouse || win.powerMenu ? Theme.card : "transparent"
+                    Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+                }
                 Glyph { anchors.centerIn: parent; name: "power"; size: 19 }
             }
         }
@@ -494,7 +517,12 @@ PanelWindow {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: modelData[2]()
-                        Rectangle { anchors.fill: parent; radius: 10; color: item.containsMouse ? Theme.win : "transparent" }
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: 10
+                            color: item.containsMouse ? Theme.win : "transparent"
+                            Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+                        }
                         Row {
                             anchors.left: parent.left
                             anchors.leftMargin: 12
@@ -545,8 +573,8 @@ PanelWindow {
             Rectangle {
                 anchors.fill: parent
                 radius: Theme.radiusSmall
-                color: res.selected ? Theme.card : "transparent"
-                Behavior on color { ColorAnimation { duration: Theme.ms(90) } }
+                color: res.pressed ? Theme.cardHover : res.selected ? Theme.card : "transparent"
+                Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
             }
             RowLayout {
                 anchors.fill: parent
@@ -608,7 +636,14 @@ PanelWindow {
         implicitHeight: 30
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
-        Rectangle { anchors.fill: parent; radius: 15; color: chip.containsMouse ? Theme.win : Theme.card }
+        scale: pressed ? Theme.pressScale : 1
+        Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+        Rectangle {
+            anchors.fill: parent
+            radius: 15
+            color: chip.containsMouse ? Theme.win : Theme.card
+            Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+        }
         Row {
             id: chipRow
             anchors.centerIn: parent
