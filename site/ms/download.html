@@ -48,7 +48,7 @@
     <div class="wrap">
       <h1 class="rise d1">Dapatkan KrissOS.</h1>
       <div id="release" class="rise d2">
-        <p class="lede">ISO preview dibina dari <code>main</code> setiap malam dan diterbitkan bila ia berjaya boot dalam CI. Ia terus boot ke KrissOS Shell.</p>
+        <p class="lede">ISO preview dibina dari <code>main</code> tiap-tiap malam, dan keluar kalau lulus test boot dalam CI ja. Terus boot masuk KrissOS Shell.</p>
         <div class="actions">
           <a class="btn" href="https://sourceforge.net/projects/krissos/files/preview/">Dapatkan ISO preview</a>
           <a class="btn ghost" href="install.html">Guna repo pada Arch</a>
@@ -60,14 +60,14 @@
   <section>
     <div class="wrap split">
       <div class="reveal">
-        <h2>Apa yang boleh dijangka.</h2>
-        <p class="lede">KrissOS masih muda. Cuba preview dalam VM atau PC spare dulu, jangan pada satu-satunya komputer anda. Belum lagi.</p>
+        <h2>Sebelum install, baca ni.</h2>
+        <p class="lede">KrissOS masih baru. Cuba dulu dalam VM atau PC spare, jangan terus pada PC utama anda. Belum masa lagi.</p>
       </div>
       <ul class="list reveal">
-        <li><span>PC anda<small>PC Intel dan AMD 64-bit. Mac Apple Silicon datang kemudian, dengan imej sendiri.</small></span></li>
-        <li><span>Desktop<small>KrissOS Shell secara asal. Installer juga tawarkan KDE Plasma.</small></span></li>
-        <li><span>Update<small>Update kecil sentiasa, terus dari Arch, berserta pakej bertandatangan kami. Setiap satu ambil snapshot dulu.</small></span></li>
-        <li><span>Keluaran<small>Build setiap malam masuk ke <code>preview</code>. Keluaran diberi nama kod: <code>110</code>, <code>115</code>, dan seterusnya.</small></span></li>
+        <li><span>PC anda<small>PC Intel dan AMD 64-bit. Mac Apple Silicon nanti, dengan imej sendiri.</small></span></li>
+        <li><span>Desktop<small>KrissOS Shell by default. Installer ada pilihan KDE Plasma sekali.</small></span></li>
+        <li><span>Update<small>Update kecik-kecik selalu, terus dari Arch, campur pakej signed kami. Setiap update ambil snapshot dulu, jadi boleh patah balik.</small></span></li>
+        <li><span>Keluaran<small>Build tiap malam masuk <code>preview</code>. Keluaran rasmi pakai nama kod: <code>110</code>, <code>115</code>, dan seterusnya.</small></span></li>
       </ul>
     </div>
   </section>
@@ -75,11 +75,11 @@
   <section>
     <div class="wrap">
       <div class="card note reveal">
-        <h2>Dua tetapan, lepas tu boot.</h2>
+        <h2>Dua setting ja, lepas tu boot.</h2>
         <ul class="list">
-          <li><span>Hidupkan firmware UEFI<small>Dalam virt-manager, GNOME Boxes, VirtualBox atau VMware, pilih UEFI (OVMF) sebelum boot pertama. Installer perlukannya, dan itulah yang CI uji.</small></span></li>
-          <li><span>RAM 4 GB atau lebih<small>Sesi live berjalan dari memori. Dua core CPU dan 3D acceleration buat ia lebih lancar.</small></span></li>
-          <li><span>Tak perlu log masuk<small>Sesi live terus masuk ke KrissOS Shell. Tekan kekunci Windows untuk buka launcher.</small></span></li>
+          <li><span>Hidupkan firmware UEFI<small>Dalam virt-manager, GNOME Boxes, VirtualBox atau VMware, pilih UEFI (OVMF) sebelum boot pertama. Installer perlu UEFI, dan itu yang CI test.</small></span></li>
+          <li><span>RAM 4 GB atau lebih<small>Sesi live jalan dari RAM. Bagi dua core CPU dan on 3D acceleration, baru smooth.</small></span></li>
+          <li><span>Tak perlu log masuk<small>Sesi live terus masuk KrissOS Shell. Tekan kekunci Windows, launcher terbuka.</small></span></li>
         </ul>
       </div>
     </div>
@@ -88,23 +88,23 @@
   <section>
     <div class="wrap">
       <div class="head reveal">
-        <h2>Semak imej.</h2>
-        <p class="lede">Muat turun ISO, <code>sha256sums.txt</code> dan <code>sha256sums.txt.sig</code> ke dalam satu folder, kemudian semak kedua-duanya sebelum tulis ISO ke USB.</p>
+        <h2>Check dulu imej tu.</h2>
+        <p class="lede">Download ISO, <code>sha256sums.txt</code> dan <code>sha256sums.txt.sig</code> dalam satu folder, lepas tu check dua-dua sebelum burn ISO ke USB.</p>
       </div>
       <ol class="steps">
         <li class="reveal">
-          <h3>Semak checksum</h3>
-          <p>Ia patut paparkan <code>OK</code> di sebelah ISO.</p>
+          <h3>Check checksum</h3>
+          <p>Kena keluar <code>OK</code> sebelah nama ISO.</p>
           <div class="code"><pre><code>sha256sum -c sha256sums.txt</code></pre></div>
         </li>
         <li class="reveal">
           <h3>Import kunci tandatangan</h3>
-          <p>Kunci yang sama menandatangani pakej kami.</p>
+          <p>Kunci yang sama sign pakej kami.</p>
           <div class="code"><pre><code>curl -fsSL https://raw.githubusercontent.com/krazetech/krissos/main/pkgs/kriss-keyring/krissos.gpg | gpg --import</code></pre></div>
         </li>
         <li class="reveal">
-          <h3>Semak tandatangan</h3>
-          <p>Cari <b>Good signature from "KrissOS Packages"</b> dan cap jari ini. Setiap ISO juga ada <code>.sig</code> sendiri kalau anda nak semak terus.</p>
+          <h3>Check tandatangan</h3>
+          <p>Cari <b>Good signature from "KrissOS Packages"</b> dan cap jari ni. Setiap ISO pun ada <code>.sig</code> sendiri kalau nak check terus.</p>
           <div class="code"><pre><code>gpg --verify sha256sums.txt.sig sha256sums.txt</code></pre></div>
           <div class="code"><pre><code>7C92 AE8B 599A F813 2166  6CA3 1317 AA31 B21C 5F87</code></pre></div>
         </li>

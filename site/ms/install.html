@@ -48,25 +48,25 @@
     <div class="wrap">
       <div class="head">
         <h1 class="rise d1">Tambah repo <code>[kriss]</code>.</h1>
-        <p class="lede rise d2">Guna pakej KrissOS pada install Arch biasa. Pakej dibina dalam CI, ditandatangani, dan diterbitkan ke GitHub release. Install KrissOS dah siap set semua ni.</p>
+        <p class="lede rise d2">Nak pakej KrissOS atas Arch biasa? Semua pakej dibina dalam CI, di-sign, dan keluar di GitHub release. Kalau install KrissOS, semua ni dah siap set.</p>
       </div>
 
       <ol class="steps">
         <li class="reveal">
           <h2>Percaya kunci tandatangan</h2>
-          <p>Import kunci awam, kemudian tandatangan secara lokal.</p>
+          <p>Import kunci awam, lepas tu sign secara lokal.</p>
           <div class="code"><pre><code>curl -fsSL https://raw.githubusercontent.com/krazetech/krissos/main/pkgs/kriss-keyring/krissos.gpg | sudo pacman-key --add -</code></pre></div>
           <div class="code"><pre><code>sudo pacman-key --lsign-key 7C92AE8B599AF81321666CA31317AA31B21C5F87</code></pre></div>
         </li>
         <li class="reveal">
           <h2>Tambah repo</h2>
-          <p>Tambah ini di hujung <code>/etc/pacman.conf</code>.</p>
+          <p>Tambah ni kat hujung <code>/etc/pacman.conf</code>.</p>
           <div class="code"><pre><code>[kriss]
 Server = https://github.com/krazetech/krissos/releases/download/repo-x86_64</code></pre></div>
         </li>
         <li class="reveal">
           <h2>Sync dan install</h2>
-          <p>Refresh database, kemudian install apa yang anda nak. <code>kriss-keyring</code> pastikan kunci sentiasa terkini lepas ni.</p>
+          <p>Refresh database, lepas tu install apa yang anda nak. Lepas ni <code>kriss-keyring</code> jaga kunci supaya sentiasa terkini.</p>
           <div class="code"><pre><code>sudo pacman -Syu kriss-keyring</code></pre></div>
         </li>
       </ol>
@@ -76,8 +76,8 @@ Server = https://github.com/krazetech/krissos/releases/download/repo-x86_64</cod
   <section>
     <div class="wrap split">
       <div class="reveal">
-        <h2>Semak sebelum percaya.</h2>
-        <p class="lede">Pakej ditandatangani oleh <b>KrissOS Packages</b>. Kunci peribadi hanya disimpan dalam secret CI dan backup offline.</p>
+        <h2>Check dulu, baru percaya.</h2>
+        <p class="lede">Pakej di-sign oleh <b>KrissOS Packages</b>. Kunci peribadi cuma ada dalam secret CI dan backup offline, tak merata.</p>
       </div>
       <div class="reveal">
         <p class="muted">Cap jari</p>
@@ -90,18 +90,18 @@ Server = https://github.com/krazetech/krissos/releases/download/repo-x86_64</cod
   <section>
     <div class="wrap">
       <div class="head reveal">
-        <h2>Apa yang anda dapat.</h2>
+        <h2>Apa ada dalam repo.</h2>
       </div>
       <ul class="list reveal">
-        <li><span><code>kriss-keyring</code><small>Kunci tandatangan awam</small></span><span class="tag live">Ada</span></li>
-        <li><span><code>kriss-theme</code><small>Warna, font, wallpaper, dan tema Plasma, SDDM, Plymouth dan Limine</small></span><span class="tag live">Ada</span></li>
-        <li><span><code>kriss-settings</code><small>Config asal, os-release, menu Limine dan hook pacman</small></span><span class="tag live">Ada</span></li>
-        <li><span><code>kriss-shell</code><small>KrissOS Shell dan skrin log masuknya, atas <code>cosmic-comp</code></small></span><span class="tag live">Ada</span></li>
-        <li><span><code>kriss-tools</code><small>Arahan <code>kriss</code>: <code>kriss tune</code>, <code>kriss update</code> dan <code>kriss-vm</code></small></span><span class="tag live">Ada</span></li>
-        <li><span><code>kriss-welcome</code><small>App mula-mula: game checker, app, Copy from Windows, driver dan tambahan</small></span><span class="tag live">Ada</span></li>
-        <li><span><code>kriss-meta-gaming</code><small>Steam, GameMode, Gamescope, MangoHud, Mesa dan Vulkan dalam satu install</small></span><span class="tag live">Ada</span></li>
-        <li><span><code>linux-kriss</code><small>Kernel x86-64-v3, berserta <code>linux-kriss-generic</code> untuk CPU lama</small></span><span class="tag wip">Diuji</span></li>
-        <li><span><code>kriss-installer</code><small>Installer Calamares untuk live ISO, dengan <code>calamares</code></small></span><span class="tag wip">Diuji</span></li>
+        <li><span><code>kriss-keyring</code><small>Kunci tandatangan awam</small></span><span class="tag live">Dah ada</span></li>
+        <li><span><code>kriss-theme</code><small>Warna, font, wallpaper, dan tema Plasma, SDDM, Plymouth dan Limine</small></span><span class="tag live">Dah ada</span></li>
+        <li><span><code>kriss-settings</code><small>Config asal, os-release, menu Limine dan hook pacman</small></span><span class="tag live">Dah ada</span></li>
+        <li><span><code>kriss-shell</code><small>KrissOS Shell dan skrin log masuknya, atas <code>cosmic-comp</code></small></span><span class="tag live">Dah ada</span></li>
+        <li><span><code>kriss-tools</code><small>Arahan <code>kriss</code>: <code>kriss tune</code>, <code>kriss update</code> dan <code>kriss-vm</code></small></span><span class="tag live">Dah ada</span></li>
+        <li><span><code>kriss-welcome</code><small>App mula-mula: game checker, app, Copy from Windows, driver dan tambahan</small></span><span class="tag live">Dah ada</span></li>
+        <li><span><code>kriss-meta-gaming</code><small>Steam, GameMode, Gamescope, MangoHud, Mesa dan Vulkan dalam satu install</small></span><span class="tag live">Dah ada</span></li>
+        <li><span><code>linux-kriss</code><small>Kernel x86-64-v3, berserta <code>linux-kriss-generic</code> untuk CPU lama</small></span><span class="tag wip">Tengah test</span></li>
+        <li><span><code>kriss-installer</code><small>Installer Calamares untuk live ISO, dengan <code>calamares</code></small></span><span class="tag wip">Tengah test</span></li>
       </ul>
     </div>
   </section>
