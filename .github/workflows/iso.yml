@@ -53,7 +53,7 @@ jobs:
           fi
 
       - name: Sign
-        if: github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') || (github.ref == 'refs/heads/main' && github.event_name != 'pull_request')
         env:
           KRISS_GPG_KEY: ${{ secrets.KRISS_GPG_KEY }}
         run: |
@@ -125,3 +125,25 @@ jobs:
           gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
             || gh release create "$GITHUB_REF_NAME" --verify-tag --title "KrissOS $GITHUB_REF_NAME" --notes ''
           gh release upload "$GITHUB_REF_NAME" out/* --clobber  # the ISO, sha256sums.txt and their .sig files
+
+      # Nightly and manual runs on main refresh the public `preview` pre-release that the website's
+      # Download page links to. Only after the boot and install tests pass (steps stop on failure).
+      # The ISO name carries the date, so the old assets go first.
+      - name: Publish preview
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          size=$(stat -c %s out/*.iso)
+          if (( size > 2147483648 )); then
+            echo "::error::The ISO is $size bytes, over GitHub's 2 GiB release asset limit."
+            exit 1
+          fi
+          if ! gh release view preview >/dev/null 2>&1; then
+            gh release create preview --prerelease --target main --title 'KrissOS preview' \
+              --notes 'Latest nightly build from main. For testing in a VM or on spare hardware.'
+          fi
+          for a in $(gh release view preview --json assets -q '.assets[].name'); do
+            gh release delete-asset preview "$a" --yes
+          done
+          gh release upload preview out/* --clobber
