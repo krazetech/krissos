@@ -1,0 +1,8 @@
+[Unit]
+Description=Update the Limine boot menu when snapshots change
+
+[Path]
+PathChanged=/.snapshots
+
+[Install]
+WantedBy=multi-user.target

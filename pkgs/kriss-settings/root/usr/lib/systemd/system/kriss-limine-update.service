@@ -1,0 +1,10 @@
+[Unit]
+Description=Update the Limine boot menu
+RequiresMountsFor=/boot /efi /.snapshots
+
+[Service]
+Type=oneshot
+# ponytail: snapper makes the snapshot's directory before its info.xml; a short wait
+# lets it finish. Watch info.xml writes instead if snapshots still go missing.
+ExecStartPre=/usr/bin/sleep 2
+ExecStart=/usr/bin/kriss-limine-update

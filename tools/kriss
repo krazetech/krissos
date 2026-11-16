@@ -2,8 +2,10 @@
 # kriss: KrissOS system tool.
 set -euo pipefail
 
-readonly KRISS_VERSION="0.1.0"
+readonly KRISS_VERSION="0.2.0"
 readonly OS_RELEASE="${KRISS_OS_RELEASE:-/etc/os-release}"
+# Overridable so tests can point hwcheck at fixture trees.
+readonly PROC="${KRISS_PROC:-/proc}" SYS="${KRISS_SYS:-/sys}" DEV="${KRISS_DEV:-/dev}"
 
 die() { printf 'kriss: %s\n' "$*" >&2; exit 2; }
 
@@ -39,6 +41,88 @@ cmd_info() {
   fi
 }
 
+# GPU vendors from the PCI ids of every DRM card, as a JSON array.
+gpu_vendors() {
+  local f out=""
+  for f in "$SYS"/class/drm/card[0-9]*/device/vendor; do
+    [[ -r $f ]] || continue
+    case "$(cat "$f")" in
+      0x10de) out+='"nvidia",' ;;
+      0x1002) out+='"amd",' ;;
+      0x8086) out+='"intel",' ;;
+      *) out+='"other",' ;;
+    esac
+  done
+  # ponytail: hybrid laptops expose one card per GPU; duplicates are dropped by sort -u.
+  printf '[%s]' "$(tr ',' '\n' <<<"$out" | sed '/^$/d' | sort -u | paste -sd, -)"
+}
+
+# Hardware facts as JSON, read without root. kriss-welcome uses winboat_ok to
+# decide whether to offer WinBoat (a Windows VM): about 16 GB RAM, CPU
+# virtualisation, /dev/kvm and enough cores.
+cmd_hwcheck() {
+  local ram_mb cores virt="" kvm=false ok=true reasons=""
+  ram_mb=$(($(sed -n 's/^MemTotal: *\([0-9]*\) kB/\1/p' "$PROC/meminfo") / 1024))
+  cores=$(grep -c '^processor' "$PROC/cpuinfo" || true)
+  if grep -qw vmx "$PROC/cpuinfo"; then virt=vmx; elif grep -qw svm "$PROC/cpuinfo"; then virt=svm; fi
+  [[ -e $DEV/kvm ]] && kvm=true
+  # ponytail: 14 GiB, because a 16 GB PC reports less after firmware and iGPU
+  # reservations. 4 threads is WinBoat's own minimum.
+  ((ram_mb >= 14336)) || reasons+='"ram",'
+  [[ -n $virt ]] || reasons+='"virt",'
+  [[ $kvm == true ]] || reasons+='"kvm",'
+  ((cores >= 4)) || reasons+='"cores",'
+  [[ -z $reasons ]] || ok=false
+  printf '{"ram_mb": %d, "cores": %d, "virt": "%s", "kvm": %s, "gpus": %s, "winboat_ok": %s, "reasons": [%s]}\n' \
+    "$ram_mb" "$cores" "$virt" "$kvm" "$(gpu_vendors)" "$ok" "${reasons%,}"
+}
+
+# kriss tune [performance|balanced|powersave|kapcai|status|sync]
+# A profile sets the power-profiles-daemon profile and starts a sched_ext scheduler
+# through scx_loader (scx-tools). Both are D-Bus services guarded by polkit; kriss-tools
+# ships a polkit rule so active admin users switch schedulers without a password.
+# ponytail: governor and EPP are left to power-profiles-daemon, which sets EPP itself on
+# amd-pstate and intel_pstate. Write sysfs here only if a driver it skips matters.
+cmd_tune() {
+  local p="${1:-status}" ppd sched mode
+  case "$p" in
+    status)
+      row profile "$(powerprofilesctl get 2>/dev/null || echo unknown)"
+      row sched "$(scxctl get 2>/dev/null || echo none)"
+      return ;;
+    # Run at login: the power profile survives a reboot, the scheduler does not.
+    sync) p=$(powerprofilesctl get); [[ $p != power-saver ]] || p=powersave ;;
+  esac
+  case "$p" in
+    performance) ppd=performance sched=lavd mode=gaming ;;
+    balanced) ppd=balanced sched=bpfland mode=auto ;;
+    powersave | kapcai) ppd=power-saver sched=lavd mode=powersave ;;
+    *) die "unknown profile '$p'. Use performance, balanced, powersave or status." ;;
+  esac
+  command -v powerprofilesctl >/dev/null || die "tune needs power-profiles-daemon."
+  powerprofilesctl set "$ppd"
+  if command -v scxctl >/dev/null; then
+    # switch also starts a scheduler when none is running.
+    scxctl switch -s "$sched" -m "$mode"
+  else
+    echo "kriss: scx-tools is not installed; only the power profile was set." >&2
+  fi
+  printf 'kriss: %s (power: %s, scheduler: scx_%s %s)\n' "$p" "$ppd" "$sched" "$mode"
+}
+
+# Update everything, after a btrfs snapshot when snapper is set up, so a bad update rolls back
+# from the boot menu. Runs as root: the update notice calls it through pkexec.
+cmd_update() {
+  ((EUID == 0)) || die "update needs root. Run: pkexec kriss update"
+  if command -v snapper >/dev/null && snapper list-configs 2>/dev/null | grep -q '^root '; then
+    snapper -c root create --cleanup-algorithm number --description 'before kriss update'
+  fi
+  pacman -Syu --noconfirm
+  if command -v flatpak >/dev/null; then
+    flatpak update --noninteractive --assumeyes
+  fi
+}
+
 cmd_version() {
   printf 'kriss %s\n%s\n' "$KRISS_VERSION" "$(os_field PRETTY_NAME 'not running on KrissOS')"
 }
@@ -62,6 +146,7 @@ Usage: kriss [command]
 Commands:
   info       Show a summary of this system (default)
   version    Show the kriss and KrissOS versions
+  hwcheck    Print hardware facts (RAM, CPU, GPU, VM support) as JSON
   help       Show this help
 EOF
 }
@@ -69,7 +154,10 @@ EOF
 main() {
   case "${1:-info}" in
     info) cmd_info ;;
+    update) cmd_update ;;
     version | --version | -V) cmd_version ;;
+    hwcheck) cmd_hwcheck ;;
+    tune) cmd_tune "${@:2}" ;;
     help | --help | -h) cmd_help ;;
     --kapcai) cmd_kapcai ;;
     *) die "unknown command '$1'. Run 'kriss help'." ;;

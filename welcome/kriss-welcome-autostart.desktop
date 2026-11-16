@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=KrissOS Welcome
+Name[ms]=Selamat Datang ke KrissOS
+Exec=kriss-welcome --autostart
+Icon=krissos
+NoDisplay=true
+X-KDE-autostart-phase=2

@@ -1,0 +1,36 @@
+#!/usr/bin/env python3
+"""Check the shell's translations: every Tr.t("...") string in qml/ needs an entry in
+each qml/i18n/<lang>.json, and every entry must still be used.
+
+    shell/i18n-check           report and exit 1 on a problem
+    shell/i18n-check --list    print the strings, one JSON array, to start a new language
+"""
+import json
+import pathlib
+import re
+import sys
+
+qml = pathlib.Path(__file__).resolve().parent / "qml"
+used = set()
+for f in qml.glob("*.qml"):
+    for m in re.finditer(r'Tr\.t\("((?:[^"\\]|\\.)*)"', f.read_text()):
+        used.add(json.loads(f'"{m.group(1)}"'))
+
+if sys.argv[1:] == ["--list"]:
+    print(json.dumps(sorted(used), ensure_ascii=False, indent=1))
+    sys.exit(0)
+
+bad = False
+for cat in sorted(qml.glob("i18n/*.json")):
+    have = json.loads(cat.read_text())
+    for s in sorted(used - have.keys()):
+        print(f"{cat.name}: missing {s!r}")
+        bad = True
+    for s in sorted(have.keys() - used):
+        print(f"{cat.name}: unused {s!r}")
+        bad = True
+    for s, t in have.items():
+        if s.count("%") != t.count("%"):
+            print(f"{cat.name}: placeholders differ in {s!r}")
+            bad = True
+sys.exit(bad)

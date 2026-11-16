@@ -1,0 +1,98 @@
+#!/bin/bash
+# Write the Limine boot menu: KrissOS, Windows (when the installer found it) and, under
+# Snapshots, the newest snapper snapshots of /. Runs after kernel and Limine updates
+# and whenever /.snapshots changes. Does nothing on systems the KrissOS installer did
+# not set up (no /etc/kernel/cmdline or no Limine on the ESP at /efi).
+#   kriss-limine-update          write the menu
+#   kriss-limine-update --keep   before pacman replaces a kernel: copy it to
+#                                /boot/kriss/VERSION so snapshots made with it still boot
+# Inputs: /etc/kernel/cmdline (with rootflags=subvol=@), /etc/kriss/limine.d/*.conf
+# (extra entries, such as Windows), /usr/share/kriss/theme/limine.conf (kriss-theme).
+set -euo pipefail
+shopt -s nullglob
+
+esp=/efi/EFI
+[ -f /etc/kernel/cmdline ] && [ -f "$esp/limine/BOOTX64.EFI" ] || exit 0
+snaps=${KRISS_SNAPSHOTS:-/.snapshots}
+
+# "VERSION PKGBASE" for each kernel installed under the root given.
+kernels() {
+    local f
+    for f in "$1"/usr/lib/modules/*/pkgbase; do
+        echo "$(basename "$(dirname "$f")") $(<"$f")"
+    done
+}
+
+if [ "${1:-}" = --keep ]; then
+    while read -r ver base; do
+        [ -f "/boot/vmlinuz-$base" ] || continue
+        mkdir -p "/boot/kriss/$ver"
+        cp "/boot/vmlinuz-$base" "/boot/initramfs-$base.img" "/boot/kriss/$ver/"
+    done < <(kernels "")
+    exit 0
+fi
+
+boot=$(findmnt -nfo PARTUUID /boot)
+cmdline=$(</etc/kernel/cmdline)
+declare -A current=() keep=()
+while read -r ver base; do current[$base]=$ver; done < <(kernels "")
+
+entry() {  # entry INDENT NAME KERNEL INITRAMFS CMDLINE
+    printf '%s%s\n' "$1" "$2"
+    printf '%s    protocol: linux\n' "$1"
+    printf '%s    path: guid(%s):/%s\n' "$1" "$boot" "$3"
+    printf '%s    module_path: guid(%s):/%s\n' "$1" "$boot" "$4"
+    printf '%s    cmdline: %s\n' "$1" "$5"
+}
+
+menu() {
+    cat /usr/share/kriss/theme/limine.conf 2>/dev/null || true
+    echo 'timeout: 5'
+    echo
+    local base name=KrissOS
+    for base in "${!current[@]}"; do
+        entry '' "/$name" "vmlinuz-$base" "initramfs-$base.img" "$cmdline"
+        name="KrissOS ($base)"
+    done
+    cat /etc/kriss/limine.d/*.conf 2>/dev/null || true
+
+    # Newest first. A snapshot boots with the kernel it was taken with: the installed
+    # one, or the copy --keep made before an update. Snapshots with neither are left out.
+    local dirs=() d n ver date desc kernel initrd
+    for d in "$snaps"/*/info.xml; do dirs+=("$(basename "$(dirname "$d")")"); done
+    [ ${#dirs[@]} -gt 0 ] || return 0
+    echo '/Snapshots'
+    for n in $(printf '%s\n' "${dirs[@]}" | sort -rn | head -n 15); do
+        read -r ver base < <(kernels "$snaps/$n/snapshot") || continue
+        if [ "${current[$base]:-}" = "$ver" ]; then
+            kernel=vmlinuz-$base initrd=initramfs-$base.img
+        elif [ -f "/boot/kriss/$ver/vmlinuz-$base" ]; then
+            kernel=kriss/$ver/vmlinuz-$base initrd=kriss/$ver/initramfs-$base.img
+            keep[$ver]=1
+        else
+            continue
+        fi
+        date=$(sed -n 's:.*<date>\(.*\)</date>.*:\1:p' "$snaps/$n/info.xml")
+        desc=$(sed -n 's:.*<description>\(.*\)</description>.*:\1:p' "$snaps/$n/info.xml")
+        entry '    ' "//${date%:*} ${desc:-snapshot} ($n)" "$kernel" "$initrd" \
+            "${cmdline/subvol=@/subvol=@snapshots/$n/snapshot} kriss_snapshot=1"
+    done
+}
+
+# Not $(menu): that subshell would lose the keep list.
+conf=$(mktemp)
+trap 'rm -f "$conf"' EXIT
+menu >"$conf"
+for d in "$esp/limine" "$esp/BOOT"; do
+    # EFI/BOOT is ours only when the installer put Limine there (and a limine.conf).
+    [ -f "$d/limine.conf" ] || [ "$d" = "$esp/limine" ] || continue
+    cmp -s /usr/share/limine/BOOTX64.EFI "$d/BOOTX64.EFI" || cp /usr/share/limine/BOOTX64.EFI "$d/BOOTX64.EFI"
+    cp "$conf" "$d/limine.conf.new"
+    mv "$d/limine.conf.new" "$d/limine.conf"
+done
+
+# Drop kernel copies no listed snapshot needs any more.
+for d in /boot/kriss/*/; do
+    ver=$(basename "$d")
+    [ -n "${keep[$ver]:-}" ] || rm -rf "$d"
+done

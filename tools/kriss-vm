@@ -1,0 +1,736 @@
+#!/usr/bin/env bash
+# kriss-vm: hand one GPU to a Windows VM (VFIO + Looking Glass) and take it back.
+#
+# The approach follows Omarchy PR #3454 (https://github.com/basecamp/omarchy/pull/3454, by
+# Sławomir Andreasik). Taken from it: the AMD reset-bug device list, binding every device in
+# the GPU's IOMMU group through driver_override, removing vfio-pci ids before handing a GPU
+# back, iommu=pt, appending KERNEL_CMDLINE[default]+= to /etc/default/limine, and keeping
+# reset-bug GPUs on vfio-pci persistently.
+#
+# TODO(laptop): MUX-less laptops (a dGPU with no display outputs) need the compositor pinned
+# to the iGPU and a virtual display driver in the guest. Not built yet; `check` flags them.
+# TODO(single-gpu): a PC with one GPU would have to hand over its own display. Not supported.
+set -euo pipefail
+
+readonly KRISS_VM_VERSION="0.1.0"
+# Overridable so --self-test can point everything at fixture trees.
+SYS="${KRISS_SYS:-/sys}" PROC="${KRISS_PROC:-/proc}" ROOT="${KRISS_VM_ROOT:-}"
+STATE="${KRISS_VM_STATE:-/var/lib/kriss-vm}"
+CONF="$ROOT/etc/kriss-vm.conf"
+RUNDIR="${XDG_RUNTIME_DIR:-/tmp}/kriss-vm"
+VIRSH=(virsh -q -c qemu:///system)
+
+# AMD GPUs with the reset bug: once on vfio-pci they cannot go back to amdgpu without a power
+# cycle. List from Omarchy PR #3454, which took it from vendor-reset's device-db.h.
+readonly AMD_RESET_BUG='67c0|67c1|67c2|67c4|67c7|67c8|67c9|67ca|67cc|67cf|67d0|67df|6fdf|67e0|67e1|67e3|67e7|67e8|67e9|67eb|67ef|67ff|6980|6981|6985|6986|6987|6995|6997|699f|6860|6861|6862|6863|6864|6867|6868|6869|686a|686b|686c|686d|686e|686f|687f|66a0|66a1|66a2|66a3|66a4|66a7|66af|164c|7310|7312|7318|7319|731a|731b|731e|731f|15bf|15e7|1636|1638|7360|7362|7340|7341|7347|734f|73ff|738c|7300|7301|67b0|67b1|6920|6921|6928|6929'
+
+# Settings written by setup. KRISS_VM_GPU overrides the GPU for one run.
+GPU="" VM=win11 WIDTH="" HEIGHT="" SMBIOS=0 PERSISTENT=0
+
+die() { printf 'kriss-vm: %s\n' "$*" >&2; exit 2; }
+say() { printf 'kriss-vm: %s\n' "$*"; }
+row() { printf '  %-9s %s\n' "$1" "$2"; }
+need_root() { ((EUID == 0)) || die "$1 needs root. Run: sudo kriss-vm $1"; }
+as_root() { if ((EUID == 0)); then "$@"; else sudo "$@"; fi; }
+load_conf() {
+  # shellcheck source=/dev/null
+  if [[ -r $CONF ]]; then . "$CONF"; fi
+  GPU=${KRISS_VM_GPU:-$GPU}
+}
+
+# --- PCI ----------------------------------------------------------------------------------
+
+dev() { printf '%s/bus/pci/devices/%s' "$SYS" "$1"; }
+attr() { cat "$(dev "$1")/$2" 2>/dev/null || true; }
+driver_of() { local l; if l=$(readlink "$(dev "$1")/driver" 2>/dev/null); then basename "$l"; else echo none; fi; }
+gpu_name() { lspci -s "$1" 2>/dev/null | cut -d' ' -f2- | sed 's/^[^:]*: //' || true; }
+gpus() {
+  local d
+  for d in "$SYS"/bus/pci/devices/*; do
+    if [[ $(cat "$d/class" 2>/dev/null) == 0x03* ]]; then basename "$d"; fi
+  done
+}
+
+# The GPU to hand over: KRISS_VM_GPU or the conf, else the first GPU that is not driving the
+# boot display. Prints nothing on a PC with only one GPU.
+# ponytail: with three GPUs it takes the first non-boot one; set KRISS_VM_GPU to choose.
+pick_gpu() {
+  if [[ -n $GPU ]]; then echo "$GPU"; return; fi
+  local g list
+  mapfile -t list < <(gpus)
+  ((${#list[@]} > 1)) || return 0
+  for g in "${list[@]}"; do
+    if [[ $(attr "$g" boot_vga) != 1 ]]; then echo "$g"; return; fi
+  done
+}
+need_gpu() {
+  local g; g=$(pick_gpu)
+  [[ -n $g ]] || die "no second GPU to hand over. Single-GPU passthrough is not supported."
+  [[ -e $(dev "$g") ]] || die "no PCI device $g."
+  echo "$g"
+}
+
+iommu_group() { local l; l=$(readlink "$(dev "$1")/iommu_group" 2>/dev/null) && basename "$l"; }
+# Devices that go to the VM: everything in the GPU's IOMMU group except PCI bridges (vfio lets
+# those stay on the host). Without IOMMU groups yet, the GPU's own functions.
+pass_devs() {
+  local g d
+  if g=$(iommu_group "$1"); then
+    for d in "$SYS/kernel/iommu_groups/$g/devices"/*; do
+      d=${d##*/}
+      if [[ $(attr "$d" class) != 0x0604* ]]; then echo "$d"; fi
+    done
+  else
+    for d in "$SYS/bus/pci/devices/${1%.*}".*; do echo "${d##*/}"; done
+  fi
+}
+# Devices in the GPU's group that are not the GPU's own functions: the VM would take them too.
+foreign_devs() {
+  local d
+  for d in $(pass_devs "$1"); do
+    if [[ ${d%.*} != "${1%.*}" ]]; then echo "$d"; fi
+  done
+}
+has_reset_bug() {
+  local id; id=$(attr "$1" device)
+  [[ $(attr "$1" vendor) == 0x1002 && ${id#0x} =~ ^($AMD_RESET_BUG)$ ]]
+}
+host_driver() {
+  case "$(attr "$1" vendor)" in
+    0x1002) echo amdgpu ;;
+    0x10de) echo nvidia ;;
+    0x8086) echo i915 ;;
+    *) echo unknown ;;
+  esac
+}
+
+# --- sizes and boot config ----------------------------------------------------------------
+
+# Looking Glass frame buffer: w×h×4 bytes×2 frames in MiB, plus 10, up to a power of two.
+kvmfr_mib() {
+  local mib=$((($1 * $2 * 4 * 2 + 1048575) / 1048576 + 10)) p=1
+  while ((p < mib)); do p=$((p * 2)); done
+  echo "$p"
+}
+# The largest mode of any connected display, as "W H"; 1920 1080 when none is found.
+host_res() {
+  local m l w=1920 h=1080
+  for m in "$SYS"/class/drm/card*-*/modes; do
+    l=$(head -n1 "$m" 2>/dev/null) || continue
+    if [[ $l =~ ^([0-9]+)x([0-9]+) ]] && ((BASH_REMATCH[1] * BASH_REMATCH[2] > w * h)); then
+      w=${BASH_REMATCH[1]} h=${BASH_REMATCH[2]}
+    fi
+  done
+  echo "$w $h"
+}
+
+# Where this system keeps the kernel command line: the kind, then the files.
+# /boot is often root-only, so a non-root check may only see the /etc files.
+bootloader() {
+  local f
+  if [[ -f $ROOT/etc/default/limine ]]; then echo "limine $ROOT/etc/default/limine"; return; fi
+  if [[ -f $ROOT/etc/default/grub ]]; then echo "grub $ROOT/etc/default/grub"; return; fi
+  if [[ -f $ROOT/etc/kernel/cmdline ]]; then echo "sdboot-uki $ROOT/etc/kernel/cmdline"; return; fi
+  for f in "$ROOT"/boot/limine.conf "$ROOT"/boot/limine/limine.conf "$ROOT"/boot/EFI/limine/limine.conf; do
+    if [[ -f $f ]]; then echo "limine-conf $f"; return; fi
+  done
+  if compgen -G "$ROOT/boot/loader/entries/*.conf" >/dev/null; then
+    echo "sdboot $(printf '%s ' "$ROOT"/boot/loader/entries/*.conf)"
+    return
+  fi
+  echo unknown
+}
+
+CHANGED=0
+# add_params KIND FILE PARAM...: put PARAMs on FILE's kernel command line, skipping any
+# that are already there. Refuses a file that turns the IOMMU off.
+# ponytail: a param with a different value already there (vfio-pci.ids=old) is left beside
+# the new one; the kernel takes the last.
+add_params() {
+  local kind=$1 f=$2 p add=""
+  shift 2
+  if grep -Eq '(^|[ "])((amd|intel)_)?iommu=off([ "]|$)' "$f"; then
+    die "$f turns the IOMMU off (iommu=off). Remove that first."
+  fi
+  for p; do
+    grep -Eq "(^|[ \"])${p//./\\.}([ \"]|\$)" "$f" || add+=" $p"
+  done
+  [[ -n $add ]] || return 0
+  backup "$f"
+  case $kind in
+    # CachyOS and Omarchy append to the default entry the same way.
+    limine) printf 'KERNEL_CMDLINE[default]+="%s"\n' "$add" >>"$f" ;;
+    grub) sed -i "s|^\(GRUB_CMDLINE_LINUX_DEFAULT=\"[^\"]*\)\"|\1$add\"|" "$f" ;;
+    sdboot-uki) sed -i "1s|\$|$add|" "$f" ;;
+    sdboot) sed -i "s|^\(options[[:space:]].*\)\$|\1$add|" "$f" ;;
+    limine-conf) sed -i -E "s|^([[:space:]]*(kernel_)?cmdline:.*)\$|\1$add|" "$f" ;;
+    *) die "cannot edit the kernel command line for bootloader '$kind'." ;;
+  esac
+  CHANGED=1
+}
+
+# Rebuild the initramfs and boot entries after a change.
+regen_boot() {
+  local kind=$1
+  if ! command -v mkinitcpio >/dev/null; then
+    say "mkinitcpio not found: rebuild your initramfs and boot entries by hand."
+    return
+  fi
+  case $kind in
+    limine) if command -v limine-mkinitcpio >/dev/null; then limine-mkinitcpio; else mkinitcpio -P && limine-update; fi ;;
+    grub) mkinitcpio -P && grub-mkconfig -o /boot/grub/grub.cfg ;;
+    *) mkinitcpio -P ;;
+  esac
+}
+
+# --- backups ------------------------------------------------------------------------------
+
+RUN=""
+new_run() {
+  if [[ -z $RUN ]]; then
+    RUN="$STATE/backup/$(date +%Y%m%d-%H%M%S.%N)"
+    mkdir -p "$RUN"
+    : >>"$RUN/manifest"
+  fi
+}
+# backup FILE: save FILE once per run before it changes. A file that did not exist is noted
+# as new, so revert deletes it.
+backup() {
+  local f=$1
+  new_run
+  if cut -f2 "$RUN/manifest" | grep -qxF "$f"; then return 0; fi
+  if [[ -e $f ]]; then
+    mkdir -p "$RUN/files${f%/*}"
+    cp -a "$f" "$RUN/files$f"
+    printf 'file\t%s\n' "$f" >>"$RUN/manifest"
+  else
+    printf 'new\t%s\n' "$f" >>"$RUN/manifest"
+  fi
+}
+# put FILE CONTENT: write FILE (backed up first) only when its content changes.
+put() {
+  if [[ -f $1 && $(cat "$1") == "$2" ]]; then return 0; fi
+  backup "$1"
+  mkdir -p "${1%/*}"
+  printf '%s\n' "$2" >"$1"
+  CHANGED=1
+}
+# Undo every run, newest first, so each file ends as it was before the first run. Finished
+# runs move to $STATE/reverted, so nothing is thrown away.
+restore_runs() {
+  local run kind what u g runs
+  mapfile -t runs < <(find "$STATE/backup" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -r)
+  ((${#runs[@]})) || { say "nothing to revert."; return 1; }
+  for run in "${runs[@]}"; do
+    while IFS=$'\t' read -r kind what; do
+      case $kind in
+        file) cp -a "$run/files$what" "$what" ;;
+        new) rm -f "$what" ;;
+        domain) "${VIRSH[@]}" define "$run/domain-$what.xml" >/dev/null ;;
+        group) read -r u g <<<"$what"; gpasswd -d "$u" "$g" >/dev/null || true ;;
+        unit) systemctl disable --now "$what" || true ;;
+      esac
+      say "reverted $kind $what"
+    done < <(tac "$run/manifest")
+    mkdir -p "$STATE/reverted"
+    mv "$run" "$STATE/reverted/"
+  done
+}
+
+# --- the VM definition ----------------------------------------------------------------------
+
+# patch_domain_xml FILE GPU: give the VM the GPU's devices (managed='no', since kriss-vm does
+# the binding) and the kvmfr shared memory for Looking Glass. With SMBIOS=1, also the host's
+# SMBIOS tables and a hidden KVM signature.
+# ponytail: the kvmfr size is set once; after a resolution change, edit the size= by hand.
+patch_domain_xml() {
+  local f=$1 d dom bus slot fn mib qns='http://libvirt.org/schemas/domain/qemu/1.0'
+  mib=$(kvmfr_mib "$WIDTH" "$HEIGHT")
+  for d in $(pass_devs "$2"); do
+    IFS=':.' read -r dom bus slot fn <<<"$d"
+    local src="<address domain='0x$dom' bus='0x$bus' slot='0x$slot' function='0x$fn'/>"
+    grep -qF "$src" "$f" ||
+      sed -i "s|^\([[:space:]]*\)</devices>|\1  <hostdev mode='subsystem' type='pci' managed='no'><source>$src</source></hostdev>\n\1</devices>|" "$f"
+  done
+  grep -q 'xmlns:qemu=' "$f" || sed -i "0,/<domain /s|<domain |<domain xmlns:qemu='$qns' |" "$f"
+  grep -qF /dev/kvmfr0 "$f" || sed -i "s|^</domain>|  <qemu:commandline>\n    <qemu:arg value='-device'/>\n    <qemu:arg value='ivshmem-plain,id=shmem0,memdev=looking-glass'/>\n    <qemu:arg value='-object'/>\n    <qemu:arg value='memory-backend-file,id=looking-glass,mem-path=/dev/kvmfr0,size=${mib}M,share=yes'/>\n  </qemu:commandline>\n</domain>|" "$f"
+  if ((SMBIOS)); then
+    grep -q '<smbios ' "$f" || sed -i "s|^\([[:space:]]*\)</os>|\1  <smbios mode='host'/>\n\1</os>|" "$f"
+    grep -q '<kvm>' "$f" || sed -i "s|^\([[:space:]]*\)</features>|\1  <kvm><hidden state='on'/></kvm>\n\1</features>|" "$f"
+  fi
+}
+apply_domain() {
+  local gpu=$1 tmp
+  if ! command -v virsh >/dev/null || ! "${VIRSH[@]}" dominfo "$VM" >/dev/null 2>&1; then
+    say "no VM named '$VM' yet. Create a Windows 11 VM in virt-manager (UEFI, Q35), then run"
+    say "'sudo kriss-vm setup' again to give it the GPU and Looking Glass."
+    return
+  fi
+  tmp=$(mktemp)
+  "${VIRSH[@]}" dumpxml --inactive "$VM" >"$tmp"
+  cp "$tmp" "$tmp.orig"
+  patch_domain_xml "$tmp" "$gpu"
+  if ! cmp -s "$tmp" "$tmp.orig"; then
+    new_run
+    cp "$tmp.orig" "$RUN/domain-$VM.xml"
+    printf 'domain\t%s\n' "$VM" >>"$RUN/manifest"
+    "${VIRSH[@]}" define "$tmp" >/dev/null
+    say "VM '$VM' now has the GPU and Looking Glass."
+  fi
+  rm -f "$tmp" "$tmp.orig"
+}
+
+# --- commands -----------------------------------------------------------------------------
+
+cmd_check() {
+  local bad=0 virt ngroups g gpu groups ram bl foreign res mib l
+  load_conf
+  printf 'kriss-vm check\n'
+
+  virt=$(grep -m1 -ow 'svm\|vmx' "$PROC/cpuinfo" || true)
+  if [[ -n $virt ]]; then row cpu "ok: virtualisation flag $virt"
+  else row cpu "FAIL: no svm/vmx flag. Turn on SVM (AMD) or VT-x (Intel) in firmware."; bad=1; fi
+
+  ngroups=$(find "$SYS/kernel/iommu_groups" -mindepth 1 -maxdepth 1 2>/dev/null | wc -l)
+  if ((ngroups > 0)); then row iommu "ok: on, $ngroups groups"
+  else
+    row iommu "FAIL: off (no IOMMU groups). Turn on IOMMU / AMD-Vi / VT-d in firmware, then run 'sudo kriss-vm setup'."
+    bad=1
+  fi
+
+  mapfile -t groups < <(gpus)
+  for g in "${groups[@]}"; do
+    l="$g $(driver_of "$g")"
+    [[ $(attr "$g" boot_vga) != 1 ]] || l+=" [boot display]"
+    row gpu "$l $(gpu_name "$g")"
+  done
+  ((${#groups[@]})) || row gpu "none found"
+
+  gpu=$(pick_gpu)
+  if [[ -z $gpu ]]; then
+    row target "FAIL: only one GPU, and it drives the display. Passthrough needs a second GPU or an iGPU."
+    bad=1
+    gpu=${groups[0]:-}
+  else
+    row target "ok: $gpu (on $(driver_of "$gpu"))"
+  fi
+
+  if [[ -n $gpu ]]; then
+    if g=$(iommu_group "$gpu"); then
+      foreign=$(foreign_devs "$gpu" | paste -sd' ' -)
+      if [[ -z $foreign ]]; then row group "ok: group $g holds only the GPU's own functions ($(pass_devs "$gpu" | paste -sd' ' -))"
+      else
+        row group "FAIL: group $g also holds $foreign; the VM would take those too."
+        if grep -qw pcie_acs_override_setup "$PROC/kallsyms" 2>/dev/null; then
+          row "" "The ACS override would split it, and this kernel has the patch: setup adds pcie_acs_override=downstream,multifunction (weaker isolation between those devices)."
+        else
+          row "" "The ACS override could split it, but this kernel lacks the patch (linux-zen and the CachyOS kernels have it). Or move the GPU to another slot."
+        fi
+        bad=1
+      fi
+    else
+      row group "unknown until the IOMMU is on"
+    fi
+    if has_reset_bug "$gpu"; then
+      row reset "warn: AMD reset bug. It stays on vfio-pci from boot; the host gets it back only after a reboot."
+    elif [[ $(attr "$gpu" vendor) == 0x1002 ]]; then
+      row reset "ok: not on the AMD reset-bug list (reset: $(attr "$gpu" reset_method))"
+    else
+      row reset "ok: reset method $(attr "$gpu" reset_method)"
+    fi
+  fi
+
+  read -r bl _ <<<"$(bootloader)"
+  if [[ $bl == unknown ]]; then
+    row boot "unknown$( ((EUID == 0)) || echo ' (run as root to look in /boot)')"
+  else
+    row boot "ok: $bl"
+  fi
+
+  ram=$(($(sed -n 's/^MemTotal: *\([0-9]*\) kB/\1/p' "$PROC/meminfo") / 1048576))
+  # ponytail: 14 GiB, as in `kriss hwcheck`: a 16 GB PC reports less after reservations.
+  if ((ram >= 14)); then row ram "ok: $ram GiB (give the VM about $((ram / 2)) GiB)"
+  else row ram "FAIL: $ram GiB. A gaming VM and the host need about 16 GB."; bad=1; fi
+
+  if [[ -n $WIDTH ]]; then res="$WIDTH $HEIGHT"; else res=$(host_res); fi
+  read -r WIDTH HEIGHT <<<"$res"
+  mib=$(kvmfr_mib "$WIDTH" "$HEIGHT")
+  if modinfo kvmfr >/dev/null 2>&1; then l="module installed"; else l="module not installed (looking-glass-module-dkms)"; fi
+  row kvmfr "$mib MiB for ${WIDTH}x$HEIGHT, $l"
+
+  l=""
+  for g in qemu-system-x86_64 virsh looking-glass-client; do command -v "$g" >/dev/null || l+=" $g"; done
+  [[ -e /usr/share/edk2/x64/OVMF_CODE.4m.fd ]] || l+=" edk2-ovmf"
+  if [[ -z $l ]]; then row tools "ok"; else row tools "missing:$l (setup installs what the repos have)"; fi
+
+  if command -v virsh >/dev/null && "${VIRSH[@]}" dominfo "$VM" >/dev/null 2>&1; then row vm "ok: '$VM' is defined"
+  else row vm "no VM named '$VM' yet (create it in virt-manager)"; fi
+
+  if compgen -G "$SYS/class/power_supply/BAT*" >/dev/null; then
+    row laptop "warn: laptops with no MUX switch are not supported yet."
+  fi
+  if ((SMBIOS)); then row smbios "on (opted in)"; else row smbios "off (setup --smbios to opt in)"; fi
+  return "$bad"
+}
+
+cmd_setup() {
+  local smbios=0 a gpu kind files f user ids="" d params=() cpu
+  need_root setup
+  load_conf
+  while (($#)); do
+    case $1 in
+      --smbios) smbios=1 ;;
+      --persistent) PERSISTENT=1 ;;
+      --res) [[ ${2:-} =~ ^([0-9]+)x([0-9]+)$ ]] || die "--res takes WIDTHxHEIGHT, e.g. 2560x1440."
+        WIDTH=${BASH_REMATCH[1]} HEIGHT=${BASH_REMATCH[2]}; shift ;;
+      --vm) VM=${2:?--vm takes a name}; shift ;;
+      *) die "unknown option '$1'. Run 'kriss-vm help'." ;;
+    esac
+    shift
+  done
+  user=${SUDO_USER:-}
+  [[ -n $user || -z ${PKEXEC_UID:-} ]] || user=$(id -nu "$PKEXEC_UID")
+  [[ -n $user && $user != root ]] || die "run setup with sudo from your own account, so Looking Glass is set up for you."
+  gpu=$(need_gpu)
+  [[ $(attr "$gpu" boot_vga) != 1 ]] || die "$gpu drives the boot display. Plug the monitor into the other GPU and make it primary in firmware."
+  if [[ -z $WIDTH ]]; then read -r WIDTH HEIGHT <<<"$(host_res)"; fi
+  ! has_reset_bug "$gpu" || PERSISTENT=1
+
+  if ((smbios && !SMBIOS)); then
+    cat >&2 <<'EOF'
+Warning: SMBIOS spoofing makes the VM report this PC's firmware and hides the KVM signature.
+Some anti-cheat systems (Vanguard, Javelin and some EAC/BattlEye titles) ban VMs anyway, and
+hiding a VM can break a game's terms of service. The risk to your game accounts is yours.
+EOF
+    [[ -t 0 ]] || die "--smbios asks for confirmation; run it in a terminal."
+    read -rp 'Type yes to turn it on: ' a
+    [[ $a == yes ]] || die "SMBIOS spoofing left off."
+    SMBIOS=1
+  fi
+
+  say "installing QEMU, libvirt and OVMF"
+  pacman -S --needed --noconfirm qemu-desktop libvirt edk2-ovmf dnsmasq virt-manager
+  for a in looking-glass looking-glass-module-dkms; do
+    if pacman -Si "$a" >/dev/null 2>&1; then pacman -S --needed --noconfirm "$a"
+    elif ! pacman -Q "$a" >/dev/null 2>&1; then say "$a is not in your repos: install it from the AUR."; fi
+  done
+
+  # Kernel command line.
+  cpu=$(grep -m1 '^vendor_id' "$PROC/cpuinfo")
+  if [[ $cpu == *GenuineIntel* ]]; then params=(intel_iommu=on iommu=pt); else params=(amd_iommu=on iommu=pt); fi
+  [[ -z $(foreign_devs "$gpu") ]] || params+=("pcie_acs_override=downstream,multifunction")
+  read -r kind files <<<"$(bootloader)"
+  [[ $kind != unknown ]] || die "no Limine, systemd-boot or GRUB config found. Add ${params[*]} to your kernel command line by hand."
+  for f in $files; do
+    add_params "$kind" "$f" "${params[@]}"
+  done
+
+  # Early binding, only for GPUs that must stay on vfio-pci (the reset bug, or --persistent).
+  if ((PERSISTENT)); then
+    for d in $(pass_devs "$gpu"); do ids+="${ids:+,}$(attr "$d" vendor | cut -c3-):$(attr "$d" device | cut -c3-)"; done
+    put "$ROOT/etc/modprobe.d/kriss-vm.conf" "# kriss-vm: $gpu stays on vfio-pci from boot.
+options vfio-pci ids=$ids
+softdep $(host_driver "$gpu") pre: vfio-pci"
+    put "$ROOT/etc/mkinitcpio.conf.d/kriss-vm.conf" "MODULES+=(vfio_pci vfio vfio_iommu_type1)"
+  fi
+
+  # Looking Glass shared memory.
+  put "$ROOT/etc/modules-load.d/kvmfr.conf" "kvmfr"
+  put "$ROOT/etc/modprobe.d/kvmfr.conf" "options kvmfr static_size_mb=$(kvmfr_mib "$WIDTH" "$HEIGHT")"
+  put "$ROOT/etc/udev/rules.d/99-kvmfr.rules" "SUBSYSTEM==\"kvmfr\", OWNER=\"$user\", GROUP=\"kvm\", MODE=\"0660\""
+  f="$ROOT/etc/libvirt/qemu.conf"
+  if [[ -f $f ]] && ! grep -q '^cgroup_device_acl' "$f"; then
+    backup "$f"
+    cat >>"$f" <<'EOF'
+
+# kriss-vm: let QEMU open the Looking Glass device.
+cgroup_device_acl = [
+    "/dev/null", "/dev/full", "/dev/zero",
+    "/dev/random", "/dev/urandom",
+    "/dev/ptmx", "/dev/kvm",
+    "/dev/userfaultfd", "/dev/kvmfr0"
+]
+EOF
+  elif [[ -f $f ]] && ! grep -qF /dev/kvmfr0 "$f"; then
+    say "add \"/dev/kvmfr0\" to cgroup_device_acl in $f by hand."
+  fi
+
+  put "$CONF" "# Written by kriss-vm setup.
+GPU=$gpu
+VM=$VM
+WIDTH=$WIDTH
+HEIGHT=$HEIGHT
+SMBIOS=$SMBIOS
+PERSISTENT=$PERSISTENT"
+
+  # libvirt and the user's groups.
+  if ! systemctl is-enabled --quiet libvirtd.socket; then
+    systemctl enable --now libvirtd.socket
+    new_run; printf 'unit\tlibvirtd.socket\n' >>"$RUN/manifest"
+  fi
+  for a in libvirt kvm; do
+    if ! id -nG "$user" | grep -qw "$a"; then
+      gpasswd -a "$user" "$a" >/dev/null
+      new_run; printf 'group\t%s %s\n' "$user" "$a" >>"$RUN/manifest"
+    fi
+  done
+
+  apply_domain "$gpu"
+  if ((CHANGED)); then
+    say "rebuilding the initramfs and boot entries"
+    regen_boot "$kind"
+    say "done. Reboot, then run 'kriss-vm check'."
+  else
+    say "nothing to change."
+  fi
+  [[ -z $RUN ]] || say "backups: $RUN ('sudo kriss-vm revert' undoes everything)"
+}
+
+cmd_bind() {
+  local gpu d users
+  need_root bind
+  load_conf
+  gpu=$(need_gpu)
+  [[ $(attr "$gpu" boot_vga) != 1 ]] || die "$gpu drives the boot display; it cannot be handed over."
+  users=$(fuser "/dev/dri/by-path/pci-$gpu-card" "/dev/dri/by-path/pci-$gpu-render" 2>/dev/null | xargs || true)
+  [[ -z $users || ${1:-} == --force ]] || die "$gpu is in use by PIDs $users. Close those apps (or Ollama) first, or pass --force."
+  modprobe vfio-pci
+  for d in $(pass_devs "$gpu"); do
+    [[ $(driver_of "$d") != vfio-pci ]] || continue
+    echo vfio-pci >"$(dev "$d")/driver_override"
+    if [[ -e $(dev "$d")/driver ]]; then echo "$d" >"$(dev "$d")/driver/unbind"; fi
+    echo "$d" >"$SYS/bus/pci/drivers_probe"
+  done
+  say "$gpu is on vfio-pci."
+}
+
+cmd_unbind() {
+  local gpu d
+  need_root unbind
+  load_conf
+  gpu=$(need_gpu)
+  if has_reset_bug "$gpu" && [[ ${1:-} != --force ]]; then
+    die "$gpu has the AMD reset bug: it goes back to the host after a reboot."
+  fi
+  for d in $(pass_devs "$gpu"); do
+    [[ $(driver_of "$d") == vfio-pci ]] || continue
+    # Persistent mode lists the ids in vfio-pci; drop them so the probe picks the host driver.
+    echo "$(attr "$d" vendor | cut -c3-) $(attr "$d" device | cut -c3-)" >"$SYS/bus/pci/drivers/vfio-pci/remove_id" 2>/dev/null || true
+    echo >"$(dev "$d")/driver_override"
+    echo "$d" >"$SYS/bus/pci/drivers/vfio-pci/unbind"
+    echo "$d" >"$SYS/bus/pci/drivers_probe"
+  done
+  say "$gpu is back on $(driver_of "$gpu")."
+}
+
+# Give the GPU back and restart Ollama if start stopped it.
+restore_host() {
+  local gpu=$1
+  if has_reset_bug "$gpu"; then say "$gpu stays on vfio-pci (AMD reset bug) until a reboot."
+  else as_root "$SELF" unbind; fi
+  if [[ -e $RUNDIR/ollama ]]; then
+    as_root systemctl start ollama
+    rm -f "$RUNDIR/ollama"
+  fi
+}
+
+cmd_start() {
+  local gpu
+  ((EUID != 0)) || die "run start as yourself, not with sudo: Looking Glass opens in your session."
+  load_conf
+  gpu=$(need_gpu)
+  mkdir -p "$RUNDIR"
+  if systemctl is-active --quiet ollama 2>/dev/null; then
+    say "stopping Ollama while the VM has the GPU"
+    as_root systemctl stop ollama
+    touch "$RUNDIR/ollama"
+  fi
+  as_root "$SELF" bind
+  if [[ $("${VIRSH[@]}" domstate "$VM" 2>/dev/null) != running ]] && ! "${VIRSH[@]}" start "$VM"; then
+    say "the VM did not start; giving the GPU back."
+    restore_host "$gpu"
+    exit 1
+  fi
+  if command -v looking-glass-client >/dev/null; then
+    setsid -f looking-glass-client -f /dev/kvmfr0 >"$RUNDIR/looking-glass.log" 2>&1
+    say "'$VM' is running in Looking Glass. 'kriss-vm stop' gives the GPU back."
+  else
+    say "'$VM' is running. Install looking-glass to see it; 'kriss-vm stop' gives the GPU back."
+  fi
+}
+
+cmd_stop() {
+  local gpu i
+  ((EUID != 0)) || die "run stop as yourself, not with sudo."
+  load_conf
+  gpu=$(need_gpu)
+  if [[ $("${VIRSH[@]}" domstate "$VM" 2>/dev/null) == running ]]; then
+    if [[ ${1:-} == --force ]]; then "${VIRSH[@]}" destroy "$VM"
+    else
+      "${VIRSH[@]}" shutdown "$VM"
+      for ((i = 0; i < 120; i++)); do
+        [[ $("${VIRSH[@]}" domstate "$VM" 2>/dev/null) == running ]] || break
+        sleep 1
+      done
+      [[ $("${VIRSH[@]}" domstate "$VM" 2>/dev/null) != running ]] || die "'$VM' is still shutting down. Wait, or run 'kriss-vm stop --force'."
+    fi
+  fi
+  pkill -x looking-glass-client || true
+  restore_host "$gpu"
+  say "'$VM' is off and the GPU is back with the host."
+}
+
+cmd_revert() {
+  need_root revert
+  local kind
+  read -r kind _ <<<"$(bootloader)"
+  restore_runs || return 0
+  [[ $kind == unknown ]] || regen_boot "$kind"
+  say "reverted. Reboot to finish. Installed packages were left in place."
+}
+
+# --- self-test ----------------------------------------------------------------------------
+
+t_eq() { [[ $1 == "$2" ]] || { printf 'FAIL %s\n  got:  %s\n  want: %s\n' "$3" "$1" "$2" >&2; exit 1; }; }
+
+self_test() (
+  local t f before
+  t=$(mktemp -d)
+  trap 'rm -rf "$t"' EXIT
+  STATE=$t/state
+
+  t_eq "$(kvmfr_mib 1920 1080)" 32 "kvmfr 1080p"
+  t_eq "$(kvmfr_mib 2560 1440)" 64 "kvmfr 1440p"
+  t_eq "$(kvmfr_mib 3840 2160)" 128 "kvmfr 4K"
+  t_eq "$(kvmfr_mib 1280 720)" 32 "kvmfr 720p"
+
+  f=$t/limine
+  printf '%s\n' 'ESP_PATH="/boot"' 'KERNEL_CMDLINE[default]+="quiet splash rw root=UUID=x"' >"$f"
+  add_params limine "$f" amd_iommu=on iommu=pt
+  before=$(cat "$f")
+  add_params limine "$f" amd_iommu=on iommu=pt
+  t_eq "$(cat "$f")" "$before" "limine: second run changes nothing"
+  t_eq "$(bash -c 'declare -A KERNEL_CMDLINE; . "$1"; echo "${KERNEL_CMDLINE[default]}"' _ "$f")" \
+    "quiet splash rw root=UUID=x amd_iommu=on iommu=pt" "limine cmdline"
+
+  f=$t/grub
+  printf '%s\n' 'GRUB_CMDLINE_LINUX=""' 'GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet iommu=pt"' >"$f"
+  add_params grub "$f" intel_iommu=on iommu=pt
+  add_params grub "$f" intel_iommu=on iommu=pt
+  t_eq "$(cat "$f")" $'GRUB_CMDLINE_LINUX=""\nGRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet iommu=pt intel_iommu=on"' "grub"
+
+  f=$t/entry.conf
+  printf '%s\n' 'title Arch' 'linux /vmlinuz-linux' 'options root=UUID=x rw' >"$f"
+  add_params sdboot "$f" amd_iommu=on iommu=pt
+  t_eq "$(cat "$f")" $'title Arch\nlinux /vmlinuz-linux\noptions root=UUID=x rw amd_iommu=on iommu=pt' "systemd-boot entry"
+
+  f=$t/cmdline
+  echo 'root=UUID=x rw' >"$f"
+  add_params sdboot-uki "$f" amd_iommu=on
+  t_eq "$(cat "$f")" 'root=UUID=x rw amd_iommu=on' "systemd-boot UKI cmdline"
+
+  f=$t/limine.conf
+  printf '%s\n' '/Arch' '    protocol: linux' '    kernel_cmdline: root=UUID=x rw' >"$f"
+  add_params limine-conf "$f" iommu=pt
+  t_eq "$(sed -n 3p "$f")" '    kernel_cmdline: root=UUID=x rw iommu=pt' "limine.conf"
+
+  echo 'GRUB_CMDLINE_LINUX_DEFAULT="quiet amd_iommu=off"' >"$t/off"
+  if (add_params grub "$t/off" iommu=pt) 2>/dev/null; then t_eq refused accepted "iommu=off is refused"; fi
+
+  # Backups: two runs, then revert leaves every file as it was before the first.
+  mkdir -p "$t/etc"
+  echo original >"$t/etc/a"
+  RUN=""; backup "$t/etc/a"; echo one >"$t/etc/a"; put "$t/etc/b" new
+  RUN=""; backup "$t/etc/a"; echo two >"$t/etc/a"; put "$t/etc/b" newer
+  restore_runs >/dev/null
+  t_eq "$(cat "$t/etc/a")" original "revert restores the first copy"
+  [[ ! -e $t/etc/b ]] || t_eq exists gone "revert deletes files it created"
+
+  # IOMMU groups and GPU choice on a fixture sysfs.
+  SYS=$t/sys
+  mkpci() { # mkpci ADDR CLASS VENDOR DEVICE GROUP BOOT_VGA
+    mkdir -p "$SYS/bus/pci/devices/$1" "$SYS/kernel/iommu_groups/$5/devices"
+    printf '%s\n' "$2" >"$SYS/bus/pci/devices/$1/class"
+    printf '%s\n' "$3" >"$SYS/bus/pci/devices/$1/vendor"
+    printf '%s\n' "$4" >"$SYS/bus/pci/devices/$1/device"
+    printf '%s\n' "$6" >"$SYS/bus/pci/devices/$1/boot_vga"
+    ln -s "../../../kernel/iommu_groups/$5" "$SYS/bus/pci/devices/$1/iommu_group"
+    : >"$SYS/kernel/iommu_groups/$5/devices/$1"
+  }
+  GPU=""
+  mkpci 0000:0a:00.0 0x030000 0x1002 0x73bf 14 1
+  t_eq "$(pick_gpu)" "" "one GPU: nothing to hand over"
+  ! has_reset_bug 0000:0a:00.0 || t_eq yes no "Navi 21 has no reset bug"
+  rm -r "$SYS/bus/pci/devices/0000:0a:00.0"
+  mkpci 0000:00:02.0 0x030000 0x8086 0x4680 2 1
+  mkpci 0000:01:00.0 0x030000 0x1002 0x73ff 1 0
+  mkpci 0000:01:00.1 0x040300 0x1002 0xab28 1 0
+  mkpci 0000:00:01.1 0x060400 0x1022 0x1483 1 0
+  t_eq "$(pick_gpu)" 0000:01:00.0 "the GPU not driving the display"
+  t_eq "$(GPU=0000:00:02.0 pick_gpu)" 0000:00:02.0 "KRISS_VM_GPU wins"
+  t_eq "$(pass_devs 0000:01:00.0 | paste -sd' ' -)" "0000:01:00.0 0000:01:00.1" "bridges stay on the host"
+  t_eq "$(foreign_devs 0000:01:00.0)" "" "isolated group"
+  mkpci 0000:02:00.0 0x0c0330 0x1022 0x43d5 1 0
+  t_eq "$(foreign_devs 0000:01:00.0)" 0000:02:00.0 "shared group"
+  has_reset_bug 0000:01:00.0 || t_eq no yes "Navi 23 has the reset bug"
+
+  # The VM definition: patched once, unchanged the second time.
+  rm "$SYS/kernel/iommu_groups/1/devices/0000:02:00.0"
+  f=$t/vm.xml
+  printf '%s\n' "<domain type='kvm'>" '  <os>' '  </os>' '  <features>' '  </features>' '  <devices>' "    <address type='pci' domain='0x0000' bus='0x01' slot='0x00' function='0x0'/>" '  </devices>' '</domain>' >"$f"
+  WIDTH=2560 HEIGHT=1440 SMBIOS=0
+  patch_domain_xml "$f" 0000:01:00.0
+  before=$(cat "$f")
+  patch_domain_xml "$f" 0000:01:00.0
+  t_eq "$(cat "$f")" "$before" "domain: second run changes nothing"
+  t_eq "$(grep -c "<hostdev .*managed='no'" "$f")" 2 "domain: both GPU functions"
+  grep -qF "mem-path=/dev/kvmfr0,size=64M" "$f" || t_eq missing present "domain: kvmfr device"
+  ! grep -q '<smbios' "$f" || t_eq present absent "domain: SMBIOS off by default"
+  SMBIOS=1 patch_domain_xml "$f" 0000:01:00.0
+  grep -q "<smbios mode='host'/>" "$f" || t_eq missing present "domain: SMBIOS when opted in"
+  if command -v xmllint >/dev/null; then xmllint --noout "$f" || t_eq invalid valid "domain XML"; fi
+
+  echo 'kriss-vm self-test: ok'
+)
+
+cmd_help() {
+  cat <<'EOF'
+Usage: kriss-vm <command>
+
+Hand one GPU to a Windows VM for games and heavy apps, shown on the host through Looking Glass.
+
+Commands:
+  check              Check this PC for passthrough (read-only, no root needed)
+  setup [options]    Kernel params, vfio, kvmfr, libvirt and Looking Glass (root)
+      --res WxH        guest resolution for the Looking Glass buffer (default: your monitor)
+      --vm NAME        libvirt VM to give the GPU to (default: win11)
+      --persistent     keep the GPU on vfio-pci from boot (automatic for the AMD reset bug)
+      --smbios         copy this PC's SMBIOS into the VM and hide KVM. Off by default:
+                       some anti-cheat titles ban VMs either way.
+  bind | unbind      Move the GPU to vfio-pci, or back to its host driver (root)
+  start | stop       Stop Ollama, take the GPU, start the VM and open Looking Glass;
+                     stop reverses all of it
+  revert             Restore every file kriss-vm changed (root)
+  --self-test        Run the built-in checks
+EOF
+}
+
+SELF=$(realpath "$0")
+
+main() {
+  case "${1:-help}" in
+    check) cmd_check ;;
+    setup) cmd_setup "${@:2}" ;;
+    bind) cmd_bind "${@:2}" ;;
+    unbind) cmd_unbind "${@:2}" ;;
+    start) cmd_start ;;
+    stop) cmd_stop "${@:2}" ;;
+    revert) cmd_revert ;;
+    --self-test) self_test ;;
+    version | --version | -V) echo "kriss-vm $KRISS_VM_VERSION" ;;
+    help | --help | -h) cmd_help ;;
+    *) die "unknown command '$1'. Run 'kriss-vm help'." ;;
+  esac
+}
+
+main "$@"

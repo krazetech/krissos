@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=KrissOS Shell
+Comment=The KrissOS desktop on cosmic-comp
+Exec=/usr/bin/kriss-shell
+TryExec=/usr/bin/kriss-shell
+Type=Application
+DesktopNames=KrissOS;COSMIC

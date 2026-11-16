@@ -1,0 +1,59 @@
+# Kernel: iso/build.sh swaps this line for the [kriss] kernel.
+linux
+
+# Live boot
+base
+mkinitcpio
+mkinitcpio-archiso
+syslinux
+memtest86+
+memtest86+-efi
+amd-ucode
+intel-ucode
+linux-firmware
+sof-firmware
+
+# KrissOS
+kriss-keyring
+kriss-settings
+kriss-theme
+kriss-tools
+
+# Installer: Calamares with the KrissOS sequence. os-prober finds Windows, ntfs-3g
+# resizes it.
+calamares
+kriss-installer
+os-prober
+ntfs-3g
+
+# KrissOS Shell on cosmic-comp, with the KrissOS login screen on greetd
+kriss-shell
+greetd
+cosmic-files
+cosmic-terminal
+cosmic-settings
+xdg-desktop-portal-cosmic
+power-profiles-daemon
+upower
+libnotify
+firefox
+noto-fonts
+noto-fonts-emoji
+pipewire
+pipewire-alsa
+pipewire-pulse
+wireplumber
+
+# System
+networkmanager
+bluez
+sudo
+nano
+man-db
+arch-install-scripts
+btrfs-progs
+dosfstools
+e2fsprogs
+exfatprogs
+gptfdisk
+efibootmgr

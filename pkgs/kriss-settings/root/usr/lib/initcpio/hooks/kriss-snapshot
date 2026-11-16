@@ -1,0 +1,12 @@
+#!/usr/bin/ash
+# See /usr/lib/initcpio/install/kriss-snapshot.
+
+run_latehook() {
+    [ "${kriss_snapshot:-}" = 1 ] || return 0
+    mkdir -p /kriss/lower /kriss/rw
+    mount --move /new_root /kriss/lower
+    mount -t tmpfs -o mode=755 kriss-rw /kriss/rw
+    mkdir /kriss/rw/upper /kriss/rw/work
+    mount -t overlay -o lowerdir=/kriss/lower,upperdir=/kriss/rw/upper,workdir=/kriss/rw/work \
+        kriss-snapshot /new_root
+}

@@ -1,0 +1,296 @@
+import QtQuick
+import QtQuick.Layouts
+import Quickshell
+import Quickshell.Wayland
+import Quickshell.Widgets
+import Quickshell.Services.Notifications
+
+// Toasts stack above the tray, bottom right, the way Sonner stacks them: the newest in
+// front, older ones peeking out behind it, smaller. Hovering fans the stack out and
+// pauses the timers; a swipe to the right dismisses one. The bell opens the same cards,
+// fanned out, with everything not yet dismissed.
+PanelWindow {
+    id: win
+
+    readonly property bool open: Desktop.notificationsOpen
+    // Ids of the cards on show, newest first; a card's place in it is its depth.
+    readonly property var shownIds: Notifs.all.filter(n => open || Notifs.isPopup(n)).map(n => n.id).reverse()
+    readonly property bool expanded: open || hover.hovered
+    readonly property int gap: 10
+    readonly property int peek: 14
+
+    // Card heights by id, as each card reports its own.
+    property var heights: ({})
+    function setHeight(id, h) {
+        if (heights[id] === h) return;
+        const next = Object.assign({}, heights);
+        next[id] = h;
+        heights = next;
+    }
+    function heightAt(depth) { return heights[shownIds[depth]] ?? 0; }
+    // Fanned out: how far above the stack's bottom the card at this depth ends.
+    function below(depth) {
+        let sum = 0;
+        for (let d = 0; d < depth; d++) sum += heightAt(d) + gap;
+        return sum;
+    }
+    readonly property real stackHeight: !shownIds.length ? 0
+        : expanded ? below(shownIds.length - 1) + heightAt(shownIds.length - 1)
+        : heightAt(0) + Math.min(shownIds.length - 1, 2) * peek
+
+    // Sonner's own curve: quick out, a touch of settle at the end.
+    readonly property var curve: [0.21, 1.02, 0.73, 1, 1, 1]
+
+    visible: shownIds.length > 0 || open
+    screen: Desktop.screen
+    WlrLayershell.layer: WlrLayer.Overlay
+    WlrLayershell.namespace: "kriss-notifications"
+    exclusionMode: ExclusionMode.Ignore
+    anchors { bottom: true; right: true }
+    margins { right: Theme.gap * 1.5; bottom: Theme.gap * 2 + Theme.barHeight }
+    implicitWidth: 380
+    // A fixed size, so the cards can move without the window resizing under them every
+    // frame; clicks outside the cards go through to the windows behind.
+    // ponytail: the oldest cards fall off the top of a list taller than this.
+    implicitHeight: 640
+    mask: Region { item: column }
+    color: "transparent"
+
+    // While the list is open, a click anywhere else (bar aside) or Esc closes it,
+    // like the quick settings panel. The toasts sit above it on the overlay layer.
+    PanelWindow {
+        visible: Desktop.notificationsOpen
+        screen: Desktop.screen
+        WlrLayershell.layer: WlrLayer.Top
+        WlrLayershell.namespace: "kriss-notifications-close"
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
+        exclusionMode: ExclusionMode.Normal
+        exclusiveZone: 0
+        anchors { top: true; bottom: true; left: true; right: true }
+        color: "transparent"
+        MouseArea {
+            anchors.fill: parent
+            focus: true
+            onClicked: Desktop.notificationsOpen = false
+            Keys.onEscapePressed: Desktop.notificationsOpen = false
+        }
+    }
+
+    HoverHandler { id: hover; onHoveredChanged: Notifs.paused = hovered }
+
+    Column {
+        id: column
+        anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+        spacing: win.gap
+
+        // Header while the list is open.
+        Rectangle {
+            visible: win.open
+            width: parent.width
+            height: 48
+            radius: Theme.radius
+            color: Theme.win
+            border.width: 1
+            border.color: Theme.rim
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 18
+                anchors.rightMargin: 10
+                Text {
+                    Layout.fillWidth: true
+                    text: Notifs.all.length ? Tr.t("Notifications") : Tr.t("No new notifications")
+                    color: Theme.fg
+                    font { family: Theme.sans; pixelSize: 14; weight: Font.DemiBold }
+                }
+                MouseArea {
+                    visible: Notifs.all.length > 0
+                    implicitWidth: clearText.implicitWidth + 20
+                    implicitHeight: 28
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: Notifs.clear()
+                    Rectangle { anchors.fill: parent; radius: 14; color: Theme.card }
+                    Text {
+                        id: clearText
+                        anchors.centerIn: parent
+                        text: Tr.t("Clear all")
+                        color: Theme.fg
+                        font { family: Theme.sans; pixelSize: 12; weight: Font.DemiBold }
+                    }
+                }
+            }
+        }
+
+        Item {
+            id: stack
+            width: parent.width
+            height: win.stackHeight
+            Behavior on height { NumberAnimation { duration: Theme.ms(400); easing.type: Easing.BezierSpline; easing.bezierCurve: win.curve } }
+
+            Repeater {
+                model: Notifs.model
+                delegate: Item {
+                    id: card
+                    required property var modelData
+                    readonly property var n: modelData
+                    readonly property var defaultAction: n.actions.find(a => a.identifier === "default")
+                    readonly property int depth: win.shownIds.indexOf(n.id)
+                    readonly property bool shown: depth >= 0
+                    readonly property bool front: depth === 0 || win.expanded
+                    readonly property real naturalHeight: content.implicitHeight + 28
+                    onNaturalHeightChanged: win.setHeight(n.id, naturalHeight)
+
+                    // Slides up into place when it arrives.
+                    property bool arrived: false
+                    Component.onCompleted: { win.setHeight(n.id, naturalHeight); arrived = true; }
+
+                    width: stack.width
+                    height: front ? naturalHeight : win.heightAt(0)
+                    y: !shown || !arrived ? stack.height + 24
+                        : win.expanded ? stack.height - win.below(depth) - naturalHeight
+                        : stack.height - win.heightAt(0) - Math.min(depth, 2) * win.peek
+                    scale: win.expanded || !shown ? 1 : 1 - Math.min(depth, 2) * 0.05
+                    transformOrigin: Item.Top
+                    opacity: shown && arrived && (win.expanded || depth < 3) ? 1 : 0
+                    z: -depth
+                    enabled: shown
+
+                    Behavior on y { NumberAnimation { duration: Theme.ms(400); easing.type: Easing.BezierSpline; easing.bezierCurve: win.curve } }
+                    Behavior on height { NumberAnimation { duration: Theme.ms(400); easing.type: Easing.BezierSpline; easing.bezierCurve: win.curve } }
+                    Behavior on scale { NumberAnimation { duration: Theme.ms(400); easing.type: Easing.BezierSpline; easing.bezierCurve: win.curve } }
+                    Behavior on opacity { NumberAnimation { duration: Theme.ms(200) } }
+
+                    // Swipe right to dismiss; a click takes the default action.
+                    MouseArea {
+                        id: swipe
+                        anchors.fill: parent
+                        cursorShape: card.defaultAction ? Qt.PointingHandCursor : Qt.ArrowCursor
+                        drag.target: face
+                        drag.axis: Drag.XAxis
+                        drag.minimumX: 0
+                        drag.maximumX: card.width
+                        onClicked: card.defaultAction ? Notifs.invoke(card.n, card.defaultAction) : card.n.dismiss()
+                        onReleased: {
+                            if (face.x > card.width * 0.35) away.start();
+                            else face.x = 0;
+                        }
+                    }
+                    NumberAnimation {
+                        id: away
+                        target: face; property: "x"; to: card.width + 24
+                        duration: Theme.ms(200); easing.type: Easing.OutCubic
+                        onFinished: card.n.dismiss()
+                    }
+
+                    Item {
+                        id: face
+                        width: parent.width
+                        height: parent.height
+                        opacity: 1 - Math.max(0, x) / card.width
+                        Behavior on x {
+                            enabled: !swipe.drag.active && !away.running
+                            NumberAnimation { duration: Theme.ms(300); easing.type: Easing.BezierSpline; easing.bezierCurve: win.curve }
+                        }
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: Theme.radius
+                            // Solid: notifications have no blur behind them, and app content showed through.
+                            color: Theme.win
+                            border.width: card.n.urgency === NotificationUrgency.Critical ? 2 : 1
+                            border.color: card.n.urgency === NotificationUrgency.Critical ? Theme.red : Theme.rim
+                        }
+
+                        Item {
+                            anchors.fill: parent
+                            clip: true
+                            // Cards behind the front one show only their edge.
+                            opacity: card.front ? 1 : 0
+                            Behavior on opacity { NumberAnimation { duration: Theme.ms(200) } }
+
+                            RowLayout {
+                                id: content
+                                anchors { left: parent.left; right: parent.right; top: parent.top; margins: 14 }
+                                spacing: 12
+
+                                Rectangle {
+                                    Layout.alignment: Qt.AlignTop
+                                    implicitWidth: 40; implicitHeight: 40; radius: 12
+                                    color: Theme.card
+                                    IconImage {
+                                        id: appIcon
+                                        anchors.centerIn: parent
+                                        implicitSize: 26
+                                        visible: status === Image.Ready
+                                        source: card.n.image || Quickshell.iconPath(card.n.appIcon || card.n.appName.toLowerCase(), true)
+                                    }
+                                    Glyph { anchors.centerIn: parent; visible: !appIcon.visible; name: "bell"; size: 20; color: Theme.accent }
+                                }
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 3
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        Text {
+                                            Layout.fillWidth: true
+                                            text: card.n.summary || card.n.appName
+                                            elide: Text.ElideRight
+                                            color: Theme.fg
+                                            font { family: Theme.sans; pixelSize: 14; weight: Font.DemiBold }
+                                        }
+                                        MouseArea {
+                                            implicitWidth: 22; implicitHeight: 22
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: card.n.dismiss()
+                                            Glyph { anchors.centerIn: parent; name: "close"; size: 14; color: Theme.soft }
+                                        }
+                                    }
+                                    Text {
+                                        visible: text.length > 0
+                                        Layout.fillWidth: true
+                                        text: card.n.body
+                                        textFormat: Text.PlainText
+                                        wrapMode: Text.Wrap
+                                        maximumLineCount: 4
+                                        elide: Text.ElideRight
+                                        color: Theme.soft
+                                        font { family: Theme.sans; pixelSize: 13 }
+                                        lineHeight: 1.15
+                                    }
+                                    Flow {
+                                        visible: buttons.count > 0
+                                        Layout.fillWidth: true
+                                        Layout.topMargin: 6
+                                        spacing: 6
+                                        Repeater {
+                                            id: buttons
+                                            model: card.n.actions.filter(a => a.identifier !== "default")
+                                            delegate: MouseArea {
+                                                id: act
+                                                required property var modelData
+                                                required property int index
+                                                width: actText.implicitWidth + 26
+                                                height: 30
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: Notifs.invoke(card.n, modelData)
+                                                // The first action is the one most apps expect you to take.
+                                                Rectangle { anchors.fill: parent; radius: 15; color: act.index === 0 ? Theme.accent : Theme.card }
+                                                Text {
+                                                    id: actText
+                                                    anchors.centerIn: parent
+                                                    text: act.modelData.text
+                                                    color: act.index === 0 ? Theme.accentInk : Theme.fg
+                                                    font { family: Theme.sans; pixelSize: 12; weight: Font.DemiBold }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

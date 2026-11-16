@@ -1,0 +1,51 @@
+#!/bin/bash
+# Install KrissOS into the mounted target. Calamares runs this on the live system
+# right after partitioning and mounting.
+# usage: pacstrap ROOT DESKTOP   (DESKTOP: shell or plasma)
+set -euo pipefail
+
+root=$1 desktop=${2:-shell}
+
+# The live ISO carries the [kriss] packages it was built with in /opt/kriss-local, so a
+# branch ISO installs that branch's packages. The installed system keeps only the
+# published repos (configure copies the live /etc/pacman.conf).
+conf=/etc/pacman.conf
+if [ -f /opt/kriss-local/kriss-local.db.tar.zst ]; then
+  conf=$(mktemp)
+  sed '/^\[kriss\]/i [kriss-local]\nSigLevel = Optional TrustAll\nServer = file:///opt/kriss-local\n' \
+    /etc/pacman.conf >"$conf"
+fi
+pacman --config "$conf" -Sy
+has() { pacman --config "$conf" -Si "$1" >/dev/null 2>&1; }
+
+# Kernel: linux-kriss needs x86-64-v3 (Haswell / Zen 1 and newer).
+if /usr/lib/ld-linux-x86-64.so.2 --help | grep -q 'x86-64-v3 (supported'; then
+  kernel=linux-kriss
+else
+  kernel=linux-kriss-generic
+fi
+# ponytail: Arch's kernel while [kriss] has no kernel published yet; drop once it does.
+has "$kernel" || { echo "kriss: $kernel is not in the repos; installing Arch's linux"; kernel=linux; }
+echo "kriss: kernel $kernel"
+
+pkgs=(base linux-firmware sof-firmware amd-ucode intel-ucode "$kernel"
+      btrfs-progs snapper snap-pac limine efibootmgr dosfstools ntfs-3g exfatprogs
+      zram-generator networkmanager bluez bluez-utils sudo nano man-db
+      pipewire pipewire-alsa pipewire-pulse wireplumber
+      firefox noto-fonts noto-fonts-emoji flatpak
+      kriss-keyring kriss-settings kriss-theme kriss-tools kriss-welcome)
+
+case $desktop in
+plasma) pkgs+=(plasma-meta sddm konsole dolphin discover) ;;
+*) pkgs+=(kriss-shell greetd cosmic-files cosmic-terminal cosmic-settings
+          xdg-desktop-portal-cosmic power-profiles-daemon upower libnotify) ;;
+esac
+
+read -ra gpu < <(/usr/lib/kriss-installer/nvidia "$kernel") || true
+pkgs+=("${gpu[@]}")
+
+echo "kriss: installing ${pkgs[*]}"
+pacstrap -C "$conf" -K "$root" "${pkgs[@]}"
+# pacman-key leaves gpg-agent running on the target's keyring, which keeps the target busy
+# and makes the final unmount fail.
+gpgconf --homedir "$root/etc/pacman.d/gnupg" --kill all 2>/dev/null || true
