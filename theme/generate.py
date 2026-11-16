@@ -69,6 +69,44 @@ def main(src, dst):
     for mode, t in (("dark", tokens), ("light", light(tokens))):
         out = render(WALLPAPER.read_text(), {**variants(t), "keris": keris})
         (wp / f"kriss-{mode}.svg").write_text(out)
+    plymouth(dst / "usr/share/plymouth/themes/kriss", values, keris)
+
+
+WIPE_FRAMES = 16  # kriss.script plays them over 0.5 s; keep the two in step.
+PLYMOUTH_SIZES = (256, 512)  # the script picks the smallest one at least as big as the logo
+
+
+def plymouth(out, values, keris):
+    """The boot splash layers, as SVG; the kriss-theme build turns each into a PNG.
+
+    disc, keris-00..15 (the hilt wiping on from the bottom with a soft edge, over a
+    transparent background) and logo (both, for the breathing loop), each at every
+    PLYMOUTH_SIZES; plus the password field and its bullet.
+    """
+    disc = f'<circle cx="284.5" cy="284.5" r="284.5" fill="{values["accent"]}"/>'
+    hilt = keris.replace("<path ", f'<path fill="{values["bg"]}" ', 1)
+    svg = '<svg xmlns="http://www.w3.org/2000/svg" width="{0}" height="{0}" viewBox="0 0 569 569">{1}</svg>'
+    feather = 0.18
+    for size in PLYMOUTH_SIZES:
+        (out / f"disc-{size}.svg").write_text(svg.format(size, disc))
+        (out / f"logo-{size}.svg").write_text(svg.format(size, disc + hilt))
+        for i in range(WIPE_FRAMES):
+            # The soft edge travels from below the hilt to above it.
+            edge = -feather + (1 + feather) * i / (WIPE_FRAMES - 1)
+            mask = ('<defs><linearGradient id="g" x1="0" y1="569" x2="0" y2="0" gradientUnits="userSpaceOnUse">'
+                    f'<stop offset="{max(edge, 0):.3f}" stop-color="#fff"/>'
+                    f'<stop offset="{min(max(edge + feather, 0), 1):.3f}" stop-color="#fff" stop-opacity="0"/>'
+                    '</linearGradient><mask id="m"><rect width="569" height="569" fill="url(#g)"/></mask></defs>')
+            body = mask + f'<g mask="url(#m)">{hilt}</g>'
+            (out / f"keris-{i:02}-{size}.svg").write_text(svg.format(size, body))
+    # 2x the size the script shows them at 1080p, so they only ever scale down.
+    (out / "field.svg").write_text(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="88">'
+        f'<rect x="1" y="1" width="638" height="86" rx="43" fill="{values["surface"]}" '
+        f'stroke="{values["muted"]}" stroke-opacity="0.35" stroke-width="2"/></svg>')
+    (out / "bullet.svg").write_text(
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24">'
+        f'<circle cx="12" cy="12" r="12" fill="{values["accent"]}"/></svg>')
 
 
 def test():
