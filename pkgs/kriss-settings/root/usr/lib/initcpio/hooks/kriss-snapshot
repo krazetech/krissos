@@ -9,4 +9,8 @@ run_latehook() {
     mkdir /kriss/rw/upper /kriss/rw/work
     mount -t overlay -o lowerdir=/kriss/lower,upperdir=/kriss/rw/upper,workdir=/kriss/rw/work \
         kriss-snapshot /new_root
+    # fstab's line for / names subvol=@; remounting the overlay with it would fail.
+    # The edit lands in the RAM layer only.
+    sed -i '/^[^#][^[:space:]]*[[:space:]][[:space:]]*\/[[:space:]]/s/^/#/' /new_root/etc/fstab
+    echo ':: KrissOS: booting a read-only snapshot. Changes are lost at reboot; to keep it, run: kriss rollback'
 }
