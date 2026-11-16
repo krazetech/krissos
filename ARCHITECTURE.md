@@ -68,7 +68,9 @@ and lets it pick the kernel, GPU driver and desktop at install time.
   `/boot/kriss/`) and a RAM overlay from the `kriss-snapshot` initramfs hook.
 - **Kernel:** `linux-kriss` on x86-64-v3 CPUs, `linux-kriss-generic` otherwise.
 - **NVIDIA:** `nvidia-open-dkms` on Turing and newer. Older cards keep nouveau, since
-  no driver in Arch's repos supports them any more.
+  no driver in Arch's repos supports them any more. For Maxwell, Pascal and Volta,
+  kriss-welcome offers NVIDIA's 580 driver afterwards as an optional online extra
+  (`kriss nvidia setup`, pinned AUR builds in `[kriss]`; see `pkgs/nvidia-580xx-utils/SOURCES.md`).
 - **Secure Boot:** not set up by the installer yet. Limine needs `limine enroll-config`
   and hashed kernel paths before an `sbctl` signature means anything.
 
