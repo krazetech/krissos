@@ -20,7 +20,9 @@ gpgv --keyring "$tmp/alarm.gpg" "$tmp/rootfs.tar.gz.sig" "$tmp/rootfs.tar.gz"
 docker import "$tmp/rootfs.tar.gz" alarm:rootfs
 docker build -t alarm - <<'EOF'
 FROM alarm:rootfs
-RUN pacman-key --init && pacman-key --populate archlinuxarm \
+# pacman's Landlock sandbox cannot be applied inside Docker; this container is throwaway.
+RUN sed -i '/^\[options\]/a DisableSandbox' /etc/pacman.conf \
+ && pacman-key --init && pacman-key --populate archlinuxarm \
  && pacman -Syu --noconfirm --needed base-devel git \
  && pacman -Scc --noconfirm
 EOF
