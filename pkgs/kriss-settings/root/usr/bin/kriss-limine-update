@@ -8,7 +8,7 @@
 # Runs after kernel, initramfs and Limine updates (pacman hook, mkinitcpio post hook)
 # and whenever /.snapshots changes (kriss-limine-update.path). Does nothing on systems
 # the KrissOS installer did not set up (no /etc/kernel/cmdline or no Limine on the ESP
-# at /efi), or while a snapshot is booted: that root's kernels are not the ones in /boot.
+# at /efi or /boot), or while a snapshot is booted: that root's kernels are not the ones in /boot.
 #   kriss-limine-update          write the menu
 #   kriss-limine-update --keep   before pacman replaces a kernel: copy it to
 #                                /boot/kriss/VERSION so snapshots made with it still boot
@@ -20,7 +20,10 @@
 set -euo pipefail
 shopt -s nullglob
 
+# The ESP: /efi as the installer sets it up, or /boot when /boot is the ESP itself
+# (an Arch or CachyOS install moved over with kriss migrate).
 esp=/efi/EFI
+mountpoint -q /efi || esp=/boot/EFI
 [ -f /etc/kernel/cmdline ] && [ -f "$esp/limine/BOOTX64.EFI" ] || exit 0
 [ -n "${KRISS_ROLLBACK:-}" ] || ! grep -qw kriss_snapshot=1 /proc/cmdline || exit 0
 snaps=${KRISS_SNAPSHOTS:-/.snapshots}

@@ -23,6 +23,7 @@ package() {
   local t="$startdir/../../tools" units="$pkgdir/usr/lib/systemd/user"
   install -Dm755 "$t/kriss" "$pkgdir/usr/bin/kriss"
   install -Dm755 "$t/kriss-vm" "$pkgdir/usr/bin/kriss-vm"
+  install -Dm755 "$t/kriss-migrate" "$pkgdir/usr/bin/kriss-migrate"
   install -Dm644 "$t/kriss-tune.rules" "$pkgdir/usr/share/polkit-1/rules.d/50-kriss-tune.rules"
   install -Dm644 "$t/kriss-tune.desktop" "$pkgdir/etc/xdg/autostart/kriss-tune.desktop"
   # Says so at login when a boot-menu snapshot is running (kriss rollback --notice).
