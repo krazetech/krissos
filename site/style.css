@@ -149,6 +149,7 @@ kbd { font: 500 .8rem/1 var(--mono); color: var(--fg); background: var(--surface
 h2 kbd { font-size: .5em; vertical-align: middle; }
 .keys li { align-items: center; justify-content: flex-start; flex-wrap: wrap; gap: 8px 20px; }
 .keys .k { flex: 0 0 15rem; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.keys .combo { display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; }
 .keys li > span:last-child { flex: 1 1 14rem; color: var(--soft); }
 
 /* Code blocks */
