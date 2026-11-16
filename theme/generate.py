@@ -7,7 +7,8 @@ usage: generate.py TEMPLATE_DIR OUT_DIR
 Every file under TEMPLATE_DIR is written to OUT_DIR at the same relative path
 with {{name}} replaced by the token value. Colour tokens also give
 {{name.hex}} (no '#'), {{name.rgb}} ("r,g,b" decimal, for KDE) and
-{{name.rgbf}} ("r, g, b" as 0-1 floats, for Plymouth).
+{{name.rgbf}} ("r, g, b" as 0-1 floats, for Plymouth) and {{name.ansi}}
+("38;2;r;g;b", a 24-bit foreground SGR code for prompts, /etc/issue and fastfetch).
 An unknown {{token}} is a KeyError, so a typo fails the build.
 
 When TEMPLATE_DIR is theme/templates (kriss-theme), wallpaper.svg is also
@@ -31,6 +32,7 @@ def variants(tokens):
         if re.fullmatch(r"#[0-9A-Fa-f]{6}", value):
             out[name + ".hex"] = value[1:]
             out[name + ".rgb"] = ",".join(str(int(value[i:i + 2], 16)) for i in (1, 3, 5))
+            out[name + ".ansi"] = "38;2;" + out[name + ".rgb"].replace(",", ";")
             out[name + ".rgbf"] = ", ".join(
                 f"{int(value[i:i + 2], 16) / 255:.3f}" for i in (1, 3, 5))
             # One channel at a time ({{accent.rf}}), for formats that name each field.
@@ -74,6 +76,7 @@ def test():
     assert render("{{accent}} {{accent.hex}} {{font}}", v) == "#29B2E8 29B2E8 Figtree"
     assert v["accent.rgb"] == "41,178,232"
     assert v["accent.rgbf"] == "0.161, 0.698, 0.910"
+    assert v["accent.ansi"] == "38;2;41;178;232"
     assert (v["accent.rf"], v["accent.bf"]) == ("0.161", "0.910")
     assert "font.hex" not in v
     assert light({"bg": "#000000", "light_bg": "#FFFFFF"})["bg"] == "#FFFFFF"
