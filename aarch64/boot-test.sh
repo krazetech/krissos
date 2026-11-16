@@ -52,6 +52,13 @@ if ((ok)); then
     if [ "$(wc -c <"$out/shell.png" 2>/dev/null || echo 0)" -gt 50000 ]; then drawn=1; break; fi
     sleep 8
   done
+  # The wallpaper lands first; under TCG the bar follows some seconds later. Keep the
+  # settled frame for the artifact.
+  if ((drawn)); then
+    sleep 30
+    echo "screendump $out/shell.png -f png" | socat - "UNIX-CONNECT:$out/mon" >/dev/null || true
+    sleep 2
+  fi
 fi
 kill "$pid" 2>/dev/null && wait "$pid" || true
 rm -f "$out/disk.img"
