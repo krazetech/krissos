@@ -4,7 +4,7 @@ on:
   push:
     tags: ['[0-9]*', 'MR*']   # release codenames: 110, 115, MR3
   pull_request:
-    paths: ['iso/**', 'installer/**', 'pkgs/calamares/**', 'pkgs/kriss-installer/**', '.github/workflows/iso.yml']
+    paths: ['iso/**', 'installer/**', 'pkgs/calamares/**', 'pkgs/kriss-installer/**', 'pkgs/kriss-settings/**', 'pkgs/kriss-theme/**', 'pkgs/kriss-tools/**', 'theme/**', 'tools/kriss', '.github/workflows/iso.yml']
   schedule:
     - cron: '30 3 * * *'      # nightly
   workflow_dispatch:
