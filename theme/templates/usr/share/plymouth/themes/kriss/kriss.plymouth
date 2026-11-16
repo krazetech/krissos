@@ -1,7 +1,9 @@
 [Plymouth Theme]
 Name=KrissOS
-Description=Black background, the KrissOS logo and a Sky Cyan spinner.
+Description=The keris emblem reveals on Obsidian black, then breathes until the system is up.
 ModuleName=script
+# The mkinitcpio hook copies this font into the initramfs for the password prompt.
+Font={{font_sans}}
 
 [script]
 ImageDir=/usr/share/plymouth/themes/kriss
