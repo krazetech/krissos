@@ -26,7 +26,7 @@ cp -a "$here/." "$profile"
 
 # Build the small [kriss] packages from this checkout and put them ahead of the
 # published repo, so an ISO from a branch carries that branch's theme and tools.
-pacman -S --noconfirm --needed base-devel python librsvg python-pywayland wayland wayland-protocols
+pacman -S --noconfirm --needed base-devel python librsvg python-pywayland wayland wayland-protocols rust
 id builder >/dev/null 2>&1 || useradd -m builder
 src="$work/src" local_repo="$work/kriss-local"
 rm -rf "$src" "$local_repo"
@@ -47,10 +47,6 @@ if [ "$want" != "$have" ]; then
   su builder -c "cd '$cal' && PKGDEST='$local_repo' makepkg --noconfirm --nodeps"
 fi
 repo-add "$local_repo/kriss-local.db.tar.zst" "$local_repo"/*.pkg.tar.zst
-# The installer installs from this copy first, so the installed system gets the same
-# [kriss] packages as the ISO (see installer/lib/pacstrap).
-mkdir -p "$profile/airootfs/opt"
-cp -a "$local_repo" "$profile/airootfs/opt/kriss-local"
 # sed -i replaces the pacman.conf symlink with a file, so the live system's copy keeps
 # only the published repo.
 sed -i "/^\[kriss\]/i [kriss-local]\nSigLevel = Optional TrustAll\nServer = file://$local_repo\n" \
@@ -65,7 +61,7 @@ python "$here/../theme/generate.py" "$here/../theme/templates/usr/share/pixmaps"
   echo '</svg>'
 } | rsvg-convert -o "$profile/syslinux/splash.png"
 
-sed -i "s/^linux\$/$kernel/" "$profile/packages.x86_64"
+sed -i "s/^linux\(-headers\)\?\$/$kernel\1/" "$profile/packages.x86_64"
 sed -i "s/vmlinuz-linux/vmlinuz-$kernel/; s/initramfs-linux\./initramfs-$kernel./" \
   "$profile"/efiboot/loader/entries/*.conf "$profile"/syslinux/*.cfg
 mkarchiso -v -r -w "$work/mkarchiso" -o "$out" "$profile"

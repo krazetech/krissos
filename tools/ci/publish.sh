@@ -1,7 +1,7 @@
 #!/bin/bash
 # Merge freshly built packages into the published [kriss] repo (a GitHub release).
 # usage: publish.sh <dir with *.pkg.tar.zst>
-# env: KRISS_GPG_KEY (armored secret key), GH_TOKEN, RELEASE_TAG (default repo-x86_64)
+# env: KRISS_GPG_KEY (armored secret key), GH_TOKEN, RELEASE_TAG (repo-x86_64, the default, or repo-aarch64)
 #
 # Callers must share one workflow concurrency group: two overlapping runs would each
 # download the same db and the second upload would drop the first run's packages.
@@ -19,7 +19,7 @@ printf '%s\n' "$KRISS_GPG_KEY" | gpg --batch --import
 
 cd "$1"
 gh release view "$tag" >/dev/null 2>&1 \
-  || gh release create "$tag" --title 'KrissOS package repo (x86_64)' \
+  || gh release create "$tag" --title "KrissOS package repo (${tag#repo-})" \
        --notes 'Signed [kriss] pacman repository. Updated by CI.' --latest=false
 
 # Start from the published db. On the very first publish there is none.

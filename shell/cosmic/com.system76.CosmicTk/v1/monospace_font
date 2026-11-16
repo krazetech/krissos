@@ -1,0 +1,6 @@
+(
+    family: "{{font_mono}}",
+    weight: Normal,
+    stretch: Normal,
+    style: Normal,
+)

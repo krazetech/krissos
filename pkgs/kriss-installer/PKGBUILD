@@ -1,13 +1,13 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-installer
-pkgver=0.1.0
+pkgver=0.2.0
 pkgrel=1
 pkgdesc='KrissOS installer: Calamares sequence, module configs, desktop picker and install scripts'
 arch=('any')
 url='https://github.com/krazetech/krissos'
 license=('GPL-3.0-or-later')
 depends=('arch-install-scripts' 'btrfs-progs' 'dosfstools' 'efibootmgr' 'ntfs-3g' 'os-prober'
-         'quickshell' 'sudo' 'util-linux')
+         'quickshell' 'rsync' 'sudo' 'util-linux')
 makedepends=('python')
 
 # Sources live in this monorepo. notice.qml takes its colours from theme/tokens.json.
