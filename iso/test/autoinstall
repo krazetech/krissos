@@ -1,12 +1,11 @@
 #!/bin/bash
 # Scripted install for CI: what Calamares does for "Erase disk" with the KrissOS Shell,
-# without the pages. It partitions /dev/vda like partition.conf and mount.conf, runs the
-# installer's own pacstrap and configure steps, and stands in for Calamares' fstab,
-# locale and users jobs. iso/install-test.sh hands it to the live ISO through QEMU's
-# fw_cfg and systemd.run=.
+# without the pages. It partitions /dev/vda like partition.conf and mount.conf, copies the
+# live system like unpackfs.conf, runs the installer's own unlive, online and configure
+# steps, and stands in for Calamares' fstab, locale and users jobs. iso/install-test.sh
+# hands it to the live ISO through QEMU's fw_cfg and systemd.run=, with no network: the
+# install must work offline.
 set -euxo pipefail
-systemctl start pacman-init NetworkManager
-nm-online -s -q -t 120
 
 disk=/dev/vda t=/target
 sgdisk -Z -n1:0:+512M -t1:ef00 -n2:0:+2G -t2:ea00 -n3:0:0 -t3:8304 "$disk"
@@ -28,7 +27,13 @@ mount -o "$o,subvol=@snapshots" "${disk}3" "$t/.snapshots"
 mount -o umask=0077 "${disk}1" "$t/efi"
 mount "${disk}2" "$t/boot"
 
-/usr/lib/kriss-installer/pacstrap "$t" shell
+# Calamares' unpackfs (sourcefs: file is an rsync of the mounted live image).
+rsync -aHAX /run/archiso/airootfs/ "$t/"
+# The NVIDIA driver was built for the ISO's kernel; this VM has no NVIDIA card.
+ls "$t"/usr/lib/modules/*/updates/dkms/nvidia.ko*
+/usr/lib/kriss-installer/unlive "$t"
+[ -z "$(arch-chroot "$t" pacman -Qq nvidia-utils calamares 2>/dev/null)" ]
+if grep -q '^live:' "$t/etc/passwd"; then exit 1; fi
 
 # Calamares' machineid, fstab, locale and users jobs.
 systemd-machine-id-setup --root="$t"
@@ -40,7 +45,9 @@ echo krissos >"$t/etc/hostname"
 arch-chroot "$t" useradd -m -G wheel -c 'KrissOS Test' kriss
 echo kriss:kriss | arch-chroot "$t" chpasswd
 
-/usr/lib/kriss-installer/configure "$t" shell
+# No network here, so this must say offline and change nothing.
+/usr/lib/kriss-installer/online "$t" shell
+/usr/lib/kriss-installer/configure "$t"
 
 # Serial console for the test boot, and one snapshot to prove the Snapshots menu.
 sed -i 's/$/ console=ttyS0,115200 systemd.journald.forward_to_console=1/' "$t/etc/kernel/cmdline"

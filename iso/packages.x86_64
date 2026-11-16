@@ -1,5 +1,6 @@
-# Kernel: iso/build.sh swaps this line for the [kriss] kernel.
+# Kernel: iso/build.sh swaps these two lines for the [kriss] kernel.
 linux
+linux-headers
 
 # Live boot
 base
@@ -18,9 +19,11 @@ kriss-keyring
 kriss-settings
 kriss-theme
 kriss-tools
+kriss-welcome
 
 # Installer: Calamares with the KrissOS sequence. os-prober finds Windows, ntfs-3g
-# resizes it.
+# resizes it. The installer copies this live system to the disk (no internet), so
+# everything an installed KrissOS needs is listed here too.
 calamares
 kriss-installer
 os-prober
@@ -57,3 +60,23 @@ e2fsprogs
 exfatprogs
 gptfdisk
 efibootmgr
+limine
+snapper
+snap-pac
+zram-generator
+bluez-utils
+flatpak
+
+# Graphics and Wi-Fi on any PC (small; the disk stays portable between machines). Mesa
+# already carries the VA-API driver for AMD and nouveau.
+vulkan-intel
+vulkan-radeon
+vulkan-nouveau
+intel-media-driver
+wireless-regdb
+
+# NVIDIA's open driver for Turing and newer, also in the live session. The installer
+# removes it from PCs without such a card; older cards keep nouveau.
+dkms
+nvidia-open-dkms
+nvidia-utils
