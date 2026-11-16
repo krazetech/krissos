@@ -30,6 +30,9 @@ add_repos() {
 }
 pacman-key --add "$repo/tools/ci/keys/asahi-alarm.asc"
 pacman-key --lsign-key "$asahi_key"
+# [kriss] (repo-aarch64) is signed with the KrissOS key, like iso/build.sh.
+pacman-key --add "$repo/pkgs/kriss-keyring/krissos.gpg"
+pacman-key --lsign-key 7C92AE8B599AF81321666CA31317AA31B21C5F87
 grep -q '^\[asahi-alarm\]' /etc/pacman.conf || add_repos /etc/pacman.conf
 # Until the first publish there is no repo-aarch64 release; build from this checkout alone.
 curl -fsIL -o /dev/null https://github.com/krazetech/krissos/releases/download/repo-aarch64/kriss.db \
