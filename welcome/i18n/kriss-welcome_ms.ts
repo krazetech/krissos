@@ -447,6 +447,26 @@ Menjalankan: %1</translation>
         <source>Install</source>
         <translation>Pasang</translation>
     </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="14"/>
+        <source>Install the NVIDIA 580 driver (needs internet)</source>
+        <translation>Pasang pemacu NVIDIA 580 (perlu internet)</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="15"/>
+        <source>Install the NVIDIA 580 driver?</source>
+        <translation>Pasang pemacu NVIDIA 580?</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="16"/>
+        <source>Your NVIDIA graphics card is older than the GeForce 16 series, so it uses the open nouveau driver. NVIDIA&apos;s own 580 driver is faster for games. NVIDIA keeps it in long-term maintenance: it gets fixes but no new features. If you skip this, nouveau stays and everything keeps working. On laptops, the screen stays on the built-in graphics; start an app with prime-run to use the NVIDIA card. The NVIDIA card may not switch fully off with this driver, so the battery can run down faster. Restart after it installs.</source>
+        <translation>Kad grafik NVIDIA anda lebih lama daripada siri GeForce 16, jadi ia menggunakan pemacu terbuka nouveau. Pemacu 580 NVIDIA sendiri lebih laju untuk permainan. NVIDIA menyelenggara pemacu ini untuk jangka panjang: ia menerima pembaikan tetapi tiada ciri baharu. Jika anda langkau, nouveau kekal dan semuanya terus berfungsi. Pada komputer riba, skrin kekal pada grafik terbina dalam; mulakan aplikasi dengan prime-run untuk menggunakan kad NVIDIA. Kad NVIDIA mungkin tidak mati sepenuhnya dengan pemacu ini, jadi bateri boleh cepat habis. Mulakan semula selepas ia dipasang.</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExtrasPage.qml" line="85"/>
+        <source>Needs internet</source>
+        <translation>Perlu internet</translation>
+    </message>
 </context>
 <context>
     <name>GamesPage</name>

@@ -34,7 +34,7 @@ def hwcheck(ram_kb, flags, threads, kvm, vendors):
 
 strong = hwcheck(32_000_000, "vmx", 12, True, ["0x10de", "0x8086"])
 assert strong == {"ram_mb": 31250, "cores": 12, "virt": "vmx", "kvm": True, "gpus": ["intel", "nvidia"],
-                  "winboat_ok": True, "reasons": []}, strong
+                  "winboat_ok": True, "reasons": [], "nvidia_legacy": False}, strong
 weak = hwcheck(8_000_000, "", 2, False, [])
 assert weak["winboat_ok"] is False and weak["reasons"] == ["ram", "virt", "kvm", "cores"], weak
 assert weak["gpus"] == [] and weak["virt"] == ""
@@ -147,6 +147,7 @@ assert logic.extra_command("gaming", []) == [
 cmd = logic.extra_command("ollama", ["nvidia"])
 assert cmd[3].endswith("systemctl enable --now ollama.service") and cmd[-2:] == ["ollama", "ollama-cuda"], cmd
 assert logic.extra_command("claude-code", [])[0] == "sh"  # per-user install, no root
+assert logic.extra_command("nvidia-legacy", ["intel", "nvidia"]) == ["pkexec", "kriss", "nvidia", "setup"]
 assert all(logic.extra_command(e, ["amd"]) for e in logic.EXTRAS)
 qml = (ROOT / "qml/ExtrasPage.qml").read_text()
 assert set(re.findall(r'\{ id: "([a-z-]+)"', qml)) - {"antigravity"} == set(logic.EXTRAS)

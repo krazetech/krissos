@@ -14,6 +14,7 @@ import threading
 
 from PySide6.QtCore import QLocale, QObject, QProcess, QTranslator, Property, Signal, Slot
 from PySide6.QtGui import QGuiApplication, QIcon
+from PySide6.QtNetwork import QNetworkInformation
 from PySide6.QtQml import QQmlApplicationEngine
 
 import logic
@@ -42,6 +43,7 @@ def user_dir(name):
 class Backend(QObject):
     installDone = Signal(str, bool)
     languageChanged = Signal()
+    onlineChanged = Signal()
     windowsMounted = Signal(str, str)  # mount point, or "" and the error
     copyProgress = Signal(float, float, str)  # bytes done, bytes total, file name
     copyDone = Signal(int, int, "QStringList")  # files copied, files failed, bookmark files written
@@ -58,10 +60,20 @@ class Backend(QObject):
         self._apps = json.loads((HERE / "data/apps.json").read_text())
         self._procs = {}
         self._mounted = ""  # the Windows partition this app mounted, unmounted after copying
+        # NetworkManager's view of the internet, so the extras page can say "needs internet"
+        # instead of failing. Qt picks the backend; with none, assume online.
+        self._net = QNetworkInformation.instance() if QNetworkInformation.loadDefaultBackend() else None
+        if self._net:
+            self._net.reachabilityChanged.connect(lambda _r: self.onlineChanged.emit())
 
     @Property("QVariantMap", constant=True)
     def hw(self):
         return self._hw
+
+    @Property(bool, notify=onlineChanged)
+    def online(self):
+        r = QNetworkInformation.Reachability
+        return not self._net or self._net.reachability() in (r.Online, r.Unknown)
 
     @Property("QVariantList", constant=True)
     def apps(self):

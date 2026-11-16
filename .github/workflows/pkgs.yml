@@ -41,6 +41,9 @@ jobs:
       - name: Test kriss tune
         run: tools/ci/tune-test.sh
 
+      - name: Test kriss nvidia
+        run: tools/ci/nvidia-test.sh
+
       # makepkg refuses to run as root. The kernel is built by kernel.yml.
       - name: Build packages
         run: |
