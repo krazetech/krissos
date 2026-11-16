@@ -4,6 +4,7 @@ pkgs/*/pkg/
 *.pkg.tar.*
 *.log
 out/
+pkgs/*/*.run
 
 # local working notes
 NOTES.md

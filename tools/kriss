@@ -76,8 +76,115 @@ cmd_hwcheck() {
   [[ $kvm == true ]] || reasons+='"kvm",'
   ((cores >= 4)) || reasons+='"cores",'
   [[ -z $reasons ]] || ok=false
-  printf '{"ram_mb": %d, "cores": %d, "virt": "%s", "kvm": %s, "gpus": %s, "winboat_ok": %s, "reasons": [%s]}\n' \
-    "$ram_mb" "$cores" "$virt" "$kvm" "$(gpu_vendors)" "$ok" "${reasons%,}"
+  local legacy=false
+  nvidia_legacy_gpu >/dev/null && legacy=true
+  printf '{"ram_mb": %d, "cores": %d, "virt": "%s", "kvm": %s, "gpus": %s, "winboat_ok": %s, "reasons": [%s], "nvidia_legacy": %s}\n' \
+    "$ram_mb" "$cores" "$virt" "$kvm" "$(gpu_vendors)" "$ok" "${reasons%,}" "$legacy"
+}
+
+# --- kriss nvidia: the NVIDIA 580 driver for GPUs older than Turing ----------------------
+# The installer gives Turing and newer nvidia-open-dkms and leaves older GPUs on nouveau
+# (installer/lib/nvidia). The 580 branch is the last for Maxwell, Pascal and Volta: device
+# ids 0x1340 to 0x1df6 in its supported-gpus.json (pkgs/nvidia-580xx-utils/SOURCES.md).
+# Optional and online only; nouveau stays when it is skipped.
+
+# The PCI address of an NVIDIA GPU that needs the 580 driver; fails when there is none.
+nvidia_legacy_gpu() {
+  local dev id
+  for dev in "$SYS"/bus/pci/devices/*; do
+    [[ $(cat "$dev/vendor" 2>/dev/null) == 0x10de ]] || continue
+    case $(cat "$dev/class") in 0x0300* | 0x0302*) ;; *) continue ;; esac
+    id=$(cat "$dev/device")
+    if ((id >= 0x1340 && id < 0x1e00)); then echo "${dev##*/}"; return 0; fi
+  done
+  return 1
+}
+
+# The PCI address of the GPU that drives the built-in screen, when it is not NVIDIA's:
+# the iGPU of a hybrid laptop.
+nvidia_igpu() {
+  local dev
+  for dev in "$SYS"/bus/pci/devices/*; do
+    [[ $(cat "$dev/boot_vga" 2>/dev/null) == 1 && $(cat "$dev/vendor") != 0x10de ]] || continue
+    echo "${dev##*/}"
+    return 0
+  done
+  return 1
+}
+
+# Everything the driver needs apart from the packages, as root under $ETC. Safe to run twice.
+nvidia_configure() {
+  local f igpu
+  # Keep nouveau out of the initramfs, as the installer does for nvidia-utils: the kms hook
+  # loads it early and the NVIDIA driver must not race with it. nvidia-580xx-utils
+  # blacklists nouveau for the rest of the boot.
+  f=$ETC/mkinitcpio.conf.d/kriss.conf
+  [[ ! -f $f ]] || sed -i -E '/^HOOKS=/ s/ kms( |\))/\1/' "$f"
+  # The driver turns modeset on by default (an AUR patch); say it on the command line too,
+  # so it holds if that patch ever goes.
+  f=$ETC/kernel/cmdline
+  if [[ -f $f ]] && ! grep -qw 'nvidia_drm.modeset=1' "$f"; then
+    sed -i '1s/$/ nvidia_drm.modeset=1/' "$f"
+  fi
+
+  igpu=$(nvidia_igpu) || return 0
+  # Hybrid laptop: the compositor stays on the iGPU (ARCHITECTURE §5); apps use the NVIDIA
+  # GPU through prime-run.
+  # ponytail: no runtime power management setup. NVIDIA supports runtime D3 on Turing and
+  # newer only; on an MX150 the driver reports "Runtime D3 status: Not supported" and the
+  # card stays powered (about 2 W more at idle than nouveau, which lets it suspend).
+  f=$ETC/environment
+  touch "$f"
+  sed -i '/^COSMIC_RENDER_DEVICE=/d' "$f"
+  echo "COSMIC_RENDER_DEVICE=/dev/dri/by-path/pci-$igpu-render" >>"$f"
+}
+
+cmd_nvidia_check() {
+  local gpu driver
+  if ! gpu=$(nvidia_legacy_gpu); then
+    echo "No NVIDIA GPU here needs the 580 driver."
+    return 1
+  fi
+  driver=$(readlink "$SYS/bus/pci/devices/$gpu/driver" || echo none)
+  echo "NVIDIA GPU $gpu ($(cat "$SYS/bus/pci/devices/$gpu/device")) can use the NVIDIA 580 driver."
+  echo "Driver in use: ${driver##*/}"
+  if pacman -T nvidia-580xx-dkms nvidia-580xx-utils >/dev/null 2>&1; then
+    echo "The 580 driver is installed."
+  else
+    echo "Not installed; it keeps nouveau. Install it with: pkexec kriss nvidia setup (needs internet)"
+  fi
+}
+
+cmd_nvidia_setup() {
+  ((EUID == 0)) || die "run 'pkexec kriss nvidia setup': it installs packages."
+  nvidia_legacy_gpu >/dev/null || die "no NVIDIA GPU here needs the 580 driver."
+  local kernel pkgs
+  kernel=$(<"/usr/lib/modules/$(uname -r)/pkgbase") || die "cannot tell which kernel package is running."
+  pkgs=(nvidia-580xx-dkms nvidia-580xx-utils "$kernel-headers")
+  if grep -q '^\[multilib\]' "$ETC/pacman.conf"; then pkgs+=(lib32-nvidia-580xx-utils); fi
+  local igpu
+  if igpu=$(nvidia_igpu); then
+    # prime-run, and Vulkan for the iGPU with Mesa's device-select layer listing it first.
+    # Without them every Vulkan app (GTK 4 included) lands on the NVIDIA GPU.
+    pkgs+=(nvidia-prime vulkan-mesa-implicit-layers)
+    case $(cat "$SYS/bus/pci/devices/$igpu/vendor") in
+      0x8086) pkgs+=(vulkan-intel) ;;
+      0x1002) pkgs+=(vulkan-radeon) ;;
+    esac
+  fi
+  pacman -S --needed --noconfirm "${pkgs[@]}" || die "installing the driver failed. Nothing else was changed."
+  nvidia_configure
+  mkinitcpio -P
+  if command -v kriss-limine-update >/dev/null; then kriss-limine-update; fi
+  echo "kriss: done. Restart to start using the NVIDIA 580 driver."
+}
+
+cmd_nvidia() {
+  case "${1:-check}" in
+    check) cmd_nvidia_check ;;
+    setup) cmd_nvidia_setup ;;
+    *) die "unknown nvidia command '$1'. Use check or setup." ;;
+  esac
 }
 
 # kriss tune [performance|balanced|powersave|kapcai|status|sync]
@@ -321,6 +428,8 @@ Commands:
   rollback   Keep the snapshot booted from the boot menu as your system
   winapps check   Check this PC is ready for Windows apps in WinBoat (read-only)
   winapps setup   Fix what is missing (asks first), then open WinBoat
+  nvidia check    Say whether this PC's NVIDIA GPU can use the NVIDIA 580 driver
+  nvidia setup    Install that driver (root, needs internet); nouveau stays otherwise
   help       Show this help
 EOF
 }
@@ -333,6 +442,7 @@ main() {
     hwcheck) cmd_hwcheck ;;
     tune) cmd_tune "${@:2}" ;;
     winapps) cmd_winapps "${@:2}" ;;
+    nvidia) cmd_nvidia "${@:2}" ;;
     rollback) cmd_rollback "${@:2}" ;;
     help | --help | -h) cmd_help ;;
     --kapcai) cmd_kapcai ;;
@@ -340,4 +450,5 @@ main() {
   esac
 }
 
-main "$@"
+# Sourced by tests (tools/ci/nvidia-test.sh), run otherwise.
+[[ ${BASH_SOURCE[0]} != "$0" ]] || main "$@"

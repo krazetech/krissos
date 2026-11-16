@@ -1,6 +1,6 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-welcome
-pkgver=0.2.0
+pkgver=0.2.1
 pkgrel=1
 pkgdesc='KrissOS first-boot app: game checker, apps, copy from Windows, drivers and extras'
 arch=('any')
@@ -24,7 +24,7 @@ check() {
 
 package() {
   # Added here, not above: makepkg --syncdeps cannot resolve sibling [kriss] packages.
-  depends+=('kriss-theme>=0.2.0' 'kriss-tools>=0.2.0')
+  depends+=('kriss-theme>=0.2.0' 'kriss-tools>=0.5.1')
   local share="$pkgdir/usr/share/kriss-welcome"
   install -Dm644 -t "$share" "$_src"/kriss_welcome.py "$_src"/logic.py
   install -Dm644 -t "$share/qml" "$_src"/qml/*.qml
