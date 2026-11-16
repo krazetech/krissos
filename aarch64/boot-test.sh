@@ -61,11 +61,14 @@ if ((ok)); then
   fi
   # Quickshell keeps its log in the user's runtime dir, not the journal. Log in on the
   # serial console (getty on ttyAMA0) and dump it into serial.log.
-  for line in kriss kriss 'export WAYLAND_DISPLAY=wayland-1; qs log -p /usr/share/kriss-shell/qml 2>&1 | tail -150'; do
+  for line in kriss kriss 'export WAYLAND_DISPLAY=wayland-1; qs log -p /usr/share/kriss-shell/qml 2>&1 | tail -150' \
+    'grim -s 0.5 - | base64 -w 76 | sed s/^/B64:/'; do
     printf '%s\r' "$line" | socat - "UNIX-CONNECT:$out/ser" >/dev/null || true
     sleep 20
   done
   sleep 40
+  # What the compositor itself sees, to compare with the scanout in shell.png.
+  tr -d '\r' <"$out/serial.log" | grep -o 'B64:[A-Za-z0-9+/=]*' | cut -c5- | base64 -d >"$out/compositor.png" 2>/dev/null || true
 fi
 kill "$pid" 2>/dev/null && wait "$pid" || true
 rm -f "$out/disk.img"
