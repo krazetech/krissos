@@ -1,0 +1,6 @@
+(
+    family: "{{font_sans}}",
+    weight: Normal,
+    stretch: Normal,
+    style: Normal,
+)

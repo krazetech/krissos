@@ -1,12 +1,12 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-shell
-pkgver=0.2.4
+pkgver=0.2.5
 pkgrel=1
 pkgdesc='KrissOS Shell: bar, launcher, quick settings, notifications and lock screen on cosmic-comp'
 arch=('any')
 url='https://github.com/krazetech/krissos'
 license=('GPL-3.0-or-later')
-depends=('cosmic-comp' 'xorg-xwayland' 'quickshell' 'python-pywayland' 'glib2' 'dbus'
+depends=('cosmic-comp' 'cosmic-settings-daemon' 'xorg-xwayland' 'quickshell' 'python-pywayland' 'glib2' 'dbus'
          'grim' 'slurp' 'wl-clipboard' 'xdg-user-dirs' 'brightnessctl')
 makedepends=('python' 'python-pywayland' 'wayland' 'wayland-protocols' 'cargo')
 optdepends=('greetd: the KrissOS login screen'

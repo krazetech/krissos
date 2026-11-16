@@ -74,7 +74,7 @@ greeter)
 
     # COSMIC defaults: the Windows key opens our launcher, Windows+L locks, the KrissOS
     # dark and light themes (accent, backgrounds, corners, a 4 px Sky Cyan ring on the
-    # focused window), Papirus icons and the KrissOS terminal colours. Copied key by key
+    # focused window), Papirus icons, the KrissOS fonts and terminal colours. Copied key by key
     # only where the user has no value of their own, so their changes win.
     cfg=${XDG_CONFIG_HOME:-$HOME/.config}/cosmic
     for dir in "$data"/cosmic/*/v*; do
@@ -102,6 +102,10 @@ greeter)
     # shellcheck disable=SC2086,SC2163 # one NAME=value per line; values are socket names, no spaces
     export $env
     dbus-update-activation-environment --systemd XDG_CURRENT_DESKTOP XDG_SESSION_TYPE QT_QPA_PLATFORMTHEME 2>/dev/null
+    # Switches light and dark (by hand or at sunset) and keeps the gsettings icon theme and
+    # fonts in step with COSMIC's, so COSMIC apps and the terminal follow the mode live.
+    cosmic-settings-daemon &
+    daemon=$!
     # Apps in /etc/xdg/autostart and ~/.config/autostart, such as kriss-welcome on first
     # login, through systemd's XDG autostart units.
     systemctl --user --no-block start kriss-shell-session.target
@@ -110,7 +114,7 @@ greeter)
 
     "$0" --inside
     systemctl --user stop kriss-shell-session.target graphical-session.target
-    kill "$comp" 2>/dev/null
+    kill "$daemon" "$comp" 2>/dev/null
     wait "$comp"
     ;;
 *)
