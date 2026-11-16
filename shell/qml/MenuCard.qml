@@ -67,6 +67,8 @@ Rectangle {
             readonly property var entry: parent.modelData
             readonly property int index: parent.index
             height: 36
+            enabled: !entry.off
+            opacity: enabled ? 1 : 0.4
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             acceptedButtons: Qt.LeftButton | Qt.RightButton
@@ -85,7 +87,9 @@ Rectangle {
                 x: 10
                 anchors.verticalCenter: parent.verticalCenter
                 implicitSize: 18
-                source: row.entry.icon ? Quickshell.iconPath(row.entry.icon, true) || Quickshell.iconPath("text-x-generic") : ""
+                // A theme icon name, or a URL or path (tray menus send those).
+                source: !row.entry.icon ? "" : row.entry.icon.includes("/") ? row.entry.icon
+                    : Quickshell.iconPath(row.entry.icon, true) || Quickshell.iconPath("text-x-generic")
             }
             Glyph {
                 visible: !!row.entry.glyph

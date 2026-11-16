@@ -115,7 +115,8 @@ keyboard rules. Every animation goes through `Theme.ms()`, which is 0 when
 
 ## Settings
 
-Pinned apps (in taskbar order) and Do not disturb are kept in `~/.config/kriss/shell.json`.
+Pinned apps (in taskbar order), the tray icons hidden in the overflow (`trayHidden`) and Do not
+disturb are kept in `~/.config/kriss/shell.json`.
 Right-click an app on the bar or in the launcher to pin or unpin it; drag a pinned app along the
 bar to move it. Without the file, the defaults in `qml/Desktop.qml` apply. **Taskbar settings**
 (right-click an empty part of the bar) opens this file until a Personalise page exists.
@@ -142,6 +143,9 @@ It behaves like Windows 11's. Each app has one button, pinned or not, with all i
 | Right-click Start, Windows+X | Installed apps, power options, system, network, Terminal, Task Manager, Settings, Files, Search, Shut down or sign out, Desktop |
 | The search box | Start, ready to search: the search field and Recommended files |
 | Right-click the bar | Task Manager (the first system monitor installed) and Taskbar settings |
+| Tray icon | Click opens the app, middle click its second action, scroll scrolls; hover for its tooltip; right-click for its menu, drawn like ours |
+| ^ left of the tray | The overflow flyout with the hidden tray icons; arrows, Enter, Menu key or Shift+F10, Esc work in it |
+| Drag a tray icon | Onto the ^ or up off the bar hides it in the overflow; out of the flyout onto the bar shows it again |
 | The strip right of the clock | Show the desktop; again to bring the windows back |
 
 Under each button: a short mark for a running app and a longer accent pill for the app in front.

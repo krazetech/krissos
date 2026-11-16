@@ -40,6 +40,7 @@ Singleton {
     // What the launcher, quick settings and calendar leave below them for an auto-hidden bar,
     // which reserves no room of its own.
     readonly property int barRoom: taskbarAutoHide ? Theme.barHeight : 0
+    property alias trayHidden: config.trayHidden
 
     readonly property string configFile: (Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config") + "/kriss/shell.json"
     FileView {
@@ -68,6 +69,8 @@ Singleton {
             // A bar on every screen, each with the windows on that screen; false: one bar,
             // on the first screen, with every window.
             property bool taskbarAllScreens: true
+            // Tray icons kept in the overflow flyout (^), by the id the app gives its icon.
+            property list<string> trayHidden: []
         }
     }
 
@@ -77,6 +80,14 @@ Singleton {
 
     function togglePin(id) {
         pinned = isPinned(id) ? pinned.filter(p => p !== id) : pinned.concat([id]);
+    }
+
+    function isTrayHidden(id) {
+        return trayHidden.indexOf(id) >= 0;
+    }
+
+    function setTrayHidden(id, hide) {
+        if (hide !== isTrayHidden(id)) trayHidden = hide ? trayHidden.concat([id]) : trayHidden.filter(t => t !== id);
     }
 
     // Drag to reorder: pinned app `id` takes the place of pinned app `target`.

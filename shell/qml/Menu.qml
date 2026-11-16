@@ -8,6 +8,7 @@ import "fuzzy.js" as Fuzzy
 //   {text, sub: [entries]}                                   a submenu, to the side
 //   {header: "Recent"}                                       a small title
 //   {sep: true}                                              a line
+// and off: true greys an item out.
 // It works from the keyboard the way Radix menus do: up and down (Home, End) move one
 // highlight that the pointer shares, Enter or Space picks, Right opens a submenu and Left
 // or Esc closes it, Tab stays inside, and typing jumps to the item that starts with those
@@ -55,7 +56,7 @@ PanelWindow {
         subOf = -1;
     }
 
-    function pickable(e) { return e && !e.header && !e.sep; }
+    function pickable(e) { return e && !e.header && !e.sep && !e.off; }
     // The next pickable entry from i in direction d, or i if there is none.
     function next(list, i, d) {
         for (let j = i + d; j >= 0 && j < list.length; j += d)
