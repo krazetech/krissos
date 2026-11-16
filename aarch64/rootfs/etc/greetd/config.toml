@@ -1,0 +1,13 @@
+[terminal]
+vt = 1
+
+# ponytail: preview image, so the kriss user is signed in straight away, like the live ISO.
+# A first-boot setup (user, password, language) replaces this before the image is offered
+# to anyone; see ARCHITECTURE §13.
+[initial_session]
+command = "kriss-shell"
+user = "kriss"
+
+[default_session]
+command = "kriss-shell greeter"
+user = "greeter"
