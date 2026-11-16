@@ -39,8 +39,31 @@ ShellRoot {
                 sourceSize: Qt.size(parent.width, parent.height)
                 fillMode: Image.PreserveAspectCrop
             }
+
+            // Right-click on the desktop: display settings, personalise, a terminal, as on Windows.
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.RightButton
+                onClicked: mouse => {
+                    spot.x = mouse.x; spot.y = mouse.y;
+                    const open = (id, text) => {
+                        const e = DesktopEntries.byId(id);
+                        return e ? [{ text: text, icon: e.icon, run: () => e.execute() }] : [];
+                    };
+                    const s = "com.system76.CosmicSettings";
+                    deskMenu.show(spot, [].concat(
+                        open(s + ".Displays", Tr.t("Display settings")),
+                        open(s + ".Wallpaper", Tr.t("Personalise")),
+                        [{ sep: true }],
+                        open("com.system76.CosmicTerm", Tr.t("Open in Terminal")),
+                        open(s, Tr.t("Settings"))), false);
+                }
+                Item { id: spot; width: 1; height: 1 }
+            }
         }
     }
+
+    Menu { id: deskMenu }
 
     Variants {
         id: bars
