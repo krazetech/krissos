@@ -4,15 +4,19 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The KrissOS Shell</title>
-<meta name="description" content="The KrissOS desktop: one floating bar, a launcher you type into, notifications, quick settings and a lock screen, on cosmic-comp.">
-<meta name="theme-color" content="#000000">
+<meta name="description" content="The KrissOS desktop: Windows habits in its own calm look. A taskbar, a launcher on the Windows key, notifications, quick settings and a lock screen.">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="icon" href="favicon.ico" sizes="32x32">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="alternate" hreflang="en" href="https://krazetech.github.io/krissos/shell.html">
+<link rel="alternate" hreflang="ms" href="https://krazetech.github.io/krissos/ms/shell.html">
 <meta property="og:title" content="The KrissOS Shell">
-<meta property="og:description" content="The KrissOS desktop: one floating bar, a launcher you type into, notifications, quick settings and a lock screen, on cosmic-comp.">
+<meta property="og:description" content="The KrissOS desktop: Windows habits in its own calm look. A taskbar, a launcher on the Windows key, notifications, quick settings and a lock screen.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KrissOS">
+<meta property="og:locale" content="en_MY">
 <meta property="og:image" content="https://krazetech.github.io/krissos/og.jpg">
 <meta property="og:image:alt" content="The KrissOS logo, a keris hilt on a Sky Cyan disc, over the KrissOS wallpaper.">
 <meta name="twitter:card" content="summary_large_image">
@@ -32,18 +36,18 @@
         <li><a href="download.html">Download</a></li>
         <li><a href="install.html">Arch repo</a></li>
         <li><a href="roadmap.html">Roadmap</a></li>
-        <li><a href="https://github.com/krazetech/krissos">GitHub</a></li>
+        <li class="gh"><a href="https://github.com/krazetech/krissos">GitHub</a></li>
+        <li><a class="lang" href="ms/shell.html" hreflang="ms" lang="ms">BM</a></li>
       </ul>
     </nav>
   </div>
 </header>
 
 <main id="main">
-  <section class="hero center">
+<section class="hero center">
     <div class="wrap">
-      <p class="eyebrow rise">KrissOS Shell</p>
       <h1 class="rise d1">One bar.<br>Everything in reach.</h1>
-      <p class="lede rise d2">The default KrissOS desktop. A floating bar, a launcher you type into, notifications, quick settings and a lock screen, written in QML for Quickshell on <code>cosmic-comp</code>. Your Windows shortcuts work from day one.</p>
+      <p class="lede rise d2">The default KrissOS desktop: a taskbar, a launcher you type into, notifications, quick settings and a lock screen. Your Windows shortcuts work from day one.</p>
       <figure class="shot hero-shot rise d3">
         <img src="shots/windows.webp" width="1280" height="800" alt="The KrissOS Shell with two floating windows: COSMIC Files in front with a Sky Cyan focus ring, a terminal behind, and the bar at the bottom.">
       </figure>
@@ -54,7 +58,6 @@
   <section>
     <div class="wrap split">
       <div class="reveal">
-        <p class="eyebrow">The bar</p>
         <h2>One bar at the bottom.</h2>
         <p class="lede">The launcher button, your pinned and open apps, the power profile, the tray, volume, notifications and the clock. Right-click an app to pin it, drag a pinned app to move it.</p>
       </div>
@@ -67,9 +70,8 @@
   <section>
     <div class="wrap split flip">
       <div class="reveal">
-        <p class="eyebrow">Launcher</p>
         <h2>Press <kbd>Windows</kbd> and type.</h2>
-        <p class="lede">Search works like cmdk: apps and actions are ranked as you type, arrow keys move, Enter opens. The Menu key or Shift+F10 opens the selected app's menu.</p>
+        <p class="lede">Apps and actions are ranked as you type. Arrow keys move, Enter opens. The Menu key or Shift+F10 opens the selected app's menu.</p>
       </div>
       <figure class="shot reveal">
         <img src="shots/launcher.webp" width="680" height="440" loading="lazy" alt="The launcher with "fi" typed into the search field. Firefox is selected under Apps with an Enter hint, then COSMIC Files, Advanced Network Configuration, and Notifications under Actions.">
@@ -80,9 +82,8 @@
   <section>
     <div class="wrap split">
       <div class="reveal">
-        <p class="eyebrow">Notifications</p>
         <h2>A stack, not a pile.</h2>
-        <p class="lede">New notifications stack like Sonner toasts above the bar, with the newest on top and the rest tucked behind. The bell keeps a count. Do not disturb holds them back.</p>
+        <p class="lede">New notifications stack above the bar, newest on top and the rest tucked behind. The bell keeps a count. Do not disturb holds them back.</p>
       </div>
       <figure class="shot reveal">
         <img src="shots/notifications.webp" width="560" height="240" loading="lazy" alt="A notification titled Second stacked on top of an earlier card, above the bar. The bell icon on the bar shows a badge with the number 2.">
@@ -93,9 +94,8 @@
   <section>
     <div class="wrap split flip">
       <div class="reveal">
-        <p class="eyebrow">Quick settings</p>
         <h2><kbd>Windows</kbd>+<kbd>A</kbd> for the toggles.</h2>
-        <p class="lede">A sheet slides up from the bar, like Vaul: Do not disturb, dark or light mode, the power profile, and volume with its output picker. Drag it down or press Escape to close it.</p>
+        <p class="lede">A sheet slides up from the bar: Do not disturb, dark or light mode, the power profile, and volume with its output picker. Drag it down or press Escape to close it.</p>
       </div>
       <figure class="shot reveal">
         <img src="shots/quick.webp" width="680" height="400" loading="lazy" alt="The quick settings sheet above the bar, with Do not disturb, Dark mode (on, in Sky Cyan) and Balanced tiles and a volume slider at 71.">
@@ -106,9 +106,8 @@
   <section>
     <div class="wrap">
       <div class="head reveal">
-        <p class="eyebrow">Lock and login</p>
         <h2>The same calm face, twice.</h2>
-        <p class="lede">The lock screen takes typing straight away, no click needed. The login screen runs on greetd and looks the same, with other users at the bottom left and the desktop to start at the bottom right.</p>
+        <p class="lede">The lock screen takes typing straight away, no click needed. The login screen looks the same, with other users at the bottom left and the desktop to start at the bottom right.</p>
       </div>
       <div class="gallery two">
         <figure class="shot reveal">
@@ -126,7 +125,6 @@
   <section>
     <div class="wrap">
       <div class="head reveal">
-        <p class="eyebrow">Light and dark</p>
         <h2>Obsidian or daylight.</h2>
         <p class="lede">Switch in quick settings. The bar, sheets and wallpaper follow, and Sky Cyan stays the one accent in both.</p>
       </div>
@@ -143,12 +141,19 @@
     </div>
   </section>
 
+  <section class="center">
+    <div class="wrap reveal">
+      <span class="tag plan">Coming</span>
+      <h2>Prefer a Mac?</h2>
+      <p class="lede">An optional Mac layout is on the way: a top bar, a centred dock and window buttons on the left, in the same KrissOS look.</p>
+    </div>
+  </section>
+
   <section id="shortcuts">
     <div class="wrap split">
       <div class="reveal">
-        <p class="eyebrow">Shortcuts</p>
         <h2>The keys you already know.</h2>
-        <p class="lede">Copied into your COSMIC config on first login. Keys you have already set are left alone.</p>
+        <p class="lede">Set up on your first login. Keys you have already changed are left alone.</p>
       </div>
       <ul class="list keys reveal">
         <li><span class="k"><span class="combo"><kbd>Windows</kbd></span></span><span>Open the launcher</span></li>
@@ -169,7 +174,6 @@
 
   <section class="center">
     <div class="wrap reveal">
-      <p class="eyebrow">Try it</p>
       <h2>Boot it in a VM tonight.</h2>
       <p class="lede">The live ISO logs straight into the KrissOS Shell. Turn animations off in your settings and every transition becomes instant.</p>
       <div class="actions">
@@ -180,23 +184,9 @@
   </section>
 </main>
 
-<script>
-// Copy buttons for code blocks. Purely additive: without JS the text is still selectable.
-for (const box of document.querySelectorAll('.code')) {
-  const b = document.createElement('button');
-  b.className = 'copy';
-  b.type = 'button';
-  b.textContent = 'Copy';
-  b.onclick = () => navigator.clipboard.writeText(box.querySelector('pre').textContent)
-    .then(() => { b.textContent = 'Copied'; setTimeout(() => b.textContent = 'Copy', 1500); });
-  box.append(b);
-}
-</script>
-</main>
-
 <footer>
   <div class="wrap">
-    <p>KrissOS by Kraze Tech. Free software under the <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>.<br>Not affiliated with Arch Linux.</p>
+    <p>KrissOS by Kraze Tech, made in Malaysia with a lot of kopi. Free software under the <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>.<br>Not affiliated with Arch Linux.</p>
     <nav aria-label="Footer">
       <a href="shell.html">Shell</a>
       <a href="download.html">Download</a>

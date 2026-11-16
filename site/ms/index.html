@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KrissOS: Arch Linux yang sedia untuk semua orang</title>
+<meta name="description" content="KrissOS ialah Arch Linux yang sedia untuk semua orang: install tanpa internet, rasa macam Windows, untuk kerja, gaming dan AI di PC sendiri.">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="../logo.svg" type="image/svg+xml">
+<link rel="icon" href="../favicon.ico" sizes="32x32">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="alternate" hreflang="en" href="https://krazetech.github.io/krissos/">
+<link rel="alternate" hreflang="ms" href="https://krazetech.github.io/krissos/ms/">
+<meta property="og:title" content="KrissOS: Arch Linux yang sedia untuk semua orang">
+<meta property="og:description" content="KrissOS ialah Arch Linux yang sedia untuk semua orang: install tanpa internet, rasa macam Windows, untuk kerja, gaming dan AI di PC sendiri.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="KrissOS">
+<meta property="og:locale" content="ms_MY">
+<meta property="og:image" content="https://krazetech.github.io/krissos/og.jpg">
+<meta property="og:image:alt" content="The KrissOS logo, a keris hilt on a Sky Cyan disc, over the KrissOS wallpaper.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<a class="skip" href="#main">Langkau ke kandungan</a>
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="./"><img src="../logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
+    <nav aria-label="Main">
+      <ul>
+        <li><a href="shell.html">Shell</a></li>
+        <li><a href="download.html">Muat turun</a></li>
+        <li><a href="install.html">Repo Arch</a></li>
+        <li><a href="roadmap.html">Hala tuju</a></li>
+        <li class="gh"><a href="https://github.com/krazetech/krissos">GitHub</a></li>
+        <li><a class="lang" href="../" hreflang="en" lang="en">EN</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+<section class="hero center">
+    <div class="wrap">
+      <img class="mark rise" src="../logo.svg" alt="" width="96" height="96">
+      <p class="pill rise">ISO preview dah keluar. Keluaran 110 dalam perjalanan.</p>
+      <h1 class="rise d1">Arch Linux, sedia untuk semua orang.</h1>
+      <p class="lede rise d2">Install tanpa internet. Guna macam Windows. Buat kerja, main game, jalankan AI sendiri. Senang je.</p>
+      <div class="actions rise d2">
+        <a class="btn" href="download.html">Muat turun</a>
+        <a class="btn ghost" href="#windows">Dari Windows?</a>
+      </div>
+
+      <figure class="shot hero-shot rise d3">
+        <picture>
+          <source media="(prefers-color-scheme: light)" srcset="../shots/windows-light.webp">
+          <img src="../shots/desktop.webp" width="1280" height="800" alt="KrissOS Shell: wallpaper keris, dengan satu bar terapung di bawah yang ada launcher, app yang dipin, ikon tray dan jam.">
+        </picture>
+      </figure>
+    </div>
+  </section>
+  <p class="caption wrap">Screenshot sebenar KrissOS Shell. Dia ikut tetapan cerah atau gelap anda, sama macam laman ni.</p>
+
+  <section id="windows">
+    <div class="wrap">
+      <div class="head center reveal">
+        <h2>Dari Windows?</h2>
+        <p class="lede">Tabiat lama anda jalan kat sini. Rupanya kami punya: lembut, bulat dan tenang, dengan satu warna Sky Cyan.</p>
+      </div>
+      <ul class="list narrow reveal">
+        <li><span>Launcher macam Start<small>Taip untuk cari app, fail atau tetapan</small></span><kbd>Windows</kbd></li>
+        <li><span>Taskbar di bawah<small>App yang dipin, tetingkap terbuka, tray dan jam</small></span></li>
+        <li><span>Tutup di atas kanan<small>Minimize, maximize dan tutup, tempat yang anda biasa</small></span></li>
+        <li><span>Buka fail anda<small>File manager, satu kekunci je</small></span><kbd>Windows + E</kbd></li>
+        <li><span>Kunci skrin<small>Nak pergi minum teh tarik? Kunci dulu</small></span><kbd>Windows + L</kbd></li>
+      </ul>
+      <div class="grid carry">
+        <article class="card reveal">
+          <h3>Fail anda</h3>
+          <p>Copy from Windows dalam app welcome bawa masuk Desktop, Documents, Pictures, Music dan Videos, berserta bookmark Edge dan Chrome, dari drive Windows di sebelah KrissOS.</p>
+        </article>
+        <article class="card reveal">
+          <h3>Game anda</h3>
+          <p>Log masuk Steam dan banyak game Windows terus boleh main. Game checker dalam app welcome beritahu game mana yang jalan sebelum anda bergantung padanya.</p>
+        </article>
+        <article class="card reveal">
+          <h3>App anda</h3>
+          <p>Kebanyakan app ada versi Linux atau jalan dalam browser. Yang selebihnya, WinBoat jalankan app Windows dalam tetingkap sendiri.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="shell" class="scene">
+    <div class="wrap">
+      <div class="head center reveal">
+        <h2>Biasa, tapi bukan tiru.</h2>
+        <p class="lede">Tabiat Windows, dalam rupa kami sendiri. Tetingkap yang anda guna dapat cincin Sky Cyan yang lembut.</p>
+      </div>
+      <div class="gallery">
+        <figure class="shot wide reveal">
+          <img src="../shots/windows.webp" width="1280" height="800" loading="lazy" alt="Dua tetingkap terapung, COSMIC Files di depan dengan cincin fokus Sky Cyan dan terminal di belakang, atas wallpaper keris. Bar di bawah tunjuk app yang terbuka.">
+        </figure>
+        <figure class="shot reveal">
+          <img src="../shots/launcher.webp" width="680" height="440" loading="lazy" alt="Launcher dengan &quot;fi&quot; ditaip dalam kotak carian. Firefox dipilih di bawah Apps, kemudian COSMIC Files, Advanced Network Configuration, dan Notifications di bawah Actions.">
+          <figcaption>Tekan Windows dan taip</figcaption>
+        </figure>
+        <figure class="shot reveal">
+          <img src="../shots/quick.webp" width="680" height="400" loading="lazy" alt="Quick settings, panel di atas bar dengan jubin Do not disturb, Dark mode dan Balanced serta slider volume pada 71.">
+          <figcaption>Quick settings, Windows + A</figcaption>
+        </figure>
+      </div>
+      <div class="actions center reveal"><a class="btn ghost" href="shell.html">Tengok shell</a></div>
+    </div>
+  </section>
+
+  <section id="pillars">
+    <div class="wrap">
+      <div class="head center reveal">
+        <h2>Satu komputer untuk sepanjang hari.</h2>
+        <p class="lede">Kerja waktu pagi, main game waktu malam, jalankan AI sendiri di celah-celah. Tak perlu komputer kedua, tak perlu dual boot.</p>
+      </div>
+      <div class="grid">
+        <article class="card pillar reveal">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="3"/><path d="M8 21h8M12 17v4"/></svg></div>
+          <h3>Kerja</h3>
+          <p>Desktop yang tenang, semua benda ada di tempat yang anda jangka. Kalau update buat hal, pilih snapshot lama masa hidupkan komputer. App Windows sahaja jalan melalui WinBoat.</p>
+        </article>
+        <article class="card pillar reveal">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 11h4M8 9v4M15 12h.01M18 10h.01"/><path d="M17.3 5H6.7a4 4 0 0 0-4 3.6L2 15a3 3 0 0 0 5.3 2.2L9 15h6l1.7 2.2A3 3 0 0 0 22 15l-.7-6.4a4 4 0 0 0-4-3.6Z"/></svg></div>
+          <h3>Gaming</h3>
+          <p>Steam dah siap set, dengan driver yang betul untuk kad grafik anda, termasuk kad NVIDIA lama. Mod kuasa tune sistem bila anda mula main.</p>
+        </article>
+        <article class="card pillar reveal">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="3"/><path d="M9 9h6v6H9zM9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg></div>
+          <h3>AI lokal</h3>
+          <p>Jalankan model AI di komputer sendiri, tanpa akaun dan tanpa cloud. Ollama diset untuk kad grafik anda, dan tool coding yang anda dah guna cuma selangkah lagi.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="promises">
+    <div class="wrap split">
+      <div class="reveal">
+        <h2>Lima janji.</h2>
+        <p class="lede">Apa yang KrissOS pegang dalam setiap keluaran. Takde syarat tersembunyi.</p>
+      </div>
+      <ul class="list reveal">
+        <li><span>Tak perlu internet untuk install<small>Semua ada dalam USB. Internet cuma untuk tambahan.</small></span></li>
+        <li><span>Semua boleh undo<small>Boot ke snapshot lama, simpan dengan <code>kriss rollback</code>, dan undo perubahan tool kami dengan <code>revert</code>.</small></span></li>
+        <li><span>Satu rupa yang tenang<small>Gaya lembut yang sama, dari menu boot sampai app yang kami bawa.</small></span></li>
+        <li><span>Arch di bawah, tak diusik<small>App dan update anda terus dari Arch. Kami cuma tambah satu lapisan nipis bertandatangan yang dua orang mampu jaga.</small></span></li>
+        <li><span>Hardware anda, kami urus<small>Driver dipilih untuk anda, termasuk kad NVIDIA lama, dengan nombor yang jujur tentang apa yang boleh dijangka.</small></span></li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="wrap">
+      <div class="head center reveal">
+        <h2>Kecil, dengan sengaja.</h2>
+        <p class="lede">Yang lain semua terus dari Arch. Kami bawa yang kami punya sahaja, dalam satu repo bertandatangan yang dua orang mampu jaga.</p>
+      </div>
+      <div class="grid">
+        <article class="card reveal">
+          <span class="tag live">Ada</span>
+          <h3>KrissOS Shell</h3>
+          <p>Taskbar, launcher yang anda taip, notifikasi, quick settings dan skrin kunci. Inilah desktop asalnya.</p>
+        </article>
+        <article class="card reveal">
+          <span class="tag live">Ada</span>
+          <h3>Live USB</h3>
+          <p>Cuba KrissOS sebelum install. Build baru keluar setiap malam, dan hanya selepas ia boot dalam ujian kami.</p>
+        </article>
+        <article class="card reveal">
+          <span class="tag live">Ada</span>
+          <h3>App welcome</h3>
+          <p>Terbuka masa mula-mula: game checker, app biasa anda, Copy from Windows, driver dan tambahan.</p>
+        </article>
+        <article class="card reveal">
+          <span class="tag live">Ada</span>
+          <h3>Gaming</h3>
+          <p>Steam, GameMode, Gamescope dan MangoHud dalam satu install, berserta mod kuasa yang tukar dengan satu klik.</p>
+        </article>
+        <article class="card reveal">
+          <span class="tag live">Ada</span>
+          <h3>App Windows</h3>
+          <p>WinBoat jalankan app Windows dalam tetingkap sendiri. <code>kriss winapps</code> semak komputer anda dulu, lepas tu set semuanya.</p>
+        </article>
+        <article class="card reveal">
+          <span class="tag live">Ada</span>
+          <h3>AI lokal, siap set</h3>
+          <p>Ollama dari app welcome, ditala untuk kad grafik anda, dan langkah pilihan untuk install coding agent yang anda dah guna.</p>
+        </article>
+        <article class="card reveal">
+          <span class="tag live">Ada</span>
+          <h3>Windows dalam VM</h3>
+          <p><code>kriss-vm</code> bagi VM Windows guna kad grafik anda, untuk desktop. Ia semak hardware dulu dan undo semuanya dengan satu arahan.</p>
+        </article>
+        <article class="card reveal">
+          <span class="tag wip">Sedang dibuat</span>
+          <h3>Installer</h3>
+          <p>Install di sebelah Windows, dengan setiap snapshot boleh dipilih dalam menu boot. Sedang diuji.</p>
+        </article>
+        <article class="card reveal">
+          <span class="tag wip">Sedang dibuat</span>
+          <h3>Kernel yang lebih laju</h3>
+          <p>Kernel kami sendiri, ditala untuk pemproses moden dan dibina secara terbuka. Build standard untuk PC lama. Sedang diuji.</p>
+        </article>
+        <article class="card reveal">
+          <span class="tag plan">Akan datang</span>
+          <h3>Layout Mac</h3>
+          <p>Lebih suka Mac? Layout pilihan dengan bar atas, dock di tengah dan butang tetingkap di kiri, dalam rupa yang sama.</p>
+        </article>
+        <article class="card reveal">
+          <span class="tag plan">Akan datang</span>
+          <h3><code>kriss migrate</code></h3>
+          <p>Dah guna Arch atau CachyOS? Satu arahan akan tukar install itu jadi KrissOS terus, fail dan app anda kekal.</p>
+        </article>
+        <article class="card reveal">
+          <span class="tag plan">Akan datang</span>
+          <h3>Secure Boot</h3>
+          <p>KrissOS akan jalan dengan Secure Boot hidup, dan kekal bertandatangan selepas setiap update.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="center">
+    <div class="wrap reveal">
+      <h2>Cuba malam ni.</h2>
+      <p class="lede">Boot live USB atau VM. Takde apa yang diinstall sampai anda setuju.</p>
+      <div class="actions">
+        <a class="btn" href="download.html">Muat turun</a>
+        <a class="btn ghost" href="roadmap.html">Tengok hala tuju</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>KrissOS oleh Kraze Tech, dibuat di Malaysia dengan banyak kopi. Perisian bebas di bawah <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>.<br>Tiada kaitan dengan Arch Linux.</p>
+    <nav aria-label="Footer">
+      <a href="shell.html">Shell</a>
+      <a href="download.html">Muat turun</a>
+      <a href="install.html">Repo Arch</a>
+      <a href="roadmap.html">Hala tuju</a>
+      <a href="https://github.com/krazetech/krissos">GitHub</a>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>

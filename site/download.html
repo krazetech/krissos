@@ -4,15 +4,19 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Download KrissOS</title>
-<meta name="description" content="Download the KrissOS live ISO for x86_64.">
-<meta name="theme-color" content="#000000">
+<meta name="description" content="Get the KrissOS preview ISO, test it in a VM, and check the image.">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="icon" href="favicon.ico" sizes="32x32">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="alternate" hreflang="en" href="https://krazetech.github.io/krissos/download.html">
+<link rel="alternate" hreflang="ms" href="https://krazetech.github.io/krissos/ms/download.html">
 <meta property="og:title" content="Download KrissOS">
-<meta property="og:description" content="Download the KrissOS live ISO for x86_64.">
+<meta property="og:description" content="Get the KrissOS preview ISO, test it in a VM, and check the image.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KrissOS">
+<meta property="og:locale" content="en_MY">
 <meta property="og:image" content="https://krazetech.github.io/krissos/og.jpg">
 <meta property="og:image:alt" content="The KrissOS logo, a keris hilt on a Sky Cyan disc, over the KrissOS wallpaper.">
 <meta name="twitter:card" content="summary_large_image">
@@ -32,16 +36,16 @@
         <li><a href="download.html" aria-current="page">Download</a></li>
         <li><a href="install.html">Arch repo</a></li>
         <li><a href="roadmap.html">Roadmap</a></li>
-        <li><a href="https://github.com/krazetech/krissos">GitHub</a></li>
+        <li class="gh"><a href="https://github.com/krazetech/krissos">GitHub</a></li>
+        <li><a class="lang" href="ms/download.html" hreflang="ms" lang="ms">BM</a></li>
       </ul>
     </nav>
   </div>
 </header>
 
 <main id="main">
-  <section class="center">
+<section class="center">
     <div class="wrap">
-      <p class="eyebrow rise">Download</p>
       <h1 class="rise d1">Get KrissOS.</h1>
       <div id="release" class="rise d2">
         <p class="lede">A preview ISO is built from <code>main</code> every night and published once it boots in CI. It boots straight into the KrissOS Shell.</p>
@@ -56,14 +60,13 @@
   <section>
     <div class="wrap split">
       <div class="reveal">
-        <p class="eyebrow">Before you install</p>
         <h2>What to expect.</h2>
-        <p class="lede">KrissOS is young. Preview images are for testing in a VM or on spare hardware, not for your only machine yet.</p>
+        <p class="lede">KrissOS is still young. Try the preview in a VM or on a spare PC, not on the only computer you have. Not yet.</p>
       </div>
       <ul class="list reveal">
-        <li><span>Architecture<small>x86_64 only. Apple Silicon comes later as its own image.</small></span></li>
+        <li><span>Your PC<small>64-bit Intel and AMD PCs. Apple Silicon Macs come later, with their own image.</small></span></li>
         <li><span>Desktop<small>The KrissOS Shell by default. The installer also offers KDE Plasma.</small></span></li>
-        <li><span>Updates<small>Rolling, straight from the Arch mirrors plus the <code>[kriss]</code> repo.</small></span></li>
+        <li><span>Updates<small>Small updates all the time, straight from Arch, plus our own signed packages. Each one takes a snapshot first.</small></span></li>
         <li><span>Releases<small>Nightly builds go to <code>preview</code>. Releases are tagged by codename: <code>110</code>, <code>115</code>, and on.</small></span></li>
       </ul>
     </div>
@@ -72,7 +75,6 @@
   <section>
     <div class="wrap">
       <div class="card note reveal">
-        <p class="eyebrow">Test it in a VM</p>
         <h2>Two settings, then boot.</h2>
         <ul class="list">
           <li><span>UEFI firmware on<small>In virt-manager, GNOME Boxes, VirtualBox or VMware, pick UEFI (OVMF) before the first boot. The installer needs it, and it is what CI tests.</small></span></li>
@@ -86,7 +88,6 @@
   <section>
     <div class="wrap">
       <div class="head reveal">
-        <p class="eyebrow">Verify</p>
         <h2>Check the image.</h2>
         <p class="lede">Download the ISO, <code>sha256sums.txt</code> and <code>sha256sums.txt.sig</code> into one folder, then check both before you write the ISO to a USB stick.</p>
       </div>
@@ -151,7 +152,7 @@ fetch('https://api.github.com/repos/krazetech/krissos/releases?per_page=20')
 
 <footer>
   <div class="wrap">
-    <p>KrissOS by Kraze Tech. Free software under the <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>.<br>Not affiliated with Arch Linux.</p>
+    <p>KrissOS by Kraze Tech, made in Malaysia with a lot of kopi. Free software under the <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>.<br>Not affiliated with Arch Linux.</p>
     <nav aria-label="Footer">
       <a href="shell.html">Shell</a>
       <a href="download.html">Download</a>

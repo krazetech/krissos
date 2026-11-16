@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hala tuju KrissOS</title>
+<meta name="description" content="Di mana KrissOS sekarang dalam perjalanan ke 110, keluaran pertamanya.">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="../logo.svg" type="image/svg+xml">
+<link rel="icon" href="../favicon.ico" sizes="32x32">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="alternate" hreflang="en" href="https://krazetech.github.io/krissos/roadmap.html">
+<link rel="alternate" hreflang="ms" href="https://krazetech.github.io/krissos/ms/roadmap.html">
+<meta property="og:title" content="Hala tuju KrissOS">
+<meta property="og:description" content="Di mana KrissOS sekarang dalam perjalanan ke 110, keluaran pertamanya.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="KrissOS">
+<meta property="og:locale" content="ms_MY">
+<meta property="og:image" content="https://krazetech.github.io/krissos/og.jpg">
+<meta property="og:image:alt" content="The KrissOS logo, a keris hilt on a Sky Cyan disc, over the KrissOS wallpaper.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<a class="skip" href="#main">Langkau ke kandungan</a>
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="./"><img src="../logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
+    <nav aria-label="Main">
+      <ul>
+        <li><a href="shell.html">Shell</a></li>
+        <li><a href="download.html">Muat turun</a></li>
+        <li><a href="install.html">Repo Arch</a></li>
+        <li><a href="roadmap.html" aria-current="page">Hala tuju</a></li>
+        <li class="gh"><a href="https://github.com/krazetech/krissos">GitHub</a></li>
+        <li><a class="lang" href="../roadmap.html" hreflang="en" lang="en">EN</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+<section>
+    <div class="wrap">
+      <div class="head">
+        <h1 class="rise d1">Perjalanan ke 110.</h1>
+        <p class="lede rise d2">Keluaran ikut barisan Kriss: <code>110</code> ialah 1.0, kemudian <code>115</code> dan <code>MR3</code>. Inilah kedudukan setiap fasa hari ini. Sikit-sikit, lama-lama jadi bukit.</p>
+      </div>
+
+      <ol class="phases">
+        <li class="done reveal">
+          <span class="n">0</span>
+          <div>
+            <h2>Asas <span class="tag live">Siap</span></h2>
+            <p>Repo, rangka CI, kunci tandatangan, dan repo <code>[kriss]</code> bertandatangan di GitHub Releases.</p>
+          </div>
+        </li>
+        <li class="done reveal">
+          <span class="n">1</span>
+          <div>
+            <h2>Kernel <span class="tag live">Siap</span></h2>
+            <p><code>linux-kriss</code> dibina dalam CI dan boot pada desktop dev. Ia ada dalam repo <code>[kriss]</code> untuk diuji.</p>
+          </div>
+        </li>
+        <li class="done reveal">
+          <span class="n">2</span>
+          <div>
+            <h2>Tema, tetapan dan live ISO <span class="tag live">Siap</span></h2>
+            <p><code>kriss-theme</code>, <code>kriss-settings</code>, dan live ISO yang boot ke KrissOS Shell atas <code>cosmic-comp</code>, disemak oleh ujian boot dalam CI.</p>
+          </div>
+        </li>
+        <li class="now reveal">
+          <span class="n">3</span>
+          <div>
+            <h2>Installer <span class="tag wip">Sedang dibuat</span></h2>
+            <ul>
+              <li>Calamares dengan pemilih desktop (KrissOS Shell atau Plasma), dual boot, btrfs dan snapper, dan Limine. Diuji dengan install automatik dalam CI.</li>
+              <li>Secure Boot melalui <code>sbctl</code>. Belum mula.</li>
+            </ul>
+          </div>
+        </li>
+        <li class="done reveal">
+          <span class="n">4</span>
+          <div>
+            <h2>Gaming <span class="tag live">Siap</span></h2>
+            <p>Profil kuasa <code>kriss tune</code> dengan scheduler sched_ext, dan <code>kriss-meta-gaming</code>: Steam, GameMode, Gamescope, MangoHud dan driver terkini.</p>
+          </div>
+        </li>
+        <li class="done reveal">
+          <span class="n">5</span>
+          <div>
+            <h2>GPU passthrough <span class="tag live">Siap</span></h2>
+            <p><code>kriss-vm</code> untuk desktop. Laptop tanpa suis MUX datang seterusnya.</p>
+          </div>
+        </li>
+        <li class="done reveal">
+          <span class="n">6</span>
+          <div>
+            <h2>App Windows dan AI lokal <span class="tag live">Siap</span></h2>
+            <p>WinBoat untuk app Windows, diset oleh <code>kriss winapps</code>, dan setup AI dalam app welcome: Ollama dengan pengesanan GPU berserta coding agent pilihan.</p>
+          </div>
+        </li>
+        <li class="reveal">
+          <span class="n">7</span>
+          <div>
+            <h2>Layout Mac dan pindah terus <span class="tag plan">Akan datang</span></h2>
+            <ul>
+              <li>Layout Mac pilihan untuk shell: bar atas, dock di tengah dan butang tetingkap di kiri, dalam rupa KrissOS yang sama.</li>
+              <li><code>kriss migrate</code>: tukar install Arch atau CachyOS sedia ada jadi KrissOS terus.</li>
+            </ul>
+          </div>
+        </li>
+        <li class="reveal">
+          <span class="n">110</span>
+          <div>
+            <h2>KrissOS 1.0 <span class="tag plan">Matlamat</span></h2>
+            <p>Keluaran bertag yang pertama.</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap split">
+      <div class="reveal">
+        <h2>Selepas 110: Apple Silicon.</h2>
+      </div>
+      <p class="lede reveal">Imej berasingan atas Arch Linux ARM dengan tool Asahi. Shell, tema, tool dan setup AI ikut sekali; kernel x86, WinBoat dan <code>kriss-vm</code> tidak.</p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>KrissOS oleh Kraze Tech, dibuat di Malaysia dengan banyak kopi. Perisian bebas di bawah <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>.<br>Tiada kaitan dengan Arch Linux.</p>
+    <nav aria-label="Footer">
+      <a href="shell.html">Shell</a>
+      <a href="download.html">Muat turun</a>
+      <a href="install.html">Repo Arch</a>
+      <a href="roadmap.html">Hala tuju</a>
+      <a href="https://github.com/krazetech/krissos">GitHub</a>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>
