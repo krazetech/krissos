@@ -26,6 +26,21 @@ Singleton {
     }
     // Windows that Show desktop minimized, to bring back on the second press.
     property var hidden: []
+    // Window ids, the most recently focused first, for Alt+Tab.
+    property var recent: []
+    onRawChanged: {
+        const ids = raw.map(w => w.id);
+        const now = raw.find(w => w.active && !w.minimized)?.id;
+        const kept = recent.filter(id => id !== now && ids.indexOf(id) >= 0);
+        const fresh = ids.filter(id => id !== now && kept.indexOf(id) < 0);
+        recent = (now !== undefined ? [now] : []).concat(kept, fresh);
+    }
+    // The open windows in Alt+Tab order.
+    readonly property var byRecent: recent.map(id => list.find(w => w.id === id)).filter(w => w)
+
+    function activate(id) {
+        helper.write("activate " + id + "\n");
+    }
 
     function forApp(appId) {
         return list.filter(w => w.appId === appId);

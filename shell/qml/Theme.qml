@@ -48,6 +48,11 @@ Singleton {
     property bool reduceMotion: false
     function ms(duration) { return reduceMotion ? 0 : duration; }
 
+    // Motion: every animation takes its length from these, through ms().
+    readonly property int fast: 140    // hover, press, fades, small moves
+    readonly property int normal: 220  // a panel opening, a list growing
+    readonly property int slow: 500    // the quick settings sheet (Vaul's length)
+
     // Switches the shell, GTK and Qt apps (through the GNOME setting) and COSMIC apps and
     // the compositor (through COSMIC's own theme mode) together.
     function setDark(on) {
