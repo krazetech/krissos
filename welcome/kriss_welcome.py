@@ -47,7 +47,9 @@ class Backend(QObject):
     copyDone = Signal(int, int, "QStringList")  # files copied, files failed, bookmark files written
 
     def __init__(self, app, engine):
-        super().__init__()
+        # A child of the engine, so it outlives the QML that calls it: the engine deletes
+        # its windows before its children.
+        super().__init__(engine)
         self._app, self._engine = app, engine
         self._translator = QTranslator()
         self._lang = "en"
