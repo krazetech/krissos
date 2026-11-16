@@ -28,6 +28,7 @@
     <a class="brand" href="./"><img src="logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
     <nav aria-label="Main">
       <ul>
+        <li><a href="shell.html">Shell</a></li>
         <li><a href="download.html">Download</a></li>
         <li><a href="install.html" aria-current="page">Arch repo</a></li>
         <li><a href="roadmap.html">Roadmap</a></li>
@@ -91,10 +92,14 @@ Server = https://github.com/krazetech/krissos/releases/download/repo-x86_64</cod
       </div>
       <ul class="list reveal">
         <li><span><code>kriss-keyring</code><small>The public signing key</small></span><span class="tag live">Live</span></li>
-        <li><span><code>kriss-theme</code><small>Colors, fonts, wallpaper, Plymouth and Limine theme</small></span><span class="tag live">Live</span></li>
-        <li><span><code>kriss-settings</code><small>Default configs and pacman hooks</small></span><span class="tag live">Live</span></li>
-        <li><span><code>kriss-tools</code><small>The <code>kriss</code> command, early</small></span><span class="tag live">Live</span></li>
-        <li><span><code>linux-kriss</code><small>The x86-64-v3 kernel</small></span><span class="tag wip">In progress</span></li>
+        <li><span><code>kriss-theme</code><small>Colours, fonts, wallpaper, and the Plasma, SDDM, Plymouth and Limine theme</small></span><span class="tag live">Live</span></li>
+        <li><span><code>kriss-settings</code><small>Default configs, os-release, the Limine menu and pacman hooks</small></span><span class="tag live">Live</span></li>
+        <li><span><code>kriss-shell</code><small>The KrissOS Shell and its login screen, on <code>cosmic-comp</code></small></span><span class="tag live">Live</span></li>
+        <li><span><code>kriss-tools</code><small>The <code>kriss</code> command: <code>kriss tune</code>, <code>kriss update</code> and <code>kriss-vm</code></small></span><span class="tag live">Live</span></li>
+        <li><span><code>kriss-welcome</code><small>The first-boot app: game checker, apps, copy from Windows, drivers and extras</small></span><span class="tag live">Live</span></li>
+        <li><span><code>kriss-meta-gaming</code><small>Steam, GameMode, Gamescope, MangoHud, Mesa and Vulkan in one install</small></span><span class="tag live">Live</span></li>
+        <li><span><code>linux-kriss</code><small>The x86-64-v3 kernel, plus <code>linux-kriss-generic</code> for older CPUs</small></span><span class="tag wip">Testing</span></li>
+        <li><span><code>kriss-installer</code><small>The Calamares installer for the live ISO, with <code>calamares</code></small></span><span class="tag wip">Testing</span></li>
       </ul>
     </div>
   </section>
@@ -118,6 +123,7 @@ for (const box of document.querySelectorAll('.code')) {
   <div class="wrap">
     <p>KrissOS by Kraze Tech. Free software under the <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>.<br>Not affiliated with Arch Linux.</p>
     <nav aria-label="Footer">
+      <a href="shell.html">Shell</a>
       <a href="download.html">Download</a>
       <a href="install.html">Arch repo</a>
       <a href="roadmap.html">Roadmap</a>

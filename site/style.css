@@ -58,6 +58,7 @@ code, pre { font-family: var(--mono); font-size: .9em; }
   .nav .wrap { gap: 12px; }
   .nav ul { gap: 14px; font-size: .84rem; }
   .brand span { display: none; }
+  .nav li:last-child { display: none; } /* GitHub stays in the footer */
 }
 
 /* Type */
@@ -104,47 +105,18 @@ section + section { border-top: 1px solid var(--line); }
 .pill { display: inline-flex; align-items: center; gap: 10px; padding: 7px 14px 7px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); font-size: .85rem; color: var(--soft); margin-bottom: 28px; }
 .pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px rgba(36, 177, 230, .18); }
 
-.mark { margin: 0 auto 28px; width: clamp(72px, 9vw, 96px); height: auto; filter: drop-shadow(0 0 40px rgba(36, 177, 230, .35)); }
+.mark { margin: 0 auto 28px; width: clamp(72px, 9vw, 96px); height: auto; }
 
-/* Desktop mock over the real wallpaper. logo.svg and wallpaper.svg are rendered copies of
-   theme/templates/usr/share/pixmaps/krissos.svg and theme/wallpaper.svg (kriss-dark.svg) by theme/generate.py. */
-/* ponytail: copies, not linked; re-render them into site/ when the tokens or artwork change. */
-.screen {
-  position: relative; margin: 72px auto 0; width: min(1040px, 100%); text-align: left;
-  aspect-ratio: 16 / 10; border-radius: 28px 28px 0 0; overflow: hidden;
-  border: 1px solid rgba(230, 237, 242, .14); border-bottom: 0;
-  background: var(--bg) url(wallpaper.svg) center / cover;
-}
-.screen .win {
-  position: absolute; border-radius: 18px;
-  background: linear-gradient(135deg, rgba(11, 13, 15, .9), rgba(11, 13, 15, .62));
-  border: 1px solid rgba(230, 237, 242, .12);
-  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-  padding: 14px 16px; font: .72rem/1.6 var(--mono); color: var(--soft);
-}
-.screen .win.focus { box-shadow: 0 0 0 2px var(--accent), 0 30px 60px rgba(0, 0, 0, .5); }
-.screen .win b { color: var(--fg); font-weight: 500; }
-.screen .win .a { color: var(--accent); }
-.screen .dots { display: flex; gap: 6px; margin-bottom: 10px; }
-.screen .dots i { width: 9px; height: 9px; border-radius: 50%; background: rgba(230, 237, 242, .18); }
-.screen .term { left: 7%; top: 12%; width: 46%; }
-.screen .side { right: 7%; top: 18%; width: 32%; }
-.screen .bar {
-  position: absolute; left: 50%; bottom: 3.5%; transform: translateX(-50%);
-  display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 18px;
-  background: rgba(11, 13, 15, .78); border: 1px solid rgba(230, 237, 242, .12);
-  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-}
-.screen .bar i { width: 26px; height: 26px; border-radius: 8px; background: rgba(230, 237, 242, .1); }
-.screen .bar i:first-child { background: var(--accent); }
-.screen .bar span { font: .7rem var(--mono); color: var(--soft); margin-left: 8px; }
+/* Screenshots. Real captures of the shell (see shots/), never mock-ups. */
+.shot { margin: 0; }
+.shot img { width: 100%; height: auto; border-radius: 20px; border: 1px solid rgba(230, 237, 242, .14); background: var(--surface); }
+.shot figcaption { font-size: .85rem; color: var(--muted); margin-top: 12px; }
+.hero-shot { margin: 72px auto 0; width: min(1040px, 100%); }
+.hero-shot img { border-radius: 28px; }
+.gallery { display: grid; gap: 20px; grid-template-columns: 1fr 1fr; align-items: start; }
+.gallery .wide { grid-column: 1 / -1; }
+@media (max-width: 700px) { .gallery { grid-template-columns: 1fr; } }
 .caption { font-size: .85rem; color: var(--muted); text-align: center; margin-top: 18px; }
-@media (max-width: 700px) {
-  .screen { aspect-ratio: 4 / 5; }
-  .screen .term { left: 6%; right: 6%; width: auto; top: 8%; }
-  .screen .side { left: 14%; right: 6%; width: auto; top: 50%; }
-}
-
 /* Pillars and feature grid */
 .grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); }
 .card {
@@ -161,11 +133,23 @@ section + section { border-top: 1px solid var(--line); }
 
 /* Split rows */
 .split { display: grid; gap: 48px; align-items: center; grid-template-columns: 1fr 1fr; }
+@media (min-width: 861px) { .split.flip > :first-child { order: 2; } }
 @media (max-width: 860px) { .split { grid-template-columns: 1fr; } }
 .list { list-style: none; padding: 0; margin: 0; }
 .list li { padding: 18px 0; border-top: 1px solid var(--line); display: flex; gap: 16px; justify-content: space-between; align-items: baseline; }
 .list li:last-child { border-bottom: 1px solid var(--line); }
 .list small { display: block; color: var(--muted); font-size: .9rem; }
+
+.card.note { padding: clamp(28px, 5vw, 56px); }
+.card.note h2 { font-size: clamp(1.75rem, 4vw, 2.5rem); }
+.card.note .list { margin-top: 28px; }
+
+/* Keyboard shortcuts */
+kbd { font: 500 .8rem/1 var(--mono); color: var(--fg); background: var(--surface); border: 1px solid rgba(230, 237, 242, .18); border-bottom-width: 2px; border-radius: 8px; padding: .3em .55em; white-space: nowrap; }
+h2 kbd { font-size: .5em; vertical-align: middle; }
+.keys li { align-items: center; justify-content: flex-start; flex-wrap: wrap; gap: 8px 20px; }
+.keys .k { flex: 0 0 15rem; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.keys li > span:last-child { flex: 1 1 14rem; color: var(--soft); }
 
 /* Code blocks */
 .code { position: relative; margin: 0 0 20px; }

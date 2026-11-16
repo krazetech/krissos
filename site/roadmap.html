@@ -28,6 +28,7 @@
     <a class="brand" href="./"><img src="logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
     <nav aria-label="Main">
       <ul>
+        <li><a href="shell.html">Shell</a></li>
         <li><a href="download.html">Download</a></li>
         <li><a href="install.html">Arch repo</a></li>
         <li><a href="roadmap.html" aria-current="page">Roadmap</a></li>
@@ -54,46 +55,42 @@
             <p>Repo, CI skeleton, signing key, and the signed <code>[kriss]</code> repo on GitHub Releases.</p>
           </div>
         </li>
-        <li class="now reveal">
+        <li class="done reveal">
           <span class="n">1</span>
           <div>
-            <h3>Kernel and shell test <span class="tag wip">In progress</span></h3>
-            <ul>
-              <li><code>linux-kriss</code> builds in CI and boots on the dev desktop. The pipeline is in review.</li>
-              <li>Test that <code>cosmic-comp</code> can host the KrissOS Shell panel, dock, launcher, notifications and lock screen. Not started.</li>
-            </ul>
+            <h3>Kernel <span class="tag live">Done</span></h3>
+            <p><code>linux-kriss</code> builds in CI and boots on the dev desktop. It is in the <code>[kriss]</code> repo for testing.</p>
+          </div>
+        </li>
+        <li class="done reveal">
+          <span class="n">2</span>
+          <div>
+            <h3>Theme, settings and a live ISO <span class="tag live">Done</span></h3>
+            <p><code>kriss-theme</code>, <code>kriss-settings</code>, and a live ISO that boots to the KrissOS Shell on <code>cosmic-comp</code>, checked by a boot test in CI.</p>
           </div>
         </li>
         <li class="now reveal">
-          <span class="n">2</span>
+          <span class="n">3</span>
           <div>
-            <h3>Theme, settings and a live ISO <span class="tag wip">In progress</span></h3>
+            <h3>Installer <span class="tag wip">In progress</span></h3>
             <ul>
-              <li><code>kriss-theme</code> and <code>kriss-settings</code> are in the repo.</li>
-              <li>The light and dark wallpapers are in review.</li>
-              <li>The first live ISO boots to KDE Plasma and is being built now. The KrissOS Shell follows.</li>
+              <li>Calamares with the desktop picker (KrissOS Shell or Plasma), dual boot, btrfs and snapper, and Limine. Tested by an unattended install in CI.</li>
+              <li>Secure Boot through <code>sbctl</code>. Not started.</li>
             </ul>
           </div>
         </li>
-        <li class="reveal">
-          <span class="n">3</span>
-          <div>
-            <h3>Installer <span class="tag plan">Planned</span></h3>
-            <p>Calamares with a desktop picker, btrfs and snapper with bootable snapshots, and Secure Boot through <code>sbctl</code>.</p>
-          </div>
-        </li>
-        <li class="reveal">
+        <li class="done reveal">
           <span class="n">4</span>
           <div>
-            <h3>Gaming <span class="tag plan">Planned</span></h3>
-            <p><code>kriss-tune</code> power profiles with sched_ext schedulers, and the gaming metapackage: Steam, GameMode, Gamescope, MangoHud and current drivers.</p>
+            <h3>Gaming <span class="tag live">Done</span></h3>
+            <p><code>kriss tune</code> power profiles with sched_ext schedulers, and <code>kriss-meta-gaming</code>: Steam, GameMode, Gamescope, MangoHud and current drivers.</p>
           </div>
         </li>
-        <li class="reveal">
+        <li class="done reveal">
           <span class="n">5</span>
           <div>
-            <h3>GPU passthrough <span class="tag plan">Planned</span></h3>
-            <p><code>kriss-vm</code> on desktops first, then laptops without a MUX switch.</p>
+            <h3>GPU passthrough <span class="tag live">Done</span></h3>
+            <p><code>kriss-vm</code> on desktops. Laptops with no MUX switch come next.</p>
           </div>
         </li>
         <li class="reveal">
@@ -107,7 +104,7 @@
           <span class="n">110</span>
           <div>
             <h3>KrissOS 1.0 <span class="tag plan">Goal</span></h3>
-            <p>The KrissOS Shell becomes the default desktop. KDE Plasma stays available.</p>
+            <p>The first tagged release.</p>
           </div>
         </li>
       </ol>
@@ -130,6 +127,7 @@
   <div class="wrap">
     <p>KrissOS by Kraze Tech. Free software under the <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>.<br>Not affiliated with Arch Linux.</p>
     <nav aria-label="Footer">
+      <a href="shell.html">Shell</a>
       <a href="download.html">Download</a>
       <a href="install.html">Arch repo</a>
       <a href="roadmap.html">Roadmap</a>

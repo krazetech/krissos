@@ -28,6 +28,7 @@
     <a class="brand" href="./"><img src="logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
     <nav aria-label="Main">
       <ul>
+        <li><a href="shell.html">Shell</a></li>
         <li><a href="download.html" aria-current="page">Download</a></li>
         <li><a href="install.html">Arch repo</a></li>
         <li><a href="roadmap.html">Roadmap</a></li>
@@ -43,9 +44,9 @@
       <p class="eyebrow rise">Download</p>
       <h1 class="rise d1">Get KrissOS.</h1>
       <div id="release" class="rise d2">
-        <p class="lede">The first live ISO is on its way. It boots to KDE Plasma with the KrissOS look, and it will appear here as soon as it is published.</p>
+        <p class="lede">A preview ISO is built from <code>main</code> every night and published once it boots in CI. It boots straight into the KrissOS Shell.</p>
         <div class="actions">
-          <a class="btn" href="https://github.com/krazetech/krissos/releases">Watch the releases</a>
+          <a class="btn" href="https://github.com/krazetech/krissos/releases/tag/preview">Get the preview ISO</a>
           <a class="btn ghost" href="install.html">Use the repo on Arch</a>
         </div>
       </div>
@@ -57,14 +58,28 @@
       <div class="reveal">
         <p class="eyebrow">Before you install</p>
         <h2>What to expect.</h2>
-        <p class="lede">KrissOS is young. The first images are for testing on spare hardware or in a VM, not for your only machine yet.</p>
+        <p class="lede">KrissOS is young. Preview images are for testing in a VM or on spare hardware, not for your only machine yet.</p>
       </div>
       <ul class="list reveal">
         <li><span>Architecture<small>x86_64 only. Apple Silicon comes later as its own image.</small></span></li>
-        <li><span>Desktop<small>KDE Plasma first. The KrissOS Shell becomes the default at 110.</small></span></li>
+        <li><span>Desktop<small>The KrissOS Shell by default. The installer also offers KDE Plasma.</small></span></li>
         <li><span>Updates<small>Rolling, straight from the Arch mirrors plus the <code>[kriss]</code> repo.</small></span></li>
-        <li><span>Releases<small>Images are tagged by codename: <code>110</code>, <code>115</code>, and on.</small></span></li>
+        <li><span>Releases<small>Nightly builds go to <code>preview</code>. Releases are tagged by codename: <code>110</code>, <code>115</code>, and on.</small></span></li>
       </ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="card note reveal">
+        <p class="eyebrow">Test it in a VM</p>
+        <h2>Two settings, then boot.</h2>
+        <ul class="list">
+          <li><span>UEFI firmware on<small>In virt-manager, GNOME Boxes, VirtualBox or VMware, pick UEFI (OVMF) before the first boot. The installer needs it, and it is what CI tests.</small></span></li>
+          <li><span>4 GB of RAM or more<small>The live session runs from memory. Two CPU cores and 3D acceleration make it smoother.</small></span></li>
+          <li><span>No login needed<small>The live session logs straight into the KrissOS Shell. Press the Windows key to open the launcher.</small></span></li>
+        </ul>
+      </div>
     </div>
   </section>
 
@@ -73,11 +88,58 @@
       <div class="head reveal">
         <p class="eyebrow">Verify</p>
         <h2>Check the image.</h2>
-        <p class="lede">Compare the checksum with the one published on the release page before you write the ISO to a USB stick.</p>
+        <p class="lede">Download the ISO, <code>sha256sums.txt</code> and <code>sha256sums.txt.sig</code> into one folder, then check both before you write the ISO to a USB stick.</p>
       </div>
-      <div class="code reveal"><pre><code>sha256sum krissos-*.iso</code></pre></div>
+      <ol class="steps">
+        <li class="reveal">
+          <h3>Check the checksum</h3>
+          <p>It should print <code>OK</code> next to the ISO.</p>
+          <div class="code"><pre><code>sha256sum -c sha256sums.txt</code></pre></div>
+        </li>
+        <li class="reveal">
+          <h3>Import the signing key</h3>
+          <p>The same key signs our packages.</p>
+          <div class="code"><pre><code>curl -fsSL https://raw.githubusercontent.com/krazetech/krissos/main/pkgs/kriss-keyring/krissos.gpg | gpg --import</code></pre></div>
+        </li>
+        <li class="reveal">
+          <h3>Check the signature</h3>
+          <p>Look for <b>Good signature from "KrissOS Packages"</b> and this fingerprint. Each ISO also has its own <code>.sig</code> if you want to check it directly.</p>
+          <div class="code"><pre><code>gpg --verify sha256sums.txt.sig sha256sums.txt</code></pre></div>
+          <div class="code"><pre><code>7C92 AE8B 599A F813 2166  6CA3 1317 AA31 B21C 5F87</code></pre></div>
+        </li>
+      </ol>
     </div>
   </section>
+<script>
+// Show the newest release (pre-releases included, so the nightly "preview") that carries an .iso.
+// Without JS, or with no ISO yet, the static text and its link to the preview release stay.
+// ponytail: unauthenticated GitHub API, 60 requests/hour per visitor IP; plenty for a static page.
+fetch('https://api.github.com/repos/krazetech/krissos/releases?per_page=20')
+  .then(r => r.ok ? r.json() : [])
+  .then(list => {
+    for (const rel of list) {
+      if (rel.draft) continue;
+      const iso = rel.assets.find(a => a.name.endsWith('.iso'));
+      if (!iso) continue;
+      const sums = rel.assets.find(a => a.name === 'sha256sums.txt');
+      // The preview release is reused, so its own date is old; the ISO's upload date is the build date.
+      const when = new Date(iso.updated_at).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+      const box = document.getElementById('release');
+      const p = document.createElement('p');
+      p.className = 'lede';
+      p.textContent = `${rel.prerelease ? 'Preview build' : rel.name || rel.tag_name} from ${when}. ${(iso.size / 1e9).toFixed(1)} GB live ISO for x86_64.`;
+      const link = (cls, href, text) => Object.assign(document.createElement('a'), { className: cls, href, textContent: text });
+      const actions = document.createElement('div');
+      actions.className = 'actions';
+      actions.append(link('btn', iso.browser_download_url, 'Download ISO'));
+      if (sums) actions.append(link('btn ghost', sums.browser_download_url, 'sha256sums.txt'));
+      actions.append(link('btn ghost', rel.html_url, 'All files and signatures'));
+      box.replaceChildren(p, actions);
+      return;
+    }
+  })
+  .catch(() => {});
+</script>
 </main>
 
 <script>
@@ -117,6 +179,7 @@ fetch('https://api.github.com/repos/krazetech/krissos/releases?per_page=20')
   <div class="wrap">
     <p>KrissOS by Kraze Tech. Free software under the <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>.<br>Not affiliated with Arch Linux.</p>
     <nav aria-label="Footer">
+      <a href="shell.html">Shell</a>
       <a href="download.html">Download</a>
       <a href="install.html">Arch repo</a>
       <a href="roadmap.html">Roadmap</a>

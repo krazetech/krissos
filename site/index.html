@@ -28,6 +28,7 @@
     <a class="brand" href="./"><img src="logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
     <nav aria-label="Main">
       <ul>
+        <li><a href="shell.html">Shell</a></li>
         <li><a href="download.html">Download</a></li>
         <li><a href="install.html">Arch repo</a></li>
         <li><a href="roadmap.html">Roadmap</a></li>
@@ -41,7 +42,7 @@
   <section class="hero center">
     <div class="wrap">
       <img class="mark rise" src="logo.svg" alt="" width="96" height="96">
-      <p class="pill rise">In development. First ISO coming soon.</p>
+      <p class="pill rise">Preview ISO out now. Release 110 is on the way.</p>
       <h1 class="rise d1">Arch Linux,<br>ready to work.</h1>
       <p class="lede rise d2">KrissOS is a thin overlay on Arch Linux, tuned for productivity, gaming and local AI. Rolling updates straight from Arch, plus a small signed repo of our own.</p>
       <div class="actions rise d2">
@@ -49,28 +50,12 @@
         <a class="btn ghost" href="install.html">Add the repo to Arch</a>
       </div>
 
-      <div class="screen rise d3" role="img" aria-label="Concept of the KrissOS desktop: floating rounded windows over a black and Sky Cyan wallpaper, with one bottom bar.">
-        <div class="win term focus">
-          <div class="dots"><i></i><i></i><i></i></div>
-          <div><span class="a">~</span> <b>kriss version</b></div>
-          <div>KrissOS 110 (codename 110)</div>
-          <div><span class="a">~</span> <b>kriss-tune performance</b></div>
-          <div>profile: performance, scx scheduler on</div>
-          <div><span class="a">~</span> <b>ollama run llama3</b></div>
-          <div>using GPU: Vulkan</div>
-        </div>
-        <div class="win side">
-          <div class="dots"><i></i><i></i><i></i></div>
-          <div><b>Snapshots</b></div>
-          <div>#42 before update</div>
-          <div>#41 kriss-vm setup</div>
-          <div class="a">Boot from Limine</div>
-        </div>
-        <div class="bar" aria-hidden="true"><i></i><i></i><i></i><i></i><span>14:20</span></div>
-      </div>
+      <figure class="shot hero-shot rise d3">
+        <img src="shots/desktop.webp" width="1280" height="800" alt="The KrissOS Shell on the live ISO: the keris wallpaper in Sky Cyan on black, with one floating bar at the bottom holding the launcher, pinned apps, the Balanced power profile, tray icons and the clock.">
+      </figure>
     </div>
   </section>
-  <p class="caption wrap">Concept render of the KrissOS Shell, planned for 110. The first ISO ships with KDE Plasma.</p>
+  <p class="caption wrap">The live ISO, straight after boot. Captured by the boot test in CI.</p>
 
   <section id="pillars">
     <div class="wrap">
@@ -109,23 +94,43 @@
       <div class="grid">
         <article class="card reveal">
           <span class="tag live">Live</span>
+          <h3>KrissOS Shell</h3>
+          <p>One floating bar, a launcher you type into, notifications, quick settings and a lock screen, on <code>cosmic-comp</code>. The compositor test passed, and it is the default desktop.</p>
+        </article>
+        <article class="card reveal">
+          <span class="tag live">Live</span>
+          <h3>Live ISO</h3>
+          <p>Boots straight into the KrissOS Shell. CI builds it every night and boots it in a VM before it is published.</p>
+        </article>
+        <article class="card reveal">
+          <span class="tag live">Live</span>
           <h3>Signed <code>[kriss]</code> repo</h3>
           <p>Our packages, built and signed in CI and served from GitHub Releases. No mirrors to run.</p>
         </article>
         <article class="card reveal">
+          <span class="tag live">Live</span>
+          <h3><code>kriss tune</code> and gaming</h3>
+          <p>Performance, balanced and powersave profiles with a matching sched_ext scheduler, and <code>kriss-meta-gaming</code>: Steam, GameMode, Gamescope, MangoHud and current drivers.</p>
+        </article>
+        <article class="card reveal">
+          <span class="tag live">Live</span>
+          <h3><code>kriss-welcome</code></h3>
+          <p>The first-boot app: a game checker, your usual apps, copying files from Windows, drivers and extras.</p>
+        </article>
+        <article class="card reveal">
+          <span class="tag live">Live</span>
+          <h3><code>kriss-vm</code></h3>
+          <p>GPU passthrough to a Windows VM with Looking Glass, on desktops. Checks your hardware first, backs up every file it edits, and reverts in one command.</p>
+        </article>
+        <article class="card reveal">
           <span class="tag wip">In progress</span>
           <h3><code>linux-kriss</code> kernel</h3>
-          <p>Built for x86-64-v3 with CachyOS scheduler patches and LTO, from source in our CI. A generic build covers older CPUs.</p>
+          <p>Built for x86-64-v3 with BORE, sched_ext and Clang ThinLTO, from source in our CI. A generic build covers older CPUs. Being tested before it becomes the default.</p>
         </article>
         <article class="card reveal">
           <span class="tag wip">In progress</span>
-          <h3>Theme and defaults</h3>
-          <p>Obsidian and Sky Cyan across wallpapers, terminal colors, boot splash and login, all generated from one set of tokens.</p>
-        </article>
-        <article class="card reveal">
-          <span class="tag plan">Planned</span>
-          <h3>Bootable snapshots</h3>
-          <p>btrfs and snapper, with every snapshot one pick away in the Limine boot menu.</p>
+          <h3>Installer</h3>
+          <p>Calamares with a desktop picker, dual boot, btrfs and snapper, and every snapshot one pick away in the Limine boot menu. Being tested in CI.</p>
         </article>
         <article class="card reveal">
           <span class="tag plan">Planned</span>
@@ -134,25 +139,39 @@
         </article>
         <article class="card reveal">
           <span class="tag plan">Planned</span>
-          <h3><code>kriss-tune</code></h3>
-          <p>Performance, balanced and powersave profiles, each with a matching sched_ext scheduler.</p>
-        </article>
-        <article class="card reveal">
-          <span class="tag plan">Planned</span>
-          <h3><code>kriss-vm</code></h3>
-          <p>GPU passthrough to a Windows VM with Looking Glass. Checks your hardware first, backs up every file it edits, and reverts in one command.</p>
-        </article>
-        <article class="card reveal">
-          <span class="tag plan">Planned</span>
           <h3>Windows apps</h3>
           <p>WinBoat runs Windows productivity apps in a container. One command checks KVM and sets it up.</p>
         </article>
         <article class="card reveal">
           <span class="tag plan">Planned</span>
-          <h3>Ollama, set up</h3>
-          <p>GPU detection for CUDA, ROCm and Vulkan. <code>kriss-vm</code> hands the GPU over and back without a fight.</p>
+          <h3>Local AI, set up</h3>
+          <p>Ollama with GPU detection for CUDA, ROCm and Vulkan, and an optional step to install the coding agents you already use.</p>
         </article>
       </div>
+    </div>
+  </section>
+
+  <section id="shell">
+    <div class="wrap">
+      <div class="head reveal">
+        <p class="eyebrow">KrissOS Shell</p>
+        <h2>Feels like home on day one.</h2>
+        <p class="lede">The Windows key opens the launcher, Windows+L locks, and windows float with a Sky Cyan ring on the one in focus.</p>
+      </div>
+      <div class="gallery">
+        <figure class="shot wide reveal">
+          <img src="shots/windows.webp" width="1280" height="800" loading="lazy" alt="Two floating windows, COSMIC Files in front with a Sky Cyan focus ring and a terminal behind, over the keris wallpaper. The bar below shows the open apps.">
+        </figure>
+        <figure class="shot reveal">
+          <img src="shots/quick.webp" width="680" height="400" loading="lazy" alt="Quick settings, a sheet above the bar with Do not disturb, Dark mode and Balanced tiles and a volume slider at 71.">
+          <figcaption>Quick settings</figcaption>
+        </figure>
+        <figure class="shot reveal">
+          <img src="shots/lock.webp" width="1280" height="800" loading="lazy" alt="The lock screen: a large clock, the date, the user's initial in a Sky Cyan circle and a password field, with Sleep, Restart and Shut down below.">
+          <figcaption>Lock screen</figcaption>
+        </figure>
+      </div>
+      <div class="actions reveal"><a class="btn ghost" href="shell.html">Tour the shell</a></div>
     </div>
   </section>
 
@@ -160,12 +179,12 @@
     <div class="wrap split">
       <div class="reveal">
         <p class="eyebrow">Desktop</p>
-        <h2>Plasma now. Our shell at 110.</h2>
-        <p class="lede">The first images ship stock KDE Plasma with the KrissOS wallpapers. The KrissOS Shell, a panel, dock, launcher and lock screen on <code>cosmic-comp</code>, becomes the default at release 110.</p>
+        <h2>Our shell by default. Plasma if you want it.</h2>
+        <p class="lede">The KrissOS Shell is the default desktop. The installer also offers KDE Plasma, themed to match.</p>
       </div>
       <ul class="list reveal">
-        <li><span>KDE Plasma<small>Stock Plasma, KrissOS wallpapers</small></span><span class="tag wip">First ISO</span></li>
-        <li><span>KrissOS Shell<small>Floating windows, one bottom bar, Sky Cyan focus ring</small></span><span class="tag plan">Default at 110</span></li>
+        <li><span>KrissOS Shell<small>Floating windows, one bottom bar, Sky Cyan focus ring</small></span><span class="tag live">Default</span></li>
+        <li><span>KDE Plasma<small>Pick it in the installer, with the KrissOS look</small></span><span class="tag live">Optional</span></li>
         <li><span>Apple Silicon<small>A separate image on Arch Linux ARM and Asahi</small></span><span class="tag plan">After 110</span></li>
       </ul>
     </div>
@@ -188,6 +207,7 @@
   <div class="wrap">
     <p>KrissOS by Kraze Tech. Free software under the <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>.<br>Not affiliated with Arch Linux.</p>
     <nav aria-label="Footer">
+      <a href="shell.html">Shell</a>
       <a href="download.html">Download</a>
       <a href="install.html">Arch repo</a>
       <a href="roadmap.html">Roadmap</a>
