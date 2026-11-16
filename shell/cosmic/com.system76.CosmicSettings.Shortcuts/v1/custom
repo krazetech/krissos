@@ -5,6 +5,7 @@
     (modifiers: [Super], key: "e"): System(HomeFolder),
     (modifiers: [Super], key: "a"): Spawn("kriss-shell quick"),
     (modifiers: [Super], key: "n"): Spawn("kriss-shell notifications"),
+    (modifiers: [Super, Alt], key: "d"): Spawn("kriss-shell calendar"),
     // Snap the window to a half (cosmic-comp's Move on a floating window). Up maximizes and
     // Down minimizes, as on Windows; COSMIC's Windows+Shift+arrows still snap to quarters.
     (modifiers: [Super], key: "Left"): Move(Left),

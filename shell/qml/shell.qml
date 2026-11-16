@@ -85,7 +85,7 @@ ShellRoot {
     }
 
     // cosmic-comp runs `kriss-shell COMMAND` for the Windows-key shortcuts, which calls these.
-    // `kriss-shell launcher|quick|notifications`: Windows, Windows+A and Windows+N; `calendar` has no key yet.
+    // `kriss-shell launcher|quick|notifications`: Windows, Windows+A and Windows+N; `calendar`: Windows+Alt+D.
     IpcHandler {
         target: "launcher"
         function toggle(): void { root.toggle("launcherOpen"); }
