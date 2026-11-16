@@ -1,0 +1,58 @@
+#!/bin/bash
+# Turn the live system that unpackfs copied to the target into an installed one: drop the
+# live user and the archiso-only config, put the kernel back in /boot, set up the pacman
+# keyring and remove what this PC does not need. Works offline. Calamares runs this on the
+# live system right after unpackfs, before its users step (which then gets uid 1000).
+# usage: unlive ROOT
+set -euo pipefail
+
+root=$1
+chr() { arch-chroot "$root" "$@"; }
+
+# The live user and its passwordless sudo; root had an empty password on the live system.
+chr userdel live
+rm -rf "$root/home/live"
+chr usermod -p '!*' root
+
+# Live-only files from iso/airootfs. configure rewrites /etc/greetd/config.toml (the
+# live autologin) and enables the display manager again.
+rm -f "$root"/etc/sudoers.d/live \
+  "$root"/etc/mkinitcpio.conf.d/archiso.conf \
+  "$root"/etc/systemd/system/{pacman-init.service,etc-pacman.d-gnupg.mount,display-manager.service} \
+  "$root"/etc/systemd/system/multi-user.target.wants/pacman-init.service \
+  "$root"/etc/systemd/journald.conf.d/volatile-storage.conf \
+  "$root"/etc/systemd/logind.conf.d/do-not-suspend.conf \
+  "$root"/etc/systemd/system-generators/systemd-gpt-auto-generator \
+  "$root"/etc/udev/rules.d/90-kriss-nouveau.rules \
+  "$root"/etc/xdg/autostart/kriss-install-boot.desktop \
+  "$root"/etc/skel/.config/kriss/shell.json \
+  "$root"/etc/skel/.config/autostart/kriss-welcome.desktop
+
+# mkarchiso empties /boot (the kernel is on the ISO instead); the kernel package keeps its
+# own copy next to its modules. configure builds the initramfs.
+kernels=()
+for d in "$root"/usr/lib/modules/*/; do
+  [ -f "$d/pkgbase" ] || continue
+  k=$(<"$d/pkgbase")
+  cp "$d/vmlinuz" "$root/boot/vmlinuz-$k"  # cp, not install: /boot is FAT, no chmod
+  kernels+=("$k")
+done
+echo "kriss: kernel ${kernels[*]}"
+
+# The live keyring was a tmpfs filled at boot; the target gets its own.
+chr pacman-key --init
+chr pacman-key --populate
+# pacman-key leaves gpg-agent running on the target's keyring, which keeps the target busy
+# and makes the final unmount fail.
+gpgconf --homedir "$root/etc/pacman.d/gnupg" --kill all 2>/dev/null || true
+
+# The installer and the live boot tools. NVIDIA's driver (on the ISO so the live session
+# uses it) comes out too unless this PC has a Turing or newer card: kept, nvidia-utils
+# would blacklist nouveau for older cards and DKMS would rebuild it on every kernel update.
+rm_pkgs=(calamares kriss-installer mkinitcpio-archiso syslinux memtest86+ memtest86+-efi)
+if [ -z "$(/usr/lib/kriss-installer/nvidia "${kernels[0]}")" ]; then
+  rm_pkgs+=(nvidia-open-dkms nvidia-utils dkms)
+  for k in "${kernels[@]}"; do rm_pkgs+=("$k-headers"); done
+fi
+mapfile -t rm_pkgs < <(chr pacman -Qq "${rm_pkgs[@]}" 2>/dev/null)
+chr pacman -Rns --noconfirm "${rm_pkgs[@]}"

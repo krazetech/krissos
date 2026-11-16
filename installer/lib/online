@@ -1,0 +1,36 @@
+#!/bin/bash
+# Extras for an online install, all optional: linux-kriss on x86-64-v3 CPUs, the latest
+# updates, and KDE Plasma (not on the ISO). Offline, or when a download fails, the system
+# from the USB stays as it is and updates come later. Never fails the install.
+# usage: online ROOT DESKTOP   (DESKTOP: shell or plasma)
+set -uo pipefail
+
+root=$1 desktop=${2:-shell}
+chr() { arch-chroot "$root" "$@"; }
+offline() {
+  echo "kriss: $1; installing KrissOS from the USB as it is. Updates come later."
+  [ "$desktop" = plasma ] && echo 'kriss: KDE Plasma needs the internet; installing the KrissOS Shell instead.'
+  exit 0
+}
+
+curl -fsI --max-time 15 https://geo.mirror.pkgbuild.com >/dev/null || offline 'no internet'
+chr pacman -Sy || offline 'the package lists did not download'
+
+pkgs=()
+[ "$desktop" = plasma ] && pkgs+=(plasma-meta sddm konsole dolphin discover)
+# linux-kriss needs x86-64-v3 (Haswell / Zen 1 and newer); the ISO's kernel runs anywhere.
+old=$(cat "$root"/usr/lib/modules/*/pkgbase)
+new=
+if [ "$old" != linux-kriss ] && chr pacman -Si linux-kriss >/dev/null 2>&1 &&
+   /usr/lib/ld-linux-x86-64.so.2 --help | grep -q 'x86-64-v3 (supported'; then
+  new=linux-kriss
+  pkgs+=(linux-kriss)
+  chr pacman -Q dkms >/dev/null 2>&1 && pkgs+=(linux-kriss-headers)  # NVIDIA kept
+fi
+
+chr pacman -Su --noconfirm --needed "${pkgs[@]}" || offline 'the download failed'
+if [ -n "$new" ]; then
+  echo "kriss: kernel $new instead of $old"
+  # shellcheck disable=SC2046  # no headers package when NVIDIA was removed
+  chr pacman -Rns --noconfirm "$old" $(chr pacman -Qq "$old-headers" 2>/dev/null)
+fi

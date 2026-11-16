@@ -52,8 +52,11 @@ comes from Arch or a pinned AUR build, and the AUR builds are kept to a minimum.
 ### The installer
 
 Calamares on the live ISO (`kriss-install`, also the boot menu's *Install KrissOS* entry).
-It downloads the system with `pacstrap`, so it needs the internet; that keeps the ISO small
-and lets it pick the kernel, GPU driver and desktop at install time.
+It never needs the internet: Calamares' `unpackfs` copies the live system to the disk and
+`installer/lib/unlive` strips the live-only parts (live user, autologin, archiso config,
+the installer itself, and the NVIDIA driver on PCs without a Turing or newer card). Online
+is a bonus only: `installer/lib/online` then switches to `linux-kriss`, runs `pacman -Syu`
+and installs KDE Plasma, which is not on the ISO. Offline, Plasma falls back to the shell.
 
 - **Disk:** GPT and UEFI only. Dual-boot alongside Windows is the default, erase disk the
   other choice; manual partitioning and disk encryption are off for now. `kriss-install`
@@ -66,9 +69,9 @@ and lets it pick the kernel, GPU driver and desktop at install time.
   Windows when the installer found its boot manager, and the 15 newest snapper snapshots.
   A snapshot boots with the kernel it was taken with (old kernels are kept under
   `/boot/kriss/`) and a RAM overlay from the `kriss-snapshot` initramfs hook.
-- **Kernel:** `linux-kriss` on x86-64-v3 CPUs, `linux-kriss-generic` otherwise.
-- **NVIDIA:** `nvidia-open-dkms` on Turing and newer. Older cards keep nouveau, since
-  no driver in Arch's repos supports them any more.
+- **Kernel:** the ISO's kernel offline; `linux-kriss` on x86-64-v3 CPUs when online.
+- **NVIDIA:** `nvidia-open-dkms` on Turing and newer, on the ISO so the live session uses
+  it too. Older cards keep nouveau, since no driver in Arch's repos supports them any more.
 - **Secure Boot:** not set up by the installer yet. Limine needs `limine enroll-config`
   and hashed kernel paths before an `sbctl` signature means anything.
 
