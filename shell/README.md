@@ -106,7 +106,10 @@ bar to move it. Without the file, the defaults in `qml/Desktop.qml` apply.
 | Windows+Shift+1…9 | Move the window to that workspace |
 | Print Screen | Screenshot of everything, to `~/Pictures/Screenshots` and the clipboard |
 | Windows+Shift+S | Screenshot of a dragged region |
-| Alt+Tab, Alt+F4 | cosmic-comp's own |
+| Alt+Tab, Alt+Shift+Tab | Switch windows, most recent first; let go of Alt to switch, Esc to cancel |
+| Play/Pause, Next, Previous | The media player that is playing; quick settings shows it too |
+| Power button | Sleep (hold it to shut down), from `/usr/lib/systemd/logind.conf.d/50-kriss-shell.conf` |
+| Alt+F4 | cosmic-comp's own |
 
 ## Translations
 

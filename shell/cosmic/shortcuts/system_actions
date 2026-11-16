@@ -11,4 +11,10 @@
     MuteMic: "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle",
     VolumeLower: "wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%-",
     VolumeRaise: "wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+",
+    // COSMIC's defaults run cosmic-launcher and playerctl, which the KrissOS Shell doesn't use.
+    WindowSwitcher: "kriss-shell switcher next",
+    WindowSwitcherPrevious: "kriss-shell switcher previous",
+    PlayPause: "kriss-shell media playPause",
+    PlayNext: "kriss-shell media next",
+    PlayPrev: "kriss-shell media previous",
 }

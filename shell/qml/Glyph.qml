@@ -41,7 +41,13 @@ Item {
         chevron: "M9 6l6 6-6 6",
         down: "M7 10l5 5 5-5",
         up: "M7 14l5-5 5 5",
-        back: "M15 6l-6 6 6 6"
+        back: "M15 6l-6 6 6 6",
+        play: "M7 4.5v15l12-7.5z",
+        pause: "M8 5v14M16 5v14",
+        next: "M5 5l10 7-10 7zM19 5v14",
+        prev: "M19 5L9 12l10 7zM5 5v14",
+        music: "M9 18V5l11-2v13M6 18a3 3 0 1 0 6 0a3 3 0 1 0-6 0M17 16a3 3 0 1 0 6 0a3 3 0 1 0-6 0",
+        charging: "M13 2L4 14h7l-1 8 9-12h-7z"
     })
 
     Shape {

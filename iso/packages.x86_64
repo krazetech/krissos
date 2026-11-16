@@ -53,6 +53,7 @@ bluez
 sudo
 nano
 man-db
+inetutils
 arch-install-scripts
 btrfs-progs
 dosfstools
