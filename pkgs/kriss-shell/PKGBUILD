@@ -33,12 +33,14 @@ build() {
   XDG_CONFIG_HOME="$srcdir/config" cargo run --release --locked \
     --manifest-path "$_shell/cosmic-theme/Cargo.toml" --target-dir "$srcdir/target"
 
-  # Python bindings for the window-list protocols kriss-shell-toplevels speaks.
+  # Python bindings for the window-list and window-capture protocols kriss-shell-toplevels speaks.
   local wp=/usr/share/wayland-protocols/staging
   python -m pywayland.scanner -o "$srcdir/kriss_protocols" -i \
     /usr/share/wayland/wayland.xml \
     "$wp/ext-foreign-toplevel-list/ext-foreign-toplevel-list-v1.xml" \
     "$wp/ext-workspace/ext-workspace-v1.xml" \
+    "$wp/ext-image-capture-source/ext-image-capture-source-v1.xml" \
+    "$wp/ext-image-copy-capture/ext-image-copy-capture-v1.xml" \
     "$_shell"/protocols/*.xml
   touch "$srcdir/kriss_protocols/__init__.py"
 }
@@ -52,7 +54,9 @@ import os, sys
 sys.path.insert(0, os.environ["KRISS_SHELL_LIB"])
 import kriss_protocols.cosmic_toplevel_info_unstable_v1
 import kriss_protocols.cosmic_toplevel_management_unstable_v1
-import kriss_protocols.ext_foreign_toplevel_list_v1'
+import kriss_protocols.ext_foreign_toplevel_list_v1
+import kriss_protocols.ext_image_capture_source_v1
+import kriss_protocols.ext_image_copy_capture_v1'
   ! grep -rn '{{' "$srcdir/qml" "$srcdir/config/cosmic"
 }
 

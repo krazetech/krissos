@@ -38,6 +38,16 @@ Singleton {
     // The open windows in Alt+Tab order.
     readonly property var byRecent: recent.map(id => list.find(w => w.id === id)).filter(w => w)
 
+    // Window id -> the latest preview picture's URL. Kept after a preview hides, so a
+    // window minimized since still shows its last picture.
+    property var thumbs: ({})
+
+    // Capture these windows' previews at about size pixels on the long edge, and only these;
+    // an empty list stops capturing.
+    function capture(ids, size) {
+        helper.write("thumbs " + Math.round(size) + " " + ids.join(" ") + "\n");
+    }
+
     function activate(id) {
         helper.write("activate " + id + "\n");
     }
@@ -120,13 +130,14 @@ Singleton {
                     // Newer helpers also send other messages as objects; only the window list is an array.
                     const msg = JSON.parse(line);
                     if (Array.isArray(msg)) root.raw = msg;
+                    else if (msg.thumb !== undefined) root.thumbs = Object.assign({}, root.thumbs, { [msg.thumb]: msg.url });
                 } catch (e) {
                     console.warn("kriss-shell-toplevels:", line);
                 }
             }
         }
         // ponytail: restart forever with a fixed delay; a crash loop only costs a log line every 2 s.
-        onExited: (code, status) => restart.start()
+        onExited: (code, status) => { root.thumbs = {}; restart.start(); }
     }
 
     Timer {

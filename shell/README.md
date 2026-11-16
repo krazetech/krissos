@@ -11,7 +11,7 @@ SDDM lists it as **KrissOS Shell**.
 | `qml/i18n/` | Translations, one `<lang>.json` per language (`ms` is Bahasa Melayu). See below |
 | `fuzzy-check` | Tests the launcher's fuzzy ranking and the menus' type-ahead: `node shell/fuzzy-check` |
 | `i18n-check` | Checks every shell string has a translation; `--list` prints them all |
-| `kriss-shell-toplevels` | Python helper that lists open windows (and the screen each is on) and focuses, minimizes or closes them. Quickshell can't read windows from cosmic-comp directly |
+| `kriss-shell-toplevels` | Python helper that lists open windows (and the screen each is on), focuses, minimizes or closes them, and captures the taskbar's window previews while they are shown. Quickshell can't read or capture windows from cosmic-comp directly |
 | `protocols/` | COSMIC protocol files the helper's bindings are generated from |
 | `session/kriss-shell` | Starts the session and the login screen, and handles the commands the shortcuts below run |
 | `cosmic/` | Defaults copied key by key into `~/.config/cosmic` (same layout) on first start: the shortcuts below, the KrissOS theme builder keys (accent, backgrounds, corners), no coloured ring around the focused window, Papirus icons and the COSMIC Terminal colours. Existing user values are left alone |
@@ -31,7 +31,9 @@ XDG_CONFIG_HOME=$dev/config cargo run --release --manifest-path shell/cosmic-the
 ln -sfn config/cosmic "$dev/cosmic"
 python -m pywayland.scanner -o "$dev/lib/kriss_protocols" -i /usr/share/wayland/wayland.xml \
   /usr/share/wayland-protocols/staging/ext-foreign-toplevel-list/ext-foreign-toplevel-list-v1.xml \
-  /usr/share/wayland-protocols/staging/ext-workspace/ext-workspace-v1.xml shell/protocols/*.xml
+  /usr/share/wayland-protocols/staging/ext-workspace/ext-workspace-v1.xml \
+  /usr/share/wayland-protocols/staging/ext-image-capture-source/ext-image-capture-source-v1.xml \
+  /usr/share/wayland-protocols/staging/ext-image-copy-capture/ext-image-copy-capture-v1.xml shell/protocols/*.xml
 touch "$dev/lib/kriss_protocols/__init__.py"
 KRISS_SHELL_DATA=$dev KRISS_SHELL_LIB=$dev/lib PATH="$PWD/shell:$PWD/shell/session:$PATH" \
   cosmic-comp shell/session/kriss-shell --inside
@@ -54,13 +56,19 @@ kriss-shell launcher
 kriss-shell lock
 ```
 ```bash
+qs -p "$dev/qml" ipc call previews open Alacritty 400
+```
+```bash
 notify-send -A ok=Update "14 updates ready" "A snapshot is taken first."
 ```
 ```bash
 gsettings set org.gnome.desktop.interface color-scheme default
 ```
 
-The last one switches to the light variant; `prefer-dark` switches back.
+The `previews` line shows the window previews of an app (by its app id) as if its taskbar
+button were 400 px from the left; `ipc call previews close` hides them. The nested session has no
+way to move a pointer there otherwise. The last one switches to the light variant;
+`prefer-dark` switches back.
 
 ## Performance check
 
