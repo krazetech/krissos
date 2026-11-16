@@ -58,7 +58,7 @@ Singleton {
     readonly property var sheetCurve: [0.32, 0.72, 0, 1, 1, 1]
     readonly property var settleCurve: [0.21, 1.02, 0.73, 1, 1, 1]
     // Hover and press: a control lights up a little and gives slightly under the pointer.
-    readonly property color cardHover: Qt.tint(card, alpha(fg, 0.06))
+    readonly property color cardHover: Qt.tint(card, alpha(fg, 0.12))
     readonly property real pressScale: 0.95
 
     // Switches the shell, GTK and Qt apps (through the GNOME setting) and COSMIC apps and

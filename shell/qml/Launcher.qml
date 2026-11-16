@@ -641,7 +641,7 @@ PanelWindow {
         Rectangle {
             anchors.fill: parent
             radius: 15
-            color: chip.containsMouse ? Theme.win : Theme.card
+            color: chip.containsMouse ? Theme.cardHover : Theme.card
             Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
         }
         Row {
