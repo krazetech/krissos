@@ -1,0 +1,4 @@
+# Live session only (the installer removes it). nvidia-utils blacklists nouveau, but
+# NVIDIA cards older than Turing (device ids below 0x1e00) are not supported by the open
+# driver, so load nouveau for them by name, which the blacklist does not stop.
+ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030[02]*", ATTR{device}=="0x0*|0x1[0-9a-d]*", RUN+="/usr/bin/modprobe nouveau"

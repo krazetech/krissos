@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Install the ISO onto a blank QEMU disk with iso/test/autoinstall (the installer's own
-# pacstrap and configure steps, unattended), then boot the disk through Limine and wait
-# for the KrissOS login screen. Needs qemu-system-x86, ovmf, libarchive-tools and socat.
+# steps, unattended), then boot the disk through Limine and wait for the KrissOS login
+# screen. No network card at all (-nic none): installing must never need the internet.
+# Needs qemu-system-x86, ovmf, libarchive-tools and socat.
 # usage: iso/install-test.sh ISO OUT_DIR
 set -euo pipefail
 
@@ -11,7 +12,7 @@ ovmf=${OVMF:-/usr/share/ovmf/OVMF.fd}
 mkdir -p "$out"
 disk=$out/disk.qcow2
 qemu-img create -f qcow2 "$disk" 40G
-qemu=(qemu-system-x86_64 -name kriss-install-test -enable-kvm -cpu host -smp 4 -m 4096 -device virtio-vga -display none
+qemu=(qemu-system-x86_64 -name kriss-install-test -enable-kvm -cpu host -smp 4 -m 4096 -device virtio-vga -display none -nic none
       -drive "file=$disk,if=virtio,format=qcow2" -monitor "unix:$out/mon,server,nowait")
 shot() { echo "screendump $out/$1.png -f png" | socat - "UNIX-CONNECT:$out/mon" >/dev/null; }
 
