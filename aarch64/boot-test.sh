@@ -20,7 +20,7 @@ fi
 case $ACCEL in tcg) cpu=neoverse-n1 tries=240 ;; *) cpu=host tries=60 ;; esac
 echo "Accelerator: $ACCEL"
 mkdir -p "$out"
-rm -f "$out/mon"
+rm -f "$out/mon" "$out/ser"
 
 # Boot a copy: the first boot grows the root filesystem and writes a machine-id.
 cp --sparse=always "$disk" "$out/disk.img" 2>/dev/null || cp "$disk" "$out/disk.img"
@@ -31,7 +31,7 @@ qemu-system-aarch64 -machine virt -accel "$ACCEL" -cpu "$cpu" -smp 4 -m 4096 -bi
   -device virtio-gpu-pci -device qemu-xhci -device usb-kbd -device usb-tablet \
   -nic user,model=virtio-net-pci -display none \
   -smbios 'type=11,value=io.systemd.stub.kernel-cmdline-extra=console=ttyAMA0 systemd.journald.forward_to_console=1 panic=1' -no-reboot \
-  -serial "file:$out/serial.log" -monitor "unix:$out/mon,server,nowait" &
+  -chardev "socket,id=ser,path=$out/ser,server=on,wait=off,logfile=$out/serial.log" -serial chardev:ser -monitor "unix:$out/mon,server,nowait" &
 pid=$!
 trap 'kill $pid 2>/dev/null || true' EXIT
 
@@ -59,6 +59,13 @@ if ((ok)); then
     echo "screendump $out/shell.png -f png" | socat - "UNIX-CONNECT:$out/mon" >/dev/null || true
     sleep 2
   fi
+  # Quickshell keeps its log in the user's runtime dir, not the journal. Log in on the
+  # serial console (getty on ttyAMA0) and dump it into serial.log.
+  for line in kriss kriss 'qs log -p /usr/share/kriss-shell/qml 2>&1 | tail -150; qs list --all'; do
+    printf '%s\r' "$line" | socat - "UNIX-CONNECT:$out/ser" >/dev/null || true
+    sleep 20
+  done
+  sleep 40
 fi
 kill "$pid" 2>/dev/null && wait "$pid" || true
 rm -f "$out/disk.img"
