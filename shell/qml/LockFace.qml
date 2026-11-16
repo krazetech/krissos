@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Effects
 import Quickshell
+import Quickshell.Io
 import Quickshell.Services.UPower
 
 // What the lock screen and the login screen share: blurred wallpaper, the time, the
@@ -60,12 +61,18 @@ FocusScope {
             color: Theme.accent
             border.width: 5
             border.color: Theme.alpha(Theme.nightFg, 0.15)
-            // The next path in host.faces after each one that fails to load.
-            property int tried: 0
-            readonly property string path: host.faces[tried] ?? ""
+            // The first of host.faces that exists, found up front so a missing ~/.face is not
+            // logged (and a failed load does not feed back into the path).
+            property string path: ""
+            Process {
+                id: finder
+                command: ["sh", "-c", 'for f; do [ -r "$f" ] && { echo "$f"; exit; }; done', "sh"].concat(face.host.faces)
+                stdout: StdioCollector { onStreamFinished: avatar.path = text.trim() }
+            }
+            Component.onCompleted: finder.running = true
             Connections {
                 target: face.host
-                function onFacesChanged() { avatar.tried = 0; }
+                function onFacesChanged() { avatar.path = ""; finder.running = true; }
             }
 
             Text {
@@ -83,7 +90,6 @@ FocusScope {
                 sourceSize: Qt.size(192, 192)
                 fillMode: Image.PreserveAspectCrop
                 visible: false
-                onStatusChanged: if (status === Image.Error) avatar.tried++
             }
             Rectangle { id: round; anchors.fill: pic; radius: width / 2; visible: false; layer.enabled: true }
             MultiEffect {

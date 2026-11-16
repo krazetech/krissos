@@ -14,7 +14,7 @@ ShellRoot {
     // Open one panel on the focused window's screen, closing the others.
     function toggle(panel) {
         const open = !Desktop[panel];
-        Desktop.launcherOpen = Desktop.notificationsOpen = Desktop.quickOpen = false;
+        Desktop.launcherOpen = Desktop.notificationsOpen = Desktop.quickOpen = Desktop.calendarOpen = false;
         if (open) Desktop.screen = Desktop.focusedScreen();
         Desktop[panel] = open;
     }
@@ -49,6 +49,7 @@ ShellRoot {
     Launcher {}
     Notifications {}
     QuickSettings {}
+    Calendar {}
     Lock {}
     Switcher { id: switcher }
     Osd {}
@@ -84,7 +85,7 @@ ShellRoot {
     }
 
     // cosmic-comp runs `kriss-shell COMMAND` for the Windows-key shortcuts, which calls these.
-    // `kriss-shell launcher|quick|notifications`: Windows, Windows+A and Windows+N.
+    // `kriss-shell launcher|quick|notifications`: Windows, Windows+A and Windows+N; `calendar` has no key yet.
     IpcHandler {
         target: "launcher"
         function toggle(): void { root.toggle("launcherOpen"); }
@@ -98,6 +99,11 @@ ShellRoot {
     IpcHandler {
         target: "notifications"
         function toggle(): void { root.toggle("notificationsOpen"); }
+    }
+
+    IpcHandler {
+        target: "calendar"
+        function toggle(): void { root.toggle("calendarOpen"); }
     }
 
     IpcHandler {

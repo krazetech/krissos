@@ -19,7 +19,7 @@ PanelWindow {
             wins = Windows.byRecent.slice();
             if (wins.length === 0) return;
             current = 0;
-            Desktop.launcherOpen = Desktop.notificationsOpen = Desktop.quickOpen = false;
+            Desktop.launcherOpen = Desktop.notificationsOpen = Desktop.quickOpen = Desktop.calendarOpen = false;
             Desktop.screen = Desktop.focusedScreen();
             open = true;
             settle.restart();

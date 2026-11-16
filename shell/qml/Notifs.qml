@@ -39,8 +39,15 @@ Singleton {
         if (!n.resident) n.dismiss();
     }
 
-    function clear() {
-        for (const n of all.slice()) n.dismiss();
+    function clear(appName) {
+        for (const n of all.slice()) if (appName === undefined || n.appName === appName) n.dismiss();
+    }
+
+    // When it came, as "Just now" or "5 min ago"; "" for one kept over a shell reload.
+    // ponytail: arrival times live only in memory, so a reload forgets them.
+    function ago(n) {
+        const t = arrived[n.id];
+        return t === undefined ? "" : Tr.ago(new Date(t), now);
     }
 
     NotificationServer {
@@ -54,7 +61,7 @@ Singleton {
             root.arrived[n.id] = Date.now();
             root.now = Date.now();
             // Follow the focused window's screen, unless a panel is open on another one.
-            if (!Desktop.launcherOpen && !Desktop.notificationsOpen && !Desktop.quickOpen)
+            if (!Desktop.launcherOpen && !Desktop.notificationsOpen && !Desktop.quickOpen && !Desktop.calendarOpen)
                 Desktop.screen = Desktop.focusedScreen();
         }
     }

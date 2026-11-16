@@ -8,13 +8,20 @@ import Quickshell.Services.Notifications
 // Toasts stack above the tray, bottom right, the way Sonner stacks them: the newest in
 // front, older ones peeking out behind it, smaller. Hovering fans the stack out and
 // pauses the timers; a swipe to the right dismisses one. The bell opens the same cards,
-// fanned out, with everything not yet dismissed.
+// fanned out, with everything not yet dismissed, grouped by app.
 PanelWindow {
     id: win
 
     readonly property bool open: Desktop.notificationsOpen
-    // Ids of the cards on show, newest first; a card's place in it is its depth.
-    readonly property var shownIds: Notifs.all.filter(n => open || Notifs.isPopup(n)).map(n => n.id).reverse()
+    // The cards on show, newest first; a card's place in it is its depth. In the open list
+    // each app's cards sit together, the app with the newest one first, as on Windows.
+    readonly property var shown: {
+        const list = Notifs.all.filter(n => open || Notifs.isPopup(n)).reverse();
+        if (!open) return list;
+        const apps = [...new Set(list.map(n => n.appName))];
+        return apps.reduce((out, app) => out.concat(list.filter(n => n.appName === app)), []);
+    }
+    readonly property var shownIds: shown.map(n => n.id)
     readonly property bool expanded: open || hover.hovered
     readonly property int gap: 10
     readonly property int peek: 14
@@ -151,6 +158,10 @@ PanelWindow {
                     readonly property int depth: win.shownIds.indexOf(n.id)
                     readonly property bool shown: depth >= 0
                     readonly property bool front: depth === 0 || win.expanded
+                    // The top card of an app's group in the open list carries its Clear (the list
+                    // grows upwards, so that is the group's oldest).
+                    readonly property bool groupHead: win.open && shown && (depth === win.shown.length - 1 || win.shown[depth + 1].appName !== n.appName)
+                    readonly property int groupSize: groupHead ? win.shown.filter(m => m.appName === n.appName).length : 0
                     readonly property real naturalHeight: content.implicitHeight + 28
                     onNaturalHeightChanged: win.setHeight(n.id, naturalHeight)
 
@@ -244,6 +255,34 @@ PanelWindow {
                                 ColumnLayout {
                                     Layout.fillWidth: true
                                     spacing: 3
+                                    // App name and when, like the header of a Windows notification.
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        spacing: 8
+                                        Text {
+                                            Layout.fillWidth: true
+                                            text: [card.n.appName, Notifs.ago(card.n)].filter(s => s).join(" · ")
+                                            elide: Text.ElideRight
+                                            color: Theme.soft
+                                            font { family: Theme.sans; pixelSize: 12 }
+                                        }
+                                        Text {
+                                            id: clearGroup
+                                            visible: card.groupSize > 1
+                                            text: Tr.t("Clear %1", card.groupSize)
+                                            color: groupHit.containsMouse ? Theme.fg : Theme.accent
+                                            font { family: Theme.sans; pixelSize: 12; weight: Font.DemiBold }
+                                            Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+                                            MouseArea {
+                                                id: groupHit
+                                                anchors.fill: parent
+                                                anchors.margins: -6
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: Notifs.clear(card.n.appName)
+                                            }
+                                        }
+                                    }
                                     RowLayout {
                                         Layout.fillWidth: true
                                         Text {
