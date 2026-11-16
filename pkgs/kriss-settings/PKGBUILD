@@ -2,13 +2,13 @@
 pkgname=kriss-settings
 pkgver=0.4.0
 pkgrel=1
-pkgdesc='KrissOS default configs (Plasma, SDDM, GTK, terminals), os-release, Limine menu and pacman hooks'
+pkgdesc='KrissOS default configs (Plasma, SDDM, GTK, Flatpak, terminals, prompt, fastfetch), os-release, Limine menu and pacman hooks'
 arch=('any')
 url='https://github.com/krazetech/krissos'
 license=('GPL-3.0-or-later')
 # snap-pac provides the snapper pre/post snapshot hooks; it skips them when snapper
 # has no config.
-depends=('diffutils' 'gsettings-desktop-schemas' 'snap-pac')
+depends=('diffutils' 'gsettings-desktop-schemas' 'snap-pac' 'fastfetch')
 makedepends=('python')
 optdepends=('limine: the boot menu with bootable snapshots (kriss-limine-update)'
             'sbctl: re-sign the kernel and bootloader for Secure Boot')
@@ -24,6 +24,14 @@ build() {
   python "$_theme/generate.py" "$startdir/root" "$srcdir/root"
   python "$_theme/generate.py" "$_theme/templates/usr/share/color-schemes" "$srcdir/colors"
   cat "$srcdir/colors/KrissOS.colors" >> "$srcdir/root/etc/xdg/kdeglobals"
+  # The GTK colours go into ~/.config/gtk-*/gtk.css as they are, not as an @import of
+  # /usr/share: Flatpak apps see the host's ~/.config/gtk-* (var/lib/flatpak/overrides)
+  # but not its /usr.
+  python "$_theme/generate.py" "$_theme/templates/usr/share/kriss/theme" "$srcdir/kriss"
+  local v
+  for v in 3 4; do
+    install -m644 "$srcdir/kriss/gtk.css" "$srcdir/root/etc/skel/.config/gtk-$v.0/gtk.css"
+  done
 }
 
 package() {

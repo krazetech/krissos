@@ -1,0 +1,11 @@
+#
+# ~/.bashrc (KrissOS default, from /usr/share/kriss/bashrc)
+#
+
+# If not running interactively, don't do anything
+[[ $- != *i* ]] && return
+
+alias ls='ls --color=auto'
+alias grep='grep --color=auto'
+# you@computer in the KrissOS accent, then the folder you are in.
+PS1='\[\e[1;{{accent.ansi}}m\]\u@\h\[\e[0m\] \[\e[1m\]\w\[\e[0m\] \$ '

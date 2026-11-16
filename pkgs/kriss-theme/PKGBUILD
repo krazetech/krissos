@@ -6,7 +6,7 @@ pkgdesc='KrissOS colours, fonts, wallpaper, Plasma, SDDM, Plymouth and Limine th
 arch=('any')
 url='https://github.com/krazetech/krissos'
 license=('GPL-3.0-or-later')
-depends=('adw-gtk-theme' 'adwaita-cursors' 'papirus-icon-theme' 'qt6ct' 'ttf-jetbrains-mono')
+depends=('adw-gtk-theme' 'vimix-cursors' 'papirus-icon-theme' 'qt6ct' 'ttf-jetbrains-mono')
 makedepends=('python' 'librsvg')
 # ponytail: Figtree is only in the AUR, so it cannot be a hard dependency until
 # [kriss] carries a pinned build of it. Without it the UI falls back to the next sans.

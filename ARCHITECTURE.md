@@ -163,6 +163,11 @@ available as the installer's alternative.
   the focused window ringed in Sky Cyan. Light and dark window themes over a dark wallpaper.
   One bottom bar holds the launcher, apps and status. Sky Cyan is the only accent; no neon.
 - **Type:** Figtree + JetBrains Mono (OFL) proposed.
+- **Apps:** COSMIC Files, Terminal and Settings get KrissOS dark and light COSMIC themes, built
+  from the tokens by libcosmic's own ThemeBuilder (`shell/cosmic-theme/`), and a matching
+  COSMIC Terminal scheme. Icons are Papirus-Dark and the cursor is Vimix white, both from
+  Arch. Flathub apps see the GTK colours through a global `flatpak override`, and Flatpak
+  pulls the matching adw-gtk3 theme from Flathub.
 - **Reference:** the concept mockup at https://claude.ai/artifact/Cye2G1TUoXHAGoNX3typoD.
 - **Behaviour and motion references:** every UI surface (shell, `kriss-welcome`, installer,
   website) copies how these behave. They are rebuilt in QML, never added as dependencies.
