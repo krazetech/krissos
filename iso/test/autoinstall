@@ -50,5 +50,5 @@ cat "$t/efi/EFI/limine/limine.conf" "$t/etc/fstab"
 grep -q '^/Snapshots' "$t/efi/EFI/limine/limine.conf"
 grep -q 'kriss_snapshot=1' "$t/efi/EFI/limine/limine.conf"
 ls -l "$t/efi/EFI/BOOT" "$t/boot"
-umount -R "$t"
+umount -R "$t" || { fuser -vm "$t" || true; exit 1; }
 echo 'kriss-autoinstall: done'

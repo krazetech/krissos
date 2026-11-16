@@ -46,3 +46,6 @@ pkgs+=("${gpu[@]}")
 
 echo "kriss: installing ${pkgs[*]}"
 pacstrap -C "$conf" -K "$root" "${pkgs[@]}"
+# pacman-key leaves gpg-agent running on the target's keyring, which keeps the target busy
+# and makes the final unmount fail.
+gpgconf --homedir "$root/etc/pacman.d/gnupg" --kill all 2>/dev/null || true

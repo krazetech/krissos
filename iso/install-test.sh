@@ -21,7 +21,7 @@ tmp=$(mktemp -d)
 bsdtar -xf "$iso" -C "$tmp" loader/entries/01-krissos.conf 'kriss/boot/x86_64/*'
 opts=$(sed -n 's/^options *//p' "$tmp/loader/entries/01-krissos.conf")
 rm -f "$out/mon"
-timeout 60m "${qemu[@]}" -bios "$ovmf" -cdrom "$iso" \
+timeout 30m "${qemu[@]}" -bios "$ovmf" -cdrom "$iso" \
   -kernel "$tmp"/kriss/boot/x86_64/vmlinuz-* -initrd "$tmp"/kriss/boot/x86_64/initramfs-*.img \
   -fw_cfg "name=opt/kriss/autoinstall,file=$here/test/autoinstall" \
   -append "$opts console=ttyS0,115200 systemd.journald.forward_to_console=1 \
