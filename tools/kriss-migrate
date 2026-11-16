@@ -55,7 +55,8 @@ infra_pkg() {
 
 # /etc/kernel/cmdline from the running kernel's command line: without the loader's own
 # words, with rootflags=subvol=@ as kriss-limine-update expects (it swaps that for the
-# snapshot's subvolume), and zswap off since zram does the swapping.
+# snapshot's subvolume), zswap off since zram does the swapping, and splash for the
+# KrissOS boot splash.
 boot_cmdline() {
   local w out=()
   for w in $1; do
@@ -63,6 +64,7 @@ boot_cmdline() {
     out+=("${w//subvol=\/@/subvol=@}")
   done
   [[ " ${out[*]} " == *" zswap.enabled="* ]] || out+=(zswap.enabled=0)
+  [[ " ${out[*]} " == *" splash "* ]] || out+=(splash)
   echo "${out[*]}"
 }
 
@@ -83,12 +85,12 @@ fstab_as() {
 
 # The KrissOS initramfs hooks (installer/lib/configure). busybox, not systemd, so
 # kriss-snapshot can boot a snapshot from the menu. btrfs scans for the other devices
-# of a multi-device root; no early KMS with the NVIDIA driver.
+# of a multi-device root; no early KMS with the NVIDIA driver; plymouth for the splash.
 hooks_line() { # hooks_line MULTI_DEVICE NVIDIA
   local kms=kriss-kms btrfs=
   ((!$2)) || kms=
   ((!$1)) || btrfs=btrfs
-  echo "HOOKS=(base udev autodetect microcode modconf $kms keyboard keymap consolefont block $btrfs filesystems fsck kriss-snapshot)" | tr -s ' '
+  echo "HOOKS=(base udev autodetect microcode modconf $kms plymouth keyboard keymap consolefont block $btrfs filesystems fsck kriss-snapshot)" | tr -s ' '
 }
 
 # "FILE:LINE:TEXT" for each line in the shell configs given that still loads a file from
@@ -409,6 +411,10 @@ EOF
   [[ -L /etc/os-release ]] || run ln -sf ../usr/lib/os-release /etc/os-release
   # cachyos-snapper-support turns the cleanup timer off when it goes.
   run systemctl enable kriss-limine-update.path snapper-cleanup.timer
+  # The boot splash: Theme=kriss in place of the old distro's (often gone with its
+  # packages, which leaves Plymouth on bgrt and Arch's logo), then a new initramfs.
+  # kriss-settings 0.4.2 and later run this from a pacman hook too.
+  if [[ -x /usr/share/libalpm/scripts/kriss-plymouth ]]; then run /usr/share/libalpm/scripts/kriss-plymouth; fi
   run kriss-limine-update
   # The old menu sat at the ESP's root (its tools are gone now); only KrissOS's should be found.
   if [[ -f $esp/limine.conf ]]; then run mv "$esp/limine.conf" "$esp/limine.conf.before-kriss-migrate"; fi
@@ -427,6 +433,9 @@ check() {
   ok "/.snapshots is @snapshots" "[[ \$(findmnt -no FSROOT /.snapshots) == /@snapshots ]]"
   ok "greetd enabled" "systemctl is-enabled -q greetd.service"
   ok "os-release says KrissOS" "grep -q '^ID=krissos' /etc/os-release"
+  if [[ -x /usr/share/libalpm/scripts/kriss-plymouth ]]; then
+    ok "boot splash is kriss" "grep -qx 'Theme=kriss' /etc/plymouth/plymouthd.conf"
+  fi
   return "$bad"
 }
 

@@ -47,7 +47,7 @@ jobs:
       - name: Test kriss migrate
         run: tools/ci/migrate-test.sh
 
-            # The kernels are built by kernel.yml and kernel-asahi.yml, the compositor by cosmic-comp.yml.
+      # The kernels are built by kernel.yml and kernel-asahi.yml, the compositor by cosmic-comp.yml.
       - name: Build packages
         run: tools/ci/build-pkgs.sh out $(ls -d pkgs/*/ | grep -v -e '^pkgs/linux-kriss' -e '^pkgs/cosmic-comp-kriss')
 

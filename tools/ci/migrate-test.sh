@@ -63,7 +63,7 @@ done
 cl='BOOT_IMAGE=/vmlinuz quiet nowatchdog splash amdgpu.ppfeaturemask=0xffffffff rw rootflags=subvol=/@ root=UUID=1553924a'
 [[ $(boot_cmdline "$cl") == 'quiet nowatchdog splash amdgpu.ppfeaturemask=0xffffffff rw rootflags=subvol=@ root=UUID=1553924a zswap.enabled=0' ]] ||
   fail "cmdline: $(boot_cmdline "$cl")"
-[[ $(boot_cmdline 'root=UUID=x rootflags=subvol=@,compress=zstd zswap.enabled=1') == 'root=UUID=x rootflags=subvol=@,compress=zstd zswap.enabled=1' ]] ||
+[[ $(boot_cmdline 'root=UUID=x rootflags=subvol=@,compress=zstd zswap.enabled=1') == 'root=UUID=x rootflags=subvol=@,compress=zstd zswap.enabled=1 splash' ]] ||
   fail "cmdline kept: $(boot_cmdline 'root=UUID=x rootflags=subvol=@,compress=zstd zswap.enabled=1')"
 [[ $(fallback_cmdline "$cl") == 'quiet nowatchdog splash amdgpu.ppfeaturemask=0xffffffff rw rootflags=subvol=/@before-kriss-migrate root=UUID=1553924a' ]] ||
   fail "fallback cmdline: $(fallback_cmdline "$cl")"
@@ -79,9 +79,9 @@ root='UUID=1553 /              btrfs   subvol=/@,defaults,noatime,compress=zstd:
   fail "fstab touched /home"
 
 # Initramfs hooks.
-[[ $(hooks_line 0 0) == 'HOOKS=(base udev autodetect microcode modconf kriss-kms keyboard keymap consolefont block filesystems fsck kriss-snapshot)' ]] ||
+[[ $(hooks_line 0 0) == 'HOOKS=(base udev autodetect microcode modconf kriss-kms plymouth keyboard keymap consolefont block filesystems fsck kriss-snapshot)' ]] ||
   fail "hooks: $(hooks_line 0 0)"
-[[ $(hooks_line 1 1) == 'HOOKS=(base udev autodetect microcode modconf keyboard keymap consolefont block btrfs filesystems fsck kriss-snapshot)' ]] ||
+[[ $(hooks_line 1 1) == 'HOOKS=(base udev autodetect microcode modconf plymouth keyboard keymap consolefont block btrfs filesystems fsck kriss-snapshot)' ]] ||
   fail "hooks multi-device NVIDIA: $(hooks_line 1 1)"
 
 # Shell configs that still load CachyOS's removed shell config packages.
