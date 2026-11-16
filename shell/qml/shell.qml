@@ -6,7 +6,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 
 // KrissOS Shell: wallpaper, one floating bottom bar per screen, the launcher,
-// notifications, quick settings and the lock screen.
+// notifications, quick settings, the lock screen and the volume and brightness pop-up.
 ShellRoot {
     id: root
 
@@ -49,6 +49,7 @@ ShellRoot {
     Notifications {}
     QuickSettings {}
     Lock {}
+    Osd {}
 
     // cosmic-comp runs `kriss-shell COMMAND` for the Windows-key shortcuts, which calls these.
     // `kriss-shell launcher|quick|notifications`: Windows, Windows+A and Windows+N.

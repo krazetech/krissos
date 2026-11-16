@@ -8,6 +8,8 @@
 #   kriss-shell lock       lock the screen (Windows+L)
 #   kriss-shell greeter    the login screen, which greetd runs (see shell/README.md)
 #   kriss-shell desktop    show the desktop, or bring the windows back (Windows+D)
+#   kriss-shell brightness STEP
+#                          change the brightness and show the level (brightness keys, e.g. 5%+)
 #   kriss-shell screenshot [region]
 #                          the whole screen (Print Screen) or a dragged region
 #                          (Windows+Shift+S) to ~/Pictures/Screenshots and the clipboard
@@ -29,6 +31,11 @@ lock)
     ;;
 desktop)
     qs -p "$qml" ipc call desktop toggle
+    ;;
+brightness)
+    # The brightness keys: set it and show the level, or just set it without the shell.
+    qs -p "$qml" ipc call osd brightness "${2:?usage: kriss-shell brightness 5%+}" 2>/dev/null ||
+        exec brightnessctl -q -c backlight set "$2"
     ;;
 screenshot)
     dir=$(xdg-user-dir PICTURES 2>/dev/null || echo "$HOME/Pictures")/Screenshots
@@ -83,6 +90,11 @@ greeter)
         done
     }
     seed shortcuts com.system76.CosmicSettings.Shortcuts/v1
+    # The brightness keys used to call brightnessctl directly, which shows no level.
+    # Move the old defaults over; a key the user changed is left alone.
+    # ponytail: drop this once installs from before kriss-shell 0.2.4 are gone.
+    sed -i 's|"brightnessctl -q -c backlight set \(5%[-+]\)"|"kriss-shell brightness \1"|' \
+        "$cfg/com.system76.CosmicSettings.Shortcuts/v1/system_actions" 2>/dev/null || true
     seed theme com.system76.CosmicTheme.Dark/v2
     seed theme com.system76.CosmicTheme.Light/v2
 
@@ -115,7 +127,7 @@ greeter)
     wait "$comp"
     ;;
 *)
-    echo "usage: kriss-shell [launcher|quick|notifications|lock|desktop|screenshot [region]|greeter]" >&2
+    echo "usage: kriss-shell [launcher|quick|notifications|lock|desktop|brightness STEP|screenshot [region]|greeter]" >&2
     exit 2
     ;;
 esac
