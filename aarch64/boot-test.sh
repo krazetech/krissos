@@ -15,7 +15,9 @@ fw=${FW:-/usr/share/qemu-efi-aarch64/QEMU_EFI.fd}
 if [ -z "${ACCEL:-}" ]; then
   if [ -w /dev/kvm ]; then ACCEL=kvm; else ACCEL=tcg; fi
 fi
-case $ACCEL in tcg) cpu=max,pauth-impdef=on tries=240 ;; *) cpu=host tries=60 ;; esac
+# Not -cpu max under TCG: the kernel's memset uses FEAT_MOPS, which Ubuntu 24.04's QEMU 8.2
+# emulates wrongly (an oops in module loading). Neoverse N1 (Armv8.2) has no MOPS.
+case $ACCEL in tcg) cpu=neoverse-n1 tries=240 ;; *) cpu=host tries=60 ;; esac
 echo "Accelerator: $ACCEL"
 mkdir -p "$out"
 rm -f "$out/mon"
@@ -28,7 +30,7 @@ qemu-system-aarch64 -machine virt -accel "$ACCEL" -cpu "$cpu" -smp 4 -m 4096 -bi
   -drive "file=$out/disk.img,if=virtio,format=raw" \
   -device virtio-gpu-pci -device qemu-xhci -device usb-kbd -device usb-tablet \
   -nic user,model=virtio-net-pci -display none \
-  -smbios 'type=11,value=io.systemd.stub.kernel-cmdline-extra=console=ttyAMA0 systemd.journald.forward_to_console=1' \
+  -smbios 'type=11,value=io.systemd.stub.kernel-cmdline-extra=console=ttyAMA0 systemd.journald.forward_to_console=1 panic=1' -no-reboot \
   -serial "file:$out/serial.log" -monitor "unix:$out/mon,server,nowait" &
 pid=$!
 trap 'kill $pid 2>/dev/null || true' EXIT
