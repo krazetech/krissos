@@ -82,12 +82,12 @@ PanelWindow {
         }
         return rows;
     }
-    readonly property int count: query.trim() ? results.filter(r => !r.header).length : shown.length
+    readonly property int count: query.trim() ? results.filter(r => !r.header).length : Desktop.launcherSearch ? 0 : shown.length
 
     function close() { Desktop.launcherOpen = false; }
     function launch(entry) { entry.execute(); close(); }
     function run() {
-        if (!query.trim()) { if (shown[current]) launch(shown[current]); return; }
+        if (!query.trim()) { if (count && shown[current]) launch(shown[current]); return; }
         const r = results.find(r => r.sel === current);
         if (r) r.run();
     }
@@ -104,7 +104,7 @@ PanelWindow {
     function menuForCurrent() {
         if (!query.trim()) {
             const cell = grid.itemAtIndex(current);
-            if (cell && shown[current]) appMenuFor(shown[current], cell, true);
+            if (count && cell && shown[current]) appMenuFor(shown[current], cell, true);
             return;
         }
         const i = results.findIndex(r => r.sel === current);
@@ -134,10 +134,10 @@ PanelWindow {
 
     Rectangle {
         id: panel
-        anchors.left: parent.left
+        // Over Start: at the left, or centred with a centred taskbar.
+        x: Desktop.taskbarAlignment === "centre" ? (parent.width - width) / 2 : Theme.panelGap
         anchors.bottom: parent.bottom
-        anchors.leftMargin: Theme.panelGap
-        anchors.bottomMargin: Theme.panelGap
+        anchors.bottomMargin: Theme.panelGap + Desktop.barRoom
         width: 600
         height: body.implicitHeight + body.anchors.topMargin + body.anchors.bottomMargin + foot.height
         radius: Theme.radius + 4
@@ -218,7 +218,7 @@ PanelWindow {
 
             // Pinned / All apps header.
             RowLayout {
-                visible: !win.query
+                visible: !win.query && !Desktop.launcherSearch
                 Layout.fillWidth: true
                 Text {
                     Layout.fillWidth: true
@@ -237,7 +237,7 @@ PanelWindow {
                 id: grid
                 readonly property int columns: 6
                 Layout.fillWidth: true
-                visible: !win.query && win.shown.length > 0
+                visible: !win.query && !Desktop.launcherSearch && win.shown.length > 0
                 Layout.preferredHeight: Math.min(win.allApps ? 4 : 3, Math.ceil(win.shown.length / columns)) * cellHeight
                 cellWidth: width / columns
                 cellHeight: 92
@@ -322,7 +322,7 @@ PanelWindow {
             }
 
             Text {
-                visible: win.count === 0
+                visible: win.count === 0 && (win.query || !Desktop.launcherSearch)
                 Layout.fillWidth: true
                 Layout.preferredHeight: 80
                 horizontalAlignment: Text.AlignHCenter

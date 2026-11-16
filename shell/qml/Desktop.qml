@@ -14,6 +14,8 @@ Singleton {
     property bool quickOpen: false
     property bool calendarOpen: false
     property bool locked: false
+    // Start opened from the bar's search box: the search field and Recommended, no Pinned.
+    property bool launcherSearch: false
 
     // The screen the launcher, notifications and quick settings open on. A click on a
     // bar sets it to that bar's screen; a key press uses the screen of the focused window.
@@ -31,6 +33,13 @@ Singleton {
     // ~/.config/kriss/shell.json. Missing keys keep the defaults below.
     property alias pinned: config.pinned
     property alias dnd: config.dnd
+    property alias taskbarAlignment: config.taskbarAlignment
+    property alias taskbarAutoHide: config.taskbarAutoHide
+    property alias taskbarCombine: config.taskbarCombine
+    property alias taskbarAllScreens: config.taskbarAllScreens
+    // What the launcher, quick settings and calendar leave below them for an auto-hidden bar,
+    // which reserves no room of its own.
+    readonly property int barRoom: taskbarAutoHide ? Theme.barHeight : 0
 
     readonly property string configFile: (Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config") + "/kriss/shell.json"
     FileView {
@@ -49,6 +58,16 @@ Singleton {
             ]
             // Do not disturb: no toasts, notifications still collect behind the bell.
             property bool dnd: false
+            // Taskbar: "left" or "centre" (Start, search and the apps centred, as on Windows 11).
+            property string taskbarAlignment: "left"
+            // Slide the bar off the bottom edge until the pointer reaches it.
+            property bool taskbarAutoHide: false
+            // Combine an app's windows on one button: "always", "full" (when the bar runs out
+            // of room) or "never". Uncombined buttons are one per window, with its title.
+            property string taskbarCombine: "always"
+            // A bar on every screen, each with the windows on that screen; false: one bar,
+            // on the first screen, with every window.
+            property bool taskbarAllScreens: true
         }
     }
 

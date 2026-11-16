@@ -1,6 +1,6 @@
 # KrissOS Shell
 
-The KrissOS desktop: one full-width taskbar along the bottom edge with a system tray, a
+The KrissOS desktop: a full-width taskbar along the bottom edge of each screen with a system tray, a
 Windows-style launcher, quick settings, notifications and a lock screen, written in QML for
 [Quickshell](https://quickshell.org) and running on `cosmic-comp`. Packaged as `pkgs/kriss-shell`;
 SDDM lists it as **KrissOS Shell**.
@@ -120,6 +120,15 @@ Right-click an app on the bar or in the launcher to pin or unpin it; drag a pinn
 bar to move it. Without the file, the defaults in `qml/Desktop.qml` apply. **Taskbar settings**
 (right-click an empty part of the bar) opens this file until a Personalise page exists.
 
+| Key | Default | Does |
+|---|---|---|
+| `pinned` | Firefox, Files, Terminal… | Pinned apps, as desktop file ids, in taskbar order |
+| `dnd` | `false` | Do not disturb |
+| `taskbarAlignment` | `"left"` | `"centre"` centres Start, search and the apps, and Start opens above them, as on Windows 11 |
+| `taskbarAutoHide` | `false` | The bar slides off the bottom edge and comes back when the pointer reaches it |
+| `taskbarCombine` | `"always"` | `"always"`: one button per app. `"never"`: one button per window, with its title. `"full"`: per window until the bar runs out of room |
+| `taskbarAllScreens` | `true` | A bar on every screen, each with the windows on that screen; `false`: one bar, on the first screen, with every window |
+
 ## Taskbar
 
 It behaves like Windows 11's. Each app has one button, pinned or not, with all its windows on it.
@@ -131,6 +140,7 @@ It behaves like Windows 11's. Each app has one button, pinned or not, with all i
 | Shift+click, middle click | A new window |
 | Right-click an app | Jump list: recent files for the app, its own tasks (desktop file actions), the app, pin or unpin, close window or close all windows |
 | Right-click Start, Windows+X | Installed apps, power options, system, network, Terminal, Task Manager, Settings, Files, Search, Shut down or sign out, Desktop |
+| The search box | Start, ready to search: the search field and Recommended files |
 | Right-click the bar | Task Manager (the first system monitor installed) and Taskbar settings |
 | The strip right of the clock | Show the desktop; again to bring the windows back |
 
