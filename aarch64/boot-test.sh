@@ -41,8 +41,18 @@ for _ in $(seq "$tries"); do
   kill -0 "$pid" 2>/dev/null || { died=1; break; }
   sleep 5
 done
-sleep 30 # let the Shell draw
-echo "screendump $out/shell.png -f png" | socat - "UNIX-CONNECT:$out/mon" >/dev/null || true
+# kriss-shell logs that line once cosmic-comp is up, before Quickshell starts. So also wait
+# until something is drawn. ponytail: a blank screen saves as a ~5 KB PNG; the bar and the
+# wallpaper make it far bigger. Use a pixel check if this ever misjudges.
+drawn=0
+if ((ok)); then
+  for _ in $(seq "$((tries / 2))"); do
+    echo "screendump $out/shell.png -f png" | socat - "UNIX-CONNECT:$out/mon" >/dev/null || true
+    sleep 2
+    if [ "$(wc -c <"$out/shell.png" 2>/dev/null || echo 0)" -gt 50000 ]; then drawn=1; break; fi
+    sleep 8
+  done
+fi
 kill "$pid" 2>/dev/null && wait "$pid" || true
 rm -f "$out/disk.img"
 
@@ -54,3 +64,5 @@ if ((!ok)); then
   exit 1
 fi
 echo 'KrissOS Shell started.'
+if ((!drawn)); then echo 'The KrissOS Shell did not draw anything.' >&2; exit 1; fi
+echo 'KrissOS Shell drawn (see shell.png).'
