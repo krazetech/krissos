@@ -84,4 +84,10 @@ root='UUID=1553 /              btrfs   subvol=/@,defaults,noatime,compress=zstd:
 [[ $(hooks_line 1 1) == 'HOOKS=(base udev autodetect microcode modconf keyboard keymap consolefont block btrfs filesystems fsck kriss-snapshot)' ]] ||
   fail "hooks multi-device NVIDIA: $(hooks_line 1 1)"
 
+# Shell configs that still load CachyOS's removed shell config packages.
+printf '%s\n' 'source /usr/share/cachyos-fish-config/cachyos-config.fish' 'set -x EDITOR nano' >"$t/config.fish"
+printf '%s\n' '# source /usr/share/cachyos-zsh-config/cachyos-config.zsh' 'alias ls=eza' >"$t/zshrc"
+[[ $(stale_shell_refs "$t/config.fish" "$t/zshrc" "$t/missing") == "$t/config.fish:1:source /usr/share/cachyos-fish-config/cachyos-config.fish" ]] ||
+  fail "shell refs: $(stale_shell_refs "$t/config.fish" "$t/zshrc" "$t/missing")"
+
 echo "migrate-test: ok"

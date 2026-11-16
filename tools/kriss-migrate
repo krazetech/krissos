@@ -91,6 +91,12 @@ hooks_line() { # hooks_line MULTI_DEVICE NVIDIA
   echo "HOOKS=(base udev autodetect microcode modconf $kms keyboard keymap consolefont block $btrfs filesystems fsck kriss-snapshot)" | tr -s ' '
 }
 
+# "FILE:LINE:TEXT" for each line in the shell configs given that still loads a file from
+# CachyOS's shell config packages (cachyos-fish-config, cachyos-zsh-config), which go.
+stale_shell_refs() {
+  grep -Hn '^[^#]*/usr/share/cachyos-' "$@" 2>/dev/null || true
+}
+
 # --- system facts --------------------------------------------------------------------
 
 esp_dir() { if mountpoint -q /efi; then echo /efi; else echo /boot; fi; }
@@ -436,6 +442,22 @@ leftovers() {
   printf '%s\n' "${left[@]}" | column -c 88 | sed 's/^/     /'
 }
 
+# Shell configs in each user's home that would print an error at every new shell.
+# ponytail: a warning with the fix, not an edit: these are the user's own files.
+shell_warnings() {
+  local home refs
+  while read -r home; do
+    refs+=$(stale_shell_refs "$home"/.bashrc "$home"/.bash_profile "$home"/.profile "$home"/.zshrc \
+      "$home"/.config/fish/config.fish "$home"/.config/fish/conf.d/*.fish)
+  done < <(awk -F: '$3 >= 1000 && $3 < 60000 { print $6 }' /etc/passwd)
+  [[ -n ${refs:-} ]] || return 0
+  step "Shell configs that load CachyOS files (removed now)"
+  note "Each new shell prints an error until these lines go. Comment them out with:"
+  local f
+  while IFS=: read -r f _; do note "  sed -i.before-kriss-migrate '\|^[^#]*/usr/share/cachyos-|s|^|# |' $f"; done <<<"$refs" | sort -u
+  printf '%s\n' "$refs" | sed 's/^/     | /'
+}
+
 main() {
   case ${1:-} in
     --dry-run | -n) DRY=1 ;;
@@ -457,6 +479,7 @@ main() {
   drop_cachyos
   login_and_menu
   leftovers
+  shell_warnings
   if ((DRY)); then
     printf '\nRun it for real with: sudo kriss migrate\n'
     return
