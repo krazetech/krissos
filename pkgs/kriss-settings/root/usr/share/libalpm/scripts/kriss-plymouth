@@ -1,0 +1,41 @@
+#!/bin/sh
+# Make kriss (kriss-theme) the Plymouth theme, then rebuild the initramfs so the splash
+# in it is current. Runs from kriss-plymouth.hook and from kriss migrate.
+#
+# /etc/plymouth/plymouthd.conf overrides plymouthd.defaults (Theme=bgrt, which shows
+# Arch's logo). Its Theme= becomes kriss when it is unset, names a theme that is not
+# installed (a migrated system's cachyos), or names another distro's theme. Every other
+# line in the file, and a stock theme the admin picked (spinner, fade-in, bgrt...), stays.
+# plymouth-set-default-theme is not used: its `sed -ie` leaves a plymouthd.confe behind.
+# KRISS_ROOT points it at another root (tools/ci/plymouth-test.sh).
+root=${KRISS_ROOT:-}
+conf=$root/etc/plymouth/plymouthd.conf
+themes=$root/usr/share/plymouth/themes
+[ -f "$themes/kriss/kriss.plymouth" ] || exit 0
+
+theme() { sed -n 's/^[[:space:]]*Theme[[:space:]]*=[[:space:]]*//p' "$conf" 2>/dev/null | tail -n1 | tr -d '[:space:]'; }
+
+cur=$(theme)
+case $cur in
+'' | cachyos* | arch* | endeavouros* | manjaro* | garuda*) fix=1 ;;
+*) if [ -f "$themes/$cur/$cur.plymouth" ]; then fix=0; else fix=1; fi ;;
+esac
+if [ "$fix" = 1 ]; then
+  mkdir -p "${conf%/*}"
+  if grep -q '^[[:space:]]*Theme[[:space:]]*=' "$conf" 2>/dev/null; then
+    sed -i 's/^[[:space:]]*Theme[[:space:]]*=.*/Theme=kriss/' "$conf"
+  elif grep -q '^\[Daemon\]' "$conf" 2>/dev/null; then
+    sed -i '/^\[Daemon\]/a Theme=kriss' "$conf"
+  else
+    printf '[Daemon]\nTheme=kriss\n' >>"$conf"
+  fi
+  echo "kriss: Plymouth theme ${cur:-(unset)} -> kriss"
+fi
+
+# The initramfs carries its own copy of the theme. Rebuild only when it has Plymouth
+# in it and the theme is ours (kriss-theme updates change the splash).
+[ -z "$root" ] || exit 0
+[ "$(theme)" = kriss ] || exit 0
+grep -Eqs '^[^#]*HOOKS.*[( ]plymouth[ )]' /etc/mkinitcpio.conf /etc/mkinitcpio.conf.d/*.conf || exit 0
+command -v mkinitcpio >/dev/null || exit 0
+mkinitcpio -P

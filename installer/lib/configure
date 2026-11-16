@@ -19,11 +19,11 @@ sed -i "/^#\[multilib\]/,/^#Include/ s/^#//" "$root/etc/pacman.conf"
 # over a read-only snapshot booted from the Limine menu. kriss-kms (kriss-settings) is
 # kms without nouveau, which would add ~105 MB of firmware that older cards never use.
 # The NVIDIA driver gets no early KMS at all, so nothing races with it.
-# plymouth shows the boot splash (kriss-theme) from the moment the GPU is up. It needs
-# early KMS, so NVIDIA boots go without it: quiet text-free boot, no splash.
+# plymouth shows the boot splash from the moment the GPU is up (kriss-settings'
+# kriss-plymouth.hook makes kriss the theme). It needs early KMS, so NVIDIA boots go
+# without it: a quiet, text-free boot with no splash.
 kms='kriss-kms plymouth' splash=' splash'
 if chr pacman -Q nvidia-utils >/dev/null 2>&1; then kms='' splash=''; fi
-chr plymouth-set-default-theme kriss
 mkdir -p "$root/etc/mkinitcpio.conf.d"
 cat >"$root/etc/mkinitcpio.conf.d/kriss.conf" <<EOF
 # Written by the KrissOS installer.
