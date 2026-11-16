@@ -31,6 +31,7 @@ ntfs-3g
 
 # KrissOS Shell on cosmic-comp, with the KrissOS login screen on greetd
 kriss-shell
+cosmic-comp-kriss
 greetd
 cosmic-files
 cosmic-terminal

@@ -1,0 +1,42 @@
+# Maintainer: Kraze Tech
+# cosmic-comp with KrissOS patches: windows fade and scale when they open and close.
+# Follows Arch's cosmic-comp PKGBUILD. It replaces cosmic-comp, so pacman never moves back
+# to Arch's build on its own: bump pkgver here when Arch bumps cosmic-comp, rebase the
+# patch on the new tag, and update the patch's b2sum.
+pkgname=cosmic-comp-kriss
+pkgver=1.11.0
+pkgrel=1
+pkgdesc='Compositor for the COSMIC desktop environment, with open and close animations'
+arch=('x86_64')
+url='https://github.com/pop-os/cosmic-comp'
+license=('GPL-3.0-only')
+depends=('fontconfig' 'libgcc' 'glibc' 'libdisplay-info' 'libseat.so' 'libinput' 'libxcb'
+         'libxkbcommon' 'mesa' 'pixman' 'systemd-libs' 'wayland')
+makedepends=('cargo' 'git' 'just' 'lld')
+# The animations follow this switch.
+optdepends=('glib2: gsettings, to follow the enable-animations setting')
+provides=("cosmic-comp=1:$pkgver")
+conflicts=('cosmic-comp')
+replaces=('cosmic-comp')
+source=("git+https://github.com/pop-os/cosmic-comp.git#tag=epoch-$pkgver"
+        0001-open-close-animations.patch)
+b2sums=('4f6e0dbb8e7028ae8a47765ebd8ab198f87bacfe6d15e5856be51142f46aabddcb29b9f2dbf99acaf9b74fd45f6611330c19f7d29013719fecdf746c9e14ace2'
+        '57269feb68b93619bf367573c617a971f8d79c7d482eef34fabcb30451483780353e88489d0777cbf9175d2b2f65e2d040c8375f9a119840ab786733fdddb8ad')
+
+prepare() {
+  cd cosmic-comp
+  git apply "$srcdir/0001-open-close-animations.patch"
+  cargo fetch --locked
+  sed 's/lto = "fat"/lto = "thin"/' -i Cargo.toml
+}
+
+build() {
+  cd cosmic-comp
+  RUSTFLAGS+=" -C link-arg=-fuse-ld=lld"
+  just build-release --frozen
+}
+
+package() {
+  cd cosmic-comp
+  just rootdir="$pkgdir" install
+}

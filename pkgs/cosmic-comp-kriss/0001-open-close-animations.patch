@@ -1,0 +1,628 @@
+From 0c390e132cee42ae03e9a909645604793a243106 Mon Sep 17 00:00:00 2001
+From: Razman Zaidi <100824525+idiazraz@users.noreply.github.com>
+Date: Mon, 16 Nov 2026 22:21:56 +0800
+Subject: [PATCH] Open and close animations for toplevel windows
+
+Opening windows fade in and grow from 94% of their size; closing windows
+are copied into memory before their buffer goes away, then fade out and
+shrink. Both follow org.gnome.desktop.interface enable-animations.
+---
+ src/lib.rs                            |   1 +
+ src/shell/element/mod.rs              |   3 +
+ src/shell/layout/floating/mod.rs      |  39 ++-
+ src/shell/layout/tiling/mod.rs        |  11 +
+ src/shell/mod.rs                      |   4 +
+ src/shell/open_close.rs               | 337 ++++++++++++++++++++++++++
+ src/shell/workspace.rs                |  20 ++
+ src/wayland/handlers/compositor.rs    |  14 ++
+ src/wayland/handlers/xdg_shell/mod.rs |   1 +
+ src/xwayland.rs                       |   5 +
+ 10 files changed, 424 insertions(+), 11 deletions(-)
+ create mode 100644 src/shell/open_close.rs
+
+diff --git a/src/lib.rs b/src/lib.rs
+index 98bfa2a3..7348da74 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -169,6 +169,7 @@ pub fn run(hooks: crate::hooks::Hooks) -> Result<(), Box<dyn Error>> {
+     // init wayland
+     let (display, socket) = init_wayland_display(&mut event_loop)?;
+     // init state
++    shell::open_close::watch_enable_animations();
+     let mut state = state::State::new(
+         &display,
+         socket,
+diff --git a/src/shell/element/mod.rs b/src/shell/element/mod.rs
+index c7e799be..523137d1 100644
+--- a/src/shell/element/mod.rs
++++ b/src/shell/element/mod.rs
+@@ -108,6 +108,7 @@ pub struct CosmicMapped {
+     pub floating_tiled: Arc<Mutex<Option<TiledCorners>>>,
+     //sticky
+     pub previous_layer: Arc<Mutex<Option<ManagedLayer>>>,
++    pub opened_at: Arc<Mutex<Option<std::time::Instant>>>,
+ 
+     #[cfg(feature = "debug")]
+     debug: Arc<Mutex<Option<smithay_egui::EguiState>>>,
+@@ -1080,6 +1081,7 @@ impl From<CosmicWindow> for CosmicMapped {
+             moved_since_mapped: Arc::new(AtomicBool::new(false)),
+             floating_tiled: Arc::new(Mutex::new(None)),
+             previous_layer: Arc::new(Mutex::new(None)),
++            opened_at: Arc::new(Mutex::new(None)),
+             #[cfg(feature = "debug")]
+             debug: Arc::new(Mutex::new(None)),
+         }
+@@ -1097,6 +1099,7 @@ impl From<CosmicStack> for CosmicMapped {
+             moved_since_mapped: Arc::new(AtomicBool::new(false)),
+             floating_tiled: Arc::new(Mutex::new(None)),
+             previous_layer: Arc::new(Mutex::new(None)),
++            opened_at: Arc::new(Mutex::new(None)),
+             #[cfg(feature = "debug")]
+             debug: Arc::new(Mutex::new(None)),
+         }
+diff --git a/src/shell/layout/floating/mod.rs b/src/shell/layout/floating/mod.rs
+index da544454..71d85e7e 100644
+--- a/src/shell/layout/floating/mod.rs
++++ b/src/shell/layout/floating/mod.rs
+@@ -32,6 +32,7 @@ use crate::{
+     backend::render::{IndicatorShader, Key, Usage, element::AsGlowRenderer},
+     shell::{
+         CosmicSurface, Direction, ManagedLayer, MoveResult, ResizeMode,
++        open_close,
+         element::{
+             CosmicMapped, CosmicMappedRenderElement, CosmicWindow, MaximizedState,
+             resize_indicator::ResizeIndicator,
+@@ -1588,17 +1589,33 @@ impl FloatingLayout {
+                 .unwrap_or_else(|| (self.space.element_geometry(elem).unwrap().as_local(), alpha));
+             let render_location = geometry.loc - elem.geometry().loc.as_local();
+ 
+-            let maybe_map = if let Some(anim) = self.animations.get(elem) {
+-                let original_geo = anim.previous_geometry();
+-                geometry = anim.geometry(
+-                    output_geometry,
+-                    self.space
+-                        .element_geometry(elem)
+-                        .map(RectExt::as_local)
+-                        .unwrap_or(geometry),
+-                    elem.floating_tiled.lock().unwrap().as_ref(),
+-                    self.gaps(),
+-                );
++            let open = elem.open_animation();
++            let alpha = alpha * open.map_or(1.0, |(open_alpha, _)| open_alpha);
++            let anim_geometry = self
++                .animations
++                .get(elem)
++                .map(|anim| {
++                    (
++                        *anim.previous_geometry(),
++                        anim.geometry(
++                            output_geometry,
++                            self.space
++                                .element_geometry(elem)
++                                .map(RectExt::as_local)
++                                .unwrap_or(geometry),
++                            elem.floating_tiled.lock().unwrap().as_ref(),
++                            self.gaps(),
++                        ),
++                    )
++                })
++                .or(open.map(|_| (geometry, geometry)))
++                .map(|(original, target)| match open {
++                    Some((_, scale)) => (original, open_close::scale_rect(target, scale)),
++                    None => (original, target),
++                });
++
++            let maybe_map = if let Some((original_geo, target_geo)) = anim_geometry {
++                geometry = target_geo;
+ 
+                 let buffer_size = elem.geometry().size;
+                 let scale = Scale {
+diff --git a/src/shell/layout/tiling/mod.rs b/src/shell/layout/tiling/mod.rs
+index 20e11b71..618b7ae3 100644
+--- a/src/shell/layout/tiling/mod.rs
++++ b/src/shell/layout/tiling/mod.rs
+@@ -5475,6 +5475,17 @@ fn render_new_tree_windows<R>(
+         swap_tree,
+         swap_desc.as_ref(),
+         |node_id, data, geo, original_geo, alpha, animating| {
++            let (geo, alpha, animating) = match data {
++                Data::Mapped { mapped, .. } => match mapped.open_animation() {
++                    Some((open_alpha, scale)) => (
++                        crate::shell::open_close::scale_rect(geo, scale),
++                        alpha * open_alpha,
++                        true,
++                    ),
++                    None => (geo, alpha, animating),
++                },
++                _ => (geo, alpha, animating),
++            };
+             if swap_desc.as_ref().map(|desc| &desc.node) == Some(&node_id)
+                 || focused.as_ref() == Some(&node_id)
+             {
+diff --git a/src/shell/mod.rs b/src/shell/mod.rs
+index 108307b1..59e7019f 100644
+--- a/src/shell/mod.rs
++++ b/src/shell/mod.rs
+@@ -102,6 +102,7 @@ pub mod focus;
+ pub mod grabs;
+ pub mod layout;
+ mod seats;
++pub mod open_close;
+ mod workspace;
+ pub mod zoom;
+ pub use self::element::{CosmicMapped, CosmicMappedRenderElement, CosmicSurface};
+@@ -3130,6 +3131,9 @@ impl Shell {
+         {
+             mapped.set_debug(self.debug_active);
+         }
++        if !should_be_minimized {
++            mapped.start_open_animation();
++        }
+ 
+         let workspace_empty = workspace.mapped().next().is_none();
+         if is_dialog || floating_exception || !workspace.tiling_enabled {
+diff --git a/src/shell/open_close.rs b/src/shell/open_close.rs
+new file mode 100644
+index 00000000..e7a29822
+--- /dev/null
++++ b/src/shell/open_close.rs
+@@ -0,0 +1,337 @@
++// SPDX-License-Identifier: GPL-3.0-only
++
++//! Open and close animations for toplevel windows.
++//!
++//! Opening: the window fades in and grows from slightly smaller than its size.
++//! Closing: the window's last frame is copied into memory before it goes away, then drawn
++//! fading out and shrinking. Memory, not a texture, because every output renders on its own
++//! thread with its own GL context; each context imports the copy once.
++//!
++//! Both follow `org.gnome.desktop.interface enable-animations`.
++
++use std::{
++    collections::HashMap,
++    fmt,
++    io::{BufRead, BufReader},
++    process::{Command, Stdio},
++    sync::{
++        Mutex,
++        atomic::{AtomicBool, Ordering},
++    },
++    time::{Duration, Instant},
++};
++
++use anyhow::Context;
++use keyframe::{ease, functions::EaseOutCubic};
++use smithay::{
++    backend::{
++        allocator::Fourcc,
++        renderer::{
++            ContextId, ExportMem, ImportAll, ImportMem, Offscreen, Renderer,
++            damage::OutputDamageTracker,
++            element::{Id, Kind, RenderElement, texture::TextureRenderElement},
++            gles::{GlesRenderbuffer, GlesTexture},
++            utils::with_renderer_surface_state,
++        },
++    },
++    desktop::space::SpaceElement,
++    reexports::wayland_server::protocol::wl_surface::WlSurface,
++    utils::{Buffer as BufferCoords, Coordinate, Logical, Point, Rectangle, Scale, Size, Transform},
++};
++use tracing::warn;
++
++use crate::{
++    backend::render::{RendererRef, element::AsGlowRenderer},
++    shell::element::{CosmicMapped, CosmicMappedRenderElement},
++    state::{State, advertised_node_for_surface},
++    utils::prelude::*,
++};
++
++pub const OPEN_DURATION: Duration = Duration::from_millis(180);
++pub const CLOSE_DURATION: Duration = Duration::from_millis(150);
++/// Size a window opens from and closes to, as a fraction of its own.
++const MIN_SCALE: f64 = 0.94;
++
++static ENABLED: AtomicBool = AtomicBool::new(true);
++
++pub fn enabled() -> bool {
++    ENABLED.load(Ordering::Relaxed)
++}
++
++/// Follow GNOME's `enable-animations`, the desktop-wide switch the session's shell follows too.
++/// ponytail: a `gsettings monitor` child rather than linking GIO for one boolean.
++pub fn watch_enable_animations() {
++    const ARGS: [&str; 2] = ["org.gnome.desktop.interface", "enable-animations"];
++    let set = |line: &str| ENABLED.store(!line.contains("false"), Ordering::Relaxed);
++    std::thread::spawn(move || {
++        if let Ok(out) = Command::new("gsettings").arg("get").args(ARGS).output() {
++            set(&String::from_utf8_lossy(&out.stdout));
++        }
++        let mut cmd = Command::new("gsettings");
++        cmd.arg("monitor").args(ARGS).stdout(Stdio::piped());
++        // SAFETY: only calls prctl, which is async-signal-safe.
++        unsafe {
++            std::os::unix::process::CommandExt::pre_exec(&mut cmd, || {
++                rustix::process::set_parent_process_death_signal(Some(
++                    rustix::process::Signal::TERM,
++                ))
++                .map_err(Into::into)
++            });
++        }
++        let Ok(mut child) = cmd.spawn() else { return };
++        for line in BufReader::new(child.stdout.take().unwrap())
++            .lines()
++            .map_while(Result::ok)
++        {
++            set(&line);
++        }
++        let _ = child.wait();
++    });
++}
++
++fn progress(start: Instant, duration: Duration) -> Option<f64> {
++    let t = start.elapsed().as_secs_f64() / duration.as_secs_f64();
++    (t < 1.0).then(|| ease(EaseOutCubic, 0.0, 1.0, t))
++}
++
++/// `rect` scaled by `scale` around its centre.
++pub fn scale_rect<N: Coordinate, K>(rect: Rectangle<N, K>, scale: f64) -> Rectangle<N, K> {
++    let (w, h) = (rect.size.w.to_f64(), rect.size.h.to_f64());
++    let (sw, sh) = (w * scale, h * scale);
++    Rectangle::new(
++        (
++            N::from_f64(rect.loc.x.to_f64() + (w - sw) / 2.0),
++            N::from_f64(rect.loc.y.to_f64() + (h - sh) / 2.0),
++        )
++            .into(),
++        (N::from_f64(sw), N::from_f64(sh)).into(),
++    )
++}
++
++impl CosmicMapped {
++    pub fn start_open_animation(&self) {
++        if enabled() {
++            *self.opened_at.lock().unwrap() = Some(Instant::now());
++        }
++    }
++
++    /// Alpha and scale while the window is opening.
++    pub fn open_animation(&self) -> Option<(f32, f64)> {
++        let start = (*self.opened_at.lock().unwrap())?;
++        let e = progress(start, OPEN_DURATION)?;
++        Some((e as f32, MIN_SCALE + (1.0 - MIN_SCALE) * e))
++    }
++
++    /// Ends a finished open animation; true if one ended, so one more frame is due.
++    pub fn finish_open_animation(&self) -> bool {
++        let mut opened_at = self.opened_at.lock().unwrap();
++        if opened_at.is_some_and(|start| start.elapsed() >= OPEN_DURATION) {
++            *opened_at = None;
++            return true;
++        }
++        false
++    }
++}
++
++/// The last frame of a window that has gone away.
++pub struct ClosingWindow {
++    pixels: Vec<u8>,
++    size: Size<i32, BufferCoords>,
++    /// Where it was on the output, in logical pixels.
++    geometry: Rectangle<i32, Local>,
++    start: Instant,
++    textures: Mutex<HashMap<ContextId<GlesTexture>, GlesTexture>>,
++}
++
++impl fmt::Debug for ClosingWindow {
++    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
++        f.debug_struct("ClosingWindow")
++            .field("geometry", &self.geometry)
++            .field("start", &self.start)
++            .finish_non_exhaustive()
++    }
++}
++
++impl ClosingWindow {
++    pub fn is_done(&self) -> bool {
++        self.start.elapsed() >= CLOSE_DURATION
++    }
++
++    pub fn render_element<R: AsGlowRenderer>(
++        &self,
++        renderer: &mut R,
++        output_scale: f64,
++    ) -> Option<TextureRenderElement<GlesTexture>> {
++        let e = progress(self.start, CLOSE_DURATION)?;
++        let geometry = scale_rect(self.geometry.to_f64(), 1.0 - (1.0 - MIN_SCALE) * e);
++
++        let glow = renderer.glow_renderer_mut();
++        let context = glow.context_id();
++        let mut textures = self.textures.lock().unwrap();
++        let texture = match textures.get(&context) {
++            Some(texture) => texture.clone(),
++            None => {
++                let texture = glow
++                    .import_memory(&self.pixels, Fourcc::Abgr8888, self.size, false)
++                    .map_err(|err| warn!(?err, "Failed to import closing window"))
++                    .ok()?;
++                textures.insert(context.clone(), texture.clone());
++                texture
++            }
++        };
++
++        Some(TextureRenderElement::from_static_texture(
++            // A new id every frame: the element changes size and alpha every frame anyway.
++            Id::new(),
++            context,
++            geometry.loc.as_logical().to_physical(output_scale),
++            texture,
++            1,
++            Transform::Normal,
++            Some(1.0 - e as f32),
++            Some(Rectangle::from_size(
++                self.size.to_logical(1, Transform::Normal).to_f64(),
++            )),
++            Some(geometry.size.as_logical().to_i32_round()),
++            None,
++            Kind::Unspecified,
++        ))
++    }
++}
++
++fn snapshot<R>(
++    renderer: &mut R,
++    mapped: &CosmicMapped,
++    window_geometry: Rectangle<i32, Local>,
++    scale: f64,
++) -> anyhow::Result<ClosingWindow>
++where
++    R: Renderer + ImportAll + Offscreen<GlesRenderbuffer> + ExportMem + AsGlowRenderer,
++    R::TextureId: Send + Clone + 'static,
++    R::Error: Send + Sync + 'static,
++    CosmicMappedRenderElement<R>: RenderElement<R>,
++{
++    // The window plus its server-side title bar; the shadow is left out.
++    let bbox = mapped.bbox();
++    let size = bbox.size.to_physical_precise_round(scale);
++    let mut above = Vec::new();
++    let mut below = Vec::new();
++    mapped.push_render_elements(
++        renderer,
++        Point::<i32, Logical>::from((-bbox.loc.x, -bbox.loc.y)).to_physical_precise_round(scale),
++        None,
++        Scale::from(scale),
++        1.0,
++        None,
++        None,
++        &mut |elem| above.push(elem),
++        &mut |elem| below.push(elem),
++    );
++    above.append(&mut below);
++
++    let format = Fourcc::Abgr8888;
++    let buffer_size = Size::<i32, BufferCoords>::from((size.w, size.h));
++    let mut render_buffer =
++        Offscreen::<GlesRenderbuffer>::create_buffer(renderer, format, buffer_size)?;
++    let mut fb = renderer.bind(&mut render_buffer)?;
++    OutputDamageTracker::new(size, scale, Transform::Normal)
++        .render_output(renderer, &mut fb, 0, &above, [0.0; 4])
++        .map_err(|err| match err {
++            smithay::backend::renderer::damage::Error::Rendering(err) => err,
++            smithay::backend::renderer::damage::Error::OutputNoMode(_) => unreachable!(),
++        })?;
++    let mapping = renderer.copy_framebuffer(&fb, Rectangle::from_size(buffer_size), format)?;
++    let pixels = renderer.map_texture(&mapping)?.to_vec();
++
++    let mut geometry = bbox.as_local();
++    geometry.loc += window_geometry.loc - mapped.geometry().loc.as_local();
++    Ok(ClosingWindow {
++        pixels,
++        size: buffer_size,
++        geometry,
++        start: Instant::now(),
++        textures: Mutex::new(HashMap::new()),
++    })
++}
++
++impl State {
++    /// Copy a toplevel's last frame for its close animation. Call before the client's
++    /// buffer goes away: on a null commit, or when the toplevel is destroyed or unmapped.
++    pub fn start_close_animation(&mut self, surface: &WlSurface) {
++        if !enabled()
++            || !with_renderer_surface_state(surface, |state| state.buffer().is_some())
++                .unwrap_or(false)
++        {
++            return;
++        }
++
++        let (mapped, geometry, scale, handle) = {
++            let shell = self.common.shell.read();
++            // ponytail: a tab closing inside a stack is not animated.
++            let Some(mapped) = shell
++                .element_for_surface(surface)
++                .filter(|m| m.is_window())
++                .cloned()
++            else {
++                return;
++            };
++            let Some(workspace) = shell.space_for(&mapped) else {
++                return;
++            };
++            let Some(geometry) = workspace.element_geometry(&mapped) else {
++                return;
++            };
++            let scale = workspace.output.current_scale().fractional_scale();
++            (mapped, geometry, scale, workspace.handle)
++        };
++
++        let res = self
++            .backend
++            .offscreen_renderer(|kms| {
++                advertised_node_for_surface(surface, &self.common.display_handle)
++                    .or(*kms.primary_node.read().unwrap())
++            })
++            .context("No renderer")
++            .and_then(|renderer| match renderer {
++                RendererRef::Glow(renderer) => snapshot(renderer, &mapped, geometry, scale),
++                RendererRef::GlMulti(mut renderer) => {
++                    snapshot(&mut renderer, &mapped, geometry, scale)
++                }
++            });
++        match res {
++            Ok(closing) => {
++                if let Some(workspace) = self
++                    .common
++                    .shell
++                    .write()
++                    .workspaces
++                    .space_for_handle_mut(&handle)
++                {
++                    workspace.closing.push(closing);
++                }
++            }
++            Err(err) => warn!(?err, "Failed to copy closing window"),
++        }
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn scale_rect_keeps_centre() {
++        let r: Rectangle<f64, Local> = Rectangle::new((100.0, 50.0).into(), (200.0, 100.0).into());
++        let s = scale_rect(r, 0.5);
++        assert_eq!((s.loc.x, s.loc.y, s.size.w, s.size.h), (150.0, 75.0, 100.0, 50.0));
++        assert_eq!(scale_rect(r, 1.0), r);
++    }
++
++    #[test]
++    fn progress_ends() {
++        let start = Instant::now() - CLOSE_DURATION;
++        assert!(progress(start, CLOSE_DURATION).is_none());
++        let p = progress(Instant::now(), CLOSE_DURATION).unwrap();
++        assert!((0.0..0.1).contains(&p));
++    }
++}
+diff --git a/src/shell/workspace.rs b/src/shell/workspace.rs
+index fd63dcb1..30e8f14a 100644
+--- a/src/shell/workspace.rs
++++ b/src/shell/workspace.rs
+@@ -118,6 +118,7 @@ pub struct Workspace {
+     output_stack: VecDeque<OutputMatch>,
+     pub(super) backdrop_id: Id,
+     pub dirty: AtomicBool,
++    pub closing: Vec<super::open_close::ClosingWindow>,
+ }
+ 
+ #[derive(Debug)]
+@@ -412,6 +413,7 @@ impl Workspace {
+             },
+             backdrop_id: Id::new(),
+             dirty: AtomicBool::new(false),
++            closing: Vec::new(),
+         }
+     }
+ 
+@@ -449,6 +451,7 @@ impl Workspace {
+             },
+             backdrop_id: Id::new(),
+             dirty: AtomicBool::new(false),
++            closing: Vec::new(),
+         }
+     }
+ 
+@@ -544,6 +547,8 @@ impl Workspace {
+         self.tiling_layer.animations_going()
+             || self.floating_layer.animations_going()
+             || self.fullscreen_surfaces.iter().any(|f| f.is_animating())
++            || !self.closing.is_empty()
++            || self.mapped().any(|m| m.opened_at.lock().unwrap().is_some())
+             || self.dirty.swap(false, Ordering::SeqCst)
+     }
+ 
+@@ -568,6 +573,15 @@ impl Workspace {
+             true
+         });
+ 
++        let closing = self.closing.len();
++        self.closing.retain(|c| !c.is_done());
++        let opened = self
++            .mapped()
++            .fold(false, |ended, m| m.finish_open_animation() || ended);
++        if opened || closing != self.closing.len() {
++            self.dirty.store(true, Ordering::SeqCst);
++        }
++
+         let clients = self.tiling_layer.update_animation_state();
+         self.floating_layer.update_animation_state();
+         clients
+@@ -1639,6 +1653,12 @@ impl Workspace {
+         WorkspaceRenderElement<R>: RenderElement<R>,
+     {
+         let output_scale = self.output.current_scale().fractional_scale();
++        // Closing windows are drawn above the rest of the workspace.
++        for closing in &self.closing {
++            if let Some(elem) = closing.render_element(renderer, output_scale) {
++                push(elem.into());
++            }
++        }
+         let zone = {
+             let layer_map = layer_map_for_output(&self.output);
+             layer_map.non_exclusive_zone().as_local()
+diff --git a/src/wayland/handlers/compositor.rs b/src/wayland/handlers/compositor.rs
+index ed40448b..c08a18e9 100644
+--- a/src/wayland/handlers/compositor.rs
++++ b/src/wayland/handlers/compositor.rs
+@@ -261,6 +261,20 @@ impl CompositorHandler for State {
+     }
+ 
+     fn commit(&mut self, surface: &WlSurface) {
++        // a toplevel hiding: copy its last frame before the buffer is released
++        if with_states(surface, |states| {
++            matches!(
++                states
++                    .cached_state
++                    .get::<SurfaceAttributes>()
++                    .current()
++                    .buffer,
++                Some(BufferAssignment::Removed)
++            )
++        }) {
++            self.start_close_animation(surface);
++        }
++
+         // first load the buffer for various smithay helper functions (which also initializes the RendererSurfaceState)
+         on_commit_buffer_handler::<Self>(surface);
+ 
+diff --git a/src/wayland/handlers/xdg_shell/mod.rs b/src/wayland/handlers/xdg_shell/mod.rs
+index 186306d9..7630e712 100644
+--- a/src/wayland/handlers/xdg_shell/mod.rs
++++ b/src/wayland/handlers/xdg_shell/mod.rs
+@@ -351,6 +351,7 @@ impl XdgShellHandler for State {
+     }
+ 
+     fn toplevel_destroyed(&mut self, surface: ToplevelSurface) {
++        self.start_close_animation(surface.wl_surface());
+         for (popup, _) in smithay::desktop::PopupManager::popups_for_surface(surface.wl_surface()) {
+             if let smithay::desktop::PopupKind::Xdg(ref xdg_popup) = popup {
+                 xdg_popup.send_popup_done();
+diff --git a/src/xwayland.rs b/src/xwayland.rs
+index f99fc5d5..477ddec5 100644
+--- a/src/xwayland.rs
++++ b/src/xwayland.rs
+@@ -881,6 +881,11 @@ impl XwmHandler for State {
+     }
+ 
+     fn unmapped_window(&mut self, _xwm: XwmId, window: X11Surface) {
++        if !window.is_override_redirect()
++            && let Some(surface) = window.wl_surface()
++        {
++            self.start_close_animation(&surface);
++        }
+         let mut shell = self.common.shell.write();
+         if window.is_override_redirect() {
+             shell.override_redirect_windows.retain(|or| or != &window);
+-- 
+2.54.0 (Apple Git-157)
+

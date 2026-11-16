@@ -3,9 +3,9 @@ name: packages
 on:
   push:
     branches: [main]
-    paths: ['pkgs/**', '!pkgs/linux-kriss/**', '!pkgs/linux-kriss-asahi/**', 'tools/**', 'shell/**', 'theme/**', 'installer/**', '.github/workflows/pkgs.yml']
+    paths: ['pkgs/**', '!pkgs/linux-kriss/**', '!pkgs/linux-kriss-asahi/**', '!pkgs/cosmic-comp-kriss/**', 'tools/**', 'shell/**', 'theme/**', 'installer/**', '.github/workflows/pkgs.yml']
   pull_request:
-    paths: ['pkgs/**', '!pkgs/linux-kriss/**', '!pkgs/linux-kriss-asahi/**', 'tools/**', 'shell/**', 'theme/**', 'installer/**', '.github/workflows/pkgs.yml']
+    paths: ['pkgs/**', '!pkgs/linux-kriss/**', '!pkgs/linux-kriss-asahi/**', '!pkgs/cosmic-comp-kriss/**', 'tools/**', 'shell/**', 'theme/**', 'installer/**', '.github/workflows/pkgs.yml']
   workflow_dispatch:
 
 permissions:
@@ -41,9 +41,9 @@ jobs:
       - name: Test kriss tune
         run: tools/ci/tune-test.sh
 
-      # The kernels are built by kernel.yml and kernel-asahi.yml.
+      # The kernels are built by kernel.yml and kernel-asahi.yml, the compositor by cosmic-comp.yml.
       - name: Build packages
-        run: tools/ci/build-pkgs.sh out $(ls -d pkgs/*/ | grep -v '^pkgs/linux-kriss')
+        run: tools/ci/build-pkgs.sh out $(ls -d pkgs/*/ | grep -v -e '^pkgs/linux-kriss' -e '^pkgs/cosmic-comp-kriss')
 
       - name: Sign and publish
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
