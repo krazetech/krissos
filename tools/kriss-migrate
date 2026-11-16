@@ -20,7 +20,7 @@ readonly FALLBACK=@before-kriss-migrate
 readonly LIMINE_ENTRY=/etc/kriss/limine.d/90-before-migrate.conf
 readonly KRISS_PKGS=(kriss-keyring kriss-settings kriss-theme kriss-tools kriss-welcome
   kriss-shell greetd cosmic-files cosmic-terminal cosmic-settings xdg-desktop-portal-cosmic)
-DRY=0 TOP='' SIM='' ASSUME=() LAST=''
+DRY=0 TOP='' SIM='' ASSUME=()
 
 die() { printf 'kriss migrate: %s\n' "$*" >&2; exit 2; }
 step() { printf '\n:: %s\n' "$*"; }
@@ -159,13 +159,13 @@ mount_top() {
 backup() {
   step "Snapshot and keep a bootable copy of the system as it is"
   local esp ver base pretty partuuid
-  esp=$(esp_dir) ver=$(uname -r)
-  base=$(<"/usr/lib/modules/$ver/pkgbase")
-  pretty=$(sed -n 's/^PRETTY_NAME=//p' /etc/os-release | tr -d '"')
   if has_subvol "$FALLBACK"; then
     note "done before: $FALLBACK exists."
     return
   fi
+  esp=$(esp_dir) ver=$(uname -r)
+  base=$(<"/usr/lib/modules/$ver/pkgbase")
+  pretty=$(sed -n 's/^PRETTY_NAME=//p' /etc/os-release | tr -d '"')
   ((DRY)) || mount_top
   run snapper -c root create --type pre --print-number --cleanup-algorithm number \
     --userdata important=yes --description 'before kriss migrate'
@@ -241,7 +241,6 @@ pac() {
   # Installs were only printed: tell the removal check what they would have brought.
   [[ $1 != -R ]] || extra=("${ASSUME[@]}")
   if out=$(sim --print --print-format '%n %v' "$@" "${extra[@]}" 2>&1 | grep -v '^:: Synchronizing\| downloading\.\.\.$'; exit "${PIPESTATUS[0]}"); then
-    LAST=$out
     [[ $1 != -R ]] || sim --dbonly --noscriptlet "$@" "${extra[@]}" >/dev/null
     printf '%s\n' "$out" | sed -n 's/^/     | /; 1,30p'
     (($(wc -l <<<"$out") <= 30)) || note "  ... $(wc -l <<<"$out") packages in all"
@@ -286,7 +285,7 @@ boot_config() {
   # which would put the new kernel in its own layout. Its package goes at the end, so
   # the old boot menu keeps working until the KrissOS one is written.
   for f in /etc/pacman.d/hooks/90-mkinitcpio-install.hook /etc/mkinitcpio.conf.d/*limine*; do
-    if [[ ! -f $f ]] || ! grep -qi limine "$f"; then continue; fi
+    if [[ $f == *.before-kriss-migrate || ! -f $f ]] || ! grep -qi limine "$f"; then continue; fi
     run mv "$f" "$f.before-kriss-migrate"
   done
   (($(btrfs filesystem show / | grep -c 'devid') <= 1)) || multi=1
@@ -331,16 +330,19 @@ packages() {
   # ponytail: nvidia-open-dkms only; a pre-Turing GPU wants kriss nvidia setup afterwards.
   if pacman -Qq | grep -q '^linux-cachyos.*nvidia'; then pkgs+=(nvidia-open-dkms); fi
   if pacman -Q dkms >/dev/null 2>&1 || [[ " ${pkgs[*]} " == *dkms* ]]; then pkgs+=("$kernel-headers"); fi
-  # First out: the CachyOS kernel headers, which pin CachyOS's own pahole that -Syuu
-  # downgrades, and CachyOS's config packages, whose /etc/skel files kriss-settings
-  # ships too. The kernels and the two Limine tools stay until the KrissOS menu is
-  # written, so the old menu keeps working.
+  # First out: the CachyOS kernel headers, which pin CachyOS's own pahole, and CachyOS's
+  # config packages, whose /etc/skel files kriss-settings ships too. The kernels and the
+  # two Limine tools stay until the KrissOS menu is written, so the old menu keeps
+  # working. No scriptlets: cachyos-snapper-support's runs snapper delete-config, which
+  # deletes every snapshot.
   local p early=()
   while read -r p; do
     if [[ $p == linux-cachyos*-headers ]] || { infra_pkg "$p" && [[ $p != limine-* ]]; }; then early+=("$p"); fi
   done < <(pm -Qq)
-  if ((${#early[@]})); then pac -R "${early[@]}"; fi
-  pac -Syuu --needed "${pkgs[@]}"
+  if ((${#early[@]})); then pac -R --noscriptlet "${early[@]}"; fi
+  # Not -Syuu: that also downgrades whatever is newer than its repo, such as a package
+  # another repo's own installer put in with pacman -U.
+  pac -Syu --needed "${pkgs[@]}"
   # CachyOS's pacman records each package's repo as %INSTALLED_DB%, which Arch's warns
   # about on every run.
   if grep -qs '^%INSTALLED_DB%$' /var/lib/pacman/local/*/desc; then
@@ -350,25 +352,18 @@ packages() {
   if ((DRY)); then
     mapfile -t ASSUME < <(pm -Si "${pkgs[@]}" | awk -F' *: ' '/^Name/ { print $2 } /^Provides/ && $2 != "None" { n = split($2, a, / +/); for (i = 1; i <= n; i++) print a[i] }' | sed 's/^/--assume-installed=/')
   fi
-  # -Syuu leaves CachyOS builds alone when Arch has the same version; reinstall those.
-  local rebuild
-  if ((DRY)); then
-    # Those -Syuu did not change already.
-    mapfile -t rebuild < <(arch_rebuilds | awk -F/ 'NR == FNR { seen[$1]; next } !($2 in seen)' <(cut -d' ' -f1 <<<"$LAST") -)
-    note "then reinstall ${#rebuild[@]} more CachyOS builds that Arch has at the same version:"
-    printf '%s\n' "${rebuild[@]#*/}" | column -c 88 | sed 's/^/     | /' 
-  else
-    mapfile -t rebuild < <(arch_rebuilds)
-    if ((${#rebuild[@]})); then
-      # Same version means the same file name: the CachyOS build in pacman's cache would
-      # be checked against Arch's signature and refused. Drop it, so Arch's is fetched.
-      local url
-      while read -r url; do
-        rm -f "/var/cache/pacman/pkg/${url##*/}" "/var/cache/pacman/pkg/${url##*/}.sig"
-      done < <(pacman -Sp "${rebuild[@]}")
-      pac -S "${rebuild[@]}"
-    fi
+  # Every CachyOS build Arch or [kriss] has, at Arch's version: older, newer or the same.
+  local rebuild url
+  mapfile -t rebuild < <(arch_rebuilds)
+  ((${#rebuild[@]})) || return 0
+  # Same version means the same file name: the CachyOS build in pacman's cache would be
+  # checked against Arch's signature and refused. Drop it, so Arch's is fetched.
+  if ((!DRY)); then
+    while read -r url; do
+      rm -f "/var/cache/pacman/pkg/${url##*/}" "/var/cache/pacman/pkg/${url##*/}.sig"
+    done < <(pacman -Sp "${rebuild[@]}")
   fi
+  pac -S "${rebuild[@]}"
 }
 
 # CachyOS's kernels and system pieces, once the KrissOS kernel and menu are in place.
@@ -380,7 +375,7 @@ drop_cachyos() {
   done < <(pm -Qq)
   if ((${#old[@]} == 0)); then note "none left."; return; fi
   if systemctl cat limine-snapper-sync.service >/dev/null 2>&1; then run systemctl disable limine-snapper-sync.service; fi
-  pac -R "${old[@]}"
+  pac -R --noscriptlet "${old[@]}"
 }
 
 login_and_menu() {
@@ -406,7 +401,8 @@ EOF
   fi
   # kriss-settings writes /usr/lib/os-release; CachyOS left a file of its own here.
   [[ -L /etc/os-release ]] || run ln -sf ../usr/lib/os-release /etc/os-release
-  run systemctl enable kriss-limine-update.path
+  # cachyos-snapper-support turns the cleanup timer off when it goes.
+  run systemctl enable kriss-limine-update.path snapper-cleanup.timer
   run kriss-limine-update
   # The old menu sat at the ESP's root (its tools are gone now); only KrissOS's should be found.
   if [[ -f $esp/limine.conf ]]; then run mv "$esp/limine.conf" "$esp/limine.conf.before-kriss-migrate"; fi
