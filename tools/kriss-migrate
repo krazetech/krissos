@@ -195,18 +195,22 @@ flat_snapshots() {
     note "done before: /.snapshots is @snapshots."
     return
   fi
-  [[ $(stat -c %i /.snapshots) == 256 ]] || die "/.snapshots is not a btrfs subvolume."
-  ! has_subvol @snapshots || die "@snapshots exists but is not mounted at /.snapshots."
   local line
   line=$(awk '$1 !~ /^#/ && $2 == "/"' /etc/fstab)
-  ((DRY)) || mount_top
-  # Nothing may write snapshots during the move. limine-snapper-sync is gone after the
-  # package step; until then the old boot menu stays as it was.
-  run systemctl stop snapperd.service
-  if systemctl cat limine-snapper-sync.service >/dev/null 2>&1; then run systemctl stop limine-snapper-sync.service; fi
-  run mv "${TOP:-<top>}/@/.snapshots" "${TOP:-<top>}/@snapshots"
-  run mkdir -m750 /.snapshots
-  fstab_as "$line" @snapshots /.snapshots | if ((DRY)); then
+  if ! has_subvol @snapshots; then
+    [[ $(stat -c %i /.snapshots) == 256 ]] || die "/.snapshots is not a btrfs subvolume."
+    ((DRY)) || mount_top
+    # Nothing may write snapshots during the move. limine-snapper-sync is gone after the
+    # package step; until then the old boot menu stays as it was.
+    run systemctl stop snapperd.service
+    if systemctl cat limine-snapper-sync.service >/dev/null 2>&1; then run systemctl stop limine-snapper-sync.service; fi
+    run mv "${TOP:-<top>}/@/.snapshots" "${TOP:-<top>}/@snapshots"
+    run mkdir -m750 /.snapshots
+  fi
+  # Removing cachyos-snapper-support rewrites fstab without this line, so this step runs
+  # again after the package swap.
+  grep -q '^[^#][^[:space:]]*[[:space:]]\+/\.snapshots[[:space:]]' /etc/fstab ||
+    fstab_as "$line" @snapshots /.snapshots | if ((DRY)); then
     printf '   would add to /etc/fstab: %s\n' "$(cat)"
   else
     cat >>/etc/fstab
@@ -337,6 +341,12 @@ packages() {
   done < <(pm -Qq)
   if ((${#early[@]})); then pac -R "${early[@]}"; fi
   pac -Syuu --needed "${pkgs[@]}"
+  # CachyOS's pacman records each package's repo as %INSTALLED_DB%, which Arch's warns
+  # about on every run.
+  if grep -qs '^%INSTALLED_DB%$' /var/lib/pacman/local/*/desc; then
+    if ((DRY)); then note "would drop CachyOS's %INSTALLED_DB% field from pacman's database"
+    else sed -i '/^%INSTALLED_DB%$/,/^$/d' /var/lib/pacman/local/*/desc; fi
+  fi
   if ((DRY)); then
     mapfile -t ASSUME < <(pm -Si "${pkgs[@]}" | awk -F' *: ' '/^Name/ { print $2 } /^Provides/ && $2 != "None" { n = split($2, a, / +/); for (i = 1; i <= n; i++) print a[i] }' | sed 's/^/--assume-installed=/')
   fi
@@ -412,6 +422,7 @@ check() {
   ok "/boot/initramfs-$kernel.img" "[[ -f /boot/initramfs-$kernel.img ]]"
   ok "boot menu has the old system" "grep -q '(before kriss migrate)' '$conf'"
   ok "snapshot 'before kriss migrate'" "snapper -c root list | grep -q 'before kriss migrate'"
+  ok "/.snapshots is @snapshots" "[[ \$(findmnt -no FSROOT /.snapshots) == /@snapshots ]]"
   ok "greetd enabled" "systemctl is-enabled -q greetd.service"
   ok "os-release says KrissOS" "grep -q '^ID=krissos' /etc/os-release"
   return "$bad"
@@ -446,6 +457,7 @@ main() {
   repos
   boot_config
   packages
+  flat_snapshots
   drop_cachyos
   login_and_menu
   leftovers
