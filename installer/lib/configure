@@ -19,12 +19,13 @@ sed -i "/^#\[multilib\]/,/^#Include/ s/^#//" "$root/etc/pacman.conf"
 # over a read-only snapshot booted from the Limine menu. kriss-kms (kriss-settings) is
 # kms without nouveau, which would add ~105 MB of firmware that older cards never use.
 # The NVIDIA driver gets no early KMS at all, so nothing races with it.
+# plymouth (after the KMS driver) shows the kriss splash; "splash" on the cmdline turns it on.
 kms=kriss-kms
 if chr pacman -Q nvidia-utils >/dev/null 2>&1; then kms=; fi
 mkdir -p "$root/etc/mkinitcpio.conf.d"
 cat >"$root/etc/mkinitcpio.conf.d/kriss.conf" <<EOF
 # Written by the KrissOS installer.
-HOOKS=(base udev autodetect microcode modconf $kms keyboard keymap consolefont block filesystems fsck kriss-snapshot)
+HOOKS=(base udev autodetect microcode modconf $kms plymouth keyboard keymap consolefont block filesystems fsck kriss-snapshot)
 EOF
 
 # --- snapper ---------------------------------------------------------------------
@@ -48,7 +49,7 @@ printf '[zram0]\nzram-size = min(ram / 2, 8192)\ncompression-algorithm = zstd\n'
 # --- Limine ----------------------------------------------------------------------
 esp=$root/efi
 uuid=$(findmnt -nvo UUID "$root")
-echo "root=UUID=$uuid rootflags=subvol=@ rw quiet zswap.enabled=0" >"$root/etc/kernel/cmdline"
+echo "root=UUID=$uuid rootflags=subvol=@ rw quiet splash zswap.enabled=0" >"$root/etc/kernel/cmdline"
 
 install -Dm644 "$root/usr/share/limine/BOOTX64.EFI" "$esp/EFI/limine/BOOTX64.EFI"
 # Firmware that forgets boot entries (and QEMU without saved NVRAM) falls back to
