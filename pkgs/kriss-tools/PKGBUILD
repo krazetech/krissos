@@ -1,6 +1,6 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-tools
-pkgver=0.5.0
+pkgver=0.6.0
 pkgrel=1
 pkgdesc='KrissOS system tools'
 arch=('any')
@@ -10,6 +10,7 @@ depends=('bash' 'coreutils' 'glibc' 'grep' 'libnotify' 'pacman-contrib' 'polkit'
 optdepends=('power-profiles-daemon: show and set the power profile (kriss tune)'
             'scx-tools: sched_ext scheduler per profile (kriss tune)'
             'snapper: snapshot before kriss update'
+            'btrfs-progs: kriss rollback'
             'flatpak: update Flatpak apps with kriss update'
             'qemu-desktop: run the GPU passthrough VM (kriss-vm)'
             'libvirt: manage the passthrough VM (kriss-vm)'
@@ -24,6 +25,8 @@ package() {
   install -Dm755 "$t/kriss-vm" "$pkgdir/usr/bin/kriss-vm"
   install -Dm644 "$t/kriss-tune.rules" "$pkgdir/usr/share/polkit-1/rules.d/50-kriss-tune.rules"
   install -Dm644 "$t/kriss-tune.desktop" "$pkgdir/etc/xdg/autostart/kriss-tune.desktop"
+  # Says so at login when a boot-menu snapshot is running (kriss rollback --notice).
+  install -Dm644 "$t/kriss-snapshot-notice.desktop" "$pkgdir/etc/xdg/autostart/kriss-snapshot-notice.desktop"
   # The KrissOS Shell has no polkit agent of its own; without one pkexec and udisks cannot ask.
   install -Dm644 "$t/kriss-polkit-agent.desktop" "$pkgdir/etc/xdg/autostart/kriss-polkit-agent.desktop"
   install -Dm755 "$t/kriss-update-notify" "$pkgdir/usr/bin/kriss-update-notify"

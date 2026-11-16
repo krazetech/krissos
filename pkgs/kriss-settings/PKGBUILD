@@ -1,6 +1,6 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-settings
-pkgver=0.3.2
+pkgver=0.4.1
 pkgrel=1
 pkgdesc='KrissOS default configs (Plasma, SDDM, GTK, Flatpak, terminals, prompt, fastfetch), os-release, Limine menu and pacman hooks'
 arch=('any')
@@ -8,7 +8,7 @@ url='https://github.com/krazetech/krissos'
 license=('GPL-3.0-or-later')
 # snap-pac provides the snapper pre/post snapshot hooks; it skips them when snapper
 # has no config.
-depends=('gsettings-desktop-schemas' 'snap-pac' 'fastfetch')
+depends=('diffutils' 'gsettings-desktop-schemas' 'snap-pac' 'fastfetch')
 makedepends=('python')
 optdepends=('limine: the boot menu with bootable snapshots (kriss-limine-update)'
             'sbctl: re-sign the kernel and bootloader for Secure Boot')
