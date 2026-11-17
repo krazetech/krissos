@@ -32,7 +32,25 @@ PanelWindow {
         showTimer.stop();
         hideTimer.stop();
         open = false;
+        // The keyboard goes back to the bar's button.
+        if (byKeyboard) { byKeyboard = false; Desktop.keysTo(keysBack); }
     }
+    // Up on a taskbar button from the keyboard: its previews, with the keyboard on them; Esc
+    // gives it back to the button.
+    property bool byKeyboard: false
+    property Item keysBack: null
+    function openFrom(btn) {
+        if (!btn || btn.wins.length === 0) return;
+        pending = { app: btn.modelData, x: btn.mapToItem(null, btn.width / 2, 0).x };
+        take();
+        byKeyboard = true;
+        current = 0;
+        panel.forceActiveFocus();
+        keysBack = Desktop.keysFor;
+        Desktop.keysTo(panel);
+    }
+    // A screen reader hears the window as the keyboard moves.
+    onCurrentChanged: if (byKeyboard && wins[current]) panel.Accessible.announce(wins[current].title || wins[current].appId)
     function take() {
         hideTimer.stop();
         app = pending.app;
@@ -112,9 +130,11 @@ PanelWindow {
         y: win.height - height - Theme.panelGap
         radius: Theme.radiusSmall + win.pad
         color: Theme.bar
-        border.width: 1
+        border.width: Theme.rimWidth
         border.color: Theme.rim
         focus: true
+        Accessible.role: Accessible.List
+        Accessible.name: Tr.t("Window previews")
 
         // Slides along the bar to the next app, but appears in place.
         Behavior on x { enabled: panel.opacity > 0; NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
@@ -125,7 +145,7 @@ PanelWindow {
 
         HoverHandler {
             id: pointer
-            onHoveredChanged: if (hovered) hideTimer.stop(); else if (win.open) hideTimer.restart()
+            onHoveredChanged: if (hovered) hideTimer.stop(); else if (win.open && !win.byKeyboard) hideTimer.restart()
         }
 
         Keys.onPressed: event => {
@@ -164,6 +184,10 @@ PanelWindow {
                 acceptedButtons: Qt.LeftButton | Qt.MiddleButton
                 cursorShape: Qt.PointingHandCursor
                 onEntered: win.current = index
+                Accessible.role: Accessible.ListItem
+                Accessible.name: w?.title || entry?.name || w?.appId || ""
+                Accessible.selected: lit
+                Accessible.onPressAction: if (w) { Windows.activate(w.id); win.hide(); }
                 onClicked: mouse => {
                     if (!w) return;
                     if (mouse.button === Qt.MiddleButton) { Windows.close(w.id); return; }
@@ -175,6 +199,8 @@ PanelWindow {
                     anchors.fill: parent
                     radius: Theme.radiusSmall
                     color: card.pressed ? Theme.cardHover : card.lit ? Theme.card : "transparent"
+                    border.width: Theme.focusWidth
+                    border.color: card.lit && win.byKeyboard ? Theme.accent : "transparent"
                     Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                 }
 
@@ -189,7 +215,7 @@ PanelWindow {
                     text: card.w?.title || card.entry?.name || card.w?.appId || ""
                     elide: Text.ElideRight
                     color: Theme.fg
-                    font { family: Theme.sans; pixelSize: 12; weight: card.w?.active && !card.w?.minimized ? Font.DemiBold : Font.Medium }
+                    font { family: Theme.sans; pixelSize: Theme.sp(12); weight: card.w?.active && !card.w?.minimized ? Font.DemiBold : Font.Medium }
                 }
                 MouseArea {
                     id: close

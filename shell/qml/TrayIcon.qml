@@ -47,6 +47,22 @@ MouseArea {
     }
     onVisibleChanged: dragging = false
     onWheel: wheel => modelData.scroll(wheel.angleDelta.y, false)
+    // On the bar's focus chain: Enter opens the app, the Menu key or Shift+F10 its menu.
+    // (In the overflow flyout the flyout keeps the keyboard and moves kbFocused instead.)
+    activeFocusOnTab: true
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Menu || event.key === Qt.Key_F10 && event.modifiers & Qt.ShiftModifier) openMenu(true);
+        else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
+            if (modelData.onlyMenu) openMenu(true); else { modelData.activate(); used(); }
+        } else return;
+        event.accepted = true;
+    }
+    Accessible.role: Accessible.Button
+    Accessible.name: modelData.tooltipTitle || modelData.title || modelData.id
+    Accessible.description: modelData.tooltipDescription
+    Accessible.onPressAction: modelData.onlyMenu ? openMenu(true) : (modelData.activate(), used())
+    Accessible.focused: kbFocused
+
     transform: Translate { id: shift }
 
     function openMenu(byKeyboard) {
@@ -78,8 +94,8 @@ MouseArea {
         anchors.fill: parent
         anchors.margins: -7
         radius: Theme.barRadius
-        color: tray.containsMouse || tray.kbFocused ? Theme.card : "transparent"
-        border.width: tray.kbFocused ? 2 : 0
+        color: tray.containsMouse || tray.kbFocused || tray.activeFocus ? Theme.card : "transparent"
+        border.width: tray.kbFocused || tray.activeFocus ? Theme.focusWidth : 0
         border.color: Theme.accent
         Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
     }
@@ -104,7 +120,7 @@ MouseArea {
             height: tip.implicitHeight + 12
             radius: 8
             color: Theme.card
-            border.width: 1
+            border.width: Theme.rimWidth
             border.color: Theme.line
             Text {
                 id: tip
@@ -117,7 +133,7 @@ MouseArea {
                 maximumLineCount: 4
                 elide: Text.ElideRight
                 color: Theme.fg
-                font { family: Theme.sans; pixelSize: 12 }
+                font { family: Theme.sans; pixelSize: Theme.sp(12) }
             }
         }
     }

@@ -101,6 +101,9 @@ Singleton {
         if (keep.length !== saved.length) saved = keep;
     }
 
+    // A new notification, for the screen reader announcement (Notifications.qml).
+    signal came(var n)
+
     NotificationServer {
         id: server
         keepOnReload: true
@@ -115,6 +118,7 @@ Singleton {
             if (!Desktop.launcherOpen && !Desktop.notificationsOpen && !Desktop.quickOpen && !Desktop.calendarOpen)
                 Desktop.screen = Desktop.focusedScreen();
             if (Windows.fullscreenOn(Desktop.screen)) root.held[n.id] = true;
+            root.came(n);
         }
     }
 

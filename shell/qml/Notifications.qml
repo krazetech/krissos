@@ -66,6 +66,42 @@ PanelWindow {
     implicitHeight: (screen?.height ?? 1080) - Theme.barHeight - 2 * Theme.panelGap
     mask: Region { item: column }
     color: "transparent"
+    // The keyboard while the center is open: Tab walks the header, the cards (top to bottom)
+    // and the month; on a card Enter takes its action, Delete dismisses it and the Menu key
+    // or Shift+F10 lists all it can do. Esc closes.
+    // (Through Desktop.keysTo: this window is often on screen already, with toasts.)
+
+    // A screen reader hears each notification that shows as a toast; critical ones cut in.
+    Connections {
+        target: Notifs
+        function onCame(n) {
+            const critical = n.urgency === NotificationUrgency.Critical;
+            if (Desktop.dnd && !critical) return;
+            const text = !n.body ? n.summary : !n.summary ? n.body : n.summary + (/[.!?…:]$/.test(n.summary) ? " " : ". ") + n.body;
+            column.Accessible.announce(Tr.t("Notification from %1: %2", n.appName || Tr.t("an app"), text),
+                critical ? Accessible.Assertive : Accessible.Polite);
+        }
+    }
+
+    // The card at a depth (0 is the newest, at the bottom), for the keys.
+    function cardAt(depth) {
+        for (let i = 0; i < cards.count; i++) if (cards.itemAt(i)?.depth === depth) return cards.itemAt(i);
+        return null;
+    }
+    function focusCard(depth) {
+        const c = cardAt(depth);
+        if (c) c.focusItem.forceActiveFocus();
+        return !!c;
+    }
+    function cardMenu(card) {
+        const n = card.n, out = n.actions.map(a => ({ text: a.text || Tr.t("Open"), run: () => Notifs.invoke(n, a) }));
+        if (out.length) out.push({ sep: true });
+        out.push({ text: Tr.t("Dismiss"), glyph: "close", run: () => Notifs.dismiss(n) });
+        const same = Notifs.all.filter(m => m.appName === n.appName).length;
+        if (same > 1) out.push({ text: Tr.t("Clear %1", same), glyph: "trash", run: () => Notifs.clear(n.appName) });
+        menu.show(card.focusItem, out, true);
+    }
+    Menu { id: menu }
 
     // While the list is open, a click anywhere else (bar aside) or Esc closes it,
     // like the quick settings panel. The toasts sit above it on the overlay layer.
@@ -74,20 +110,28 @@ PanelWindow {
         screen: Desktop.screen
         WlrLayershell.layer: WlrLayer.Top
         WlrLayershell.namespace: "kriss-notifications-close"
-        WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
         exclusionMode: ExclusionMode.Normal
         exclusiveZone: 0
         anchors { top: true; bottom: true; left: true; right: true }
         color: "transparent"
         MouseArea {
+            Accessible.ignored: true  // pointer only; the keyboard has its own way
             anchors.fill: parent
-            focus: true
             onClicked: Desktop.notificationsOpen = false
-            Keys.onEscapePressed: Desktop.notificationsOpen = false
         }
     }
 
-    onOpenChanged: if (open) month.reset()
+    // Opening puts the keyboard on the newest card (once the list has regrouped), else on Do not disturb.
+    onOpenChanged: {
+        if (open) {
+            month.reset();
+            Desktop.keysTo(column);
+            Qt.callLater(() => focusCard(0) || dnd.forceActiveFocus());
+        } else {
+            column.forceActiveFocus();  // no focus rim left on a toast
+            if (Desktop.keysFor === column || Desktop.keysNext === column) Desktop.keysTo(null);
+        }
+    }
 
     HoverHandler { id: hover; onHoveredChanged: Notifs.paused = hovered }
 
@@ -95,6 +139,16 @@ PanelWindow {
         id: column
         anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
         spacing: win.gap
+        Accessible.role: Accessible.Grouping
+        Accessible.name: Tr.t("Notifications")
+        Keys.onPressed: event => {
+            const f = column.Window.activeFocusItem;
+            if (event.key === Qt.Key_Escape) Desktop.back("notificationsOpen");
+            else if (f && (event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab))
+                f.nextItemInFocusChain(event.key === Qt.Key_Tab && !(event.modifiers & Qt.ShiftModifier)).forceActiveFocus();
+            else return;
+            event.accepted = true;
+        }
 
         // Header while the list is open.
         Rectangle {
@@ -103,10 +157,10 @@ PanelWindow {
             opacity: win.open ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
             width: parent.width
-            height: 48
+            height: Math.max(48, Theme.sp(14) + 30)
             radius: Theme.radius
             color: Theme.win
-            border.width: 1
+            border.width: Theme.rimWidth
             border.color: Theme.rim
             RowLayout {
                 anchors.fill: parent
@@ -116,7 +170,7 @@ PanelWindow {
                     Layout.fillWidth: true
                     text: Notifs.all.length ? Tr.t("Notifications") : Tr.t("No new notifications")
                     color: Theme.fg
-                    font { family: Theme.sans; pixelSize: 14; weight: Font.DemiBold }
+                    font { family: Theme.sans; pixelSize: Theme.sp(14); weight: Font.DemiBold }
                 }
                 MouseArea {
                     id: dnd
@@ -125,9 +179,18 @@ PanelWindow {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: Desktop.dnd = !Desktop.dnd
+                    activeFocusOnTab: true
+                    Keys.onReturnPressed: Desktop.dnd = !Desktop.dnd
+                    Keys.onEnterPressed: Desktop.dnd = !Desktop.dnd
+                    Keys.onSpacePressed: Desktop.dnd = !Desktop.dnd
+                    Keys.onTabPressed: clearAll.visible ? clearAll.forceActiveFocus() : win.focusCard(win.shownIds.length - 1) || month.focusFirst()
                     Accessible.role: Accessible.CheckBox
                     Accessible.name: Tr.t("Do not disturb")
+                    Accessible.checkable: true
                     Accessible.checked: Desktop.dnd
+                    Accessible.onToggleAction: Desktop.dnd = !Desktop.dnd
+                    Accessible.onPressAction: Desktop.dnd = !Desktop.dnd
+                    FocusRim { radius: 16 }
                     scale: pressed ? Theme.pressScale : 1
                     Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                     Rectangle {
@@ -146,6 +209,17 @@ PanelWindow {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: Notifs.clear()
+                    activeFocusOnTab: true
+                    Keys.onReturnPressed: Notifs.clear()
+                    Keys.onEnterPressed: Notifs.clear()
+                    Keys.onSpacePressed: Notifs.clear()
+                    Keys.onTabPressed: win.focusCard(win.shownIds.length - 1) || month.focusFirst()
+                    Keys.onBacktabPressed: dnd.forceActiveFocus()
+                    Accessible.role: Accessible.Button
+                    Accessible.name: Tr.t("Clear all")
+                    Accessible.onPressAction: Notifs.clear()
+                    onVisibleChanged: if (!visible && activeFocus) dnd.forceActiveFocus()
+                    FocusRim { radius: 16 }
                     scale: pressed ? Theme.pressScale : 1
                     Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                     Rectangle {
@@ -159,7 +233,7 @@ PanelWindow {
                         anchors.centerIn: parent
                         text: Tr.t("Clear all")
                         color: Theme.fg
-                        font { family: Theme.sans; pixelSize: 12; weight: Font.DemiBold }
+                        font { family: Theme.sans; pixelSize: Theme.sp(12); weight: Font.DemiBold }
                     }
                 }
             }
@@ -182,9 +256,11 @@ PanelWindow {
                 Behavior on height { NumberAnimation { duration: Theme.ms(Theme.slow); easing.type: Easing.BezierSpline; easing.bezierCurve: win.curve } }
 
                 Repeater {
+                    id: cards
                     model: Notifs.model
                     delegate: Item {
                         id: card
+                        readonly property alias focusItem: swipe
                         required property var modelData
                         readonly property var n: modelData
                         readonly property var defaultAction: n.actions.find(a => a.identifier === "default")
@@ -228,6 +304,31 @@ PanelWindow {
                             drag.minimumX: 0
                             drag.maximumX: card.width
                             onClicked: card.defaultAction ? Notifs.invoke(card.n, card.defaultAction) : Notifs.dismiss(card.n)
+                            Accessible.role: Accessible.Notification
+                            Accessible.name: card.n.summary || card.n.appName
+                            Accessible.description: [card.n.appName, Notifs.ago(card.n), card.n.body,
+                                card.n.actions.length ? Tr.t("Menu key for actions") : ""]
+                                .map(s => (s ?? "").trim().replace(/[.!?…]+$/, "")).filter(s => s).join(". ")
+                            Accessible.onPressAction: if (card.defaultAction) Notifs.invoke(card.n, card.defaultAction)
+                            // Up and down (Tab and Shift+Tab) go down and up the list as it looks.
+                            Keys.onPressed: event => {
+                                const d = card.depth;
+                                switch (event.key) {
+                                case Qt.Key_Return: case Qt.Key_Enter: case Qt.Key_Space:
+                                    if (card.defaultAction) Notifs.invoke(card.n, card.defaultAction); else win.cardMenu(card);
+                                    break;
+                                case Qt.Key_Delete: case Qt.Key_Backspace:
+                                    if (!win.focusCard(d - 1) && !win.focusCard(d + 1)) dnd.forceActiveFocus();
+                                    Notifs.dismiss(card.n);
+                                    break;
+                                case Qt.Key_Menu: win.cardMenu(card); break;
+                                case Qt.Key_F10: if (event.modifiers & Qt.ShiftModifier) win.cardMenu(card); else return; break;
+                                case Qt.Key_Down: case Qt.Key_Tab: if (!win.focusCard(d - 1)) month.focusFirst(); break;
+                                case Qt.Key_Up: case Qt.Key_Backtab: if (!win.focusCard(d + 1)) (clearAll.visible ? clearAll : dnd).forceActiveFocus(); break;
+                                default: return;
+                                }
+                                event.accepted = true;
+                            }
                             onReleased: {
                                 if (face.x > card.width * 0.35) away.start();
                                 else face.x = 0;
@@ -250,12 +351,13 @@ PanelWindow {
                                 NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Easing.BezierSpline; easing.bezierCurve: win.curve }
                             }
 
+                            FocusRim { target: swipe; anchors.margins: 0; radius: Theme.radius }
                             Rectangle {
                                 anchors.fill: parent
                                 radius: Theme.radius
                                 // Solid: notifications have no blur behind them, and app content showed through.
                                 color: Theme.win
-                                border.width: card.n.urgency === NotificationUrgency.Critical ? 2 : 1
+                                border.width: card.n.urgency === NotificationUrgency.Critical ? 2 : Theme.rimWidth
                                 border.color: card.n.urgency === NotificationUrgency.Critical ? Theme.red : Theme.rim
                             }
 
@@ -297,14 +399,14 @@ PanelWindow {
                                                 text: [card.n.appName, Notifs.ago(card.n)].filter(s => s).join(" · ")
                                                 elide: Text.ElideRight
                                                 color: Theme.soft
-                                                font { family: Theme.sans; pixelSize: 12 }
+                                                font { family: Theme.sans; pixelSize: Theme.sp(12) }
                                             }
                                             Text {
                                                 id: clearGroup
                                                 visible: card.groupSize > 1
                                                 text: Tr.t("Clear %1", card.groupSize)
                                                 color: groupHit.containsMouse ? Theme.fg : Theme.accent
-                                                font { family: Theme.sans; pixelSize: 12; weight: Font.DemiBold }
+                                                font { family: Theme.sans; pixelSize: Theme.sp(12); weight: Font.DemiBold }
                                                 Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                                                 MouseArea {
                                                     id: groupHit
@@ -313,6 +415,8 @@ PanelWindow {
                                                     hoverEnabled: true
                                                     cursorShape: Qt.PointingHandCursor
                                                     onClicked: Notifs.clear(card.n.appName)
+                                                    Accessible.role: Accessible.Button
+                                                    Accessible.name: clearGroup.text
                                                 }
                                             }
                                         }
@@ -323,12 +427,14 @@ PanelWindow {
                                                 text: card.n.summary || card.n.appName
                                                 elide: Text.ElideRight
                                                 color: Theme.fg
-                                                font { family: Theme.sans; pixelSize: 14; weight: Font.DemiBold }
+                                                font { family: Theme.sans; pixelSize: Theme.sp(14); weight: Font.DemiBold }
                                             }
                                             MouseArea {
                                                 implicitWidth: 22; implicitHeight: 22
                                                 cursorShape: Qt.PointingHandCursor
                                                 onClicked: Notifs.dismiss(card.n)
+                                                Accessible.role: Accessible.Button
+                                                Accessible.name: Tr.t("Dismiss")
                                                 Glyph { anchors.centerIn: parent; name: "close"; size: 14; color: Theme.soft }
                                             }
                                         }
@@ -341,7 +447,7 @@ PanelWindow {
                                             maximumLineCount: 4
                                             elide: Text.ElideRight
                                             color: Theme.soft
-                                            font { family: Theme.sans; pixelSize: 13 }
+                                            font { family: Theme.sans; pixelSize: Theme.sp(13) }
                                             lineHeight: 1.15
                                         }
                                         Flow {
@@ -357,10 +463,12 @@ PanelWindow {
                                                     required property var modelData
                                                     required property int index
                                                     width: actText.implicitWidth + 26
-                                                    height: 30
+                                                    height: Math.max(30, actText.implicitHeight + 12)
                                                     hoverEnabled: true
                                                     cursorShape: Qt.PointingHandCursor
                                                     onClicked: Notifs.invoke(card.n, modelData)
+                                                    Accessible.role: Accessible.Button
+                                                    Accessible.name: modelData.text
                                                     scale: pressed ? Theme.pressScale : 1
                                                     Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                                                     // The first action is the one most apps expect you to take.
@@ -376,7 +484,7 @@ PanelWindow {
                                                         anchors.centerIn: parent
                                                         text: act.modelData.text
                                                         color: act.index === 0 ? Theme.accentInk : Theme.fg
-                                                        font { family: Theme.sans; pixelSize: 12; weight: Font.DemiBold }
+                                                        font { family: Theme.sans; pixelSize: Theme.sp(12); weight: Font.DemiBold }
                                                     }
                                                 }
                                             }
@@ -400,15 +508,18 @@ PanelWindow {
             height: month.implicitHeight + 36
             radius: Theme.radius
             color: Theme.win
-            border.width: 1
+            border.width: Theme.rimWidth
             border.color: Theme.rim
             MouseArea {
+                Accessible.ignored: true  // pointer only; the keyboard has its own way
                 anchors.fill: parent
                 onWheel: wheel => month.page(wheel.angleDelta.y > 0 ? -1 : 1)
             }
             Month {
                 id: month
                 anchors { left: parent.left; right: parent.right; top: parent.top; margins: 18 }
+                // Shift+Tab from the month goes back to the newest card.
+                onBackOut: win.focusCard(0) || (clearAll.visible ? clearAll : dnd).forceActiveFocus()
             }
         }
     }

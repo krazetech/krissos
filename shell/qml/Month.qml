@@ -26,13 +26,19 @@ ColumnLayout {
         if (dir) turn.restart();
     }
     function reset() { month = today.getMonth(); year = today.getFullYear(); }
+    // The keyboard: Tab goes from the month's name to the arrows; Shift+Tab off the first
+    // one asks the panel to take it (backOut). A page is read out as it turns.
+    function focusFirst() { title.forceActiveFocus(); }
+    signal backOut()
+    readonly property string monthName: new Date(year, month, 1).toLocaleString(Qt.locale(), "MMMM yyyy")
+    onMonthNameChanged: if (title.activeFocus || arrows.itemAt(0)?.activeFocus || arrows.itemAt(1)?.activeFocus) title.Accessible.announce(monthName)
 
     Text {
         Layout.fillWidth: true
         text: root.today.toLocaleString(Qt.locale(), "dddd, d MMMM yyyy")
         elide: Text.ElideRight
         color: Theme.fg
-        font { family: Theme.sans; pixelSize: 15; weight: Font.DemiBold }
+        font { family: Theme.sans; pixelSize: Theme.sp(15); weight: Font.DemiBold }
     }
 
     Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: Theme.line }
@@ -43,22 +49,36 @@ ColumnLayout {
         MouseArea {
             id: title
             Layout.fillWidth: true
-            implicitHeight: 32
+            implicitHeight: Math.max(32, Theme.sp(14) + 14)
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
-            onClicked: root.page((root.today.getFullYear() - root.year) * 12 + root.today.getMonth() - root.month)
+            onClicked: thisMonth()
+            function thisMonth() { root.page((root.today.getFullYear() - root.year) * 12 + root.today.getMonth() - root.month); }
+            activeFocusOnTab: true
+            Keys.onReturnPressed: thisMonth()
+            Keys.onEnterPressed: thisMonth()
+            Keys.onSpacePressed: thisMonth()
+            Keys.onUpPressed: root.page(-1)
+            Keys.onDownPressed: root.page(1)
+            Keys.onBacktabPressed: root.backOut()
+            Accessible.role: Accessible.Button
+            Accessible.name: root.monthName
+            Accessible.description: Tr.t("Back to this month. Up and Down change the month.")
+            Accessible.onPressAction: thisMonth()
+            FocusRim { radius: 10 }
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.left: parent.left
                 anchors.leftMargin: 6
-                text: new Date(root.year, root.month, 1).toLocaleString(Qt.locale(), "MMMM yyyy")
+                text: root.monthName
                 color: title.containsMouse ? Theme.accent : Theme.fg
-                font { family: Theme.sans; pixelSize: 14; weight: Font.DemiBold }
+                font { family: Theme.sans; pixelSize: Theme.sp(14); weight: Font.DemiBold }
                 Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
             }
         }
         Repeater {
-            model: [["up", -1], ["down", 1]]
+            id: arrows
+            model: [["up", -1, Tr.t("Previous month")], ["down", 1, Tr.t("Next month")]]
             delegate: MouseArea {
                 id: arrow
                 required property var modelData
@@ -66,6 +86,14 @@ ColumnLayout {
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: root.page(modelData[1])
+                activeFocusOnTab: true
+                Keys.onReturnPressed: root.page(modelData[1])
+                Keys.onEnterPressed: root.page(modelData[1])
+                Keys.onSpacePressed: root.page(modelData[1])
+                Accessible.role: Accessible.Button
+                Accessible.name: modelData[2]
+                Accessible.onPressAction: root.page(modelData[1])
+                FocusRim { radius: width / 2 + 2 }
                 scale: pressed ? Theme.pressScale : 1
                 Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                 Rectangle {
@@ -87,14 +115,14 @@ ColumnLayout {
             text: shortName.slice(0, 2)
             horizontalAlignment: Text.AlignHCenter
             color: Theme.soft
-            font { family: Theme.sans; pixelSize: 12; weight: Font.DemiBold }
+            font { family: Theme.sans; pixelSize: Theme.sp(12); weight: Font.DemiBold }
         }
     }
 
     MonthGrid {
         id: grid
         Layout.fillWidth: true
-        implicitHeight: 6 * 40
+        implicitHeight: 6 * Math.max(40, Theme.sp(13) + 22)
         month: root.month
         year: root.year
         locale: Qt.locale()
@@ -112,17 +140,21 @@ ColumnLayout {
             required property var model
             readonly property bool isToday: model.today
             readonly property bool inMonth: model.month === root.month
-            implicitHeight: 40
+            implicitHeight: Math.max(40, Theme.sp(13) + 22)
+            Accessible.role: Accessible.Cell
+            Accessible.name: model.date.toLocaleString(Qt.locale(), "dddd d MMMM")
+            Accessible.description: isToday ? Tr.t("Today") : ""
+            Accessible.selected: isToday
             Rectangle {
                 anchors.centerIn: parent
-                width: 34; height: 34; radius: 17
+                width: Math.max(34, Theme.sp(13) + 16); height: width; radius: width / 2
                 color: day.isToday ? Theme.accent : "transparent"
             }
             Text {
                 anchors.centerIn: parent
                 text: day.model.day
                 color: day.isToday ? Theme.accentInk : day.inMonth ? Theme.fg : Theme.alpha(Theme.soft, 0.5)
-                font { family: Theme.sans; pixelSize: 13; weight: day.isToday ? Font.Bold : Font.Normal; features: { "tnum": 1 } }
+                font { family: Theme.sans; pixelSize: Theme.sp(13); weight: day.isToday ? Font.Bold : Font.Normal; features: { "tnum": 1 } }
             }
         }
     }

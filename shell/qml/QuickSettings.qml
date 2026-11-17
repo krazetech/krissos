@@ -27,8 +27,8 @@ PanelWindow {
 
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.namespace: "kriss-quick-settings"
-    // On demand, so the Wi-Fi password field can take keys.
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
+    // The keyboard while open: Tab walks the controls, Esc closes.
+    WlrLayershell.keyboardFocus: Desktop.quickOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     exclusionMode: ExclusionMode.Normal
     exclusiveZone: 0
     anchors { top: true; bottom: true; left: true; right: true }
@@ -72,6 +72,8 @@ PanelWindow {
             win.pskFailed = false;
             win.peek = false;
             backlight.running = true;
+            // The keyboard on the first control (the media buttons or the first tile).
+            Qt.callLater(() => panel.nextItemInFocusChain(true)?.forceActiveFocus());
         }
     }
 
@@ -96,6 +98,7 @@ PanelWindow {
         color: Theme.alpha(Theme.night, 0.3)
         opacity: Math.max(0, 1 - panel.y / sheet.closed)
         MouseArea {
+            Accessible.ignored: true  // pointer only; the keyboard has its own way
             anchors.fill: parent
             onClicked: win.close()
         }
@@ -121,17 +124,21 @@ PanelWindow {
                 enabled: !dragger.dragging
                 NumberAnimation { duration: Theme.ms(Theme.slow); easing.type: Easing.BezierSpline; easing.bezierCurve: Theme.sheetCurve }
             }
-            width: 400
+            // Wider with larger text, so the tile labels still fit.
+            width: Math.round(400 * Math.max(1, (1 + Theme.textScale) / 2))
             height: body.implicitHeight + 50
             radius: Theme.radius + 4
             color: Theme.bar
-            border.width: 1
+            border.width: Theme.rimWidth
             border.color: Theme.rim
             focus: true
-            Keys.onEscapePressed: win.close()
+            Keys.onEscapePressed: Desktop.back("quickOpen")
+            Accessible.role: Accessible.Dialog
+            Accessible.name: Tr.t("Quick settings")
 
             // Drags the sheet; also keeps clicks on the sheet from closing it.
             MouseArea {
+                Accessible.ignored: true  // pointer only; the keyboard has its own way
                 id: dragger
                 anchors.fill: parent
                 property bool dragging: false
@@ -220,14 +227,14 @@ PanelWindow {
                                 elide: Text.ElideRight
                                 text: media.p?.trackTitle ?? ""
                                 color: Theme.fg
-                                font { family: Theme.sans; pixelSize: 13; weight: Font.DemiBold }
+                                font { family: Theme.sans; pixelSize: Theme.sp(13); weight: Font.DemiBold }
                             }
                             Text {
                                 width: parent.width
                                 elide: Text.ElideRight
                                 text: media.p?.trackArtist || media.p?.identity || ""
                                 color: Theme.soft
-                                font { family: Theme.sans; pixelSize: 12 }
+                                font { family: Theme.sans; pixelSize: Theme.sp(12) }
                             }
                         }
                         Repeater {
@@ -239,11 +246,21 @@ PanelWindow {
                                 implicitWidth: 36
                                 implicitHeight: 36
                                 hoverEnabled: true
+                                function press() { modelData === "prev" ? media.p.previous() : modelData === "next" ? media.p.next() : media.p.togglePlaying(); }
+                                activeFocusOnTab: true
+                                Keys.onReturnPressed: press()
+                                Keys.onEnterPressed: press()
+                                Keys.onSpacePressed: press()
+                                Accessible.role: Accessible.Button
+                                Accessible.name: modelData === "prev" ? Tr.t("Previous") : modelData === "next" ? Tr.t("Next")
+                                    : media.p?.isPlaying ? Tr.t("Pause") : Tr.t("Play")
+                                Accessible.onPressAction: press()
+                                FocusRim { radius: width / 2 + 2 }
                                 enabled: modelData === "prev" ? media.p?.canGoPrevious ?? false
                                     : modelData === "next" ? media.p?.canGoNext ?? false : media.p?.canTogglePlaying ?? false
                                 cursorShape: Qt.PointingHandCursor
                                 opacity: enabled ? 1 : 0.35
-                                onClicked: modelData === "prev" ? media.p.previous() : modelData === "next" ? media.p.next() : media.p.togglePlaying()
+                                onClicked: press()
                                 Rectangle {
                                     anchors.fill: parent
                                     radius: width / 2
@@ -273,8 +290,10 @@ PanelWindow {
                         visible: win.wifi !== null
                         glyph: Networking.wifiEnabled ? "wifi" : "wifiOff"
                         label: win.wifi?.connected ? (win.wifi.networks.values.find(n => n.connected)?.name ?? Tr.t("Wi-Fi")) : Tr.t("Wi-Fi")
+                        name: Tr.t("Wi-Fi")
                         on: Networking.wifiEnabled
                         list: "wifi"
+                        listTitle: Tr.t("Wi-Fi networks")
                         onToggled: Networking.wifiEnabled = !Networking.wifiEnabled
                     }
                     Tile {
@@ -283,6 +302,7 @@ PanelWindow {
                         label: Tr.t("Bluetooth")
                         on: win.adapter?.enabled ?? false
                         list: "bluetooth"
+                        listTitle: Tr.t("Bluetooth devices")
                         onToggled: win.adapter.enabled = !win.adapter.enabled
                     }
                     Tile {
@@ -294,6 +314,7 @@ PanelWindow {
                     Tile {
                         glyph: Theme.dark ? "sleep" : "sun"
                         label: Theme.dark ? Tr.t("Dark mode") : Tr.t("Light mode")
+                        name: Tr.t("Dark mode")
                         on: Theme.dark
                         onToggled: Theme.setDark(!Theme.dark)
                     }
@@ -306,6 +327,8 @@ PanelWindow {
                         readonly property int p: PowerProfiles.profile
                         glyph: p === PowerProfile.Performance ? "performance" : p === PowerProfile.PowerSaver ? "saver" : "balanced"
                         label: p === PowerProfile.Performance ? Tr.t("Performance") : p === PowerProfile.PowerSaver ? Tr.t("Power saver") : Tr.t("Balanced")
+                        name: Tr.t("Power mode: %1", label)
+                        cycles: true
                         on: p !== PowerProfile.Balanced
                         onToggled: PowerProfiles.profile = order[(order.indexOf(p) + 1) % order.length]
                         FileView {
@@ -361,13 +384,17 @@ PanelWindow {
                             border.color: Theme.accent
                             TextInput {
                                 id: psk
+                                Accessible.role: Accessible.EditableText
+                                Accessible.passwordEdit: true
+                                Accessible.name: Tr.t("Password for %1", net.modelData.name)
+                                Accessible.description: win.pskFailed ? Tr.t("Wrong password. Try again, then Enter") : ""
                                 anchors.fill: parent
                                 anchors.leftMargin: 16
                                 anchors.rightMargin: 16
                                 verticalAlignment: TextInput.AlignVCenter
                                 echoMode: TextInput.Password
                                 color: Theme.fg
-                                font { family: Theme.sans; pixelSize: 14 }
+                                font { family: Theme.sans; pixelSize: Theme.sp(14) }
                                 onVisibleChanged: { text = ""; if (visible) forceActiveFocus(); }
                                 Keys.onReturnPressed: { if (text) { net.modelData.connectWithPsk(text); win.askPsk = null; } }
                                 Keys.onEscapePressed: win.askPsk = null
@@ -420,6 +447,9 @@ PanelWindow {
 
                 Slider {
                     visible: win.sink?.audio !== undefined
+                    name: Tr.t("Volume")
+                    muted: win.sink?.audio?.muted ?? false
+                    listTitle: Tr.t("Sound output")
                     glyph: win.sink?.audio?.muted ? "mute" : "volume"
                     value: win.sink?.audio?.volume ?? 0
                     list: "output"
@@ -428,6 +458,8 @@ PanelWindow {
                 }
                 Slider {
                     visible: win.source?.audio !== undefined
+                    name: Tr.t("Microphone")
+                    muted: win.source?.audio?.muted ?? false
                     glyph: win.source?.audio?.muted ? "micOff" : "mic"
                     value: win.source?.audio?.volume ?? 0
                     onGlyphClicked: win.source.audio.muted = !win.source.audio.muted
@@ -435,6 +467,8 @@ PanelWindow {
                 }
                 Slider {
                     visible: win.brightness >= 0
+                    name: Tr.t("Brightness")
+                    canMute: false
                     glyph: "sun"
                     value: win.brightness / 100
                     onMoved: v => {
@@ -456,7 +490,7 @@ PanelWindow {
                         return d.timeToEmpty > 0 ? Tr.t("%1% battery, %2 left", pct, win.span(d.timeToEmpty)) : Tr.t("%1% battery", pct);
                     }
                     color: Theme.soft
-                    font { family: Theme.sans; pixelSize: 12; weight: Font.Medium }
+                    font { family: Theme.sans; pixelSize: Theme.sp(12); weight: Font.Medium }
                 }
             }
         }
@@ -469,15 +503,25 @@ PanelWindow {
         property string label
         property bool on
         property string list: ""
+        property string listTitle
+        property string name: label    // what a screen reader calls it, when the label is a state
+        property bool cycles: false     // steps through modes rather than turning on and off
         signal toggled()
+        // Read out when it changes from the keyboard (a pointer user sees it).
+        onOnChanged: if (main.activeFocus) main.Accessible.announce(cycles ? label : on ? Tr.t("%1 on", name) : Tr.t("%1 off", name))
+        onLabelChanged: if (cycles && main.activeFocus) main.Accessible.announce(label)
 
         Layout.fillWidth: true
+        Layout.fillHeight: true
         Layout.preferredWidth: 1
-        implicitHeight: 64
+        implicitHeight: Math.max(64, tileText.implicitHeight + 23 + 16)
         radius: Theme.radiusSmall
         readonly property bool hovered: main.containsMouse || arrow.containsMouse
         color: on ? (hovered ? Theme.accentHover : Theme.accent) : hovered ? Theme.cardHover : Theme.card
         readonly property color ink: on ? Theme.accentInk : Theme.fg
+        // High contrast outlines an off tile, which is otherwise near black on black.
+        border.width: Theme.high && !on ? Theme.rimWidth : 0
+        border.color: Theme.line
         scale: main.pressed || arrow.pressed ? Theme.pressScale : 1
         Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
         Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
@@ -489,6 +533,18 @@ PanelWindow {
             anchors.rightMargin: tile.list ? 30 : 0
             cursorShape: Qt.PointingHandCursor
             onClicked: tile.toggled()
+            activeFocusOnTab: true
+            Keys.onReturnPressed: tile.toggled()
+            Keys.onEnterPressed: tile.toggled()
+            Keys.onSpacePressed: tile.toggled()
+            Accessible.role: Accessible.Button
+            Accessible.name: tile.name
+            Accessible.description: tile.label !== tile.name && !tile.cycles ? tile.label : ""
+            Accessible.checkable: !tile.cycles
+            Accessible.checked: !tile.cycles && tile.on
+            Accessible.onPressAction: tile.toggled()
+            Accessible.onToggleAction: tile.toggled()
+            FocusRim { anchors.rightMargin: tile.list ? -32 : -2; radius: Theme.radiusSmall + 2 }
             Column {
                 anchors.left: parent.left
                 anchors.leftMargin: 12
@@ -497,11 +553,14 @@ PanelWindow {
                 spacing: 5
                 Glyph { name: tile.glyph; size: 18; color: tile.ink }
                 Text {
+                    id: tileText
                     width: parent.width
+                    wrapMode: Text.WordWrap
+                    maximumLineCount: 2
                     elide: Text.ElideRight
                     text: tile.label
                     color: tile.ink
-                    font { family: Theme.sans; pixelSize: 12; weight: Font.DemiBold }
+                    font { family: Theme.sans; pixelSize: Theme.sp(12); weight: Font.DemiBold }
                 }
             }
         }
@@ -513,6 +572,16 @@ PanelWindow {
             width: 30
             cursorShape: Qt.PointingHandCursor
             onClicked: win.page = win.page === tile.list ? "" : tile.list
+            activeFocusOnTab: visible
+            Keys.onReturnPressed: clicked(null)
+            Keys.onEnterPressed: clicked(null)
+            Keys.onSpacePressed: clicked(null)
+            Accessible.role: Accessible.Button
+            Accessible.name: tile.listTitle
+            Accessible.expandable: true
+            Accessible.expanded: win.page === tile.list
+            Accessible.onPressAction: clicked(null)
+            FocusRim { anchors.margins: 1; radius: 8 }
             Rectangle { anchors.left: parent.left; anchors.verticalCenter: parent.verticalCenter; width: 1; height: 32; color: Theme.alpha(tile.ink, 0.2) }
             Glyph { anchors.centerIn: parent; name: win.page === tile.list ? "up" : "down"; size: 16; stroke: 1.75; color: tile.ink }
         }
@@ -524,8 +593,14 @@ PanelWindow {
         property string glyph
         property real value
         property string list: ""
+        property string listTitle
+        property string name
+        property bool muted: false
+        property bool canMute: true
         signal moved(real v)
         signal glyphClicked()
+        function nudge(d) { moved(Math.max(0, Math.min(1, Math.round((value + d) * 100) / 100))); }
+        onValueChanged: if (track.activeFocus) track.Accessible.announce(Math.round(value * 100) + "%")
 
         Layout.fillWidth: true
         spacing: 10
@@ -533,6 +608,16 @@ PanelWindow {
             implicitWidth: 32; implicitHeight: 32
             cursorShape: Qt.PointingHandCursor
             onClicked: sl.glyphClicked()
+            activeFocusOnTab: sl.canMute
+            Keys.onReturnPressed: sl.glyphClicked()
+            Keys.onEnterPressed: sl.glyphClicked()
+            Keys.onSpacePressed: sl.glyphClicked()
+            Accessible.role: sl.canMute ? Accessible.Button : Accessible.Graphic
+            Accessible.name: sl.canMute ? Tr.t("Mute %1", sl.name) : sl.name
+            Accessible.checkable: sl.canMute
+            Accessible.checked: sl.muted
+            Accessible.onPressAction: if (sl.canMute) sl.glyphClicked()
+            FocusRim { radius: 18 }
             Glyph { anchors.centerIn: parent; name: sl.glyph; size: 19 }
         }
         MouseArea {
@@ -541,6 +626,29 @@ PanelWindow {
             implicitHeight: 28
             cursorShape: Qt.PointingHandCursor
             function set(x) { sl.moved(Math.max(0, Math.min(1, x / width))); }
+            // A slider to a screen reader, in percent; arrows move it 5%, Page Up and Down 10%.
+            readonly property real value: Math.round(sl.value * 100)
+            readonly property real minimumValue: 0
+            readonly property real maximumValue: 100
+            readonly property real stepSize: 5
+            activeFocusOnTab: true
+            Accessible.role: Accessible.Slider
+            Accessible.name: sl.name
+            Accessible.onIncreaseAction: sl.nudge(0.05)
+            Accessible.onDecreaseAction: sl.nudge(-0.05)
+            Keys.onPressed: event => {
+                switch (event.key) {
+                case Qt.Key_Right: case Qt.Key_Up: sl.nudge(0.05); break;
+                case Qt.Key_Left: case Qt.Key_Down: sl.nudge(-0.05); break;
+                case Qt.Key_PageUp: sl.nudge(0.1); break;
+                case Qt.Key_PageDown: sl.nudge(-0.1); break;
+                case Qt.Key_Home: sl.moved(0); break;
+                case Qt.Key_End: sl.moved(1); break;
+                default: return;
+                }
+                event.accepted = true;
+            }
+            FocusRim { anchors.margins: -1; radius: 14 }
             onPressed: mouse => set(mouse.x)
             onPositionChanged: mouse => { if (pressed) set(mouse.x); }
             onWheel: wheel => sl.moved(Math.max(0, Math.min(1, sl.value + (wheel.angleDelta.y > 0 ? 0.05 : -0.05))))
@@ -548,6 +656,8 @@ PanelWindow {
                 anchors.verticalCenter: parent.verticalCenter
                 width: parent.width; height: 6; radius: 3
                 color: Theme.card
+                border.width: Theme.high ? 1 : 0
+                border.color: Theme.line
                 Rectangle { width: parent.width * Math.min(1, sl.value); height: parent.height; radius: 3; color: Theme.accent }
             }
             Rectangle {
@@ -561,14 +671,16 @@ PanelWindow {
         }
         // Right-aligned in a fixed width, so the slider doesn't shift as the digits change.
         Item {
-            Layout.preferredWidth: 34
+            Layout.preferredWidth: Math.max(34, pct.implicitWidth)
+        Layout.minimumWidth: Layout.preferredWidth
             implicitHeight: pct.height
             RollingText {
                 id: pct
                 anchors.right: parent.right
                 text: Math.round(sl.value * 100)
                 color: Theme.soft
-                font { family: Theme.sans; pixelSize: 12; weight: Font.DemiBold; features: { "tnum": 1 } }
+                font { family: Theme.sans; pixelSize: Theme.sp(12); weight: Font.DemiBold; features: { "tnum": 1 } }
+                Accessible.ignored: true
             }
         }
         MouseArea {
@@ -576,6 +688,16 @@ PanelWindow {
             implicitWidth: 24; implicitHeight: 32
             cursorShape: Qt.PointingHandCursor
             onClicked: win.page = win.page === sl.list ? "" : sl.list
+            activeFocusOnTab: visible
+            Keys.onReturnPressed: clicked(null)
+            Keys.onEnterPressed: clicked(null)
+            Keys.onSpacePressed: clicked(null)
+            Accessible.role: Accessible.Button
+            Accessible.name: sl.listTitle
+            Accessible.expandable: true
+            Accessible.expanded: win.page === sl.list
+            Accessible.onPressAction: clicked(null)
+            FocusRim { radius: 8 }
             Glyph { anchors.centerIn: parent; name: win.page === sl.list ? "up" : "down"; size: 16; stroke: 1.75; color: Theme.soft }
         }
     }
@@ -592,8 +714,10 @@ PanelWindow {
         implicitHeight: Math.min(col.implicitHeight, 300) + 20
         radius: Theme.radiusSmall
         color: Theme.win
-        border.width: 1
+        border.width: Theme.rimWidth
         border.color: Theme.line
+        Accessible.role: Accessible.List
+        Accessible.name: title
 
         Flickable {
             anchors.fill: parent
@@ -609,13 +733,13 @@ PanelWindow {
                     text: box.title
                     color: Theme.fg
                     bottomPadding: 6
-                    font { family: Theme.sans; pixelSize: 13; weight: Font.DemiBold }
+                    font { family: Theme.sans; pixelSize: Theme.sp(13); weight: Font.DemiBold }
                 }
                 Text {
                     visible: rep.count === 0
                     text: box.empty
                     color: Theme.soft
-                    font { family: Theme.sans; pixelSize: 13 }
+                    font { family: Theme.sans; pixelSize: Theme.sp(13) }
                 }
                 Repeater { id: rep }
             }
@@ -631,9 +755,32 @@ PanelWindow {
         property bool current
 
         width: parent?.width ?? 0
-        height: 44
+        height: Math.max(44, Theme.sp(13) + 26)
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
+        activeFocusOnTab: true
+        Keys.onReturnPressed: clicked(null)
+        Keys.onEnterPressed: clicked(null)
+        Keys.onSpacePressed: clicked(null)
+        Accessible.role: Accessible.ListItem
+        Accessible.name: text
+        Accessible.description: detail
+        Accessible.checkable: true
+        Accessible.checked: current
+        Accessible.onPressAction: clicked(null)
+        // Keep the row in view as the keyboard reaches it: scroll the list it is in.
+        onActiveFocusChanged: {
+            if (!activeFocus) return;
+            for (let f = parent; f; f = f.parent) {
+                if (f.contentY === undefined) continue;
+                const y = mapToItem(f.contentItem, 0, 0).y;
+                if (y < f.contentY) f.contentY = y;
+                else if (y + height > f.contentY + f.height) f.contentY = y + height - f.height;
+                break;
+            }
+        }
+        onDetailChanged: if (activeFocus && detail) Accessible.announce(detail)
+        FocusRim { anchors.margins: 0; radius: 10 }
         Rectangle {
             anchors.fill: parent
             radius: 10
@@ -651,12 +798,12 @@ PanelWindow {
                 elide: Text.ElideRight
                 text: row.text
                 color: Theme.fg
-                font { family: Theme.sans; pixelSize: 13; weight: row.current ? Font.DemiBold : Font.Medium }
+                font { family: Theme.sans; pixelSize: Theme.sp(13); weight: row.current ? Font.DemiBold : Font.Medium }
             }
             Text {
                 text: row.detail
                 color: Theme.soft
-                font { family: Theme.sans; pixelSize: 11 }
+                font { family: Theme.sans; pixelSize: Theme.sp(11) }
             }
             Glyph { visible: row.current; name: "check"; size: 15; color: Theme.accent }
         }

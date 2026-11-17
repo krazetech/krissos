@@ -22,9 +22,13 @@ PanelWindow {
         visible = true;
         card.opacity = 0;
         appear.restart();
-        keys.forceActiveFocus();
+        focusCurrent();
     }
-    function close() { visible = false; }
+    function close() { if (visible) { visible = false; Desktop.retakeKeys(); } }
+    // The icon picked from the keyboard has the focus, so a screen reader follows it; it
+    // takes Enter and the Menu key itself, the card the rest.
+    onCurrentChanged: focusCurrent()
+    function focusCurrent() { (icons.itemAt(current)?.icon ?? card).forceActiveFocus(); }
     onItemsChanged: { if (!items.length) close(); current = Math.min(current, items.length - 1); }
 
     visible: false
@@ -36,31 +40,10 @@ PanelWindow {
     color: "transparent"
 
     MouseArea {
+        Accessible.ignored: true  // pointer only; the keyboard has its own way
         anchors.fill: parent
         acceptedButtons: Qt.AllButtons
         onPressed: fly.close()
-    }
-
-    Item {
-        id: keys
-        focus: true
-        Keys.onPressed: event => {
-            const n = fly.items.length, i = fly.current;
-            const menuKey = event.key === Qt.Key_Menu || event.key === Qt.Key_F10 && event.modifiers & Qt.ShiftModifier;
-            if (menuKey) icons.itemAt(i)?.icon.openMenu(true);
-            else switch (event.key) {
-            case Qt.Key_Left: case Qt.Key_Up: fly.current = Math.max(0, i - 1); break;
-            case Qt.Key_Right: case Qt.Key_Down: case Qt.Key_Tab: fly.current = Math.min(n - 1, i + 1); break;
-            case Qt.Key_Home: fly.current = 0; break;
-            case Qt.Key_End: fly.current = n - 1; break;
-            case Qt.Key_Return: case Qt.Key_Enter: case Qt.Key_Space:
-                if (i >= 0) { fly.items[i].activate(); fly.close(); }
-                break;
-            case Qt.Key_Escape: fly.close(); break;
-            default: return;
-            }
-            event.accepted = true;
-        }
     }
 
     Rectangle {
@@ -71,9 +54,23 @@ PanelWindow {
         y: fly.height - Theme.barHeight - height - 8
         radius: Theme.radiusSmall
         color: Theme.card
-        border.width: 1
+        border.width: Theme.rimWidth
         border.color: Theme.line
-        MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons }
+        Accessible.role: Accessible.Grouping
+        Accessible.name: Tr.t("Hidden icons")
+        MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons; Accessible.ignored: true }
+        Keys.onPressed: event => {
+            const n = fly.items.length, i = fly.current;
+            switch (event.key) {
+            case Qt.Key_Left: case Qt.Key_Up: case Qt.Key_Backtab: fly.current = Math.max(0, i - 1); break;
+            case Qt.Key_Right: case Qt.Key_Down: case Qt.Key_Tab: fly.current = Math.min(n - 1, i + 1); break;
+            case Qt.Key_Home: fly.current = 0; break;
+            case Qt.Key_End: fly.current = n - 1; break;
+            case Qt.Key_Escape: fly.close(); break;
+            default: return;
+            }
+            event.accepted = true;
+        }
         NumberAnimation { id: appear; target: card; property: "opacity"; from: 0; to: 1; duration: Theme.ms(Theme.fast); easing.type: Theme.ease }
 
         Grid {
