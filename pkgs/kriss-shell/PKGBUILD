@@ -59,7 +59,7 @@ import kriss_protocols.ext_foreign_toplevel_list_v1'
 package() {
   # ponytail: added here, not in the global array, for the same reason as kriss-settings:
   # CI builds each package alone and --syncdeps cannot resolve [kriss] packages yet.
-  depends+=('kriss-theme>=0.3.1' 'kriss-settings>=0.3.1')
+  depends+=('kriss-theme>=0.5.0' 'kriss-settings>=0.3.1')
 
   install -Dm755 "$_shell/session/kriss-shell" "$pkgdir/usr/bin/kriss-shell"
   install -Dm755 "$_shell/kriss-shell-toplevels" "$pkgdir/usr/bin/kriss-shell-toplevels"

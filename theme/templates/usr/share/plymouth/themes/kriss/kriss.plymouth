@@ -1,6 +1,6 @@
 [Plymouth Theme]
 Name=KrissOS
-Description=The keris emblem reveals on Obsidian black, then breathes until the system is up.
+Description=The keris emblem fades in on Obsidian black, glows and pulses softly until the system is up.
 ModuleName=script
 # The mkinitcpio hook copies this font into the initramfs for the password prompt.
 Font={{font_sans}}

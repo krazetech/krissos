@@ -1,5 +1,6 @@
 //@ pragma IconTheme {{icon_theme}}
 import QtQuick
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
@@ -93,6 +94,7 @@ ShellRoot {
         model: Quickshell.screens
 
         PanelWindow {
+            id: win
             required property var modelData
             screen: modelData
             WlrLayershell.layer: WlrLayer.Overlay
@@ -103,11 +105,45 @@ ShellRoot {
             anchors { top: true; bottom: true; left: true; right: true }
             color: Theme.night
 
-            // Fade in from black, where the boot splash ends (kriss-theme's plymouth theme).
+            // The boot splash (kriss-theme's Plymouth theme) ends on black. The keris comes
+            // back here at the same place and size, then opens out over the whole screen and
+            // the login screen shows through it. kriss.script sizes the logo the same way.
+            readonly property real logo: Math.floor(Math.min(win.width, win.height) * 0.09) * 2
+            readonly property real far: Math.hypot(win.width, win.height) / 2 + 2
+            property real intro: 0  // the keris and its glow coming back, 0 to 1
+            property real open: 0   // the opening, 0 to 1 at a steady pace; ease() shapes each part
+            function ease(t) {
+                t = Math.max(0, Math.min(1, t));
+                return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+            }
+            SequentialAnimation {
+                running: true
+                NumberAnimation { target: win; property: "intro"; to: 1; duration: Theme.ms(250); easing.type: Theme.ease }
+                PauseAnimation { duration: Theme.ms(100) }
+                NumberAnimation { target: win; property: "open"; to: 1; duration: Theme.ms(1100) }
+            }
+
+            // The circle the login screen shows through, a step behind the disc's edge.
+            Item {
+                id: hole
+                anchors.fill: parent
+                visible: false
+                layer.enabled: true
+                Rectangle {
+                    readonly property real r: win.logo * 0.3 + (win.far - win.logo * 0.3) * win.ease((win.open - 0.12) / 0.88)
+                    anchors.centerIn: parent
+                    width: 2 * r
+                    height: width
+                    radius: r
+                }
+            }
+
             Item {
                 anchors.fill: parent
-                opacity: 0
-                NumberAnimation on opacity { to: 1; duration: Theme.ms(Theme.slow); easing.type: Theme.ease }
+                opacity: Math.max(0, (win.open - 0.45) / 0.55)
+                scale: 0.96 + 0.04 * opacity
+                layer.enabled: win.open < 1
+                layer.effect: MultiEffect { maskEnabled: true; maskSource: hole }
 
                 LockFace { host: root }
 
@@ -136,6 +172,36 @@ ShellRoot {
                     current: true
                     onClicked: root.session = (root.session + 1) % root.sessions.length
                 }
+            }
+
+            // The keris, over the login screen until it has opened. The glow and logo are
+            // the splash's own images, so the hand-off matches it pixel for pixel.
+            Image {
+                anchors.centerIn: parent
+                width: Math.floor(win.logo * 2.6 / 2) * 2
+                height: width
+                source: "file:///usr/share/plymouth/themes/kriss/glow-512.png"
+                opacity: 0.35 * win.intro * Math.max(0, 1 - win.open * 2)
+                visible: opacity > 0
+            }
+            Rectangle {
+                id: disc
+                readonly property real r: win.logo / 2 + (win.far - win.logo / 2) * win.ease(win.open)
+                anchors.centerIn: parent
+                width: 2 * r
+                height: width
+                radius: r
+                color: Theme.accent
+                opacity: win.intro * (1 - Math.max(0, (win.open - 0.55) / 0.45))
+                visible: opacity > 0
+            }
+            Image {
+                anchors.centerIn: parent
+                width: disc.width
+                height: width
+                source: "file:///usr/share/plymouth/themes/kriss/logo-512.png"
+                opacity: win.intro * Math.max(0, 1 - win.open * 3)
+                visible: opacity > 0
             }
         }
     }

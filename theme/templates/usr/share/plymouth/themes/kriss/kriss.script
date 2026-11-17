@@ -1,15 +1,16 @@
 # KrissOS boot splash. Generated from theme/tokens.json; do not edit.
 # The PNGs next to it are rendered from the emblem vector by theme/generate.py and the
-# kriss-theme build: disc-N, keris-00..15-N (the hilt wiping on), logo-N, field, bullet.
+# kriss-theme build: logo-N (the disc with the keris hilt), glow-N (a soft halo, 2.6
+# logos wide), field and bullet.
 #
-# Reveal, then breathe:
-#   0.00-0.45 s  the Sky Cyan disc fades in and grows from 92 % (ease-out)
-#   0.45-0.95 s  the keris hilt wipes on from the bottom, soft edge
-#   then         a 3 s breathing loop: opacity 100-88 %, size 100-97 %, until boot ends
-#   at the end   plymouth-quit (its kriss.conf drop-in) sends the status "kriss-fade": the
-#                logo fades to black over 0.3 s, then Plymouth quits keeping that frame,
-#                and the login screen fades in from the same black. Plymouth stops
-#                refreshing once quit arrives, so the fade has to come before it.
+#   0.0-0.7 s    the keris fades in on Obsidian black, growing from 94 % (ease out)
+#   then         a soft pulse until boot ends, 1.6 s each: the logo swells to 105 % and
+#                its glow brightens, then both settle back
+#   at the end   plymouth-quit (its kriss.conf drop-in) sends the status "kriss-fade":
+#                logo and glow fade to black over 0.3 s, and Plymouth quits keeping that
+#                frame. The login screen (shell/qml/greeter.qml) brings the keris back in
+#                the same place and size and opens it out over the whole screen.
+#                Plymouth stops refreshing once quit arrives, so the fade comes first.
 # Reduced motion: if reduced-motion.png exists in this folder the logo is shown still.
 # Plymouth's script plugin cannot read the kernel command line or files outside the
 # theme, so a file in the theme (which the initramfs carries) is the switch:
@@ -28,10 +29,11 @@ sh = Window.GetHeight();
 cx = Window.GetX() + sw / 2;
 cy = Window.GetY() + sh / 2;
 
-# Logo: 18 % of the short side, an even number of pixels so it stays centred.
+# Logo: 18 % of the short side, an even number of pixels so it stays centred. The
+# login screen computes the same size, so the keris does not jump at the hand-off.
 size = Math.Int(Math.Min(sw, sh) * 0.09) * 2;
 src = 512;
-if (size <= 256) src = 256;
+if (size * 1.05 <= 256) src = 256;
 
 fun load(name, px) {
   return Image(name + "-" + global.src + ".png").Scale(px, px);
@@ -42,38 +44,37 @@ fun place(sprite, image, z) {
   sprite.SetPosition(global.cx - image.GetWidth() / 2, global.cy - image.GetHeight() / 2, z);
 }
 
-# Pre-scaled once, so no frame scales an image. Even steps of 2 px keep the centre still.
-logo_steps = Math.Max(1, Math.Int(size * 0.03 / 2));
-for (i = 0; i <= logo_steps; i++) logo_img[i] = load("logo", size - 2 * i);
-disc_steps = Math.Max(1, Math.Int(size * 0.08 / 2));
-for (i = 0; i <= disc_steps; i++) disc_img[i] = load("disc", size - 2 * i);
-wipe_frames = 16;
-for (i = 0; i < wipe_frames; i++) {
-  n = i;
-  if (i < 10) n = "0" + i;
-  keris_img[i] = load("keris-" + n, size);
-}
+# Pre-scaled once, so no frame scales an image. Steps of 2 px keep the centre still:
+# from 94 % (the fade in starts there) to 105 % (the top of a pulse).
+small = Math.Int(size * 0.06 / 2);
+big = Math.Int(size * 0.05 / 2);
+for (i = 0; i <= small + big; i++) logo_img[i] = load("logo", size - 2 * small + 2 * i);
+glow_size = Math.Int(size * 2.6 / 2) * 2;
+glow_img = Image("glow-" + src + ".png").Scale(glow_size, glow_size);
+glow_rest = 0.35;  # the glow between pulses, as the login screen starts it
 
 logo = Sprite();
-disc = Sprite();
-keris = Sprite();
-
-reduced = Image("reduced-motion.png");
-frame = 0;
-if (reduced) {
-  frame = -1;  # never animates
-  place(logo, logo_img[0], 1);
-} else {
-  place(disc, disc_img[disc_steps], 1);
-  disc.SetOpacity(0);
-}
+glow = Sprite();
+place(glow, glow_img, 1);
+glow.SetOpacity(0);
 
 fun ease_out(t) {
   t = Math.Clamp(t, 0, 1);
   return 1 - (1 - t) * (1 - t) * (1 - t);
 }
 
-asking = 0;  # the password prompt holds the logo still
+reduced = Image("reduced-motion.png");
+frame = 0;
+if (reduced) {
+  frame = -1;  # never animates
+  place(logo, logo_img[small], 2);
+  glow.SetOpacity(glow_rest);
+} else {
+  place(logo, logo_img[0], 2);
+  logo.SetOpacity(0);
+}
+
+asking = 0;   # the password prompt holds the logo still
 fading = -1;  # frames since "kriss-fade", -1 before it
 fun refresh_callback() {
   out = 1;
@@ -82,30 +83,25 @@ fun refresh_callback() {
     out = 1 - ease_out(global.fading / (0.3 * global.fps));
   }
   if (global.frame < 0 || global.asking) {
-    if (global.fading >= 0) global.logo.SetOpacity(out);
+    if (global.fading >= 0) {
+      global.logo.SetOpacity(out);
+      global.glow.SetOpacity(global.glow_rest * out);
+    }
     return;
   }
   t = global.frame / global.fps;
   global.frame++;
-  if (t < 0.45) {
-    p = ease_out(t / 0.45);
-    place(global.disc, global.disc_img[Math.Int((1 - p) * global.disc_steps + 0.5)], 1);
-    global.disc.SetOpacity(p * out);
-  } else if (t < 0.95) {
-    place(global.disc, global.disc_img[0], 1);
-    global.disc.SetOpacity(out);
-    i = Math.Int(ease_out((t - 0.45) / 0.5) * (global.wipe_frames - 1) + 0.5);
-    place(global.keris, global.keris_img[i], 2);
-    global.keris.SetOpacity(out);
+  if (t < 0.7) {
+    p = ease_out(t / 0.7);
+    place(global.logo, global.logo_img[Math.Int(p * global.small + 0.5)], 2);
+    global.logo.SetOpacity(p * out);
+    global.glow.SetOpacity(global.glow_rest * p * out);
   } else {
-    if (global.disc.GetOpacity() > 0) {
-      global.disc.SetOpacity(0);
-      global.keris.SetOpacity(0);
-    }
-    # Breathe: 0 at rest, 1 at the softest point, 3 s per breath.
-    b = (1 - Math.Cos((t - 0.95) * 2 * Math.Pi / 3)) / 2;
-    place(global.logo, global.logo_img[Math.Int(b * global.logo_steps + 0.5)], 1);
-    global.logo.SetOpacity((1 - 0.12 * b) * out);
+    # The pulse: 0 at rest, 1 at its fullest, 1.6 s each.
+    b = (1 - Math.Cos((t - 0.7) * 2 * Math.Pi / 1.6)) / 2;
+    place(global.logo, global.logo_img[global.small + Math.Int(b * global.big + 0.5)], 2);
+    global.logo.SetOpacity(out);
+    global.glow.SetOpacity((global.glow_rest + (1 - global.glow_rest) * b) * out);
   }
 }
 Plymouth.SetRefreshFunction(refresh_callback);
@@ -148,11 +144,10 @@ show_prompt(0);
 
 fun display_password_callback(prompt, bullets) {
   if (!global.asking && global.frame >= 0) {
-    # Settle on the finished logo, whatever point of the reveal or breath it was at.
-    global.disc.SetOpacity(0);
-    global.keris.SetOpacity(0);
-    place(global.logo, global.logo_img[0], 1);
+    # Settle on the logo at rest, whatever point of the pulse it was at.
+    place(global.logo, global.logo_img[global.small], 2);
     global.logo.SetOpacity(1);
+    global.glow.SetOpacity(global.glow_rest);
   }
   global.asking = 1;
   show_prompt(1);
@@ -181,12 +176,11 @@ fun display_normal_callback() {
 Plymouth.SetDisplayPasswordFunction(display_password_callback);
 Plymouth.SetDisplayNormalFunction(display_normal_callback);
 
-# Hand over on black: the greeter starts on the same Obsidian black, so nothing flashes.
+# Whatever happens, hand over on black: the login screen starts on the same black.
 fun quit_callback() {
   global.frame = -1;
   global.logo.SetOpacity(0);
-  global.disc.SetOpacity(0);
-  global.keris.SetOpacity(0);
+  global.glow.SetOpacity(0);
   show_prompt(0);
 }
 Plymouth.SetQuitFunction(quit_callback);

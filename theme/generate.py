@@ -72,33 +72,27 @@ def main(src, dst):
     plymouth(dst / "usr/share/plymouth/themes/kriss", values, keris)
 
 
-WIPE_FRAMES = 16  # kriss.script plays them over 0.5 s; keep the two in step.
 PLYMOUTH_SIZES = (256, 512)  # the script picks the smallest one at least as big as the logo
+GLOW = 2.6  # the glow image is this many logo widths across; kriss.script and greeter.qml use it
 
 
 def plymouth(out, values, keris):
     """The boot splash layers, as SVG; the kriss-theme build turns each into a PNG.
 
-    disc, keris-00..15 (the hilt wiping on from the bottom with a soft edge, over a
-    transparent background) and logo (both, for the breathing loop), each at every
-    PLYMOUTH_SIZES; plus the password field and its bullet.
+    logo (the disc with the keris hilt) and glow (a soft Sky Cyan halo behind it, GLOW
+    times as wide), each at every PLYMOUTH_SIZES; plus the password field and its bullet.
+    The login screen (shell/qml/greeter.qml) draws the same logo and glow to take over.
     """
     disc = f'<circle cx="284.5" cy="284.5" r="284.5" fill="{values["accent"]}"/>'
     hilt = keris.replace("<path ", f'<path fill="{values["bg"]}" ', 1)
     svg = '<svg xmlns="http://www.w3.org/2000/svg" width="{0}" height="{0}" viewBox="0 0 569 569">{1}</svg>'
-    feather = 0.18
+    halo = (f'<defs><radialGradient id="g"><stop offset="0" stop-color="{values["accent"]}" stop-opacity="0.5"/>'
+            f'<stop offset="0.4" stop-color="{values["accent"]}" stop-opacity="0.16"/>'
+            f'<stop offset="0.7" stop-color="{values["accent"]}" stop-opacity="0"/></radialGradient></defs>'
+            '<rect width="569" height="569" fill="url(#g)"/>')
     for size in PLYMOUTH_SIZES:
-        (out / f"disc-{size}.svg").write_text(svg.format(size, disc))
         (out / f"logo-{size}.svg").write_text(svg.format(size, disc + hilt))
-        for i in range(WIPE_FRAMES):
-            # The soft edge travels from below the hilt to above it.
-            edge = -feather + (1 + feather) * i / (WIPE_FRAMES - 1)
-            mask = ('<defs><linearGradient id="g" x1="0" y1="569" x2="0" y2="0" gradientUnits="userSpaceOnUse">'
-                    f'<stop offset="{max(edge, 0):.3f}" stop-color="#fff"/>'
-                    f'<stop offset="{min(max(edge + feather, 0), 1):.3f}" stop-color="#fff" stop-opacity="0"/>'
-                    '</linearGradient><mask id="m"><rect width="569" height="569" fill="url(#g)"/></mask></defs>')
-            body = mask + f'<g mask="url(#m)">{hilt}</g>'
-            (out / f"keris-{i:02}-{size}.svg").write_text(svg.format(size, body))
+        (out / f"glow-{size}.svg").write_text(svg.format(round(size * GLOW), halo))
     # 2x the size the script shows them at 1080p, so they only ever scale down.
     (out / "field.svg").write_text(
         '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="88">'
