@@ -199,8 +199,15 @@ available as the installer's alternative.
 - **Style:** soft and rounded. Floating windows with large corner radii and a light rim, and
   no coloured ring around the focused window. Light and dark window themes over a dark wallpaper.
   One taskbar, full width along the bottom edge and 48 px tall like Windows 11, holds the
-  launcher, apps and status, with acrylic blur and a soft top rim. Sky Cyan is the only accent;
-  no neon.
+  launcher, apps and status, with acrylic blur and a soft top rim. Sky Cyan is the default and
+  only shipped accent; users may pick another in settings. No neon.
+- **Material:** shell surfaces are tinted and blurred (acrylic) through `ext-background-effect`,
+  which cosmic-comp and Quickshell both support. Solid surfaces are the fallback when blur is off.
+- **Layouts:** the Windows-familiar layout (centred taskbar) is the default. An optional Mac
+  layout follows: top bar, centred dock, window buttons on the left, in the KrissOS look, with no
+  Apple logo, fonts or icons. Users pick one in `kriss-welcome` and can switch in settings.
+  Familiar, never a clone: neither layout copies Windows or macOS visuals. Plan:
+  `docs/shell-roadmap.md`.
 - **Type:** Figtree + JetBrains Mono (OFL) proposed.
 - **Apps:** COSMIC Files, Terminal and Settings get KrissOS dark and light COSMIC themes, built
   from the tokens by libcosmic's own ThemeBuilder (`shell/cosmic-theme/`), and a matching
