@@ -208,6 +208,32 @@ PanelWindow {
                 }
             }
 
+            // Task View, as on Windows 11 (Windows+Tab). `taskbarTaskView` in shell.json hides it.
+            MouseArea {
+                id: taskView
+                visible: Desktop.taskbarTaskView
+                Layout.preferredWidth: Theme.barButton
+                Layout.preferredHeight: Theme.barButton
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: bar.toggle("taskViewOpen")
+                Accessible.role: Accessible.Button
+                Accessible.name: Tr.t("Task View")
+                Rectangle {
+                    anchors.fill: parent
+                    radius: Theme.barRadius
+                    color: taskView.containsMouse || Desktop.taskViewOpen && Desktop.screen === bar.screen ? Theme.card : "transparent"
+                    Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+                }
+                Glyph {
+                    anchors.centerIn: parent
+                    name: "taskView"
+                    size: 22
+                    scale: taskView.pressed ? Theme.pressScale : 1
+                    Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+                }
+            }
+
             // Workspaces: dots, the active one stretched into a cyan pill.
             Row {
                 spacing: 6
@@ -414,7 +440,7 @@ PanelWindow {
     // from the search box, which switches to plain Start (and back) rather than closing.
     function toggle(panel, search) {
         const open = !(Desktop[panel] && Desktop.screen === bar.screen && Desktop.launcherSearch === !!search);
-        Desktop.launcherOpen = Desktop.notificationsOpen = Desktop.quickOpen = Desktop.calendarOpen = false;
+        Desktop.launcherOpen = Desktop.notificationsOpen = Desktop.quickOpen = Desktop.calendarOpen = Desktop.taskViewOpen = false;
         Desktop.screen = bar.screen;
         Desktop.launcherSearch = !!search;
         Desktop[panel] = open;

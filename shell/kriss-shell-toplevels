@@ -1,19 +1,22 @@
 #!/usr/bin/env python3
-"""Tell the KrissOS Shell which windows are open, act on them, and capture previews.
+"""Tell the KrissOS Shell which windows and desktops there are, act on them, and capture previews.
 
 Quickshell lists windows through wlr-foreign-toplevel-management, which
 cosmic-comp does not offer. cosmic-comp has ext-foreign-toplevel-list plus its
 own cosmic-toplevel-info/-management instead, so this helper speaks those.
 Quickshell's ScreencopyView cannot capture one window there either (it has no
 ext-foreign-toplevel capture source), so the taskbar previews come from here too,
-through ext-image-copy-capture.
+through ext-image-copy-capture. Desktops (workspaces) come from ext-workspace.
 
 stdout: one JSON array per change, e.g.
   [{"id": 3, "appId": "firefox", "title": "Inbox", "active": true, "minimized": false,
-    "fullscreen": false, "output": "DP-1"}]
+    "fullscreen": false, "output": "DP-1", "workspace": 2}]
+  {"workspaces": [{"id": 2, "name": "1", "active": true, "outputs": ["DP-1"]}]}, in order,
+  after every change to the desktops;
   and, while previews are captured, one object per new picture:
   {"thumb": 3, "url": "file:///run/user/1000/kriss-shell-thumbs-wayland-1/3.bmp?7"}
-stdin:  one command per line: "activate ID", "minimize ID", "close ID", or
+stdin:  one command per line: "activate ID", "minimize ID", "close ID",
+  "workspace WS" to switch to desktop WS, "move ID WS" to move window ID there, or
   "thumbs SIZE ID ID ..." to capture those windows at about SIZE pixels on the long
   edge ("thumbs 0" stops capturing).
 
@@ -39,9 +42,11 @@ from kriss_protocols.ext_foreign_toplevel_list_v1 import ExtForeignToplevelListV
 from kriss_protocols.ext_image_capture_source_v1 import (  # noqa: E402
     ExtForeignToplevelImageCaptureSourceManagerV1)
 from kriss_protocols.ext_image_copy_capture_v1 import ExtImageCopyCaptureManagerV1  # noqa: E402
+from kriss_protocols.ext_workspace_v1 import ExtWorkspaceManagerV1  # noqa: E402
 from kriss_protocols.wayland import WlOutput, WlSeat, WlShm  # noqa: E402
 
 MINIMIZED, ACTIVATED, FULLSCREEN = 1, 2, 3  # zcosmic_toplevel_handle_v1.state entries
+WS_ACTIVE = 1  # ext_workspace_handle_v1.state
 # 32-bit wl_shm formats the previews can use: (red, green, blue, alpha) bit masks of a
 # little-endian pixel. cosmic-comp 1.11 offers only ABGR and XBGR for shm.
 FORMATS = {
@@ -178,12 +183,15 @@ class Toplevels:
         # every later new window fail ("Cannot find display") once Python's cycle collector ran.
         self.registry = None
         self.globals = {}
-        self.windows = {}  # id -> {"appId", "title", "active", "minimized", "fullscreen", "output"}
+        self.windows = {}  # id -> {"appId", "title", "active", "minimized", "fullscreen", "output", "workspace"}
         self.handles = {}  # id -> (ext handle, cosmic handle)
         self.outputs = {}  # wl_output proxy -> connector name, e.g. "DP-1"
         self.captures = {}  # id -> Capture, only while the shell shows that window's preview
         self.timers = []  # [(when, function)]
         self.next_id = 1
+        self.spaces = {}  # workspace id -> {"name", "active", "coords", "group"}
+        self.space_ids = {}  # ext_workspace_handle_v1 proxy -> workspace id
+        self.groups = {}  # ext_workspace_group_handle_v1 proxy -> [wl_output proxies]
 
     def on_global(self, registry, name, interface, version):
         wanted = {
@@ -192,6 +200,7 @@ class Toplevels:
             "zcosmic_toplevel_manager_v1": (ZcosmicToplevelManagerV1, 4),
             "ext_foreign_toplevel_image_capture_source_manager_v1": (ExtForeignToplevelImageCaptureSourceManagerV1, 1),
             "ext_image_copy_capture_manager_v1": (ExtImageCopyCaptureManagerV1, 1),
+            "ext_workspace_manager_v1": (ExtWorkspaceManagerV1, 1),
             "wl_shm": (WlShm, 1),
             "wl_seat": (WlSeat, 1),
         }
@@ -214,6 +223,11 @@ class Toplevels:
         if missing:
             sys.exit(f"kriss-shell-toplevels: compositor lacks {', '.join(sorted(missing))}")
         self.globals["ext_foreign_toplevel_list_v1"].dispatcher["toplevel"] = self.on_toplevel
+        if "ext_workspace_manager_v1" in self.globals:
+            manager = self.globals["ext_workspace_manager_v1"]
+            manager.dispatcher["workspace_group"] = self.on_group
+            manager.dispatcher["workspace"] = self.on_workspace
+            manager.dispatcher["done"] = lambda _m: self.emit_spaces()
         # Pictures from an earlier run are for window ids that no longer mean the same.
         shutil.rmtree(THUMBS, ignore_errors=True)
         os.makedirs(THUMBS, mode=0o700, exist_ok=True)
@@ -221,7 +235,7 @@ class Toplevels:
     def on_toplevel(self, _list, handle):
         wid = self.next_id
         self.next_id += 1
-        win = {"appId": "", "title": "", "active": False, "minimized": False, "fullscreen": False, "output": ""}
+        win = {"appId": "", "title": "", "active": False, "minimized": False, "fullscreen": False, "output": "", "workspace": 0}
         self.windows[wid] = win
         cosmic = self.globals["zcosmic_toplevel_info_v1"].get_cosmic_toplevel(handle)
         self.handles[wid] = (handle, cosmic)
@@ -251,12 +265,60 @@ class Toplevels:
             win["output"] = self.outputs.get(output, "")
             self.emit()
 
+        def on_workspace(_h, space):
+            win["workspace"] = self.space_ids.get(space, 0)
+            self.emit()
+
+        def on_workspace_leave(_h, space):
+            if win["workspace"] == self.space_ids.get(space):
+                win["workspace"] = 0
+
         handle.dispatcher["app_id"] = set_field("appId")
         handle.dispatcher["title"] = set_field("title")
         handle.dispatcher["done"] = lambda _h: self.emit()
         handle.dispatcher["closed"] = on_closed
         cosmic.dispatcher["state"] = on_state
         cosmic.dispatcher["output_enter"] = on_output
+        cosmic.dispatcher["ext_workspace_enter"] = on_workspace
+        cosmic.dispatcher["ext_workspace_leave"] = on_workspace_leave
+
+    def on_group(self, _m, group):
+        self.groups[group] = []
+        group.dispatcher["output_enter"] = lambda _g, o: self.groups[group].append(o)
+        group.dispatcher["output_leave"] = lambda _g, o: self.groups[group].remove(o)
+        group.dispatcher["workspace_enter"] = lambda _g, w: self.space(w).__setitem__("group", group)
+        group.dispatcher["removed"] = lambda _g: (self.groups.pop(group, None), group.destroy())
+
+    def on_workspace(self, _m, handle):
+        """A desktop. Ids are ours, like window ids: cosmic-comp only gives pinned ones an id."""
+        sid = self.next_id
+        self.next_id += 1
+        self.space_ids[handle] = sid
+        self.spaces[sid] = {"name": "", "active": False, "coords": [], "group": None, "handle": handle}
+        space = self.spaces[sid]
+        handle.dispatcher["name"] = lambda _h, n: space.__setitem__("name", n)
+        handle.dispatcher["state"] = lambda _h, st: space.__setitem__("active", bool(st & WS_ACTIVE))
+        handle.dispatcher["coordinates"] = lambda _h, raw: space.__setitem__("coords", [
+            int.from_bytes(raw[i:i + 4], sys.byteorder) for i in range(0, len(raw), 4)])
+
+        def on_removed(_h):
+            self.spaces.pop(sid, None)
+            self.space_ids.pop(handle, None)
+            handle.destroy()
+        handle.dispatcher["removed"] = on_removed
+
+    def space(self, handle):
+        return self.spaces.get(self.space_ids.get(handle), {})
+
+    def emit_spaces(self):
+        """Every desktop, screen by screen, in the compositor's order."""
+        groups = list(self.groups)
+        order = sorted(self.spaces.items(), key=lambda kv: (
+            groups.index(kv[1]["group"]) if kv[1]["group"] in groups else len(groups), kv[1]["coords"], kv[0]))
+        print(json.dumps({"workspaces": [
+            {"id": sid, "name": s["name"], "active": s["active"],
+             "outputs": [self.outputs.get(o, "") for o in self.groups.get(s["group"], [])]}
+            for sid, s in order]}), flush=True)
 
     def emit(self):
         print(json.dumps([w | {"id": wid} for wid, w in self.windows.items()]), flush=True)
@@ -276,8 +338,14 @@ class Toplevels:
 
     def command(self, line):
         verb, *args = line.split()
-        if verb == "thumbs" and args and all(a.isdigit() for a in args):
+        if not all(a.isdigit() for a in args):
+            return
+        if verb == "thumbs" and args:
             self.thumbs(int(args[0]), [int(a) for a in args[1:]])
+            return
+        if verb == "workspace" and args and int(args[0]) in self.spaces:
+            self.spaces[int(args[0])]["handle"].activate()
+            self.globals["ext_workspace_manager_v1"].commit()
             return
         cosmic = self.handles.get(int(args[0]))[1] if args and args[0].isdigit() and int(args[0]) in self.handles else None
         if not cosmic:
@@ -289,6 +357,12 @@ class Toplevels:
             manager.set_minimized(cosmic)
         elif verb == "close":
             manager.close(cosmic)
+        elif verb == "move" and len(args) > 1 and int(args[1]) in self.spaces:
+            # cosmic-comp wants the screen too: the desktop's own.
+            space = self.spaces[int(args[1])]
+            outputs = self.groups.get(space["group"])
+            if outputs:
+                manager.move_to_ext_workspace(cosmic, space["handle"], outputs[0])
 
     def later(self, delay, fn):
         self.timers.append((time.monotonic() + delay, fn))

@@ -6,6 +6,12 @@
     (modifiers: [Super], key: "a"): Spawn("kriss-shell quick"),
     (modifiers: [Super], key: "n"): Spawn("kriss-shell notifications"),
     (modifiers: [Super, Alt], key: "d"): Spawn("kriss-shell calendar"),
+    // Task View and desktops, as on Windows. COSMIC has Windows+Tab as a window switcher.
+    (modifiers: [Super], key: "Tab"): Spawn("kriss-shell taskview"),
+    (modifiers: [Super, Ctrl], key: "Left"): PreviousWorkspace,
+    (modifiers: [Super, Ctrl], key: "Right"): NextWorkspace,
+    (modifiers: [Super, Ctrl], key: "d"): Spawn("kriss-shell desktops add"),
+    (modifiers: [Super, Ctrl], key: "F4"): Spawn("kriss-shell desktops close"),
     // Snap the window to a half (cosmic-comp's Move on a floating window). Up maximizes and
     // Down minimizes, as on Windows; COSMIC's Windows+Shift+arrows still snap to quarters.
     (modifiers: [Super], key: "Left"): Move(Left),

@@ -12,6 +12,9 @@
 #   kriss-shell taskbar focus|startMenu|open N|newWindow N|jumpList N
 #                          the taskbar keys: Windows+T, Windows+X, Windows+1…9,
 #                          Windows+Shift+1…9 and Windows+Alt+1…9
+#   kriss-shell taskview   open or close Task View (Windows+Tab)
+#   kriss-shell desktops add|close
+#                          a new desktop, or close the current one (Windows+Ctrl+D, Windows+Ctrl+F4)
 #   kriss-shell switcher next|previous
 #                          the Alt+Tab window switcher (Alt+Tab and Alt+Shift+Tab)
 #   kriss-shell media playPause|next|previous
@@ -39,6 +42,12 @@ lock)
     ;;
 desktop)
     qs -p "$qml" ipc call desktop toggle
+    ;;
+taskview)
+    qs -p "$qml" ipc call taskview toggle
+    ;;
+desktops)
+    qs -p "$qml" ipc call desktops "${2:?usage: kriss-shell desktops add|close}"
     ;;
 switcher | media)
     qs -p "$qml" ipc call "$1" "${2:?usage: kriss-shell $1 ACTION}"
@@ -169,7 +178,7 @@ greeter)
     wait "$comp"
     ;;
 *)
-    echo "usage: kriss-shell [launcher|quick|notifications|calendar|lock|desktop|taskbar ACTION|switcher next|media playPause|brightness STEP|screenshot [region]|greeter]" >&2
+    echo "usage: kriss-shell [launcher|quick|notifications|calendar|lock|desktop|taskview|desktops add|taskbar ACTION|switcher next|media playPause|brightness STEP|screenshot [region]|greeter]" >&2
     exit 2
     ;;
 esac
