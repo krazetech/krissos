@@ -5,9 +5,9 @@ pkgrel=1
 pkgdesc='KrissOS Shell: bar, launcher, quick settings, notifications and lock screen on cosmic-comp'
 arch=('any')
 url='https://github.com/krazetech/krissos'
-license=('GPL-3.0-or-later')
+license=('GPL-3.0-or-later' 'MIT')
 depends=('cosmic-comp' 'cosmic-settings-daemon' 'xorg-xwayland' 'quickshell' 'python-pywayland' 'glib2' 'dbus'
-         'grim' 'slurp' 'wl-clipboard' 'xdg-user-dirs' 'brightnessctl')
+         'grim' 'slurp' 'wl-clipboard' 'noto-fonts-emoji' 'xdg-user-dirs' 'brightnessctl')
 makedepends=('python' 'python-pywayland' 'wayland' 'wayland-protocols' 'cargo')
 optdepends=('greetd: the KrissOS login screen'
             'networkmanager: network status and Wi-Fi in quick settings'
@@ -33,7 +33,8 @@ build() {
   XDG_CONFIG_HOME="$srcdir/config" cargo run --release --locked \
     --manifest-path "$_shell/cosmic-theme/Cargo.toml" --target-dir "$srcdir/target"
 
-  # Python bindings for the window-list and window-capture protocols kriss-shell-toplevels speaks.
+  # Python bindings for the window-list and window-capture protocols kriss-shell-toplevels
+  # speaks, and the virtual keyboard kriss-shell-clipboard pastes with.
   local wp=/usr/share/wayland-protocols/staging
   python -m pywayland.scanner -o "$srcdir/kriss_protocols" -i \
     /usr/share/wayland/wayland.xml \
@@ -58,7 +59,8 @@ import kriss_protocols.ext_foreign_toplevel_list_v1
 import kriss_protocols.ext_image_capture_source_v1
 import kriss_protocols.ext_image_copy_capture_v1
 import kriss_protocols.ext_workspace_v1
-import kriss_protocols.kriss_snap_v1'
+import kriss_protocols.kriss_snap_v1
+import kriss_protocols.virtual_keyboard_unstable_v1'
   ! grep -rn '{{' "$srcdir/qml" "$srcdir/config/cosmic"
 }
 
@@ -69,6 +71,8 @@ package() {
 
   install -Dm755 "$_shell/session/kriss-shell" "$pkgdir/usr/bin/kriss-shell"
   install -Dm755 "$_shell/kriss-shell-toplevels" "$pkgdir/usr/bin/kriss-shell-toplevels"
+  install -Dm755 "$_shell/kriss-shell-clipboard" "$pkgdir/usr/bin/kriss-shell-clipboard"
+  install -Dm644 "$_shell/emoji/gemoji-LICENSE" "$pkgdir/usr/share/licenses/kriss-shell/gemoji"
   install -Dm644 "$_shell/session/kriss-shell.desktop" "$pkgdir/usr/share/wayland-sessions/kriss-shell.desktop"
   install -Dm644 -t "$pkgdir/usr/lib/systemd/user" "$_shell/session/kriss-shell-session.target"
   install -Dm644 "$_shell/session/logind.conf" "$pkgdir/usr/lib/systemd/logind.conf.d/50-kriss-shell.conf"

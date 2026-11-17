@@ -93,6 +93,7 @@ ShellRoot {
     Switcher { id: switcher }
     TaskView {}
     Snap { id: snapLayouts }
+    Clipboard { id: clipboard }
     Osd {}
 
     // KRISS_SHELL_FPS=1: for a second after a panel opens or closes, counts the frames and
@@ -189,6 +190,13 @@ ShellRoot {
     IpcHandler {
         target: "snap"
         function layouts(): void { snapLayouts.layoutsForActive(); }
+    }
+
+    // `kriss-shell clipboard` and `kriss-shell emoji`: Windows+V and Windows+.
+    IpcHandler {
+        target: "clipboard"
+        function history(): void { clipboard.show("clipboard"); }
+        function emoji(): void { clipboard.show("emoji"); }
     }
 
     IpcHandler {
