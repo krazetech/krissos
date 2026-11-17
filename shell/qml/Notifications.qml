@@ -367,7 +367,7 @@ PanelWindow {
                                                     Rectangle {
                                                         anchors.fill: parent
                                                         radius: 15
-                                                        color: act.index === 0 ? (act.containsMouse ? Qt.lighter(Theme.accent, 1.08) : Theme.accent)
+                                                        color: act.index === 0 ? (act.containsMouse ? Theme.accentHover : Theme.accent)
                                                             : act.containsMouse ? Theme.cardHover : Theme.card
                                                         Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                                                     }

@@ -1,0 +1,57 @@
+#!/usr/bin/env node
+// Checks qml/theme.js: the "auto" schedule, input checks, and that every curated accent
+// and its shades pass contrast in dark and light. node shell/theme-check
+const fs = require("fs"), path = require("path"), assert = require("assert");
+const src = fs.readFileSync(path.join(__dirname, "qml/theme.js"), "utf8").replace(".pragma library", "");
+const T = new Function(src + "; return { parseColor, isMode, minutes, lightAt, contrast, shades };")();
+const tokens = JSON.parse(fs.readFileSync(path.join(__dirname, "../theme/tokens.json"), "utf8"));
+
+// Schedule, in minutes after midnight.
+const at = (h, m) => h * 60 + m;
+assert(T.lightAt(at(12, 0), "07:00", "19:00"));
+assert(T.lightAt(at(7, 0), "07:00", "19:00"));           // light from the minute itself
+assert(!T.lightAt(at(19, 0), "07:00", "19:00"));         // dark from the minute itself
+assert(!T.lightAt(at(6, 59), "07:00", "19:00"));
+assert(!T.lightAt(at(0, 0), "07:00", "19:00"));
+assert(T.lightAt(at(23, 0), "22:00", "06:00"));          // a light span across midnight
+assert(T.lightAt(at(3, 0), "22:00", "06:00"));
+assert(!T.lightAt(at(12, 0), "22:00", "06:00"));
+assert(T.lightAt(at(12, 0), "nonsense", "19:00"));       // bad times: 07:00 / 19:00
+assert(!T.lightAt(at(20, 0), "08:00", "08:00"));         // equal times too
+assert(T.lightAt(at(8, 0), "8:00", "18:30"));
+assert.strictEqual(T.minutes("24:00"), null);
+assert.strictEqual(T.minutes("07:60"), null);
+assert.strictEqual(T.minutes("23:59"), at(23, 59));
+
+// Input from shell.json and IPC.
+assert.strictEqual(T.parseColor("#24B1E6"), "#24b1e6");
+assert.strictEqual(T.parseColor(" #abc "), "#aabbcc");
+for (const bad of ["24B1E6", "#24B1E", "#GGGGGG", "red", "", null, 5, "#24B1E6;rm"]) assert.strictEqual(T.parseColor(bad), null, bad);
+for (const m of ["dark", "light", "system", "auto"]) assert(T.isMode(m));
+for (const m of ["Dark", "night", "", undefined]) assert(!T.isMode(m));
+
+// Contrast: the accent as a fill or ring stands out 3:1 from the window, text on the
+// accent and its hover and pressed shades reads 4.5:1, in dark and light. The curated
+// list is read from Theme.qml so the two cannot drift.
+const qml = fs.readFileSync(path.join(__dirname, "qml/Theme.qml"), "utf8");
+const list = [...qml.matchAll(/name: Tr\.t\("([^"]+)"\), color: "([^"]+)"/g)]
+    .map(m => [m[1], m[2] === "{{accent}}" ? tokens.accent : m[2]]);
+assert(list.length >= 8, "curated accents not found in Theme.qml");
+const bgs = { dark: [tokens.bg, tokens.surface], light: [tokens.light_bg, tokens.light_surface] };
+for (const [name, c] of list) {
+    for (const dark of [true, false]) {
+        const s = T.shades(T.parseColor(c), dark, tokens.surface, tokens.light_bg);
+        for (const bg of bgs[dark ? "dark" : "light"])
+            assert(T.contrast(s.accent, bg) >= 3, `${name} on ${bg}: ${T.contrast(s.accent, bg).toFixed(2)}`);
+        for (const k of ["accent", "hover", "pressed"])
+            assert(T.contrast(s[k], s.ink) >= 4.5, `${name} ${k} text: ${T.contrast(s[k], s.ink).toFixed(2)}`);
+    }
+}
+// Any colour still gets readable text on it, even ones off the list.
+for (const c of ["#000000", "#ffffff", "#ff0000", "#777777", "#0000ff"])
+    for (const dark of [true, false]) {
+        const s = T.shades(c, dark, tokens.surface, tokens.light_bg);
+        assert(T.contrast(s.accent, s.ink) >= 4.5, c);
+        assert(T.contrast(s.accent, dark ? tokens.surface : tokens.light_bg) >= 3, c);
+    }
+console.log("ok");

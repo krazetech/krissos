@@ -476,7 +476,7 @@ PanelWindow {
         implicitHeight: 64
         radius: Theme.radiusSmall
         readonly property bool hovered: main.containsMouse || arrow.containsMouse
-        color: on ? (hovered ? Qt.lighter(Theme.accent, 1.08) : Theme.accent) : hovered ? Theme.cardHover : Theme.card
+        color: on ? (hovered ? Theme.accentHover : Theme.accent) : hovered ? Theme.cardHover : Theme.card
         readonly property color ink: on ? Theme.accentInk : Theme.fg
         scale: main.pressed || arrow.pressed ? Theme.pressScale : 1
         Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }

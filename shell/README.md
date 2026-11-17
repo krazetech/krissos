@@ -10,6 +10,7 @@ SDDM lists it as **KrissOS Shell**.
 | `qml/` | The shell. `shell.qml` is the entry point. Colours and fonts are `{{token}}` placeholders filled from `theme/tokens.json` at build time |
 | `qml/i18n/` | Translations, one `<lang>.json` per language (`ms` is Bahasa Melayu). See below |
 | `fuzzy-check` | Tests the launcher's fuzzy ranking and the menus' type-ahead: `node shell/fuzzy-check` |
+| `theme-check` | Tests the light/dark schedule and that every curated accent and its shades pass contrast: `node shell/theme-check` |
 | `i18n-check` | Checks every shell string has a translation; `--list` prints them all |
 | `clipboard-check` | Tests the clipboard history with a fake `wl-paste`: sensitive items are never stored, pinned ones survive `clear` (runs in the package build) |
 | `kriss-shell-toplevels` | Python helper that lists open windows (the screen and desktop each is on, and whether it is fullscreen) and the desktops, focuses, minimizes, closes or moves windows, switches desktops, and captures window pictures while the taskbar previews or Task View show them. Quickshell can't read or capture windows from cosmic-comp directly |
@@ -19,7 +20,7 @@ SDDM lists it as **KrissOS Shell**.
 | `protocols/` | COSMIC protocol files and the virtual keyboard protocol the helpers' bindings are generated from |
 | `session/kriss-shell` | Starts the session and the login screen, and handles the commands the shortcuts below run |
 | `cosmic/` | Defaults copied key by key into `~/.config/cosmic` (same layout) on first start: the shortcuts below, the KrissOS theme builder keys (accent, backgrounds, corners), no coloured ring around the focused window, Papirus icons and the COSMIC Terminal colours. Existing user values are left alone |
-| `cosmic-theme/` | Builds the full COSMIC dark and light themes from those builder keys with libcosmic's own ThemeBuilder, at package build time |
+| `cosmic-theme/` | `kriss-cosmic-theme`: builds the full COSMIC dark and light themes from those builder keys with libcosmic's own ThemeBuilder, at package build time, and again with `--accent` when the user picks an accent |
 | `mockup/index.html` | The approved concept |
 
 ## Run it nested for development
@@ -32,6 +33,7 @@ dev=/tmp/kriss-shell-dev
 python theme/generate.py shell/qml "$dev/qml"
 python theme/generate.py shell/cosmic "$dev/config/cosmic"
 XDG_CONFIG_HOME=$dev/config cargo run --release --manifest-path shell/cosmic-theme/Cargo.toml
+mkdir -p "$dev/bin" && ln -sf "$PWD/shell/cosmic-theme/target/release/kriss-cosmic-theme" "$dev/bin/"
 ln -sfn config/cosmic "$dev/cosmic"
 python -m pywayland.scanner -o "$dev/lib/kriss_protocols" -i /usr/share/wayland/wayland.xml \
   /usr/share/wayland-protocols/staging/ext-foreign-toplevel-list/ext-foreign-toplevel-list-v1.xml \
@@ -39,11 +41,12 @@ python -m pywayland.scanner -o "$dev/lib/kriss_protocols" -i /usr/share/wayland/
   /usr/share/wayland-protocols/staging/ext-image-capture-source/ext-image-capture-source-v1.xml \
   /usr/share/wayland-protocols/staging/ext-image-copy-capture/ext-image-copy-capture-v1.xml shell/protocols/*.xml
 touch "$dev/lib/kriss_protocols/__init__.py"
-KRISS_SHELL_DATA=$dev KRISS_SHELL_LIB=$dev/lib PATH="$PWD/shell:$PWD/shell/session:$PATH" \
-  cosmic-comp shell/session/kriss-shell --inside
+XDG_CONFIG_HOME=$dev/config GSETTINGS_BACKEND=memory KRISS_SHELL_DATA=$dev KRISS_SHELL_LIB=$dev/lib \
+  PATH="$dev/bin:$PWD/shell:$PWD/shell/session:$PATH" cosmic-comp shell/session/kriss-shell --inside
 ```
 
-Nested like this, cosmic-comp runs in kiosk mode, which turns its keyboard shortcuts off, so the
+`XDG_CONFIG_HOME` and `GSETTINGS_BACKEND=memory` keep the nested shell's settings, theme and
+colour scheme apart from your own desktop's. Nested like this, cosmic-comp runs in kiosk mode, which turns its keyboard shortcuts off, so the
 Windows key does nothing there. A real session (`kriss-shell` with no arguments, which SDDM runs)
 starts cosmic-comp normally and copies the `cosmic/` defaults into `~/.config/cosmic`.
 
@@ -66,13 +69,15 @@ qs -p "$dev/qml" ipc call previews open Alacritty 400
 notify-send -A ok=Update "14 updates ready" "A snapshot is taken first."
 ```
 ```bash
-gsettings set org.gnome.desktop.interface color-scheme default
+qs ipc -p "$dev/qml" call theme set mode light
+```
+```bash
+qs ipc -p "$dev/qml" call theme set accent "#E8B04B"
 ```
 
 The `previews` line shows the window previews of an app (by its app id) as if its taskbar
 button were 400 px from the left; `ipc call previews close` hides them. The nested session has no
-way to move a pointer there otherwise. The last one switches to the light variant;
-`prefer-dark` switches back.
+way to move a pointer there otherwise.
 
 ## Performance check
 
@@ -124,7 +129,7 @@ takes focus.
 ## Settings
 
 Pinned apps (in taskbar order), the tray icons hidden in the overflow (`trayHidden`), Do not
-disturb, the Task View button and desktop names are kept in `~/.config/kriss/shell.json`.
+disturb, the Task View button, desktop names and the theme are kept in `~/.config/kriss/shell.json`.
 Right-click an app on the bar or in the launcher to pin or unpin it; drag a pinned app along the
 bar to move it. Without the file, the defaults in `qml/Desktop.qml` apply. **Taskbar settings**
 (right-click an empty part of the bar) opens this file until a Personalise page exists.
@@ -138,6 +143,40 @@ bar to move it. Without the file, the defaults in `qml/Desktop.qml` apply. **Tas
 | `taskbarCombine` | `"always"` | `"always"`: one button per app. `"never"`: one button per window, with its title. `"full"`: per window until the bar runs out of room |
 | `taskbarAllScreens` | `true` | A bar on every screen, each with the windows on that screen; `false`: one bar, on the first screen, with every window |
 
+### Theme
+
+| Key | Values | Default |
+|---|---|---|
+| `accent` | Any `#RRGGBB` colour; `Theme.accents` lists eight KrissOS ones that pass contrast | `""`, Sky Cyan from `theme/tokens.json` |
+| `theme` | `dark`, `light`, `system` (follows `org.gnome.desktop.interface color-scheme`) or `auto` | `system` |
+| `themeLight`, `themeDark` | `HH:MM`: in `auto`, light from `themeLight` until `themeDark`, by the clock only (no location, so it works offline) | `07:00`, `19:00` |
+
+Every colour in the shell comes from `Theme`, so a change shows at once, with no reload. The
+accent is lightened on dark windows or deepened on light ones only as far as a 3:1 contrast
+needs, text on it is black or white (whichever reads better), and `Theme.accentHover` and
+`Theme.accentPressed` are derived from it (`qml/theme.js`). To change them from a script or the
+settings page:
+
+```bash
+qs ipc call theme set accent "#24B1E6"
+```
+```bash
+qs ipc call theme set mode auto
+```
+
+Both write `shell.json` and print `ok`, or an error for anything that isn't a colour or one of
+the four modes. The shell also keeps apps in step. Outside `shell.json` it writes only these:
+
+| Where | Key | When |
+|---|---|---|
+| dconf | `org.gnome.desktop.interface color-scheme` (`prefer-dark` / `default`), which GTK, Qt and Flatpak apps (through the portal) follow | light or dark changes and `theme` is not `system` |
+| `~/.config/cosmic/com.system76.CosmicTheme.Mode/v1/` | `is_dark` | light or dark changes and differs from the file |
+| `~/.config/cosmic/com.system76.CosmicTheme.Dark.Builder/v2/`, `…Light.Builder/v2/` | `accent`; `window_hint` only while it equals the old accent | the accent changes |
+| `~/.config/cosmic/com.system76.CosmicTheme.Dark/v2/`, `…Light/v2/` | the theme keys libcosmic's ThemeBuilder derives from the accent and whose value changed (`accent`, `accent_button`, `accent_text`, the buttons, `background`, `primary`, `secondary`, `success`, `warning`, `destructive`, `window_hint`, …); keys that come out the same are not rewritten | the accent changes |
+
+The last two come from `kriss-cosmic-theme --accent`, the same ThemeBuilder COSMIC Settings uses,
+so Files, Terminal and Settings repaint with the shades COSMIC itself would pick.
+
 ## Notification center
 
 The bell, or Windows+N, opens it: every notification not yet dismissed, grouped by app, newest
@@ -145,6 +184,7 @@ app first, with Clear all, a Clear for each app with several and a cross on each
 disturb toggle (toasts stop, critical ones aside); and the month with today marked. The list is
 kept in `~/.local/state/kriss/notifications.json` (`$XDG_STATE_HOME/kriss/`), newest 100, so it
 survives a restart; notifications from before one come back without their buttons.
+
 
 ## Taskbar
 

@@ -44,12 +44,17 @@ Singleton {
     property alias trayHidden: config.trayHidden
     property alias taskbarTaskView: config.taskbarTaskView
     property alias desktopNames: config.desktopNames
+    property alias accent: config.accent
+    property alias theme: config.theme
+    property alias themeLight: config.themeLight
+    property alias themeDark: config.themeDark
 
     readonly property string configFile: (Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config") + "/kriss/shell.json"
     FileView {
         path: root.configFile
         watchChanges: true
         printErrors: false
+        blockLoading: true  // the theme is right from the first frame
         onFileChanged: reload()
         onAdapterUpdated: writeAdapter()
 
@@ -78,6 +83,12 @@ Singleton {
             property bool taskbarTaskView: true
             // Desktop names given in Task View, by position ("" keeps "Desktop N").
             property list<string> desktopNames: []
+            // Theme.qml: the accent ("#RRGGBB", empty for Sky Cyan), "dark", "light",
+            // "system" or "auto", and when "auto" turns light and dark.
+            property string accent: ""
+            property string theme: "system"
+            property string themeLight: "07:00"
+            property string themeDark: "19:00"
         }
     }
 
