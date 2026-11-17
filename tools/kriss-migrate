@@ -56,15 +56,15 @@ infra_pkg() {
 # /etc/kernel/cmdline from the running kernel's command line: without the loader's own
 # words, with rootflags=subvol=@ as kriss-limine-update expects (it swaps that for the
 # snapshot's subvolume), zswap off since zram does the swapping, and splash for the
-# KrissOS boot splash.
-boot_cmdline() {
+# KrissOS boot splash, except with the NVIDIA driver (no early KMS for Plymouth to use).
+boot_cmdline() { # boot_cmdline CMDLINE [NVIDIA]
   local w out=()
   for w in $1; do
-    case $w in BOOT_IMAGE=* | initrd=* | kriss_snapshot=*) continue ;; esac
+    case $w in BOOT_IMAGE=* | initrd=* | kriss_snapshot=*) continue ;; splash) ((!${2:-0})) || continue ;; esac
     out+=("${w//subvol=\/@/subvol=@}")
   done
   [[ " ${out[*]} " == *" zswap.enabled="* ]] || out+=(zswap.enabled=0)
-  [[ " ${out[*]} " == *" splash "* ]] || out+=(splash)
+  ((${2:-0})) || [[ " ${out[*]} " == *" splash "* ]] || out+=(splash)
   echo "${out[*]}"
 }
 
@@ -85,12 +85,13 @@ fstab_as() {
 
 # The KrissOS initramfs hooks (installer/lib/configure). busybox, not systemd, so
 # kriss-snapshot can boot a snapshot from the menu. btrfs scans for the other devices
-# of a multi-device root; no early KMS with the NVIDIA driver; plymouth for the splash.
+# of a multi-device root; plymouth for the splash. No early KMS with the NVIDIA driver,
+# and so no splash either.
 hooks_line() { # hooks_line MULTI_DEVICE NVIDIA
-  local kms=kriss-kms btrfs=
+  local kms='kriss-kms plymouth' btrfs=
   ((!$2)) || kms=
   ((!$1)) || btrfs=btrfs
-  echo "HOOKS=(base udev autodetect microcode modconf $kms plymouth keyboard keymap consolefont block $btrfs filesystems fsck kriss-snapshot)" | tr -s ' '
+  echo "HOOKS=(base udev autodetect microcode modconf $kms keyboard keymap consolefont block $btrfs filesystems fsck kriss-snapshot)" | tr -s ' '
 }
 
 # "FILE:LINE:TEXT" for each line in the shell configs given that still loads a file from
@@ -307,7 +308,7 @@ EOF
     note "keeping /etc/kernel/cmdline: $(</etc/kernel/cmdline)"
   else
     run mkdir -p /etc/kernel
-    boot_cmdline "$(</proc/cmdline)" | write /etc/kernel/cmdline
+    boot_cmdline "$(</proc/cmdline)" "$nvidia" | write /etc/kernel/cmdline
   fi
   # CachyOS ships its zram settings in zram-generator's own file, which Arch's build
   # does not have. Keep them.
