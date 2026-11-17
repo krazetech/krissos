@@ -1,0 +1,377 @@
+From b441da3256da6bb1e21a4177a9f177cc4cb70be4 Mon Sep 17 00:00:00 2001
+From: Razman Zaidi <100824525+idiazraz@users.noreply.github.com>
+Date: Tue, 17 Nov 2026 21:03:51 +0800
+Subject: [PATCH] Snap layouts for the KrissOS Shell (kriss_snap_v1)
+
+A small protocol for the shell: snap(identifier, x, y, w, h) tiles a
+floating window into a zone given in twelfths of its screen's work area,
+through the same floating_tiled state as cosmic-comp's own snapping, so
+Windows+arrows and dragging out behave as for a snapped half. Halves and
+quarters map onto the existing TiledCorners; other zones (thirds) use a
+new TiledCorners::Zone. maximize_hover(identifier, hovered) tells the
+shell when the pointer enters or leaves the maximize button of a
+server-side title bar, so it can offer the layouts there.
+---
+ resources/protocols/kriss-snap-v1.xml |  39 ++++++
+ src/shell/element/window.rs           |  12 ++
+ src/shell/layout/floating/mod.rs      |  56 +++++++++
+ src/state.rs                          |   1 +
+ src/wayland/protocols/kriss_snap.rs   | 164 ++++++++++++++++++++++++++
+ src/wayland/protocols/mod.rs          |   1 +
+ 6 files changed, 273 insertions(+)
+ create mode 100644 resources/protocols/kriss-snap-v1.xml
+ create mode 100644 src/wayland/protocols/kriss_snap.rs
+
+diff --git a/resources/protocols/kriss-snap-v1.xml b/resources/protocols/kriss-snap-v1.xml
+new file mode 100644
+index 00000000..dd27a86a
+--- /dev/null
++++ b/resources/protocols/kriss-snap-v1.xml
+@@ -0,0 +1,39 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<protocol name="kriss_snap_v1">
++  <copyright>
++    SPDX-License-Identifier: GPL-3.0-only
++  </copyright>
++  <description summary="snap layouts for the KrissOS Shell">
++    Lets the shell put a window into a snap zone (a layout's half, third or
++    quarter) and tells it when the pointer rests on a window's maximize
++    button, so it can offer the layouts there. Windows are named by their
++    ext_foreign_toplevel_handle_v1 identifier.
++  </description>
++
++  <interface name="kriss_snap_manager_v1" version="1">
++    <request name="destroy" type="destructor"/>
++
++    <request name="snap">
++      <description summary="tile a window into a zone of its screen">
++        The zone is in twelfths of the screen's work area (without panels),
++        so 0 0 6 12 is the left half and 4 0 4 12 the middle third. The
++        whole area maximizes. Gaps are added as for cosmic-comp's own
++        snapping, and the window goes back to its old size when dragged out.
++      </description>
++      <arg name="toplevel" type="string" summary="ext_foreign_toplevel_handle_v1 identifier"/>
++      <arg name="x" type="uint"/>
++      <arg name="y" type="uint"/>
++      <arg name="width" type="uint"/>
++      <arg name="height" type="uint"/>
++    </request>
++
++    <event name="maximize_hover">
++      <description summary="the pointer entered or left a maximize button">
++        Only for windows with server-side decorations: cosmic-comp can't
++        see the buttons apps draw themselves.
++      </description>
++      <arg name="toplevel" type="string" summary="ext_foreign_toplevel_handle_v1 identifier"/>
++      <arg name="hovered" type="uint" summary="1 entered, 0 left"/>
++    </event>
++  </interface>
++</protocol>
+diff --git a/src/shell/element/window.rs b/src/shell/element/window.rs
+index 15277a07..aeedac0c 100644
+--- a/src/shell/element/window.rs
++++ b/src/shell/element/window.rs
+@@ -1064,6 +1064,17 @@ impl PointerTarget<State> for CosmicWindow {
+                     return;
+                 };
+                 let _previous = p.swap_focus(Some(next));
++                if has_ssd && cosmic::config::show_maximize() {
++                    // KrissOS: the header bar's maximize button, second from the right: 32 px
++                    // buttons 4 px apart, 8 px in from the edge (libcosmic's SSD header bar).
++                    let geo = p.window.geometry();
++                    let x = event.location.x as i32 - geo.loc.x;
++                    let right = geo.size.w - 8 - 32 - 4;
++                    crate::wayland::protocols::kriss_snap::maximize_hover(
++                        &p.window,
++                        next == Focus::Header && (right - 32..right).contains(&x),
++                    );
++                }
+ 
+                 let cursor_state = seat.user_data().get::<CursorState>().unwrap();
+                 cursor_state.lock().unwrap().set_shape(next.cursor_shape());
+@@ -1150,6 +1161,7 @@ impl PointerTarget<State> for CosmicWindow {
+             let cursor_state = seat.user_data().get::<CursorState>().unwrap();
+             cursor_state.lock().unwrap().unset_shape();
+             let _previous = p.swap_focus(None);
++            crate::wayland::protocols::kriss_snap::maximize_hover(&p.window, false);
+         });
+         PointerTarget::leave(&self.0, seat, data, serial, time)
+     }
+diff --git a/src/shell/layout/floating/mod.rs b/src/shell/layout/floating/mod.rs
+index 71d85e7e..210aea32 100644
+--- a/src/shell/layout/floating/mod.rs
++++ b/src/shell/layout/floating/mod.rs
+@@ -205,6 +205,8 @@ pub enum TiledCorners {
+     BottomLeft,
+     Left,
+     TopLeft,
++    /// KrissOS snap layouts: x, y, width and height in twelfths of the work area.
++    Zone(u8, u8, u8, u8),
+ }
+ 
+ impl TiledCorners {
+@@ -215,6 +217,18 @@ impl TiledCorners {
+     ) -> Rectangle<i32, Local> {
+         let (_, inner) = gaps;
+         let (loc, size) = match self {
++            TiledCorners::Zone(x, y, w, h) => {
++                // A full gap at the screen's edges and half of one on each side between zones.
++                let span = |start: u8, len: u8, origin: i32, total: i32| {
++                    let gap = |at: u8| if at == 0 || at == 12 { inner } else { inner / 2 };
++                    let a = origin + total * start as i32 / 12 + gap(start);
++                    let b = origin + total * (start + len) as i32 / 12 - gap(start + len);
++                    (a, b - a)
++                };
++                let (x, w) = span(*x, *w, output_geometry.loc.x, output_geometry.size.w);
++                let (y, h) = span(*y, *h, output_geometry.loc.y, output_geometry.size.h);
++                (Point::from((x, y)), Size::from((w, h)))
++            }
+             TiledCorners::Bottom => (
+                 Point::from((
+                     output_geometry.loc.x + inner,
+@@ -1337,6 +1351,48 @@ impl FloatingLayout {
+         }
+     }
+ 
++    /// KrissOS: tile `element` into `zone`, as a snap drag or the Move action does.
++    pub fn tile_to(&mut self, element: &CosmicMapped, zone: TiledCorners) {
++        let Some(current_geometry) = self.space.element_geometry(element).map(RectExt::as_local)
++        else {
++            return;
++        };
++        let output = self.space.outputs().next().unwrap().clone();
++        let output_geometry = layer_map_for_output(&output).non_exclusive_zone();
++        let mut tiled_state = element.floating_tiled.lock().unwrap();
++        let start_rectangle = match self.animations.remove(element) {
++            Some(anim) => anim.geometry(
++                output_geometry,
++                current_geometry,
++                tiled_state.as_ref(),
++                self.gaps(),
++            ),
++            None => current_geometry,
++        };
++        let new_geo = zone.relative_geometry(output_geometry, self.gaps());
++        element.set_tiled(true);
++        element.set_maximized(false);
++        if tiled_state.is_none() {
++            let last_geometry = element
++                .maximized_state
++                .lock()
++                .unwrap()
++                .take()
++                .map(|state| state.original_geometry)
++                .unwrap_or(current_geometry);
++            *element.last_geometry.lock().unwrap() = Some(last_geometry);
++        }
++        *tiled_state = Some(zone);
++        std::mem::drop(tiled_state);
++        element.moved_since_mapped.store(true, Ordering::SeqCst);
++        self.map_internal(
++            element.clone(),
++            Some(new_geo.loc),
++            Some(new_geo.size.as_logical()),
++            Some(start_rectangle),
++        );
++    }
++
+     pub fn move_current_element(
+         &mut self,
+         direction: Direction,
+diff --git a/src/state.rs b/src/state.rs
+index e3d170b9..928c9a58 100644
+--- a/src/state.rs
++++ b/src/state.rs
+@@ -768,6 +768,7 @@ impl State {
+ 
+         let session_lock_layer_state =
+             SessionLockLayerState::new::<State, _>(dh, client_not_sandboxed);
++        crate::wayland::protocols::kriss_snap::init(dh);
+ 
+         State {
+             common: Common {
+diff --git a/src/wayland/protocols/kriss_snap.rs b/src/wayland/protocols/kriss_snap.rs
+new file mode 100644
+index 00000000..b4ea2595
+--- /dev/null
++++ b/src/wayland/protocols/kriss_snap.rs
+@@ -0,0 +1,164 @@
++// SPDX-License-Identifier: GPL-3.0-only
++// KrissOS snap layouts: see resources/protocols/kriss-snap-v1.xml.
++
++pub use generated::kriss_snap_manager_v1::{self, KrissSnapManagerV1};
++
++#[allow(non_snake_case, non_upper_case_globals, non_camel_case_types)]
++mod generated {
++    use smithay::reexports::wayland_server;
++
++    pub mod __interfaces {
++        use wayland_backend;
++        wayland_scanner::generate_interfaces!("resources/protocols/kriss-snap-v1.xml");
++    }
++    use self::__interfaces::*;
++
++    wayland_scanner::generate_server_code!("resources/protocols/kriss-snap-v1.xml");
++}
++
++use std::sync::Mutex;
++
++use smithay::reexports::wayland_server::{
++    Client, DataInit, Dispatch, DisplayHandle, GlobalDispatch, New, backend::ClientId,
++};
++
++use super::toplevel_info::ToplevelState;
++use crate::{
++    shell::{CosmicSurface, ModalBehavior, layout::floating::TiledCorners},
++    state::{ClientState, State},
++};
++
++static MANAGERS: Mutex<Vec<KrissSnapManagerV1>> = Mutex::new(Vec::new());
++static HOVERED: Mutex<Option<String>> = Mutex::new(None);
++
++pub fn init(dh: &DisplayHandle) {
++    dh.create_global::<State, KrissSnapManagerV1, _>(1, ());
++}
++
++fn identifier(window: &CosmicSurface) -> Option<String> {
++    let state = window.user_data().get::<ToplevelState>()?.lock().unwrap();
++    state.foreign_handle().map(|h| h.identifier())
++}
++
++/// The pointer is on `window`'s maximize button, or not. Tells the shell on changes only.
++pub fn maximize_hover(window: &CosmicSurface, hovered: bool) {
++    let Some(id) = identifier(window) else { return };
++    let mut current = HOVERED.lock().unwrap();
++    let was = current.as_ref() == Some(&id);
++    if was == hovered {
++        return;
++    }
++    if let Some(old) = current.take().filter(|_| hovered) {
++        send(&old, false);
++    }
++    if hovered {
++        *current = Some(id.clone());
++    }
++    send(&id, hovered);
++}
++
++fn send(id: &str, hovered: bool) {
++    for manager in MANAGERS.lock().unwrap().iter() {
++        manager.maximize_hover(id.to_string(), hovered as u32);
++    }
++}
++
++fn snap(state: &mut State, id: &str, zone: [u32; 4]) {
++    let [x, y, w, h] = zone.map(|v| v.min(12) as u8);
++    if w == 0 || h == 0 || x + w > 12 || y + h > 12 {
++        return;
++    }
++    let Some(window) = state
++        .common
++        .toplevel_info_state
++        .toplevels
++        .iter()
++        .find(|w| identifier(w).as_deref() == Some(id))
++        .cloned()
++    else {
++        return;
++    };
++    let mut shell = state.common.shell.write();
++    let Some(mapped) = shell.element_for_surface(&window).cloned() else {
++        return;
++    };
++    let seat = shell.seats.last_active().clone();
++    if (x, y, w, h) == (0, 0, 12, 12) {
++        shell.maximize_request(
++            &mapped,
++            &seat,
++            true,
++            &state.common.event_loop_handle,
++            ModalBehavior::Block,
++        );
++        return;
++    }
++    if mapped.maximized_state.lock().unwrap().is_some() {
++        shell.unmaximize_request(&mapped, ModalBehavior::Block);
++    }
++    let Some(workspace) = shell.space_for_mut(&mapped) else {
++        return;
++    };
++    // ponytail: floating windows only; cosmic-comp's tiling layout places its own windows.
++    if workspace.is_tiled(&window) {
++        return;
++    }
++    let zone = match (x, y, w, h) {
++        (0, 0, 6, 12) => TiledCorners::Left,
++        (6, 0, 6, 12) => TiledCorners::Right,
++        (0, 0, 12, 6) => TiledCorners::Top,
++        (0, 6, 12, 6) => TiledCorners::Bottom,
++        (0, 0, 6, 6) => TiledCorners::TopLeft,
++        (6, 0, 6, 6) => TiledCorners::TopRight,
++        (0, 6, 6, 6) => TiledCorners::BottomLeft,
++        (6, 6, 6, 6) => TiledCorners::BottomRight,
++        _ => TiledCorners::Zone(x, y, w, h),
++    };
++    workspace.floating_layer.tile_to(&mapped, zone);
++}
++
++impl GlobalDispatch<KrissSnapManagerV1, ()> for State {
++    fn bind(
++        _state: &mut State,
++        _dh: &DisplayHandle,
++        _client: &Client,
++        resource: New<KrissSnapManagerV1>,
++        _data: &(),
++        data_init: &mut DataInit<'_, State>,
++    ) {
++        MANAGERS.lock().unwrap().push(data_init.init(resource, ()));
++    }
++
++    fn can_view(client: Client, _data: &()) -> bool {
++        client
++            .get_data::<ClientState>()
++            .is_some_and(|c| c.not_sandboxed())
++    }
++}
++
++impl Dispatch<KrissSnapManagerV1, ()> for State {
++    fn request(
++        state: &mut State,
++        _client: &Client,
++        _resource: &KrissSnapManagerV1,
++        request: kriss_snap_manager_v1::Request,
++        _data: &(),
++        _dh: &DisplayHandle,
++        _data_init: &mut DataInit<'_, State>,
++    ) {
++        if let kriss_snap_manager_v1::Request::Snap {
++            toplevel,
++            x,
++            y,
++            width,
++            height,
++        } = request
++        {
++            snap(state, &toplevel, [x, y, width, height]);
++        }
++    }
++
++    fn destroyed(_state: &mut State, _client: ClientId, resource: &KrissSnapManagerV1, _data: &()) {
++        MANAGERS.lock().unwrap().retain(|m| m != resource);
++    }
++}
+diff --git a/src/wayland/protocols/mod.rs b/src/wayland/protocols/mod.rs
+index 48aa8337..cdf06ed5 100644
+--- a/src/wayland/protocols/mod.rs
++++ b/src/wayland/protocols/mod.rs
+@@ -5,6 +5,7 @@ pub mod corner_radius;
+ pub mod drm;
+ pub mod image_capture_source;
+ pub mod keyboard_layout;
++pub mod kriss_snap;
+ pub mod output_configuration;
+ pub mod output_power;
+ pub mod overlap_notify;
+-- 
+2.56.1
+
