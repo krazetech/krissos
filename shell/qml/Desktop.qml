@@ -129,13 +129,29 @@ Singleton {
         layout = name;
         return "ok";
     }
-    // Window buttons follow the layout: on the right as on Windows, on the left as on a Mac.
-    // GTK apps and Qt apps with the Adwaita decorations read this; COSMIC apps keep theirs.
+    // Window buttons follow the layout: on the left as on a Mac. GTK apps and Qt apps with the
+    // Adwaita decorations read this; COSMIC apps keep theirs. Going to the Mac layout keeps the
+    // user's own button layout in ~/.local/state/kriss/window-buttons, and going back restores it.
     // Also when shell.json is changed by hand or by kriss-welcome.
-    onLayoutChanged: Quickshell.execDetached(["sh", "-c", 'gsettings set org.gnome.desktop.wm.preferences button-layout "$1"; '
-        + 'for f in "${XDG_CONFIG_HOME:-$HOME/.config}"/gtk-3.0/settings.ini "${XDG_CONFIG_HOME:-$HOME/.config}"/gtk-4.0/settings.ini; do '
-        + '[ -f "$f" ] && sed -i "s/^gtk-decoration-layout=.*/gtk-decoration-layout=$1/" "$f"; done', "sh",
-        layout === "mac" ? "close,minimize,maximize:appmenu" : "appmenu:minimize,maximize,close"])
+    onLayoutChanged: Quickshell.execDetached(["sh", "-c", `
+        mac=close,minimize,maximize:appmenu
+        saved=\${XDG_STATE_HOME:-$HOME/.local/state}/kriss/window-buttons
+        if [ "$1" = mac ]; then
+            own=$(gsettings get org.gnome.desktop.wm.preferences button-layout | tr -d "'")
+            [ -n "$own" ] && [ "$own" != "$mac" ] && mkdir -p "\${saved%/*}" && printf '%s\n' "$own" > "$saved"
+            buttons=$mac
+        elif [ -s "$saved" ]; then
+            buttons=$(cat "$saved")
+            rm -f "$saved"
+        else
+            # Nothing saved: leave the user's own layout alone, undo only the Mac one.
+            [ "$(gsettings get org.gnome.desktop.wm.preferences button-layout | tr -d "'")" = "$mac" ] || exit 0
+            buttons=appmenu:minimize,maximize,close
+        fi
+        gsettings set org.gnome.desktop.wm.preferences button-layout "$buttons"
+        for f in "\${XDG_CONFIG_HOME:-$HOME/.config}"/gtk-3.0/settings.ini "\${XDG_CONFIG_HOME:-$HOME/.config}"/gtk-4.0/settings.ini; do
+            [ -f "$f" ] && sed -i "s/^gtk-decoration-layout=.*/gtk-decoration-layout=$buttons/" "$f"
+        done`, "sh", layout])
 
     readonly property string configFile: (Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config") + "/kriss/shell.json"
     FileView {

@@ -247,6 +247,8 @@ settings, the calendar, notifications and the tray flyout drop down from the top
 rising from the taskbar. Window buttons move to the left for GTK apps and Qt apps with the Adwaita
 decorations (`org.gnome.desktop.wm.preferences button-layout` and `gtk-decoration-layout` in the
 GTK 3 and 4 `settings.ini`); COSMIC apps have no such setting yet and keep theirs on the right.
+Your own button layout is kept in `~/.local/state/kriss/window-buttons` while the Mac layout is
+on, and comes back when you switch back.
 
 The Windows layout stays the default. Switch with `kriss-shell layout mac` or `windows`, the
 first page of `kriss-welcome`, or right-click the taskbar or dock: **Switch to the top bar and
