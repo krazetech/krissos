@@ -1,7 +1,7 @@
 #!/bin/bash
 # Merge freshly built packages into the published [kriss] repo (a GitHub release).
 # usage: publish.sh <dir with *.pkg.tar.zst>
-# env: KRISS_GPG_KEY (armored secret key), GH_TOKEN, RELEASE_TAG (repo-x86_64, the default, or repo-aarch64)
+# env: KRISS_GPG_KEY (armored secret key), GH_TOKEN, GH_REPO, RELEASE_TAG (repo-x86_64, the default, or repo-aarch64)
 #
 # Callers must share one workflow concurrency group: two overlapping runs would each
 # download the same db and the second upload would drop the first run's packages.
@@ -11,7 +11,13 @@ tag=${RELEASE_TAG:-repo-x86_64}
 db=kriss.db.tar.zst
 files=kriss.files.tar.zst
 
+# Publishing reaches every install, so on the real repo a missing key is an error, not a
+# warning that a green run hides. Forks have no secret and only warn.
 if [ -z "${KRISS_GPG_KEY:-}" ]; then
+  if [ "${GH_REPO:-}" = krazetech/krissos ]; then
+    echo "::error::KRISS_GPG_KEY is not set; packages were built but not published."
+    exit 1
+  fi
   echo "::warning::KRISS_GPG_KEY is not set; packages were built but not published."
   exit 0
 fi

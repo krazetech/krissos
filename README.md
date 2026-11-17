@@ -82,10 +82,11 @@ Packages are signed by `KrissOS Packages`, fingerprint
 - **Where the private key lives:** in the `KRISS_GPG_KEY` repository secret, and in the
   maintainer's local GnuPG keyring, with an offline backup.
 - **Where the public key lives:** it ships in the `kriss-keyring` package.
-- **Rotating the key:**
-  1. Add the new key to `pkgs/kriss-keyring/`.
-  2. Move the old fingerprint to `krissos-revoked`.
-  3. Bump the package version and replace the secret.
+- **Rotating or revoking the key:** follow [docs/signing-key.md](docs/signing-key.md). A
+  rotation takes two keyring releases a couple of weeks apart, so installs that update rarely
+  are not locked out.
+- **CI without the key:** publishing packages and tagged ISO releases fail instead of shipping
+  unsigned. Only the nightly `preview` ISO and forks carry on with a warning.
 
 ## License
 
