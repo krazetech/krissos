@@ -82,6 +82,8 @@ Scope {
         Windows.snap(id, zone);
     }
     function startAssist(screenName, zones, placedIds) {
+        // Stock cosmic-comp has no kriss_snap_v1, so nothing could be placed: show nothing.
+        if (!Windows.snapReady) return;
         if (!Windows.list.some(w => w.output === screenName && placedIds.indexOf(w.id) < 0)) return;
         assistScreen = screenName;
         placed = placedIds;
