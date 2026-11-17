@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 # kriss migrate: turn an Arch or CachyOS install into KrissOS in place. Files, apps and
 # games stay; the system packages move to Arch's builds plus the [kriss] repo, the boot
 # menu becomes KrissOS's (kriss-limine-update) and the login screen the KrissOS Shell's.
