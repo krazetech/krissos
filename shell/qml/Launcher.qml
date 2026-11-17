@@ -42,43 +42,121 @@ PanelWindow {
     // The grid when nothing is typed.
     readonly property var shown: allApps ? everything : Desktop.pinnedEntries()
 
+    // Commands, with the words people search for them by, in English and Malay. The first
+    // five are also the power menu.
     readonly property var actions: [
-        ["lock", Tr.t("Lock"), () => { close(); Desktop.locked = true; }],
-        ["sleep", Tr.t("Sleep"), () => { close(); Quickshell.execDetached(["systemctl", "suspend"]); }],
-        ["restart", Tr.t("Restart"), () => Quickshell.execDetached(["systemctl", "reboot"])],
-        ["power", Tr.t("Shut down"), () => Quickshell.execDetached(["systemctl", "poweroff"])],
+        ["lock", Tr.t("Lock"), () => { close(); Desktop.locked = true; }, "lock screen;kunci;kunci skrin"],
+        ["sleep", Tr.t("Sleep"), () => { close(); Quickshell.execDetached(["systemctl", "suspend"]); }, "suspend;tidur;gantung"],
+        ["restart", Tr.t("Restart"), () => Quickshell.execDetached(["systemctl", "reboot"]), "reboot;mula semula;but semula"],
+        ["power", Tr.t("Shut down"), () => Quickshell.execDetached(["systemctl", "poweroff"]), "shutdown;power off;turn off;tutup;matikan"],
         // Quitting the shell cleanly ends the session (see kriss-shell).
-        ["signout", Tr.t("Sign out"), () => Qt.quit()],
-        ["sun", Tr.t("Quick settings"), () => { close(); Desktop.quickOpen = true; }],
-        ["bell", Tr.t("Notifications"), () => { close(); Desktop.notificationsOpen = true; }]
+        ["signout", Tr.t("Sign out"), () => Qt.quit(), "log out;logout;sign off;log keluar;daftar keluar"],
+        ["sun", Tr.t("Quick settings"), () => { close(); Desktop.quickOpen = true; }, "wifi;volume;brightness;tetapan pantas;kecerahan"],
+        ["bell", Tr.t("Notifications"), () => { close(); Desktop.notificationsOpen = true; }, "notification centre;pemberitahuan"],
+        [Desktop.dnd ? "bell" : "bellOff", Desktop.dnd ? Tr.t("Turn off do not disturb") : Tr.t("Turn on do not disturb"),
+            () => { Desktop.dnd = !Desktop.dnd; close(); }, "do not disturb;dnd;quiet;focus;jangan ganggu;senyap"],
+        ["camera", Tr.t("Take a screenshot"), () => { close(); screenshot(); },
+            "screenshot;screen capture;print screen;snip;snipping tool;tangkapan skrin;cetak skrin"],
+        // Updates need the internet, so this one is offered only online.
+        ...(providers.online ? [["update", Tr.t("Update KrissOS"), () => { close(); inTerminal("pkexec kriss update"); },
+            "update;upgrade;windows update;check for updates;kemas kini;naik taraf"]] : [])
     ]
 
+    function inTerminal(cmd) {
+        const term = providers.has["xdg-terminal-exec"] ? ["xdg-terminal-exec"]
+            : providers.has["cosmic-term"] ? ["cosmic-term", "-e"] : ["konsole", "-e"];
+        // The shell stays open after the command, so its output can be read.
+        Quickshell.execDetached(term.concat(["sh", "-c", cmd + '; exec "${SHELL:-sh}"']));
+    }
+    // COSMIC's screenshot tool or KDE's when installed, else the whole screen into
+    // Pictures/Screenshots with grim. It waits for Start to fade first.
+    function screenshot() {
+        Quickshell.execDetached(["sh", "-c", `sleep 0.4
+            for t in cosmic-screenshot spectacle; do command -v $t >/dev/null && exec $t; done
+            d="$(xdg-user-dir PICTURES 2>/dev/null || echo "$HOME/Pictures")/Screenshots"
+            mkdir -p "$d" && f="$d/$(date +%F_%H-%M-%S).png" && grim "$f" && notify-send -i "$f" "$1" "$f"`,
+            "sh", Tr.t("Screenshot saved")]);
+    }
+    function copy(text) { Quickshell.execDetached(["wl-copy", "--", text]); }
+    // A path as a file: URL, and its folder.
+    function fileUrl(path) { return "file://" + path.split("/").map(encodeURIComponent).join("/"); }
+    function openFolder(href) { Qt.openUrlExternally(href.slice(0, href.lastIndexOf("/") + 1)); close(); }
+
+    Search {
+        id: providers
+        query: win.query
+        active: Desktop.launcherOpen
+    }
+
     // Search results: rows of {header} or {kind, label, icon, run, sel}, where sel is the
-    // row's place among the rows that can be picked.
+    // row's place among the rows that can be picked. Groups are ordered by Fuzzy.order.
     readonly property var results: {
         const q = query.trim();
         if (!q) return [];
         const ranked = (list, limit) => list.filter(r => r.score > 0)
             .sort((a, b) => b.score - a.score).slice(0, limit);
-        const groups = [
-            [Tr.t("Apps"), ranked(everything.map(e => ({
-                kind: "app", label: e.name, icon: e.icon, entry: e, run: () => launch(e),
-                score: Fuzzy.best([e.name, e.genericName, ...e.keywords], q)
-            })), 7)],
-            [Tr.t("Actions"), ranked(actions.map(a => ({
-                kind: "action", label: a[1], glyph: a[0], run: a[2], score: Fuzzy.score(a[1], q)
-            })), 4)],
-            [Tr.t("Files"), ranked(recentAll.map(f => ({
-                kind: "file", label: f.name, detail: Tr.ago(f.when),
-                run: () => { Qt.openUrlExternally(f.href); close(); }, score: Fuzzy.score(f.name, q)
-            })), 4)]
-        ];
+        let groups;
+        if (q.startsWith(">")) {
+            // ">" and a command runs it in a terminal, like Run on Windows.
+            const cmd = q.slice(1).trim();
+            groups = !cmd ? [] : [{ key: "run", title: Tr.t("Commands"), items: [{
+                kind: "action", glyph: "terminal", label: Tr.t("Run “%1” in a terminal", cmd), score: 1,
+                run: () => { close(); inTerminal(cmd); }
+            }] }];
+        } else {
+            const expr = Fuzzy.calcExpr(q);
+            // Recent files first, then the rest of home; the same file once.
+            const recentRows = recentAll.filter(f => f.href.startsWith("file:")).map(f => {
+                const s = Fuzzy.score(f.name, q);
+                return { kind: "file", label: f.name, href: f.href, detail: Tr.ago(f.when), score: s >= 600 ? s + 200 : 0 };
+            });
+            const seen = new Set(recentAll.map(f => f.href));
+            const indexRows = (providers.filesFor && q.toLowerCase().includes(providers.filesFor.toLowerCase()) ? providers.files : [])
+                .map(p => {
+                    const dir = p.endsWith("/");
+                    p = dir ? p.slice(0, -1) : p;
+                    const name = p.slice(p.lastIndexOf("/") + 1), href = fileUrl(p);
+                    return seen.has(href) ? { score: 0 } : {
+                        kind: "file", label: name, href: href,
+                        // ponytail: plocate doesn't say what's a folder; no dot in the name is a guess.
+                        folder: dir || !name.includes("."),
+                        detail: p.slice(0, p.lastIndexOf("/")).replace(providers.home, "~") || "/",
+                        // The same match nearer home first.
+                        score: Fuzzy.score(name, q) && Fuzzy.score(name, q) - p.split("/").length
+                    };
+                });
+            groups = Fuzzy.order([
+                { key: "app", title: Tr.t("Apps"), items: ranked(everything.map(e => ({
+                    kind: "app", label: e.name, icon: e.icon, entry: e, run: () => launch(e),
+                    score: Fuzzy.best([e.name, e.genericName, ...e.keywords], q)
+                })), 6) },
+                { key: "setting", title: Tr.t("Settings"), items: ranked(providers.settingRows(q, Tr.lang === "ms")
+                    .map(r => Object.assign(r, { run: () => { Quickshell.execDetached(r.exec); close(); } })), 4) },
+                { key: "action", title: Tr.t("Commands"), items: ranked(actions.map(a => ({
+                    kind: "action", label: a[1], glyph: a[0], run: a[2],
+                    // Its words count a little less than its name.
+                    score: Math.max(Fuzzy.score(a[1], q), ...a[3].split(";").map(w => Fuzzy.score(w, q) - 100))
+                })), 4) },
+                { key: "file", title: Tr.t("Files"), items: ranked(recentRows.concat(indexRows), 6).map(r => Object.assign(r, {
+                    run: () => { Qt.openUrlExternally(r.href); close(); },
+                    alt: () => openFolder(r.href)
+                })) },
+                { key: "calc", title: Tr.t("Calculator"), items: expr && providers.calcFor === expr && providers.calcResult ? [{
+                    kind: "calc", glyph: "calc", label: "= " + providers.calcResult, detail: q, score: 1,
+                    run: () => { copy(providers.calcResult); close(); }
+                }] : [] },
+                { key: "web", title: Tr.t("Web"), items: providers.online ? [{
+                    kind: "action", glyph: "globe", label: Tr.t("Search the web for “%1”", q), score: 1,
+                    run: () => { Qt.openUrlExternally("https://duckduckgo.com/?q=" + encodeURIComponent(q)); close(); }
+                }] : [] }
+            ]);
+        }
         const rows = [];
         let sel = 0;
-        for (const [title, items] of groups) {
-            if (!items.length) continue;
-            rows.push({ header: title });
-            for (const r of items) { r.sel = sel++; rows.push(r); }
+        for (const g of groups) {
+            if (!g.items.length) continue;
+            rows.push({ header: g.title });
+            for (const r of g.items) { r.sel = sel++; rows.push(r); }
         }
         return rows;
     }
@@ -90,6 +168,18 @@ PanelWindow {
         if (!query.trim()) { if (count && shown[current]) launch(shown[current]); return; }
         const r = results.find(r => r.sel === current);
         if (r) r.run();
+    }
+    // Ctrl+Enter: a file's folder.
+    function runAlt() {
+        const r = results.find(r => r.sel === current);
+        if (r && r.alt) r.alt();
+    }
+    // Open, and open its folder, for a file.
+    function fileMenuFor(row, item, byKeyboard) {
+        appMenu.show(item, [
+            { text: Tr.t("Open"), glyph: row.folder ? "folder" : "file", run: row.run },
+            { text: Tr.t("Open folder"), glyph: "folder", run: row.alt }
+        ], byKeyboard);
     }
     // Open, and pin or unpin, for an app; byKeyboard highlights the first item.
     function appMenuFor(entry, item, byKeyboard) {
@@ -108,7 +198,9 @@ PanelWindow {
             return;
         }
         const i = results.findIndex(r => r.sel === current);
-        if (i >= 0 && results[i].entry) appMenuFor(results[i].entry, list.itemAtIndex(i), true);
+        if (i < 0) return;
+        if (results[i].kind === "app") appMenuFor(results[i].entry, list.itemAtIndex(i), true);
+        else if (results[i].alt) fileMenuFor(results[i], list.itemAtIndex(i), true);
     }
     function move(by) { if (count) current = Math.max(0, Math.min(count - 1, current + by)); }
 
@@ -195,8 +287,8 @@ PanelWindow {
                             font: search.font
                         }
                         Keys.onEscapePressed: if (text) text = ""; else win.close()
-                        Keys.onReturnPressed: win.run()
-                        Keys.onEnterPressed: win.run()
+                        Keys.onReturnPressed: event => event.modifiers & Qt.ControlModifier ? win.runAlt() : win.run()
+                        Keys.onEnterPressed: event => event.modifiers & Qt.ControlModifier ? win.runAlt() : win.run()
                         // In the grid, left and right step and up and down jump a row; the
                         // result list only goes up and down, so left and right stay in the text.
                         Keys.onLeftPressed: event => { if (win.query) event.accepted = false; else win.move(-1); }
@@ -543,7 +635,13 @@ PanelWindow {
             cursorShape: Qt.PointingHandCursor
             // The pointer selects, as in cmdk, so there is only ever one highlight.
             onEntered: win.current = row.sel
-            onClicked: row.run()
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            onClicked: mouse => {
+                if (mouse.button === Qt.LeftButton) return row.run();
+                if (row.kind === "app") win.appMenuFor(row.entry, res, false);
+                else if (row.alt) win.fileMenuFor(row, res, false);
+            }
+            readonly property bool twoLines: row.kind === "file" || row.kind === "calc"
 
             Rectangle {
                 anchors.fill: parent
@@ -554,34 +652,84 @@ PanelWindow {
             RowLayout {
                 anchors.fill: parent
                 anchors.leftMargin: 12
-                anchors.rightMargin: 14
+                anchors.rightMargin: 10
                 spacing: 12
                 Item {
                     implicitWidth: 28; implicitHeight: 28
+                    readonly property bool iconic: res.row.kind === "app" || res.row.kind === "setting"
                     IconImage {
-                        visible: row.kind === "app"
+                        visible: parent.iconic
                         anchors.centerIn: parent
                         implicitSize: 26
-                        source: row.kind === "app" ? Quickshell.iconPath(row.icon, "application-x-executable") : ""
+                        source: parent.iconic ? Quickshell.iconPath(res.row.icon, "preferences-system") : ""
                     }
                     Glyph {
-                        visible: row.kind !== "app"
+                        visible: !parent.iconic
                         anchors.centerIn: parent
-                        name: row.kind === "file" ? "file" : row.glyph
+                        name: res.row.kind === "file" ? (res.row.folder ? "folder" : "file") : res.row.glyph
                         size: 18
                         color: res.selected ? Theme.accent : Theme.soft
                     }
                 }
-                Text {
+                Column {
                     Layout.fillWidth: true
-                    elide: Text.ElideMiddle
-                    text: row.label
-                    color: Theme.fg
-                    font { family: Theme.sans; pixelSize: 14; weight: Font.Medium }
+                    Text {
+                        width: parent.width
+                        elide: Text.ElideMiddle
+                        text: res.row.label
+                        color: Theme.fg
+                        font.family: res.row.kind === "calc" ? Theme.mono : Theme.sans
+                        font.pixelSize: res.row.kind === "calc" ? 16 : 14
+                        font.weight: res.row.kind === "calc" ? Font.DemiBold : Font.Medium
+                    }
+                    // A file's folder, or the sum the answer is for.
+                    Text {
+                        visible: res.twoLines && !!res.row.detail
+                        width: parent.width
+                        elide: Text.ElideMiddle
+                        text: res.row.detail ?? ""
+                        color: Theme.soft
+                        font.family: res.row.kind === "calc" ? Theme.mono : Theme.sans
+                        font.pixelSize: 11
+                    }
                 }
                 Text {
-                    visible: !!row.detail && !res.selected
-                    text: row.detail ?? ""
+                    visible: !res.twoLines && !!res.row.detail && !res.selected
+                    text: res.row.detail ?? ""
+                    color: Theme.soft
+                    font { family: Theme.sans; pixelSize: 12 }
+                }
+                // A file's second action: its folder (Ctrl+Enter).
+                MouseArea {
+                    id: folderBtn
+                    visible: res.selected && !!res.row.alt
+                    implicitWidth: folderRow.implicitWidth + 16
+                    implicitHeight: 28
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: res.row.alt()
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: 8
+                        color: folderBtn.containsMouse ? Theme.cardHover : Theme.win
+                        border.width: 1
+                        border.color: Theme.line
+                    }
+                    Row {
+                        id: folderRow
+                        anchors.centerIn: parent
+                        spacing: 6
+                        Glyph { anchors.verticalCenter: parent.verticalCenter; name: "folder"; size: 14; color: Theme.soft }
+                        Text {
+                            text: Tr.t("Open folder")
+                            color: Theme.fg
+                            font { family: Theme.sans; pixelSize: 12; weight: Font.Medium }
+                        }
+                    }
+                }
+                Text {
+                    visible: res.selected && res.row.kind === "calc"
+                    text: Tr.t("Copy")
                     color: Theme.soft
                     font { family: Theme.sans; pixelSize: 12 }
                 }
