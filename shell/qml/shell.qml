@@ -60,6 +60,27 @@ ShellRoot {
                 }
                 Item { id: spot; width: 1; height: 1 }
             }
+
+            // Drag on the desktop: a selection box, as on Windows.
+            // ponytail: selects nothing yet; the desktop has no icons to select.
+            MouseArea {
+                id: drag
+                anchors.fill: parent
+                acceptedButtons: Qt.LeftButton
+                property point from
+                onPressed: mouse => from = Qt.point(mouse.x, mouse.y)
+                Rectangle {
+                    visible: drag.pressed
+                    x: Math.min(drag.from.x, drag.mouseX)
+                    y: Math.min(drag.from.y, drag.mouseY)
+                    width: Math.abs(drag.mouseX - drag.from.x)
+                    height: Math.abs(drag.mouseY - drag.from.y)
+                    radius: 4
+                    color: Theme.alpha(Theme.accent, 0.15)
+                    border.width: 1
+                    border.color: Theme.alpha(Theme.accent, 0.7)
+                }
+            }
         }
     }
 
