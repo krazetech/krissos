@@ -21,8 +21,13 @@ sed -i "/^#\[multilib\]/,/^#Include/ s/^#//" "$root/etc/pacman.conf"
 crypt='' cryptdevice=''
 rootdev=$(findmnt -nvo SOURCE "$root")
 if [ "$(lsblk -ndo TYPE "$rootdev")" = crypt ]; then
-  luksdev=/dev/$(lsblk -ndo PKNAME "$rootdev")
-  cryptdevice="cryptdevice=UUID=$(lsblk -ndo UUID "$luksdev"):${rootdev##*/} "
+  # The LUKS partition is the mapping's one slave (lsblk -d leaves PKNAME empty for dm).
+  dm=$(basename "$(readlink -f "$rootdev")")
+  slaves=("/sys/class/block/$dm/slaves/"*)
+  luksdev=/dev/${slaves[0]##*/}
+  luksuuid=$(lsblk -ndo UUID "$luksdev")
+  [ -n "$luksuuid" ] || { echo "kriss: no LUKS UUID for $luksdev" >&2; exit 1; }
+  cryptdevice="cryptdevice=UUID=$luksuuid:${rootdev##*/} "
   crypt=' encrypt'
   echo "kriss: / is encrypted ($luksdev)"
 fi
