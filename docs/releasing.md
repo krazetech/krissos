@@ -28,12 +28,15 @@ missing or empty (`tools/ci/release-notes.sh`), and uses the section as the rele
 
 ## The `110` milestone
 
-`110` is the first release we would hand to someone leaving Windows without being in the room.
-It is done when every line below is true. Anything not on this list can ship in `115`.
+`110` is the first **stable** KrissOS release: the one we tell people leaving Windows to
+install on their own PC, without us in the room. It has no date. It ships when every line
+below is true, and not before. Anything not on this list waits for `115`.
 
-Track it with the GitHub milestone **110** (description: *First stable KrissOS release, for
-people switching from Windows. Exit criteria: docs/releasing.md#the-110-milestone.*). Every
-issue and pull request that blocks it gets that milestone; nothing else does.
+Track it with the GitHub milestone **110**. Every issue and pull request that blocks it gets
+that milestone; nothing else does. Milestone description:
+
+> First stable KrissOS release, for people switching from Windows. Ships when ready, no date.
+> Exit criteria: docs/releasing.md#the-110-milestone
 
 ### Roadmap (ARCHITECTURE.md §12)
 
@@ -42,40 +45,49 @@ issue and pull request that blocks it gets that milestone; nothing else does.
 - [x] 2. `kriss-theme`, `kriss-settings`, a live ISO that boots to the KrissOS Shell.
 - [x] 3. Calamares installer with the desktop picker, btrfs + snapper, Limine, offline install.
 - [x] 4. `kriss tune` and the gaming pack.
-- [ ] 5. `kriss-vm`: desktop done; **laptops with no MUX switch still warn "not supported"**.
-      Decide: finish it for `110`, or ship `110` with the warning and move it to `115`.
+- [x] 5. `kriss-vm` on desktops. Laptops with no MUX switch move to `115`; on `110`,
+      `kriss-vm` keeps its "not supported yet" warning on them.
 - [x] 6. WinBoat tier and the AI setup.
 
-### The promises hold (ARCHITECTURE.md §0)
+### Shell: everything in
 
+- [ ] Every shell feature on the shell roadmap is merged, including the open pull requests
+      (taskbar buttons and previews, Start search, Task View, snap layouts, widgets, desktop icons,
+      fullscreen focus, clipboard history, notification
+      center, system tray, lock and login, accent and dark mode, accessibility, Personalise).
+      None is moved to `115`.
+- [ ] `shell/perf-check` passes the performance budget on the release ISO with all of it in.
+
+### Installs and boots everywhere it should
+
+- [ ] **Legacy BIOS:** the live ISO boots and installs on BIOS (CSM) PCs as well as UEFI
+      (pull request #74).
+- [ ] **Encrypted installs:** the installer offers full-disk encryption (LUKS), and an encrypted
+      install boots, unlocks and rolls back from a snapshot.
 - [ ] **Offline install:** the release ISO installs with the network unplugged, both desktops,
       on real hardware as well as in the QEMU install test.
-- [ ] **Everything can be undone:** an update is rolled back from the boot menu snapshot on a
-      real install, and `kriss rollback` works.
-- [ ] **Honest hardware numbers:** kriss-welcome's game, driver and AI-model checks are tried on
-      at least one AMD, one Intel and one NVIDIA (pre-Turing and current) machine.
-- [ ] **Real hardware:** a clean install and a dual-boot next to Windows 11 on at least three
-      different physical PCs, one of them a laptop. (`0.1-alpha` was VM-only.)
-- [ ] **Legacy BIOS:** in or out for `110` is decided (pull request #74 adds it).
+
+### The promises hold on real hardware (ARCHITECTURE.md §0)
+
+- [ ] **At least two physical PCs:** a clean install and a dual-boot next to Windows 11 pass on
+      at least two different real machines. (`0.1-alpha` was VM-only.)
+- [ ] **Everything can be undone:** on those PCs, an update is rolled back from the boot menu
+      snapshot, and `kriss rollback` works.
+- [ ] **Honest hardware numbers:** on those PCs, kriss-welcome's game, driver and AI-model
+      checks match what the machine really does.
 
 ### Safe to ship
 
-- [ ] Tagged releases fail without a good signature (the signing thread's change, see
-      `docs/signing-key.md` once it lands), and the key's rotation plan is written down.
-- [ ] Updates reach a testing channel before everyone (the update testing channel work), so a
-      bad package can be caught before it lands on `110` installs.
-- [ ] `SECURITY.md` exists and says how to report a vulnerability; bugs are tracked in GitHub
-      Issues.
-- [ ] Installer security defaults are settled: disk encryption offered, no one-character
-      passwords.
-- [ ] The tooling licence (ARCHITECTURE.md §11.2) is decided and `LICENSE` matches it.
-- [ ] No open issue labelled as a blocker on the `110` milestone.
-
-### Shell
-
-- [ ] The shell feature pull requests in the queue are merged or moved to `115`, so `110`
-      freezes on a known set.
-- [ ] `shell/perf-check` passes the performance budget on the release ISO.
+- [ ] **Signed or not at all:** tagged releases fail without a good signature (the signing
+      change, `docs/signing-key.md`), and the key's rotation plan is written down.
+- [ ] **Testing channel:** updates reach a testing repo before everyone, so a bad package is
+      caught before it lands on `110` installs.
+- [ ] **Security policy:** `SECURITY.md` says how to report a vulnerability, and bugs are
+      tracked in GitHub Issues.
+- [ ] **Installer defaults:** no one-character passwords.
+- [ ] **Licence:** the tooling licence (ARCHITECTURE.md §11.2) is decided and `LICENSE`
+      matches it.
+- [ ] No open issue or pull request left on the `110` milestone.
 
 ## Cutting a release
 
