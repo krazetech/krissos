@@ -76,6 +76,8 @@ if __name__ == "__main__":
         test()
         sys.exit(0)
     qml = pathlib.Path(__file__).resolve().parent / "qml"
-    problems = [p for f in sorted(qml.glob("*.qml")) if f.name not in LATER for p in check(f.name, f.read_text())]
+    # Only files that can be QML types: "Calendar 2.qml" (a stray copy) is never loaded.
+    files = [f for f in sorted(qml.glob("*.qml")) if re.fullmatch(r"\w+\.qml", f.name) and f.name not in LATER]
+    problems = [p for f in files for p in check(f.name, f.read_text())]
     print("\n".join(problems))
     sys.exit(bool(problems))
