@@ -152,7 +152,7 @@ Scope {
     // Settings: each page of COSMIC Settings, and each KDE System Settings module when KDE's
     // is installed, read once from their desktop files (they are hidden from the app list, so
     // DesktopEntries leaves them out). The COSMIC Panel and Dock pages are left out: the
-    // KrissOS taskbar replaces both; so is Wallpaper, which the shell draws itself. Each is {id, name, nameMs, words, icon, exec}.
+    // KrissOS taskbar replaces both; so are COSMIC's and KDE's Wallpaper, as the shell draws its own. Each is {id, name, nameMs, words, icon, exec}.
     property var settings: []
     Process {
         id: pages
@@ -171,7 +171,7 @@ Scope {
             onStreamFinished: {
                 const seen = {};
                 root.settings = text.split("\n").map(l => l.split("\t")).filter(f => {
-                    if (f.length < 6 || !f[1] || !f[5] || seen[f[0]] || /\.(Panel|Dock|Wallpaper)$/.test(f[0])) return false;
+                    if (f.length < 6 || !f[1] || !f[5] || seen[f[0]] || /\.(Panel|Dock|Wallpaper)$|^kcm_wallpaper$/.test(f[0])) return false;
                     return seen[f[0]] = true;
                 }).map(f => ({ id: f[0], name: f[1], nameMs: f[2], words: f[3].split(";").filter(w => w), icon: f[4],
                     exec: f[5].split(" ").filter(a => a && !a.startsWith("%")) }));
@@ -213,6 +213,7 @@ Scope {
     })
 
     // The shell's own Personalise pages (Personalise.qml), with the words people look for them by.
+    // Their words count in full, so "wallpaper" finds the page above a file of that name.
     readonly property var ownPages: [
         ["colours", Tr.t("Personalise"), "preferences-desktop-theme", "accent;accent colour;color;colours;dark mode;light mode;theme;personalise;personalize;warna;warna aksen;mod gelap;tema;peribadikan"],
         ["background", Tr.t("Background"), "preferences-desktop-wallpaper", "wallpaper;background;desktop background;picture;kertas dinding;latar belakang;gambar"],
@@ -224,7 +225,7 @@ Scope {
     function settingRows(q, malay) {
         return ownPages.map(p => ({
             kind: "setting", label: p[1], icon: p[2], open: () => Desktop.personalise(p[0]), detail: "",
-            score: Math.max(Fuzzy.score(p[1], q), ...p[3].split(";").map(x => Fuzzy.score(x, q) - 100).filter(x => x >= 500))
+            score: Math.max(Fuzzy.score(p[1], q), ...p[3].split(";").map(x => Fuzzy.score(x, q)).filter(x => x >= 500))
         })).concat(settings.map(e => {
             const w = pageWords[e.id.split(".").pop().toLowerCase()];
             return {

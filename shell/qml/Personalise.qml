@@ -16,7 +16,7 @@ FloatingWindow {
     title: Tr.t("Personalise")
     color: Theme.win
     implicitWidth: 820
-    implicitHeight: 600
+    implicitHeight: 640
     minimumSize: Qt.size(600, 440)
     // The window's close button.
     onVisibleChanged: {
@@ -706,6 +706,8 @@ FloatingWindow {
                 sourceSize: Qt.size(300, 168)
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
+                // Before kriss-theme ships the day light, Dynamic shows the dark one (as DynamicWallpaper does).
+                onStatusChanged: if (status === Image.Error && th.value === "dynamic") source = Desktop.fileUrl(Theme.wallpapers + "/kriss-dark.svg")
             }
             Glyph { anchors.centerIn: parent; visible: th.glyph !== ""; name: th.glyph; size: 24 }
         }
