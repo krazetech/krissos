@@ -117,7 +117,9 @@ Singleton {
         stdout: SplitParser {
             onRead: line => {
                 try {
-                    root.raw = JSON.parse(line);
+                    // Newer helpers also send other messages as objects; only the window list is an array.
+                    const msg = JSON.parse(line);
+                    if (Array.isArray(msg)) root.raw = msg;
                 } catch (e) {
                     console.warn("kriss-shell-toplevels:", line);
                 }
