@@ -107,8 +107,8 @@ PanelWindow {
         readonly property real closed: panel.height + 24
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        anchors.rightMargin: Theme.gap * 1.5
-        anchors.bottomMargin: Theme.gap
+        anchors.rightMargin: Theme.panelGap
+        anchors.bottomMargin: Theme.panelGap
         width: panel.width
         height: panel.height
         clip: true

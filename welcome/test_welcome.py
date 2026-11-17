@@ -12,7 +12,7 @@ import logic
 ROOT = pathlib.Path(__file__).resolve().parent
 
 
-def hwcheck(ram_kb, flags, threads, kvm, vendors):
+def hwcheck(ram_kb, flags, threads, kvm, vendors, vram=None):
     with tempfile.TemporaryDirectory() as t:
         t = pathlib.Path(t)
         (t / "proc").mkdir()
@@ -25,6 +25,8 @@ def hwcheck(ram_kb, flags, threads, kvm, vendors):
             d = t / f"sys/class/drm/card{i}/device"
             d.mkdir(parents=True)
             (d / "vendor").write_text(v + "\n")
+            if vram:
+                (d / "mem_info_vram_total").write_text(f"{vram}\n")
         (t / "sys/class/drm").mkdir(parents=True, exist_ok=True)
         env = {"KRISS_PROC": t / "proc", "KRISS_SYS": t / "sys", "KRISS_DEV": t / "dev", "PATH": "/usr/bin:/bin"}
         out = subprocess.run([ROOT.parent / "tools/kriss", "hwcheck"], env={k: str(v) for k, v in env.items()},
@@ -34,11 +36,12 @@ def hwcheck(ram_kb, flags, threads, kvm, vendors):
 
 strong = hwcheck(32_000_000, "vmx", 12, True, ["0x10de", "0x8086"])
 assert strong == {"ram_mb": 31250, "cores": 12, "virt": "vmx", "kvm": True, "gpus": ["intel", "nvidia"],
-                  "winboat_ok": True, "reasons": [], "nvidia_legacy": False}, strong
+                  "winboat_ok": True, "reasons": [], "nvidia_legacy": False, "vram_mb": 0}, strong
 weak = hwcheck(8_000_000, "", 2, False, [])
 assert weak["winboat_ok"] is False and weak["reasons"] == ["ram", "virt", "kvm", "cores"], weak
 assert weak["gpus"] == [] and weak["virt"] == ""
 assert hwcheck(16_000_000, "svm", 8, True, ["0x1002"])["winboat_ok"] is True  # 16 GB AMD box
+assert hwcheck(16_000_000, "svm", 8, True, ["0x1002"], vram=8 << 30)["vram_mb"] == 8192
 
 assert logic.parse_hwcheck("garbage")["winboat_ok"] is False
 assert logic.read_hwcheck(("/nonexistent/kriss",))["reasons"] == ["unknown"]
@@ -149,6 +152,21 @@ assert cmd[3].endswith("systemctl enable --now ollama.service") and cmd[-2:] == 
 assert logic.extra_command("claude-code", [])[0] == "sh"  # per-user install, no root
 assert logic.extra_command("nvidia-legacy", ["intel", "nvidia"]) == ["pkexec", "kriss", "nvidia", "setup"]
 assert all(logic.extra_command(e, ["amd"]) for e in logic.EXTRAS)
+
+# Local AI models: graphics memory when there is a card, else RAM less 4 GB for the rest.
+def fits(hw):
+    r = logic.model_fits(hw)
+    return r["gpu"], {m["name"]: m["fit"] for m in r["models"]}
+
+gpu, f = fits({"ram_mb": 16000, "vram_mb": 8192})  # 8 GB card
+assert gpu and f["llama3.1:8b"] == "fits" and f["gemma3:12b"] == "tight" and f["gemma3:27b"] == "too_big", f
+gpu, f = fits({"ram_mb": 7800, "vram_mb": 512})  # 8 GB laptop, APU carve-out only
+assert not gpu and f["llama3.2:3b"] == "fits" and f["qwen2.5-coder:7b"] == "too_big", f
+assert fits({"ram_mb": 15800})[1]["llama3.1:8b"] == "fits"
+assert set(fits(dict(logic.NO_HW))[1].values()) == {"too_big"}
+assert logic.ollama_names("NAME ID SIZE MODIFIED\nllama3.2:3b a80c4f17acd5 2.0 GB 2 days ago\n\n") == ["llama3.2:3b"]
+assert logic.ollama_names("") == []
+
 qml = (ROOT / "qml/ExtrasPage.qml").read_text()
 assert set(re.findall(r'\{ id: "([a-z-]+)"', qml)) - {"antigravity"} == set(logic.EXTRAS)
 

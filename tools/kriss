@@ -65,6 +65,24 @@ cpu_threads() { grep -c '^processor' "$PROC/cpuinfo" || true; }
 # vmx (Intel VT-x) or svm (AMD-V); empty when the firmware has it off.
 cpu_virt() { grep -m1 -ow 'vmx\|svm' "$PROC/cpuinfo" || true; }
 
+# Dedicated graphics memory in MiB, largest GPU first; 0 when there is none (iGPUs share RAM).
+# Lets kriss-welcome say which local AI models fit.
+vram_mb() {
+  local f n max=0
+  if command -v nvidia-smi >/dev/null; then
+    while read -r n; do
+      if [[ $n =~ ^[0-9]+$ ]] && ((n > max)); then max=$n; fi
+    done < <(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null || true)
+  fi
+  # amdgpu reports bytes; an APU shows only its small carve-out here, which welcome ignores.
+  for f in "$SYS"/class/drm/card[0-9]*/device/mem_info_vram_total; do
+    [[ -r $f ]] || continue
+    n=$(($(cat "$f") / 1048576))
+    if ((n > max)); then max=$n; fi
+  done
+  echo "$max"
+}
+
 cmd_hwcheck() {
   local ram_mb cores virt kvm=false ok=true reasons=""
   ram_mb=$(ram_mb) cores=$(cpu_threads) virt=$(cpu_virt)
@@ -78,8 +96,8 @@ cmd_hwcheck() {
   [[ -z $reasons ]] || ok=false
   local legacy=false
   nvidia_legacy_gpu >/dev/null && legacy=true
-  printf '{"ram_mb": %d, "cores": %d, "virt": "%s", "kvm": %s, "gpus": %s, "winboat_ok": %s, "reasons": [%s], "nvidia_legacy": %s}\n' \
-    "$ram_mb" "$cores" "$virt" "$kvm" "$(gpu_vendors)" "$ok" "${reasons%,}" "$legacy"
+  printf '{"ram_mb": %d, "cores": %d, "virt": "%s", "kvm": %s, "gpus": %s, "winboat_ok": %s, "reasons": [%s], "nvidia_legacy": %s, "vram_mb": %d}\n' \
+    "$ram_mb" "$cores" "$virt" "$kvm" "$(gpu_vendors)" "$ok" "${reasons%,}" "$legacy" "$(vram_mb)"
 }
 
 # --- kriss nvidia: the NVIDIA 580 driver for GPUs older than Turing ----------------------
@@ -118,13 +136,15 @@ nvidia_configure() {
   # Keep nouveau out of the initramfs, as the installer does for nvidia-utils: the kms hook
   # loads it early and the NVIDIA driver must not race with it. nvidia-580xx-utils
   # blacklists nouveau for the rest of the boot.
+  # The boot splash goes too: plymouth needs early KMS (installer/lib/configure).
   f=$ETC/mkinitcpio.conf.d/kriss.conf
-  [[ ! -f $f ]] || sed -i -E '/^HOOKS=/ s/ kms( |\))/\1/' "$f"
+  [[ ! -f $f ]] || sed -i -E '/^HOOKS=/ { s/ (kriss-)?kms( |\))/\2/; s/ plymouth( |\))/\1/; }' "$f"
   # The driver turns modeset on by default (an AUR patch); say it on the command line too,
   # so it holds if that patch ever goes.
   f=$ETC/kernel/cmdline
-  if [[ -f $f ]] && ! grep -qw 'nvidia_drm.modeset=1' "$f"; then
-    sed -i '1s/$/ nvidia_drm.modeset=1/' "$f"
+  if [[ -f $f ]]; then
+    sed -i -E 's/ splash( |$)/\1/' "$f"
+    grep -qw 'nvidia_drm.modeset=1' "$f" || sed -i '1s/$/ nvidia_drm.modeset=1/' "$f"
   fi
 
   igpu=$(nvidia_igpu) || return 0
@@ -426,6 +446,7 @@ Commands:
   version    Show the kriss and KrissOS versions
   hwcheck    Print hardware facts (RAM, CPU, GPU, VM support) as JSON
   rollback   Keep the snapshot booted from the boot menu as your system
+  migrate    Turn this Arch or CachyOS install into KrissOS (try --dry-run first)
   winapps check   Check this PC is ready for Windows apps in WinBoat (read-only)
   winapps setup   Fix what is missing (asks first), then open WinBoat
   nvidia check    Say whether this PC's NVIDIA GPU can use the NVIDIA 580 driver
@@ -444,6 +465,7 @@ main() {
     winapps) cmd_winapps "${@:2}" ;;
     nvidia) cmd_nvidia "${@:2}" ;;
     rollback) cmd_rollback "${@:2}" ;;
+    migrate) exec kriss-migrate "${@:2}" ;;
     help | --help | -h) cmd_help ;;
     --kapcai) cmd_kapcai ;;
     *) die "unknown command '$1'. Run 'kriss help'." ;;

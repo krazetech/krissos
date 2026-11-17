@@ -1,6 +1,6 @@
-# Kernel: iso/build.sh swaps these two lines for the [kriss] kernel.
-linux
-linux-headers
+# Kernel: baseline x86-64, so the live system boots on CPUs without x86-64-v3.
+linux-kriss-generic
+linux-kriss-generic-headers
 
 # Live boot
 base
@@ -31,6 +31,7 @@ ntfs-3g
 
 # KrissOS Shell on cosmic-comp, with the KrissOS login screen on greetd
 kriss-shell
+cosmic-comp-kriss
 greetd
 cosmic-files
 cosmic-terminal

@@ -1,7 +1,16 @@
 # KrissOS
 
-A Linux distribution by Kraze Tech, built as a thin overlay on Arch Linux for
-productivity, gaming and local AI. See [ARCHITECTURE.md](ARCHITECTURE.md) for the design.
+**Arch Linux made ready for everyday people: offline install, Windows-familiar, built for
+work, gaming and local AI.**
+
+KrissOS is for people coming from Windows. It installs from a USB stick with no internet
+needed, and it can sit next to Windows. The Windows key opens the launcher, the taskbar is at
+the bottom and close is at the top right, in KrissOS's own calm look. If an update goes wrong,
+you start an earlier snapshot from the boot menu.
+
+Under the hood it is a thin, signed overlay on Arch Linux by Kraze Tech. See
+[ARCHITECTURE.md](ARCHITECTURE.md) for the design, starting with §0, and
+[krazetech.github.io/krissos](https://krazetech.github.io/krissos/) for the site.
 
 ## Layout
 

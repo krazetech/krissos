@@ -48,6 +48,10 @@ echo kriss:kriss | arch-chroot "$t" chpasswd
 # No network here, so this must say offline and change nothing.
 /usr/lib/kriss-installer/online "$t" shell
 /usr/lib/kriss-installer/configure "$t"
+# The boot splash: plymouth after early KMS, `splash` on the command line, the KrissOS theme.
+grep -q ' kriss-kms plymouth ' "$t/etc/mkinitcpio.conf.d/kriss.conf"
+grep -qw splash "$t/etc/kernel/cmdline"
+grep -qx 'Theme=kriss' "$t/etc/plymouth/plymouthd.conf"
 
 # Serial console for the test boot, and one snapshot to prove the Snapshots menu.
 sed -i 's/$/ console=ttyS0,115200 systemd.journald.forward_to_console=1/' "$t/etc/kernel/cmdline"
@@ -60,8 +64,8 @@ grep -q '^interface_branding: KrissOS' "$conf"
 grep -q '^wallpaper: boot():/EFI/limine/kriss-wallpaper.png' "$conf"
 test -s "$t/efi/EFI/limine/kriss-wallpaper.png"
 grep -q '^/+KrissOS' "$conf"
-grep -Eq '^//linux[a-z-]* [0-9]+\.[0-9]+' "$conf"  # linux-kriss online, linux from the USB offline
-grep -Eq '^default_entry: KrissOS/linux[a-z-]* [0-9]' "$conf"
+grep -Eq '^//linux-kriss[a-z-]* [0-9]+\.[0-9]+' "$conf"  # linux-kriss online, linux-kriss-generic from the USB offline
+grep -Eq '^default_entry: KrissOS/linux-kriss[a-z-]* [0-9]' "$conf"
 grep -q '^//Snapshots' "$conf"
 grep -q '^    ///.* install test (#[0-9]*)$' "$conf"
 grep -q 'subvol=@snapshots/[0-9]*/snapshot.* kriss_snapshot=1' "$conf"

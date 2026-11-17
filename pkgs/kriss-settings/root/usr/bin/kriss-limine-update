@@ -8,23 +8,35 @@
 # Runs after kernel, initramfs and Limine updates (pacman hook, mkinitcpio post hook)
 # and whenever /.snapshots changes (kriss-limine-update.path). Does nothing on systems
 # the KrissOS installer did not set up (no /etc/kernel/cmdline or no Limine on the ESP
-# at /efi), or while a snapshot is booted: that root's kernels are not the ones in /boot.
+# at /efi or /boot), or while a snapshot is booted: that root's kernels are not the ones in /boot.
 #   kriss-limine-update          write the menu
 #   kriss-limine-update --keep   before pacman replaces a kernel: copy it to
 #                                /boot/kriss/VERSION so snapshots made with it still boot
 # Inputs: /etc/kernel/cmdline (with rootflags=subvol=@), /etc/kriss/limine.d/*.conf
 # (extra entries, such as Windows), /usr/share/kriss/theme/limine.conf and
-# limine-wallpaper.png (kriss-theme).
+# limine-wallpaper[-WxH].png (kriss-theme).
 # Secure Boot: once sbctl has keys, every path gets a BLAKE2b hash, the config's hash is
 # enrolled into Limine (limine enroll-config) and Limine is signed again.
 set -euo pipefail
 shopt -s nullglob
 
+# The ESP: /efi as the installer sets it up, or /boot when /boot is the ESP itself
+# (an Arch or CachyOS install moved over with kriss migrate).
 esp=/efi/EFI
+mountpoint -q /efi || esp=/boot/EFI
 [ -f /etc/kernel/cmdline ] && [ -f "$esp/limine/BOOTX64.EFI" ] || exit 0
 [ -n "${KRISS_ROLLBACK:-}" ] || ! grep -qw kriss_snapshot=1 /proc/cmdline || exit 0
 snaps=${KRISS_SNAPSHOTS:-/.snapshots}
 theme=/usr/share/kriss/theme
+# The wallpaper made for the first connected screen's size: Limine centres it, as
+# scaling one costs it tens of seconds. Other sizes get the 1920x1080 one.
+wp=$theme/limine-wallpaper.png
+for c in /sys/class/drm/card*-*/; do
+    [ "$(cat "$c/status" 2>/dev/null)" = connected ] || continue
+    size=$(head -n1 "$c/modes" 2>/dev/null) || true
+    [ -f "$theme/limine-wallpaper-$size.png" ] && wp=$theme/limine-wallpaper-$size.png
+    break
+done
 sb=0
 if command -v sbctl >/dev/null && { [ -d /var/lib/sbctl/keys ] || [ -d /usr/share/secureboot/keys ]; }; then
     sb=1
@@ -77,8 +89,8 @@ xml() {
 
 menu() {
     cat "$theme/limine.conf" 2>/dev/null || true
-    if [ -f "$theme/limine-wallpaper.png" ]; then
-        echo "wallpaper: $(hashed 'boot():/EFI/limine/kriss-wallpaper.png' "$theme/limine-wallpaper.png")"
+    if [ -f "$wp" ]; then
+        echo "wallpaper: $(hashed 'boot():/EFI/limine/kriss-wallpaper.png' "$wp")"
     fi
     echo 'timeout: 5'
     local base first=${order[0]:-}
@@ -141,8 +153,8 @@ for d in "$esp/limine" "$esp/BOOT"; do
     mv "$d/limine.conf.new" "$d/limine.conf"
 done
 # A missing wallpaper only costs the background, so a full ESP is not an error.
-if [ -f "$theme/limine-wallpaper.png" ] && ! cmp -s "$theme/limine-wallpaper.png" "$esp/limine/kriss-wallpaper.png"; then
-    cp "$theme/limine-wallpaper.png" "$esp/limine/kriss-wallpaper.png" ||
+if [ -f "$wp" ] && ! cmp -s "$wp" "$esp/limine/kriss-wallpaper.png"; then
+    cp "$wp" "$esp/limine/kriss-wallpaper.png" ||
         echo 'kriss: could not copy the boot menu wallpaper to the ESP' >&2
 fi
 

@@ -6,7 +6,7 @@ import Quickshell.Widgets
 import Quickshell.WindowManager
 import Quickshell.Services.SystemTray
 
-// The one floating bar: keris launcher, this screen's workspaces, pinned and running
+// The taskbar: full width along the bottom of each screen, 48 px like Windows 11. Keris launcher, this screen's workspaces, pinned and running
 // apps on the left; tray icons, power profile, quick settings (network, volume,
 // battery), notifications and the clock on the right.
 PanelWindow {
@@ -17,11 +17,12 @@ PanelWindow {
 
     WlrLayershell.namespace: "kriss-bar"
     anchors { bottom: true; left: true; right: true }
-    margins { left: Theme.gap * 1.5; right: Theme.gap * 1.5; bottom: Theme.gap }
     implicitHeight: Theme.barHeight
+    // Maximized and snapped windows stop at the bar.
+    exclusiveZone: Theme.barHeight
     color: "transparent"
     // Frosted glass: cosmic-comp blurs what is behind the bar.
-    BackgroundEffect.blurRegion: Region { item: body; radius: Theme.radius }
+    BackgroundEffect.blurRegion: Region { item: body }
 
     // Pinned apps first, then anything else that has a window open.
     readonly property var apps: {
@@ -44,39 +45,38 @@ PanelWindow {
     Rectangle {
         id: body
         anchors.fill: parent
-        radius: Theme.radius
         color: Theme.bar
-        border.width: 1
-        border.color: Theme.rim
+
+        // A soft rim along the top edge instead of a border.
+        Rectangle { width: parent.width; height: 1; color: Theme.rim }
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 11
-            anchors.rightMargin: 14
-            spacing: 12
+            anchors.leftMargin: 4
+            anchors.rightMargin: 4
+            spacing: 8
 
             // Keris: opens the launcher, like the Start button.
             MouseArea {
-                Layout.preferredWidth: 38
-                Layout.preferredHeight: 38
-                Layout.leftMargin: 4
+                id: start
+                Layout.preferredWidth: Theme.barButton
+                Layout.preferredHeight: Theme.barButton
                 cursorShape: Qt.PointingHandCursor
                 onClicked: bar.toggle("launcherOpen")
 
                 Rectangle {
                     anchors.fill: parent
-                    anchors.margins: -4
-                    radius: width / 2
-                    color: "transparent"
-                    border.width: 3
-                    border.color: Theme.alpha(Theme.accent, 0.35)
-                    visible: Desktop.launcherOpen && Desktop.screen === bar.screen
+                    radius: Theme.barRadius
+                    color: start.containsMouse || Desktop.launcherOpen && Desktop.screen === bar.screen ? Theme.card : "transparent"
+                    Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                 }
                 // The KrissOS emblem from kriss-theme.
                 Image {
-                    anchors.fill: parent
+                    anchors.centerIn: parent
+                    width: Theme.barIcon + 4
+                    height: width
                     source: "file:///usr/share/pixmaps/krissos.svg"
-                    sourceSize: Qt.size(76, 76)
+                    sourceSize: Qt.size(width * 2, height * 2)
                     scale: parent.pressed ? Theme.pressScale : parent.containsMouse ? 1.05 : 1
                     Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                 }
@@ -101,9 +101,9 @@ PanelWindow {
                         Rectangle {
                             id: dot
                             anchors.verticalCenter: parent.verticalCenter
-                            width: modelData.active ? 26 : 9
-                            height: 9
-                            radius: 4.5
+                            width: modelData.active ? 22 : 8
+                            height: 8
+                            radius: 4
                             color: modelData.active ? Theme.accent : (modelData.urgent ? Theme.red : Theme.soft)
                             opacity: modelData.active ? 1 : 0.6
                             Behavior on width { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
@@ -112,11 +112,11 @@ PanelWindow {
                 }
             }
 
-            Rectangle { Layout.preferredWidth: 2; Layout.preferredHeight: 24; radius: 1; color: Theme.line }
+            Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 20; color: Theme.line }
 
             Row {
                 id: appRow
-                spacing: 10
+                spacing: 4
                 Repeater {
                     model: bar.apps
                     delegate: AppButton {}
@@ -127,7 +127,9 @@ PanelWindow {
 
             // Tray icons (Steam, Discord...): click to open, right-click for the app's menu.
             Row {
-                spacing: 8
+                spacing: 14
+                Layout.leftMargin: 4
+                Layout.rightMargin: 4
                 Repeater {
                     model: SystemTray.items
                     delegate: TrayIcon {}
@@ -139,9 +141,8 @@ PanelWindow {
             // Network, volume and battery open quick settings, like on Windows.
             MouseArea {
                 id: quick
-                Layout.leftMargin: 4
-                implicitWidth: status.implicitWidth + 20
-                implicitHeight: 34
+                implicitWidth: status.implicitWidth + 24
+                implicitHeight: Theme.barButton
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: bar.toggle("quickOpen")
@@ -149,14 +150,14 @@ PanelWindow {
                 Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                 Rectangle {
                     anchors.fill: parent
-                    radius: height / 2
+                    radius: Theme.barRadius
                     color: quick.containsMouse || Desktop.quickOpen && Desktop.screen === bar.screen ? Theme.card : "transparent"
                     Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                 }
                 Row {
                     id: status
                     anchors.centerIn: parent
-                    spacing: 14
+                    spacing: 12
                     NetworkGlyph {}
                     VolumeGlyph {}
                     Battery {}
@@ -165,8 +166,8 @@ PanelWindow {
 
             MouseArea {
                 id: bell
-                Layout.preferredWidth: 30
-                Layout.preferredHeight: 30
+                Layout.preferredWidth: Theme.barButton
+                Layout.preferredHeight: Theme.barButton
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: bar.toggle("notificationsOpen")
@@ -174,15 +175,14 @@ PanelWindow {
                 Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                 Rectangle {
                     anchors.fill: parent
-                    anchors.margins: -2
-                    radius: width / 2
+                    radius: Theme.barRadius
                     color: bell.containsMouse || Desktop.notificationsOpen && Desktop.screen === bar.screen ? Theme.card : "transparent"
                     Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                 }
                 Glyph { anchors.centerIn: parent; name: Desktop.dnd ? "bellOff" : "bell" }
                 Rectangle {
                     visible: Notifs.all.length > 0
-                    x: parent.width - 12; y: -2
+                    x: parent.width - width - 4; y: 4
                     width: Math.max(16, count.implicitWidth + 8); height: 16; radius: 8
                     color: Theme.accent
                     Text {
@@ -198,10 +198,8 @@ PanelWindow {
             // The clock opens the calendar, as on Windows.
             MouseArea {
                 id: clockArea
-                // The hover pill reaches past the text, not the text in from the bar's edge.
-                Layout.rightMargin: -8
-                implicitWidth: clockText.implicitWidth + 16
-                implicitHeight: 42
+                implicitWidth: clockText.implicitWidth + 20
+                implicitHeight: Theme.barButton
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: bar.toggle("calendarOpen")
@@ -209,7 +207,7 @@ PanelWindow {
                 Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                 Rectangle {
                     anchors.fill: parent
-                    radius: 12
+                    radius: Theme.barRadius
                     color: clockArea.containsMouse || Desktop.calendarOpen && Desktop.screen === bar.screen ? Theme.card : "transparent"
                     Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                 }
@@ -221,7 +219,7 @@ PanelWindow {
                         anchors.right: parent.right
                         text: Qt.formatDateTime(clock.date, "HH:mm")
                         color: Theme.fg
-                        font { family: Theme.sans; pixelSize: 15; weight: Font.DemiBold; features: { "tnum": 1 } }
+                        font { family: Theme.sans; pixelSize: 13; weight: Font.DemiBold; features: { "tnum": 1 } }
                     }
                     Text {
                         anchors.right: parent.right
@@ -257,8 +255,8 @@ PanelWindow {
         property bool dragging: false
         readonly property real step: width + appRow.spacing
 
-        width: 44
-        height: 44
+        width: Theme.barButton
+        height: Theme.barButton
         z: dragging ? 1 : 0
         hoverEnabled: true
         cursorShape: dragging ? Qt.ClosedHandCursor : Qt.PointingHandCursor
@@ -293,26 +291,26 @@ PanelWindow {
 
         Rectangle {
             anchors.fill: parent
-            radius: 12
-            color: Theme.card
-            y: btn.containsMouse ? -3 : 0
+            radius: Theme.barRadius
+            // Lit under the pointer and behind the app in front, clear otherwise.
+            color: btn.containsMouse ? (btn.front ? Theme.cardHover : Theme.card) : btn.front ? Theme.card : "transparent"
+            Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
             scale: btn.pressed && !btn.dragging ? Theme.pressScale : 1
             Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
-            Behavior on y { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
             IconImage {
                 anchors.centerIn: parent
-                implicitSize: 28
+                implicitSize: Theme.barIcon
                 source: Quickshell.iconPath(btn.modelData.entry?.icon ?? btn.modelData.appId, "application-x-executable")
             }
         }
         Rectangle {
             visible: btn.wins.length > 0
             anchors.horizontalCenter: parent.horizontalCenter
-            anchors.top: parent.bottom
-            anchors.topMargin: 3
-            width: btn.front ? 16 : 5
-            height: 4
-            radius: 2
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 1
+            width: btn.front ? 16 : 6
+            height: 3
+            radius: 1.5
             color: btn.front ? Theme.accent : Theme.soft
             Behavior on width { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
         }

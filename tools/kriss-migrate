@@ -1,0 +1,509 @@
+#!/usr/bin/env bash
+# kriss migrate: turn an Arch or CachyOS install into KrissOS in place. Files, apps and
+# games stay; the system packages move to Arch's builds plus the [kriss] repo, the boot
+# menu becomes KrissOS's (kriss-limine-update) and the login screen the KrissOS Shell's.
+#   kriss migrate --dry-run   print every step and simulate the package changes
+#   kriss migrate             do it (root). Safe to run again after a failure.
+# Needs: Limine on a UEFI PC, / on btrfs subvolume @, snapper with a root config.
+# Before changing anything it takes a snapper pre-snapshot and a writable copy of the
+# system (@before-kriss-migrate) with a boot menu entry of its own, so the old system
+# still starts if something goes wrong.
+# Other repos ([claude], AUR packages and the like) are left alone.
+set -euo pipefail
+shopt -s nullglob
+export LC_ALL=C  # sort, join and comm must agree on order
+
+readonly KEY_FPR=7C92AE8B599AF81321666CA31317AA31B21C5F87
+readonly KEY_URL=https://raw.githubusercontent.com/krazetech/krissos/main/pkgs/kriss-keyring/krissos.gpg
+readonly REPO_URL=https://github.com/krazetech/krissos/releases/download/repo-x86_64
+readonly FALLBACK=@before-kriss-migrate
+readonly LIMINE_ENTRY=/etc/kriss/limine.d/90-before-migrate.conf
+readonly KRISS_PKGS=(kriss-keyring kriss-settings kriss-theme kriss-tools kriss-welcome
+  kriss-shell greetd cosmic-files cosmic-terminal cosmic-settings xdg-desktop-portal-cosmic)
+DRY=0 TOP='' SIM='' ASSUME=()
+
+die() { printf 'kriss migrate: %s\n' "$*" >&2; exit 2; }
+step() { printf '\n:: %s\n' "$*"; }
+note() { printf '   %s\n' "$*"; }
+# run CMD...: run it, or under --dry-run print it.
+run() { if ((DRY)); then printf '   would run: %s\n' "$*"; else "$@"; fi; }
+# write FILE < CONTENT: write it, or under --dry-run print it.
+write() {
+  if ((DRY)); then printf '   would write %s:\n' "$1"; sed 's/^/     | /'; else cat >"$1"; fi
+}
+
+# --- detection (tools/ci/migrate-test.sh checks these) ----------------------------
+
+# Arch, or a distribution built on it with Arch's own core and extra. Manjaro has
+# repos of its own under the same names, so moving it to Arch's builds is not this.
+arch_based() {
+  local id like
+  id=$(sed -n 's/^ID=//p' "$1" | tr -d '"')
+  like=$(sed -n 's/^ID_LIKE=//p' "$1" | tr -d '"')
+  [[ $id != manjaro ]] && [[ $id == arch || " $like " == *" arch "* ]]
+}
+
+# pacman.conf FILE without its [cachyos*] repos. Comments and blank lines stay.
+strip_cachyos() {
+  awk '/^\[/ { skip = ($0 ~ /^\[cachyos/) } skip && !/^[[:space:]]*(#|$)/ { next } { print }' "$1"
+}
+
+# CachyOS's own system pieces, which go. Other CachyOS-only packages stay and are listed.
+infra_pkg() {
+  [[ $1 == cachyos-* || $1 =~ ^(chwd|cachy-update|limine-mkinitcpio-hook|limine-snapper-sync)$ ]]
+}
+
+# /etc/kernel/cmdline from the running kernel's command line: without the loader's own
+# words, with rootflags=subvol=@ as kriss-limine-update expects (it swaps that for the
+# snapshot's subvolume), zswap off since zram does the swapping, and splash for the
+# KrissOS boot splash, except with the NVIDIA driver (no early KMS for Plymouth to use).
+boot_cmdline() { # boot_cmdline CMDLINE [NVIDIA]
+  local w out=()
+  for w in $1; do
+    case $w in BOOT_IMAGE=* | initrd=* | kriss_snapshot=*) continue ;; splash) ((!${2:-0})) || continue ;; esac
+    out+=("${w//subvol=\/@/subvol=@}")
+  done
+  [[ " ${out[*]} " == *" zswap.enabled="* ]] || out+=(zswap.enabled=0)
+  ((${2:-0})) || [[ " ${out[*]} " == *" splash "* ]] || out+=(splash)
+  echo "${out[*]}"
+}
+
+# The same command line, booting the copy of the old system instead of @.
+fallback_cmdline() {
+  local w out=()
+  for w in $1; do
+    case $w in BOOT_IMAGE=* | initrd=*) continue ;; esac
+    out+=("$(sed -E "s#subvol=/?@(,|$)#subvol=/$FALLBACK\1#" <<<"$w")")
+  done
+  echo "${out[*]}"
+}
+
+# fstab line LINE (the one for /), moved to SUBVOL at MOUNTPOINT.
+fstab_as() {
+  sed -E "s#subvolid=[0-9]+,?##; s#subvol=/?@(,|[[:space:]])#subvol=/$2\1#; s#^([^[:space:]]+[[:space:]]+)/([[:space:]])#\1$3\2#" <<<"$1"
+}
+
+# The KrissOS initramfs hooks (installer/lib/configure). busybox, not systemd, so
+# kriss-snapshot can boot a snapshot from the menu. btrfs scans for the other devices
+# of a multi-device root; plymouth for the splash. No early KMS with the NVIDIA driver,
+# and so no splash either.
+hooks_line() { # hooks_line MULTI_DEVICE NVIDIA
+  local kms='kriss-kms plymouth' btrfs=
+  ((!$2)) || kms=
+  ((!$1)) || btrfs=btrfs
+  echo "HOOKS=(base udev autodetect microcode modconf $kms keyboard keymap consolefont block $btrfs filesystems fsck kriss-snapshot)" | tr -s ' '
+}
+
+# "FILE:LINE:TEXT" for each line in the shell configs given that still loads a file from
+# CachyOS's shell config packages (cachyos-fish-config, cachyos-zsh-config), which go.
+stale_shell_refs() {
+  grep -Hn '^[^#]*/usr/share/cachyos-' "$@" 2>/dev/null || true
+}
+
+# --- system facts --------------------------------------------------------------------
+
+esp_dir() { if mountpoint -q /efi; then echo /efi; else echo /boot; fi; }
+
+# pacman for queries: under --dry-run against the simulation's repos (see sim_setup).
+pm() { if [[ -n $SIM ]]; then pacman --config "$SIM/pacman.conf" --dbpath "$SIM/db" "$@"; else pacman "$@"; fi; }
+
+has_subvol() { btrfs subvolume list / | grep -q " path $1\$"; }
+
+# The packages CachyOS built that are installed now.
+cachyos_built() { pacman -Qi | awk -F' *: ' '/^Name/ { n = $2 } /^Packager/ && /cachyos\.org/ { print n }'; }
+
+# "REPO/NAME" for each installed CachyOS build that Arch or [kriss] has too.
+arch_rebuilds() {
+  join <(cachyos_built | sort -u) \
+    <(pm -Sl core extra multilib kriss | awk '!seen[$2]++ { print $2, $1 }' | sort -k1,1) |
+    awk '{ print $2 "/" $1 }'
+}
+
+new_pacman_conf() {
+  strip_cachyos /etc/pacman.conf
+  grep -q '^\[kriss\]' /etc/pacman.conf ||
+    printf '\n# KrissOS packages (kriss migrate). The key ships in kriss-keyring.\n[kriss]\nSigLevel = Required\nServer = %s\n' "$REPO_URL"
+}
+
+kernel_pkg() {
+  if /usr/lib/ld-linux-x86-64.so.2 --help 2>/dev/null | grep -q 'x86-64-v3 (supported'; then
+    echo linux-kriss
+  else
+    echo linux-kriss-generic
+  fi
+}
+
+preflight() {
+  [[ $(uname -m) == x86_64 ]] || die "this is for x86_64 PCs; this one is $(uname -m)."
+  ((EUID == 0)) || die "run it as root: sudo kriss migrate$( ((!DRY)) || echo " --dry-run")"
+  arch_based /etc/os-release || die "this is not Arch or a distribution built on Arch's repos."
+  [[ -d /sys/firmware/efi ]] || die "KrissOS boots with Limine on UEFI; this PC started in BIOS mode."
+  pacman -Q limine >/dev/null 2>&1 || die "this system does not boot with Limine. Switch to Limine first."
+  [[ $(findmnt -no FSTYPE /) == btrfs && $(findmnt -no FSROOT /) == /@ ]] ||
+    die "/ has to be the btrfs subvolume @ (found $(findmnt -no FSTYPE,FSROOT /))."
+  snapper list-configs 2>/dev/null | grep -q '^root ' || die "snapper has no root config."
+  # ponytail: an encrypted or LVM root would need the encrypt/lvm2 hooks in kriss.conf.
+  ! lsblk -sno TYPE "$(findmnt -nvo SOURCE /)" | grep -qE 'crypt|lvm' ||
+    die "an encrypted or LVM root is not handled yet."
+  local esp; esp=$(esp_dir)
+  [[ $(findmnt -no FSTYPE "$esp") == vfat ]] || die "no EFI system partition at /efi or /boot."
+  (($(df --output=avail -k / | tail -1) > 20 * 1024 * 1024)) || die "needs 20 GiB free on / for the package swap."
+  (($(df --output=avail -k "$esp" | tail -1) > 300 * 1024)) || die "needs 300 MiB free on $esp."
+  # ponytail: no Secure Boot. The old-system entry would need hashing like kriss-limine-update's.
+  [[ ! -d /var/lib/sbctl/keys ]] || die "Secure Boot (sbctl) is set up; kriss migrate does not handle it yet."
+}
+
+# --- the steps -----------------------------------------------------------------------
+
+mount_top() {
+  [[ -z $TOP ]] || return 0
+  TOP=$(mktemp -d)
+  mount -o subvolid=5 "$(findmnt -nvo SOURCE /)" "$TOP"
+  trap 'umount "$TOP" && rmdir "$TOP"' EXIT
+}
+
+# A snapper pre-snapshot, and a writable copy of the system with the running kernel in
+# a boot menu entry of its own: snapshots of the old system cannot boot from the KrissOS
+# menu (their initramfs has no kriss-snapshot hook, their kernel is not in /boot).
+backup() {
+  step "Snapshot and keep a bootable copy of the system as it is"
+  local esp ver base pretty partuuid
+  if has_subvol "$FALLBACK"; then
+    note "done before: $FALLBACK exists."
+    return
+  fi
+  esp=$(esp_dir) ver=$(uname -r)
+  base=$(<"/usr/lib/modules/$ver/pkgbase")
+  pretty=$(sed -n 's/^PRETTY_NAME=//p' /etc/os-release | tr -d '"')
+  ((DRY)) || mount_top
+  run snapper -c root create --type pre --print-number --cleanup-algorithm number \
+    --userdata important=yes --description 'before kriss migrate'
+  run btrfs subvolume snapshot "${TOP:-<top>}/@" "${TOP:-<top>}/$FALLBACK"
+  run sed -i -E "/^[^#][^[:space:]]*[[:space:]]+\/[[:space:]]/ s#subvolid=[0-9]+,?##; /^[^#][^[:space:]]*[[:space:]]+\/[[:space:]]/ s#subvol=/?@(,|[[:space:]])#subvol=/$FALLBACK\1#" \
+    "${TOP:-<top>}/$FALLBACK/etc/fstab"
+  run install -Dm644 "/usr/lib/modules/$ver/vmlinuz" "$esp/kriss-before-migrate/vmlinuz-$base"
+  run mkinitcpio -k "$ver" -g "$esp/kriss-before-migrate/initramfs-$base.img"
+  partuuid=$(findmnt -no PARTUUID "$esp")
+  run mkdir -p "${LIMINE_ENTRY%/*}"
+  write "$LIMINE_ENTRY" <<EOF
+/$pretty (before kriss migrate)
+    comment: The system as it was before kriss migrate, from its own copy ($FALLBACK).
+    protocol: linux
+    path: guid($partuuid):/kriss-before-migrate/vmlinuz-$base
+    module_path: guid($partuuid):/kriss-before-migrate/initramfs-$base.img
+    cmdline: $(fallback_cmdline "$(</proc/cmdline)")
+EOF
+}
+
+# KrissOS keeps snapshots in their own subvolume @snapshots, mounted at /.snapshots, so
+# kriss rollback can swap @ without taking the snapshots with it. CachyOS nests them
+# inside @; move them out (a rename, nothing is copied).
+flat_snapshots() {
+  step "Snapshots in their own subvolume, @snapshots"
+  if [[ $(findmnt -no FSROOT /.snapshots 2>/dev/null) == /@snapshots ]]; then
+    note "done before: /.snapshots is @snapshots."
+    return
+  fi
+  local line
+  line=$(awk '$1 !~ /^#/ && $2 == "/"' /etc/fstab)
+  if ! has_subvol @snapshots; then
+    [[ $(stat -c %i /.snapshots) == 256 ]] || die "/.snapshots is not a btrfs subvolume."
+    ((DRY)) || mount_top
+    # Nothing may write snapshots during the move. limine-snapper-sync is gone after the
+    # package step; until then the old boot menu stays as it was.
+    run systemctl stop snapperd.service
+    if systemctl cat limine-snapper-sync.service >/dev/null 2>&1; then run systemctl stop limine-snapper-sync.service; fi
+    run mv "${TOP:-<top>}/@/.snapshots" "${TOP:-<top>}/@snapshots"
+    run mkdir -m750 /.snapshots
+  fi
+  # Removing cachyos-snapper-support rewrites fstab without this line, so this step runs
+  # again after the package swap.
+  grep -q '^[^#][^[:space:]]*[[:space:]]\+/\.snapshots[[:space:]]' /etc/fstab ||
+    fstab_as "$line" @snapshots /.snapshots | if ((DRY)); then
+    printf '   would add to /etc/fstab: %s\n' "$(cat)"
+  else
+    cat >>/etc/fstab
+  fi
+  run systemctl daemon-reload
+  run mount /.snapshots
+}
+
+# One pacman for the dry run: a copy of the local database and the new repo list,
+# so nothing on the system changes. Signatures are off: --print installs nothing.
+# Removals are carried into the copy (--dbonly, under an empty root so no hook or
+# scriptlet runs), so later steps see them; installs are only printed.
+sim_setup() {
+  SIM=$(mktemp -d)
+  chmod 755 "$SIM"  # pacman downloads as its DownloadUser (alpm)
+  trap 'rm -rf "$SIM"' EXIT
+  mkdir "$SIM/db" "$SIM/root"
+  cp -a /var/lib/pacman/local "$SIM/db/"
+  new_pacman_conf | sed 's/^SigLevel.*/SigLevel = Never/' >"$SIM/pacman.conf"
+  pacman --config "$SIM/pacman.conf" --dbpath "$SIM/db" -Sy >/dev/null
+}
+sim() { pacman --config "$SIM/pacman.conf" --dbpath "$SIM/db" --root "$SIM/root" --logfile "$SIM/log" --noconfirm "$@"; }
+# pacman ARGS...: run it, or under --dry-run show what it would change.
+pac() {
+  if ((!DRY)); then pacman --noconfirm "$@"; return; fi
+  printf '   would run: pacman %s\n' "$*"
+  local out extra=()
+  # Installs were only printed: tell the removal check what they would have brought.
+  [[ $1 != -R ]] || extra=("${ASSUME[@]}")
+  if out=$(sim --print --print-format '%n %v' "$@" "${extra[@]}" 2>&1 | grep -v '^:: Synchronizing\| downloading\.\.\.$'; exit "${PIPESTATUS[0]}"); then
+    [[ $1 != -R ]] || sim --dbonly --noscriptlet "$@" "${extra[@]}" >/dev/null
+    printf '%s\n' "$out" | sed -n 's/^/     | /; 1,30p'
+    (($(wc -l <<<"$out") <= 30)) || note "  ... $(wc -l <<<"$out") packages in all"
+  else
+    printf '%s\n' "$out" | sed 's/^/     ! /'
+    note "pacman refused this; the real run would stop here."
+  fi
+}
+
+repos() {
+  step "Repos: drop CachyOS's, add [kriss]"
+  if ! grep -q '^\[cachyos' /etc/pacman.conf && grep -q '^\[kriss\]' /etc/pacman.conf; then
+    note "done before."
+  else
+    [[ -e /etc/pacman.conf.before-kriss-migrate ]] || run cp /etc/pacman.conf /etc/pacman.conf.before-kriss-migrate
+    if ((DRY)); then
+      diff <(cat /etc/pacman.conf) <(new_pacman_conf) | sed 's/^/     | /' || true
+    else
+      new_pacman_conf >/etc/pacman.conf.new && mv /etc/pacman.conf.new /etc/pacman.conf
+    fi
+  fi
+  if pacman-key --list-keys "$KEY_FPR" >/dev/null 2>&1; then
+    note "the KrissOS key is trusted already."
+  else
+    # Only the pinned fingerprint is trusted, whatever the downloaded file holds.
+    local f
+    f=$(dirname "$(readlink -f "$0")")/../pkgs/kriss-keyring/krissos.gpg
+    if [[ ! -f $f ]]; then
+      f=$(mktemp)
+      run curl -fsSL "$KEY_URL" -o "$f"
+    fi
+    run pacman-key --add "$f"
+    run pacman-key --lsign-key "$KEY_FPR"
+  fi
+}
+
+boot_config() {
+  step "Initramfs, kernel command line and the Limine binary"
+  local esp multi=0 nvidia=0 f
+  esp=$(esp_dir)
+  # CachyOS's limine-mkinitcpio-hook replaces mkinitcpio's pacman hook with its own,
+  # which would put the new kernel in its own layout. Its package goes at the end, so
+  # the old boot menu keeps working until the KrissOS one is written.
+  for f in /etc/pacman.d/hooks/90-mkinitcpio-install.hook /etc/mkinitcpio.conf.d/*limine*; do
+    if [[ $f == *.before-kriss-migrate || ! -f $f ]] || ! grep -qi limine "$f"; then continue; fi
+    run mv "$f" "$f.before-kriss-migrate"
+  done
+  (($(btrfs filesystem show / | grep -c 'devid') <= 1)) || multi=1
+  pacman -Q nvidia-utils >/dev/null 2>&1 && nvidia=1
+  run mkdir -p /etc/mkinitcpio.conf.d
+  write /etc/mkinitcpio.conf.d/kriss.conf <<EOF
+# Written by kriss migrate (as the KrissOS installer writes it).
+$(hooks_line "$multi" "$nvidia")
+EOF
+  if [[ -f /etc/kernel/cmdline ]]; then
+    note "keeping /etc/kernel/cmdline: $(</etc/kernel/cmdline)"
+  else
+    run mkdir -p /etc/kernel
+    boot_cmdline "$(</proc/cmdline)" "$nvidia" | write /etc/kernel/cmdline
+  fi
+  # CachyOS ships its zram settings in zram-generator's own file, which Arch's build
+  # does not have. Keep them.
+  f=/usr/lib/systemd/zram-generator.conf
+  if [[ -f $f && ! -f /etc/systemd/zram-generator.conf ]]; then
+    run cp "$f" /etc/systemd/zram-generator.conf
+  fi
+  run install -Dm644 /usr/share/limine/BOOTX64.EFI "$esp/EFI/limine/BOOTX64.EFI"
+  if ! efibootmgr | grep -qi 'EFI\\limine\\BOOTX64.EFI'; then
+    local dev
+    dev=$(findmnt -nvo SOURCE "$esp")
+    run efibootmgr --create --disk "/dev/$(lsblk -no PKNAME "$dev")" \
+      --part "$(<"/sys/class/block/${dev##*/}/partition")" --label KrissOS --loader '\EFI\limine\BOOTX64.EFI'
+  fi
+  # The firmware's fallback path: kriss-limine-update keeps it current when it is Limine.
+  f=$esp/EFI/BOOT
+  if grep -qa 'Limine' "$f/BOOTX64.EFI" 2>/dev/null && [[ ! -f $f/limine.conf ]]; then
+    run touch "$f/limine.conf"
+  fi
+}
+
+packages() {
+  step "Move every package to Arch's build, add the KrissOS packages"
+  local kernel pkgs
+  kernel=$(kernel_pkg)
+  pkgs=("${KRISS_PKGS[@]}" "$kernel")
+  # DKMS modules and CachyOS's prebuilt NVIDIA modules need headers to build against.
+  # ponytail: nvidia-open-dkms only; a pre-Turing GPU wants kriss nvidia setup afterwards.
+  if pacman -Qq | grep -q '^linux-cachyos.*nvidia'; then pkgs+=(nvidia-open-dkms); fi
+  if pacman -Q dkms >/dev/null 2>&1 || [[ " ${pkgs[*]} " == *dkms* ]]; then pkgs+=("$kernel-headers"); fi
+  # First out: the CachyOS kernel headers, which pin CachyOS's own pahole, and CachyOS's
+  # config packages, whose /etc/skel files kriss-settings ships too. The kernels and the
+  # two Limine tools stay until the KrissOS menu is written, so the old menu keeps
+  # working. No scriptlets: cachyos-snapper-support's runs snapper delete-config, which
+  # deletes every snapshot.
+  local p early=()
+  while read -r p; do
+    if [[ $p == linux-cachyos*-headers ]] || { infra_pkg "$p" && [[ $p != limine-* ]]; }; then early+=("$p"); fi
+  done < <(pm -Qq)
+  if ((${#early[@]})); then pac -R --noscriptlet "${early[@]}"; fi
+  # Not -Syuu: that also downgrades whatever is newer than its repo, such as a package
+  # another repo's own installer put in with pacman -U.
+  pac -Syu --needed "${pkgs[@]}"
+  # CachyOS's pacman records each package's repo as %INSTALLED_DB%, which Arch's warns
+  # about on every run.
+  if grep -qs '^%INSTALLED_DB%$' /var/lib/pacman/local/*/desc; then
+    if ((DRY)); then note "would drop CachyOS's %INSTALLED_DB% field from pacman's database"
+    else sed -i '/^%INSTALLED_DB%$/,/^$/d' /var/lib/pacman/local/*/desc; fi
+  fi
+  if ((DRY)); then
+    mapfile -t ASSUME < <(pm -Si "${pkgs[@]}" | awk -F' *: ' '/^Name/ { print $2 } /^Provides/ && $2 != "None" { n = split($2, a, / +/); for (i = 1; i <= n; i++) print a[i] }' | sed 's/^/--assume-installed=/')
+  fi
+  # Every CachyOS build Arch or [kriss] has, at Arch's version: older, newer or the same.
+  local rebuild url
+  mapfile -t rebuild < <(arch_rebuilds)
+  ((${#rebuild[@]})) || return 0
+  # Same version means the same file name: the CachyOS build in pacman's cache would be
+  # checked against Arch's signature and refused. Drop it, so Arch's is fetched.
+  if ((!DRY)); then
+    while read -r url; do
+      rm -f "/var/cache/pacman/pkg/${url##*/}" "/var/cache/pacman/pkg/${url##*/}.sig"
+    done < <(pacman -Sp "${rebuild[@]}")
+  fi
+  pac -S "${rebuild[@]}"
+}
+
+# CachyOS's kernels and system pieces, once the KrissOS kernel and menu are in place.
+drop_cachyos() {
+  step "Remove CachyOS's kernels and system packages"
+  local p old=()
+  while read -r p; do
+    if infra_pkg "$p" || [[ $p == linux-cachyos* ]]; then old+=("$p"); fi
+  done < <(pm -Qq)
+  if ((${#old[@]} == 0)); then note "none left."; return; fi
+  if systemctl cat limine-snapper-sync.service >/dev/null 2>&1; then run systemctl disable limine-snapper-sync.service; fi
+  pac -R --noscriptlet "${old[@]}"
+}
+
+login_and_menu() {
+  step "KrissOS login screen, os-release and boot menu"
+  local dm esp
+  esp=$(esp_dir)
+  if ! grep -q 'kriss-shell greeter' /etc/greetd/config.toml 2>/dev/null; then
+    write /etc/greetd/config.toml <<'EOF'
+[terminal]
+vt = 1
+
+[default_session]
+command = "kriss-shell greeter"
+user = "greeter"
+EOF
+  fi
+  dm=$(readlink /etc/systemd/system/display-manager.service 2>/dev/null || true)
+  dm=${dm##*/}
+  if [[ $dm != greetd.service ]]; then
+    # The old login manager and Plasma stay installed; Plasma is a session in the greeter.
+    [[ -z $dm ]] || run systemctl disable "$dm"
+    run systemctl enable greetd.service
+  fi
+  # kriss-settings writes /usr/lib/os-release; CachyOS left a file of its own here.
+  [[ -L /etc/os-release ]] || run ln -sf ../usr/lib/os-release /etc/os-release
+  # cachyos-snapper-support turns the cleanup timer off when it goes.
+  run systemctl enable kriss-limine-update.path snapper-cleanup.timer
+  # The boot splash: Theme=kriss in place of the old distro's (often gone with its
+  # packages, which leaves Plymouth on bgrt and Arch's logo), then a new initramfs.
+  # kriss-settings 0.4.2 and later run this from a pacman hook too.
+  if [[ -x /usr/share/libalpm/scripts/kriss-plymouth ]]; then run /usr/share/libalpm/scripts/kriss-plymouth; fi
+  run kriss-limine-update
+  # The old menu sat at the ESP's root (its tools are gone now); only KrissOS's should be found.
+  if [[ -f $esp/limine.conf ]]; then run mv "$esp/limine.conf" "$esp/limine.conf.before-kriss-migrate"; fi
+}
+
+check() {
+  step "Check before rebooting"
+  local esp conf kernel bad=0
+  esp=$(esp_dir) conf=$esp/EFI/limine/limine.conf kernel=$(kernel_pkg)
+  ok() { if eval "$2"; then note "ok    $1"; else note "FAIL  $1"; bad=1; fi; }
+  ok "boot menu has $kernel" "grep -q '^//$kernel ' '$conf'"
+  ok "/boot/vmlinuz-$kernel" "[[ -f /boot/vmlinuz-$kernel ]]"
+  ok "/boot/initramfs-$kernel.img" "[[ -f /boot/initramfs-$kernel.img ]]"
+  ok "boot menu has the old system" "grep -q '(before kriss migrate)' '$conf'"
+  ok "snapshot 'before kriss migrate'" "snapper -c root list | grep -q 'before kriss migrate'"
+  ok "/.snapshots is @snapshots" "[[ \$(findmnt -no FSROOT /.snapshots) == /@snapshots ]]"
+  ok "greetd enabled" "systemctl is-enabled -q greetd.service"
+  ok "os-release says KrissOS" "grep -q '^ID=krissos' /etc/os-release"
+  if [[ -x /usr/share/libalpm/scripts/kriss-plymouth ]]; then
+    ok "boot splash is kriss" "grep -qx 'Theme=kriss' /etc/plymouth/plymouthd.conf"
+  fi
+  return "$bad"
+}
+
+leftovers() {
+  local p left=()
+  while read -r p; do
+    infra_pkg "$p" || [[ $p == linux-cachyos* ]] || left+=("$p")
+  done < <(comm -23 <(cachyos_built | sort -u) \
+    <(pm -Slq core extra multilib kriss | sort -u))
+  ((${#left[@]})) || return 0
+  step "CachyOS-only packages that stay (no updates from now on)"
+  note "Arch does not have these. Reinstall them from the AUR, or remove them:"
+  printf '%s\n' "${left[@]}" | column -c 88 | sed 's/^/     /'
+}
+
+# Shell configs in each user's home that would print an error at every new shell.
+# ponytail: a warning with the fix, not an edit: these are the user's own files.
+shell_warnings() {
+  local home refs
+  while read -r home; do
+    refs+=$(stale_shell_refs "$home"/.bashrc "$home"/.bash_profile "$home"/.profile "$home"/.zshrc \
+      "$home"/.config/fish/config.fish "$home"/.config/fish/conf.d/*.fish)
+  done < <(awk -F: '$3 >= 1000 && $3 < 60000 { print $6 }' /etc/passwd)
+  [[ -n ${refs:-} ]] || return 0
+  step "Shell configs that load CachyOS files (removed now)"
+  note "Each new shell prints an error until these lines go. Comment them out with:"
+  local f
+  while IFS=: read -r f _; do note "  sed -i.before-kriss-migrate '\|^[^#]*/usr/share/cachyos-|s|^|# |' $f"; done <<<"$refs" | sort -u
+  printf '%s\n' "$refs" | sed 's/^/     | /'
+}
+
+main() {
+  case ${1:-} in
+    --dry-run | -n) DRY=1 ;;
+    '') ;;
+    -h | --help) sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'; return ;;
+    *) die "unknown option '$1'. Use --dry-run or nothing." ;;
+  esac
+  preflight
+  if ((DRY)); then
+    printf 'kriss migrate --dry-run: nothing is changed.\n'
+    sim_setup
+  fi
+  backup
+  flat_snapshots
+  repos
+  boot_config
+  packages
+  flat_snapshots
+  drop_cachyos
+  login_and_menu
+  leftovers
+  shell_warnings
+  if ((DRY)); then
+    printf '\nRun it for real with: sudo kriss migrate\n'
+    return
+  fi
+  check || die "some checks failed; do not reboot yet. Rerun kriss migrate once fixed."
+  cat <<EOF
+
+kriss migrate: done. Reboot into KrissOS.
+If something is wrong, pick "(before kriss migrate)" in the boot menu: it starts the old
+system from its own copy ($FALLBACK). Once you are happy, free its space with:
+  sudo mount -o subvolid=5 $(findmnt -nvo SOURCE /) /mnt && sudo btrfs subvolume delete /mnt/$FALLBACK && sudo umount /mnt
+  sudo rm -r $(esp_dir)/kriss-before-migrate $LIMINE_ENTRY && sudo kriss-limine-update
+EOF
+}
+
+# Sourced by tests (tools/ci/migrate-test.sh), run otherwise.
+[[ ${BASH_SOURCE[0]} != "$0" ]] || main "$@"

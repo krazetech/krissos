@@ -7,6 +7,38 @@ packages and configs on top of upstream Arch. We do not fork the Arch repos.
 
 Release codenames follow the Modenas Kriss line: `110` (1.0), `115`, `MR3`.
 
+## 0. What KrissOS is
+
+**Arch Linux made ready for everyday people: offline install, Windows-familiar, built for
+work, gaming and local AI.**
+
+- **Audience:** people switching from Windows come first. Gamers, local-AI users and Malaysian
+  users (Bahasa Melayu throughout) are served too, but when their needs conflict, the switcher
+  wins.
+- **Shell:** familiar, not a clone. Windows habits (a Start-style launcher on the Windows key, a
+  taskbar, close at the top right, Win+E for files) in KrissOS's own soft, rounded Obsidian and
+  Sky Cyan look (§5, §6). An optional Mac layout (top bar, centred dock, window buttons on the
+  left) in the same look is coming.
+
+### Promises
+
+1. **Never needs internet to install.** Online is only for extras (§2, the installer).
+2. **Everything can be undone.** Bootable snapshots, `kriss rollback`, and `revert` in our tools.
+3. **One calm look.** One visual language from the boot menu to our apps (§6).
+4. **Arch underneath, untouched.** A thin signed overlay that two people can keep alive (§1, §2).
+5. **Your hardware, handled.** Drivers picked for you, older NVIDIA cards included, with honest
+   numbers.
+
+### What it isn't
+
+Not an Arch fork, not a Windows clone, not a ricing distro, not for servers.
+
+### The decision rule
+
+When a choice is unclear, ask: *would someone fresh from Windows get stuck here?* (§14). If yes,
+fix that first. Then check it against the promises: a change that breaks one of them does not
+ship.
+
 ---
 
 ## 1. Base and update model
@@ -28,7 +60,7 @@ distro team's workload, and it is out of scope.
 | Package | Purpose |
 |---|---|
 | `linux-kriss` | Kernel for x86-64-v3, built with CachyOS patches (EEVDF/BORE, sched_ext) and LTO |
-| `linux-kriss-generic` | The same kernel for baseline x86-64. The installer picks it when the CPU lacks v3 |
+| `linux-kriss-generic` | The same kernel for baseline x86-64: the live ISO's kernel, kept on CPUs without v3 |
 | `linux-kriss-asahi` | The Asahi kernel for Apple Silicon Macs (aarch64 only, §13) |
 | `kriss-tools` | `kriss` (with `kriss tune`), `kriss-ctl`, `kriss-vm` |
 | `kriss-shell` | The KrissOS Shell (panel, dock, launcher, notifications, lock screen) |
@@ -78,7 +110,7 @@ and installs KDE Plasma, which is not on the ISO. Offline, Plasma falls back to 
   normally but forgets changes at reboot; a login notification says so. `kriss rollback`,
   run from the booted snapshot, makes it `@` again and keeps the replaced system as
   `@.old-DATE`.
-- **Kernel:** the ISO's kernel offline; `linux-kriss` on x86-64-v3 CPUs when online.
+- **Kernel:** the ISO's `linux-kriss-generic` offline; `linux-kriss` on x86-64-v3 CPUs when online.
 - **NVIDIA:** `nvidia-open-dkms` on Turing and newer, on the ISO so the live session uses
   it too. Older cards keep nouveau, since no driver in Arch's repos supports them any more.
   For Maxwell, Pascal and Volta, kriss-welcome offers NVIDIA's 580 driver afterwards as an
@@ -166,8 +198,9 @@ available as the installer's alternative.
 
 - **Style:** soft and rounded. Floating windows with large corner radii and a light rim, and
   no coloured ring around the focused window. Light and dark window themes over a dark wallpaper.
-  One bottom bar holds the launcher, apps and status. Sky Cyan is the default and only shipped
-  accent; users may pick another in settings. No neon.
+  One taskbar, full width along the bottom edge and 48 px tall like Windows 11, holds the
+  launcher, apps and status, with acrylic blur and a soft top rim. Sky Cyan is the default and
+  only shipped accent; users may pick another in settings. No neon.
 - **Material:** shell surfaces are tinted and blurred (acrylic) through `ext-background-effect`,
   which cosmic-comp and Quickshell both support. Solid surfaces are the fallback when blur is off.
 - **Layouts:** the Windows-familiar layout (centred taskbar) is the default. An optional Mac

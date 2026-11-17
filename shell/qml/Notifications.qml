@@ -58,7 +58,7 @@ PanelWindow {
     WlrLayershell.namespace: "kriss-notifications"
     exclusionMode: ExclusionMode.Ignore
     anchors { bottom: true; right: true }
-    margins { right: Theme.gap * 1.5; bottom: Theme.gap * 2 + Theme.barHeight }
+    margins { right: Theme.panelGap; bottom: Theme.barHeight + Theme.panelGap }
     implicitWidth: 380
     // A fixed size, so the cards can move without the window resizing under them every
     // frame; clicks outside the cards go through to the windows behind.

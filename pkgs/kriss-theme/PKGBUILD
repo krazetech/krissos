@@ -1,6 +1,6 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-theme
-pkgver=0.4.0
+pkgver=0.5.0
 pkgrel=1
 pkgdesc='KrissOS colours, fonts, wallpaper, Plasma, SDDM, Plymouth and Limine theme'
 arch=('any')
@@ -21,20 +21,30 @@ _theme="$startdir/../../theme"
 
 build() {
   python "$_theme/generate.py" "$_theme/templates" "$srcdir/root"
-  # Plymouth cannot load SVG.
-  rsvg-convert -w 128 -h 128 -o "$srcdir/root/usr/share/plymouth/themes/kriss/logo.png" \
-    "$srcdir/root/usr/share/pixmaps/krissos.svg"
-  # The Limine menu background (kriss-limine-update copies it to the ESP). Limine cannot
-  # load SVG either; 1920x1080 keeps it small enough for Windows' 100 MB ESP.
-  rsvg-convert -w 1920 -h 1080 -o "$srcdir/root/usr/share/kriss/theme/limine-wallpaper.png" \
-    "$srcdir/root/usr/share/backgrounds/kriss/kriss-dark.svg"
+  # Plymouth cannot load SVG: generate.py writes the boot splash layers as SVG at
+  # their final sizes, and each becomes a PNG here.
+  local svg
+  for svg in "$srcdir/root/usr/share/plymouth/themes/kriss/"*.svg; do
+    rsvg-convert -o "${svg%.svg}.png" "$svg"
+    rm "$svg"
+  done
+  # The Limine menu background. Limine cannot load SVG, and scaling an image to the
+  # screen costs it about 38 s on a 2560x1440 PC, so it gets one PNG per common screen
+  # size, centred. kriss-limine-update copies only the matching one to the ESP (Windows'
+  # ESP is 100 MB); limine-wallpaper.png (1920x1080) is for any other size.
+  local size lw="$srcdir/root/usr/share/kriss/theme/limine-wallpaper"
+  rsvg-convert -w 1920 -h 1080 -o "$lw.png" "$srcdir/root/usr/share/backgrounds/kriss/kriss-dark.svg"
+  for size in 1366x768 1600x900 1920x1080 1920x1200 2560x1080 2560x1440 2560x1600 3440x1440 3840x2160; do
+    sed "s/width=\"3840\" height=\"2160\"/width=\"${size%x*}\" height=\"${size#*x}\"/" \
+      "$srcdir/root/usr/share/backgrounds/kriss/kriss-dark.svg" | rsvg-convert -o "$lw-$size.png"
+  done
 
   # Plasma picks the closest WxH.png and switches images/ <-> images_dark/ with the
   # colour scheme. The SVGs crop to fill (preserveAspectRatio slice), so setting
   # the root size renders the right crop for each aspect ratio.
   local bg="$srcdir/root/usr/share/backgrounds/kriss"
   local wp="$srcdir/root/usr/share/wallpapers/KrissOS/contents"
-  local size mode dir
+  local mode dir
   for mode in light dark; do
     dir=images; [[ $mode = dark ]] && dir=images_dark
     install -d "$wp/$dir"

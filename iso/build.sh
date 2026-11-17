@@ -4,11 +4,6 @@
 # usage: iso/build.sh OUT_DIR WORK_DIR
 set -euo pipefail
 
-# ponytail: Arch's kernel until linux-kriss-generic is published in [kriss]; then set
-# this to linux-kriss-generic. The live image takes the baseline x86-64 build so it
-# boots on CPUs without x86-64-v3.
-kernel=linux
-
 here=$(cd "$(dirname "$0")" && pwd)
 out=$1 work=$2
 mkdir -p "$out" "$work"
@@ -36,16 +31,19 @@ chown -R builder "$src" "$local_repo"
 for p in kriss-keyring kriss-settings kriss-theme kriss-tools kriss-shell kriss-installer; do
   su builder -c "cd '$src/pkgs/$p' && PKGDEST='$local_repo' makepkg --noconfirm --nodeps"
 done
-# Calamares takes a while to compile: build it only when [kriss] lacks this version.
-cal=$src/pkgs/calamares
-want=$(source "$cal/PKGBUILD" && echo "$pkgver-$pkgrel")
+# Calamares and cosmic-comp-kriss take a while to compile: build them only when [kriss]
+# lacks this version.
 pacman --config "$here/pacman.conf" -Sy
-have=$(pacman --config "$here/pacman.conf" -Sl kriss | awk '$2 == "calamares" {print $3}')
-if [ "$want" != "$have" ]; then
-  echo "Building calamares $want ([kriss] has '${have:-none}')"
-  (source "$cal/PKGBUILD" && pacman -S --noconfirm --needed "${depends[@]}" "${makedepends[@]}")
-  su builder -c "cd '$cal' && PKGDEST='$local_repo' makepkg --noconfirm --nodeps"
-fi
+for p in calamares cosmic-comp-kriss; do
+  dir=$src/pkgs/$p
+  want=$(source "$dir/PKGBUILD" && echo "$pkgver-$pkgrel")
+  have=$(pacman --config "$here/pacman.conf" -Sl kriss | awk -v p="$p" '$2 == p {print $3}')
+  if [ "$want" != "$have" ]; then
+    echo "Building $p $want ([kriss] has '${have:-none}')"
+    (source "$dir/PKGBUILD" && pacman -S --noconfirm --needed "${depends[@]}" "${makedepends[@]}")
+    su builder -c "cd '$dir' && PKGDEST='$local_repo' makepkg --noconfirm --nodeps"
+  fi
+done
 repo-add "$local_repo/kriss-local.db.tar.zst" "$local_repo"/*.pkg.tar.zst
 # sed -i replaces the pacman.conf symlink with a file, so the live system's copy keeps
 # only the published repo.
@@ -61,7 +59,4 @@ python "$here/../theme/generate.py" "$here/../theme/templates/usr/share/pixmaps"
   echo '</svg>'
 } | rsvg-convert -o "$profile/syslinux/splash.png"
 
-sed -i "s/^linux\(-headers\)\?\$/$kernel\1/" "$profile/packages.x86_64"
-sed -i "s/vmlinuz-linux/vmlinuz-$kernel/; s/initramfs-linux\./initramfs-$kernel./" \
-  "$profile"/efiboot/loader/entries/*.conf "$profile"/syslinux/*.cfg
 mkarchiso -v -r -w "$work/mkarchiso" -o "$out" "$profile"
