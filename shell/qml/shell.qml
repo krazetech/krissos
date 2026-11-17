@@ -92,6 +92,7 @@ ShellRoot {
     Lock {}
     Switcher { id: switcher }
     TaskView {}
+    Snap { id: snapLayouts }
     Osd {}
 
     // KRISS_SHELL_FPS=1: for a second after a panel opens or closes, counts the frames and
@@ -182,6 +183,12 @@ ShellRoot {
         function newWindow(n: int): void { root.bar().newWindow(n - 1); }
         function jumpList(n: int): void { root.bar().jumpList(n - 1, true); }
         function startMenu(): void { root.bar().startMenu(true); }
+    }
+
+    // `kriss-shell snap`: Windows+Z, the snap layouts for the window in front.
+    IpcHandler {
+        target: "snap"
+        function layouts(): void { snapLayouts.layoutsForActive(); }
     }
 
     IpcHandler {

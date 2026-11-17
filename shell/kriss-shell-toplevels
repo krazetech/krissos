@@ -10,13 +10,17 @@ through ext-image-copy-capture. Desktops (workspaces) come from ext-workspace.
 
 stdout: one JSON array per change, e.g.
   [{"id": 3, "appId": "firefox", "title": "Inbox", "active": true, "minimized": false,
-    "fullscreen": false, "output": "DP-1", "workspace": 2}]
+    "fullscreen": false, "output": "DP-1", "workspace": 2,
+    "geo": {"DP-1": [x, y, width, height]}}]
   {"workspaces": [{"id": 2, "name": "1", "active": true, "outputs": ["DP-1"]}]}, in order,
   after every change to the desktops;
   and, while previews are captured, one object per new picture:
   {"thumb": 3, "url": "file:///run/user/1000/kriss-shell-thumbs-wayland-1/3.bmp?7"}
+  With cosmic-comp-kriss's snap layouts: {"snap": true} once at the start, and
+  {"hover": 3, "on": true} when the pointer enters or leaves window 3's maximize button.
 stdin:  one command per line: "activate ID", "minimize ID", "close ID",
-  "workspace WS" to switch to desktop WS, "move ID WS" to move window ID there, or
+  "workspace WS" to switch to desktop WS, "move ID WS" to move window ID there,
+  "snap ID X Y W H" to tile a window into that zone, in twelfths of its screen, or
   "thumbs SIZE ID ID ..." to capture those windows at about SIZE pixels on the long
   edge ("thumbs 0" stops capturing).
 
@@ -43,6 +47,10 @@ from kriss_protocols.ext_image_capture_source_v1 import (  # noqa: E402
     ExtForeignToplevelImageCaptureSourceManagerV1)
 from kriss_protocols.ext_image_copy_capture_v1 import ExtImageCopyCaptureManagerV1  # noqa: E402
 from kriss_protocols.ext_workspace_v1 import ExtWorkspaceManagerV1  # noqa: E402
+try:  # cosmic-comp-kriss only; without it there are no snap layouts.
+    from kriss_protocols.kriss_snap_v1 import KrissSnapManagerV1  # noqa: E402
+except ImportError:
+    KrissSnapManagerV1 = None
 from kriss_protocols.wayland import WlOutput, WlSeat, WlShm  # noqa: E402
 
 MINIMIZED, ACTIVATED, FULLSCREEN = 1, 2, 3  # zcosmic_toplevel_handle_v1.state entries
@@ -185,6 +193,7 @@ class Toplevels:
         self.globals = {}
         self.windows = {}  # id -> {"appId", "title", "active", "minimized", "fullscreen", "output", "workspace"}
         self.handles = {}  # id -> (ext handle, cosmic handle)
+        self.idents = {}  # ext_foreign_toplevel identifier -> id, for kriss_snap_v1
         self.outputs = {}  # wl_output proxy -> connector name, e.g. "DP-1"
         self.captures = {}  # id -> Capture, only while the shell shows that window's preview
         self.timers = []  # [(when, function)]
@@ -204,6 +213,8 @@ class Toplevels:
             "wl_shm": (WlShm, 1),
             "wl_seat": (WlSeat, 1),
         }
+        if KrissSnapManagerV1:
+            wanted["kriss_snap_manager_v1"] = (KrissSnapManagerV1, 1)
         if interface == "wl_output" and version >= 4:
             # Every screen, including ones plugged in later. ponytail: unplugged ones
             # are not forgotten; a stale name in the dict is harmless.
@@ -228,6 +239,10 @@ class Toplevels:
             manager.dispatcher["workspace_group"] = self.on_group
             manager.dispatcher["workspace"] = self.on_workspace
             manager.dispatcher["done"] = lambda _m: self.emit_spaces()
+        if "kriss_snap_manager_v1" in self.globals:
+            self.globals["kriss_snap_manager_v1"].dispatcher["maximize_hover"] = lambda _m, ident, on: (
+                self.idents.get(ident) and print(json.dumps({"hover": self.idents[ident], "on": bool(on)}), flush=True))
+            print(json.dumps({"snap": True}), flush=True)
         # Pictures from an earlier run are for window ids that no longer mean the same.
         shutil.rmtree(THUMBS, ignore_errors=True)
         os.makedirs(THUMBS, mode=0o700, exist_ok=True)
@@ -235,7 +250,8 @@ class Toplevels:
     def on_toplevel(self, _list, handle):
         wid = self.next_id
         self.next_id += 1
-        win = {"appId": "", "title": "", "active": False, "minimized": False, "fullscreen": False, "output": "", "workspace": 0}
+        win = {"appId": "", "title": "", "active": False, "minimized": False, "fullscreen": False, "output": "",
+               "workspace": 0, "geo": {}}
         self.windows[wid] = win
         cosmic = self.globals["zcosmic_toplevel_info_v1"].get_cosmic_toplevel(handle)
         self.handles[wid] = (handle, cosmic)
@@ -253,6 +269,7 @@ class Toplevels:
                 self.captures[wid].stop()
             self.windows.pop(wid, None)
             self.handles.pop(wid, None)
+            self.idents = {k: v for k, v in self.idents.items() if v != wid}
             cosmic.destroy()
             handle.destroy()
             try:
@@ -273,12 +290,20 @@ class Toplevels:
             if win["workspace"] == self.space_ids.get(space):
                 win["workspace"] = 0
 
+        def on_geometry(_h, output, x, y, width, height):
+            win["geo"] = win["geo"] | {self.outputs.get(output, ""): [x, y, width, height]}
+            # cosmic-comp sends no done after a move alone. Once per burst, not per frame of a drag.
+            if self.emit not in (fn for _, fn in self.timers):
+                self.later(0.05, self.emit)
+
+        handle.dispatcher["identifier"] = lambda _h, ident: self.idents.__setitem__(ident, wid)
         handle.dispatcher["app_id"] = set_field("appId")
         handle.dispatcher["title"] = set_field("title")
         handle.dispatcher["done"] = lambda _h: self.emit()
         handle.dispatcher["closed"] = on_closed
         cosmic.dispatcher["state"] = on_state
         cosmic.dispatcher["output_enter"] = on_output
+        cosmic.dispatcher["geometry"] = on_geometry
         cosmic.dispatcher["ext_workspace_enter"] = on_workspace
         cosmic.dispatcher["ext_workspace_leave"] = on_workspace_leave
 
@@ -363,6 +388,11 @@ class Toplevels:
             outputs = self.groups.get(space["group"])
             if outputs:
                 manager.move_to_ext_workspace(cosmic, space["handle"], outputs[0])
+        elif verb == "snap" and len(args) == 5 and all(a.isdigit() for a in args) \
+                and "kriss_snap_manager_v1" in self.globals:
+            ident = next((k for k, v in self.idents.items() if v == int(args[0])), None)
+            if ident:
+                self.globals["kriss_snap_manager_v1"].snap(ident, *map(int, args[1:]))
 
     def later(self, delay, fn):
         self.timers.append((time.monotonic() + delay, fn))
