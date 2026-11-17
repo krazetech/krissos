@@ -91,13 +91,19 @@ the installer itself, and the NVIDIA driver on PCs without a Turing or newer car
 is a bonus only: `installer/lib/online` then switches to `linux-kriss`, runs `pacman -Syu`
 and installs KDE Plasma, which is not on the ISO. Offline, Plasma falls back to the shell.
 
-- **Disk:** GPT and UEFI only. Dual-boot alongside Windows is the default, erase disk the
-  other choice; manual partitioning and disk encryption are off for now. `kriss-install`
-  stops before the installer with steps to follow when BitLocker is on, or when the USB
-  started in legacy BIOS mode.
+- **Disk:** GPT only, on UEFI or legacy BIOS (CSM). Dual-boot alongside Windows is the
+  default, erase disk the other choice; manual partitioning and disk encryption are off
+  for now. `kriss-install` stops before the installer with steps to follow when BitLocker
+  is on, or when the USB started in legacy BIOS mode on a PC whose Windows boots UEFI
+  (`kriss-install --legacy` goes on anyway). An MBR disk, as Windows uses in BIOS mode,
+  gets Calamares' own "partition table is not GPT" message and only *Erase disk*.
 - **Layout:** the ESP at `/efi` holds only Limine, so Windows' small ESP is enough. The
   kernels go on a 2 GiB FAT32 `/boot` (XBOOTLDR), because Limine reads only FAT. btrfs
   root with `@`, `@home`, `@cache`, `@log` and `@snapshots`; zram, no swap partition.
+  Legacy BIOS has no ESP: `limine-bios.sys` and `limine.conf` go in `/boot/limine` on the
+  FAT32 `/boot`, and `limine bios-install` writes the boot sector, with stage 2 embedded
+  in the GPT, so no bios_boot partition. `kriss-limine-update` tells the two apart by
+  `/sys/firmware/efi` and runs `bios-install` again whenever Limine's boot code changes.
 - **Boot menu:** `kriss-limine-update` (`kriss-settings`) writes `limine.conf` after every
   kernel, initramfs or Limine change (pacman hook and mkinitcpio post hook) and whenever
   `/.snapshots` changes (path unit): a `KrissOS` directory with one versioned entry per
@@ -119,7 +125,7 @@ and installs KDE Plasma, which is not on the ISO. Offline, Plasma falls back to 
 - **Secure Boot:** not set up by the installer yet. Once `sbctl` has keys,
   `kriss-limine-update` hashes every path in `limine.conf` (BLAKE2b), enrolls the config's
   hash into Limine with `limine enroll-config` and signs it with `sbctl`; the pacman hook
-  re-signs the rest. Untested on real firmware.
+  re-signs the rest. Untested on real firmware. UEFI only: skipped on legacy BIOS.
 
 ## 3. Repository layout (monorepo, public GitHub org)
 
@@ -148,7 +154,9 @@ krissos/
   - `kernel.yml`: runs on a schedule, checks for new CachyOS kernel patch releases, opens a
     version-bump PR, and builds both kernels.
   - `iso.yml`: builds the live ISO on every tag (`110`, `115`, …), nightly, and on PRs that
-    touch `iso/`, then boots it in QEMU until the KrissOS Shell starts. Tags attach the ISO to a release.
+    touch `iso/`, then boots it in QEMU until the KrissOS Shell and the installer start, and
+    installs it unattended and boots the result, each under both OVMF (UEFI) and SeaBIOS
+    (legacy BIOS). Tags attach the ISO to a release.
 - **Repo hosting:** the pacman database and packages are uploaded as assets to a GitHub
   Release, and pacman fetches them over plain HTTPS. No server to run.
 - **Signing:** one GPG key, stored only in a GitHub Actions secret. Its public half ships in
