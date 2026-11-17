@@ -28,6 +28,8 @@ ShellRoot {
             screen: modelData
             WlrLayershell.layer: WlrLayer.Background
             WlrLayershell.namespace: "kriss-wallpaper"
+            // A click on the desktop gives it the keyboard, for the icons' keys.
+            WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
             exclusionMode: ExclusionMode.Ignore
             anchors { top: true; bottom: true; left: true; right: true }
             color: Theme.night
@@ -61,25 +63,10 @@ ShellRoot {
                 Item { id: spot; width: 1; height: 1 }
             }
 
-            // Drag on the desktop: a selection box, as on Windows.
-            // ponytail: selects nothing yet; the desktop has no icons to select.
-            MouseArea {
-                id: drag
+            // The icons, on the first screen as on Windows; the others get the selection box alone.
+            DesktopIcons {
                 anchors.fill: parent
-                acceptedButtons: Qt.LeftButton
-                property point from
-                onPressed: mouse => from = Qt.point(mouse.x, mouse.y)
-                Rectangle {
-                    visible: drag.pressed
-                    x: Math.min(drag.from.x, drag.mouseX)
-                    y: Math.min(drag.from.y, drag.mouseY)
-                    width: Math.abs(drag.mouseX - drag.from.x)
-                    height: Math.abs(drag.mouseY - drag.from.y)
-                    radius: 4
-                    color: Theme.alpha(Theme.accent, 0.15)
-                    border.width: 1
-                    border.color: Theme.alpha(Theme.accent, 0.7)
-                }
+                showIcons: modelData === Quickshell.screens[0]
             }
         }
     }
