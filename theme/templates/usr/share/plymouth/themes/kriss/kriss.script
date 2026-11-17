@@ -1,6 +1,11 @@
 # KrissOS boot splash. Generated from theme/tokens.json; do not edit.
 # logo.png is rendered from /usr/share/pixmaps/krissos.svg by the kriss-theme build.
 # ponytail: the spinner dots are text glyphs, so the theme needs no other images.
+#
+# The keris fades in on the background, a slow ring of dots turns under it, and when
+# plymouth-quit (its kriss.conf drop-in) sends the status "kriss-fade", everything fades
+# back to the bare background. Plymouth then quits keeping that frame, and the login
+# screen fades in from the same colour.
 Window.SetBackgroundTopColor({{bg.rgbf}});
 Window.SetBackgroundBottomColor({{bg.rgbf}});
 
@@ -10,6 +15,7 @@ cy = Window.GetY() + Window.GetHeight() / 2;
 logo = Image("logo.png");
 logo_sprite = Sprite(logo);
 logo_sprite.SetPosition(cx - logo.GetWidth() / 2, cy - logo.GetHeight() - 16, 1);
+logo_sprite.SetOpacity(0);
 
 n = 8;
 for (i = 0; i < n; i++) {
@@ -18,18 +24,36 @@ for (i = 0; i < n; i++) {
   a = i * 2 * Math.Pi / n;
   dot[i].SetPosition(cx + 20 * Math.Sin(a) - dot_image.GetWidth() / 2,
                      cy + 48 - 20 * Math.Cos(a) - dot_image.GetHeight() / 2, 2);
+  dot[i].SetOpacity(0);
 }
 
+# Plymouth calls refresh_callback 50 times a second.
+# shown goes from 0 to 1 as the splash fades in (0.5 s), and back after "kriss-fade" (0.3 s).
 tick = 0;
+shown = 0;
+fading = 0;
 fun refresh_callback() {
   global.tick++;
-  head = Math.Int(global.tick / 6) % global.n;
+  if (global.fading) {
+    global.shown = Math.Max(0, global.shown - 1 / 15);
+  } else {
+    global.shown = Math.Min(1, global.shown + 1 / 25);
+  }
+  # An ease out, as the shell's fades.
+  e = 1 - (1 - global.shown) * (1 - global.shown);
+  global.logo_sprite.SetOpacity(e);
+  head = Math.Int(global.tick / 8) % global.n;
   for (i = 0; i < global.n; i++) {
     behind = (head - i + global.n) % global.n;
-    global.dot[i].SetOpacity(1 - 0.85 * behind / (global.n - 1));
+    global.dot[i].SetOpacity(e * (1 - 0.85 * behind / (global.n - 1)));
   }
 }
 Plymouth.SetRefreshFunction(refresh_callback);
+
+fun update_status_callback(status) {
+  if (status == "kriss-fade") global.fading = 1;
+}
+Plymouth.SetUpdateStatusFunction(update_status_callback);
 
 # Disk-encryption passphrase prompt.
 prompt_sprite = Sprite();

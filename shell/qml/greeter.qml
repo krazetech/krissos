@@ -103,32 +103,39 @@ ShellRoot {
             anchors { top: true; bottom: true; left: true; right: true }
             color: Theme.night
 
-            LockFace { host: root }
+            // Fade in from black, where the boot splash ends (kriss-theme's plymouth theme).
+            Item {
+                anchors.fill: parent
+                opacity: 0
+                NumberAnimation on opacity { to: 1; duration: Theme.ms(Theme.slow); easing.type: Theme.ease }
 
-            // Other users, as on Windows.
-            Column {
-                anchors { left: parent.left; bottom: parent.bottom; margins: 36 }
-                spacing: 6
-                visible: root.users.length > 1
-                Repeater {
-                    model: root.users
-                    delegate: Choice {
-                        required property var modelData
-                        required property int index
-                        label: modelData[1]
-                        current: index === root.user
-                        onClicked: { root.user = index; root.message = ""; }
+                LockFace { host: root }
+
+                // Other users, as on Windows.
+                Column {
+                    anchors { left: parent.left; bottom: parent.bottom; margins: 36 }
+                    spacing: 6
+                    visible: root.users.length > 1
+                    Repeater {
+                        model: root.users
+                        delegate: Choice {
+                            required property var modelData
+                            required property int index
+                            label: modelData[1]
+                            current: index === root.user
+                            onClicked: { root.user = index; root.message = ""; }
+                        }
                     }
                 }
-            }
 
-            // The desktop to start; a click picks the next one.
-            Choice {
-                anchors { right: parent.right; bottom: parent.bottom; margins: 36 }
-                visible: root.sessions.length > 1
-                label: root.sessions.length ? root.sessions[root.session][0] : ""
-                current: true
-                onClicked: root.session = (root.session + 1) % root.sessions.length
+                // The desktop to start; a click picks the next one.
+                Choice {
+                    anchors { right: parent.right; bottom: parent.bottom; margins: 36 }
+                    visible: root.sessions.length > 1
+                    label: root.sessions.length ? root.sessions[root.session][0] : ""
+                    current: true
+                    onClicked: root.session = (root.session + 1) % root.sessions.length
+                }
             }
         }
     }

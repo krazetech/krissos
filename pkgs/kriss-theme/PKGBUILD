@@ -1,6 +1,6 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-theme
-pkgver=0.4.1
+pkgver=0.4.2
 pkgrel=1
 pkgdesc='KrissOS colours, fonts, wallpaper, Plasma, SDDM, Plymouth and Limine theme'
 arch=('any')

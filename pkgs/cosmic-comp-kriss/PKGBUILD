@@ -1,11 +1,12 @@
 # Maintainer: Kraze Tech
-# cosmic-comp with KrissOS patches: windows fade and scale when they open and close.
+# cosmic-comp with KrissOS patches: windows fade and scale when they open and close, and
+# the colour behind everything is black.
 # Follows Arch's cosmic-comp PKGBUILD. It replaces cosmic-comp, so pacman never moves back
 # to Arch's build on its own: bump pkgver here when Arch bumps cosmic-comp, rebase the
 # patch on the new tag, and update the patch's b2sum.
 pkgname=cosmic-comp-kriss
 pkgver=1.11.0
-pkgrel=2
+pkgrel=3
 pkgdesc='Compositor for the COSMIC desktop environment, with open and close animations'
 arch=('x86_64')
 url='https://github.com/pop-os/cosmic-comp'
@@ -26,6 +27,12 @@ b2sums=('4f6e0dbb8e7028ae8a47765ebd8ab198f87bacfe6d15e5856be51142f46aabddcb29b9f
 prepare() {
   cd cosmic-comp
   git apply "$srcdir/0001-open-close-animations.patch"
+  # Black where nothing is drawn (upstream: a dark grey), the boot splash's and the login
+  # screen's background, so no grey frame shows between them. grep fails the build if the
+  # line moved.
+  sed -i 's/CLEAR_COLOR: Color32F = Color32F::new(0.153, 0.161, 0.165, 1.0)/CLEAR_COLOR: Color32F = Color32F::new(0.0, 0.0, 0.0, 1.0)/' \
+    src/backend/render/mod.rs
+  grep -q 'CLEAR_COLOR: Color32F = Color32F::new(0.0, 0.0, 0.0, 1.0)' src/backend/render/mod.rs
   cargo fetch --locked
   sed 's/lto = "fat"/lto = "thin"/' -i Cargo.toml
 }
