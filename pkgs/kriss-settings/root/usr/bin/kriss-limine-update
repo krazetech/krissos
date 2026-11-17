@@ -7,24 +7,39 @@
 #   Windows                        (when the installer found it)
 # Runs after kernel, initramfs and Limine updates (pacman hook, mkinitcpio post hook)
 # and whenever /.snapshots changes (kriss-limine-update.path). Does nothing on systems
-# the KrissOS installer did not set up (no /etc/kernel/cmdline or no Limine on the ESP
-# at /efi or /boot), or while a snapshot is booted: that root's kernels are not the ones in /boot.
+# the KrissOS installer did not set up (no /etc/kernel/cmdline, no Limine on the ESP at
+# /efi or /boot, or on legacy BIOS no /boot/limine), or while a snapshot is booted: that
+# root's kernels are not the ones in /boot.
 #   kriss-limine-update          write the menu
 #   kriss-limine-update --keep   before pacman replaces a kernel: copy it to
 #                                /boot/kriss/VERSION so snapshots made with it still boot
 # Inputs: /etc/kernel/cmdline (with rootflags=subvol=@), /etc/kriss/limine.d/*.conf
 # (extra entries, such as Windows), /usr/share/kriss/theme/limine.conf and
 # limine-wallpaper[-WxH].png (kriss-theme).
-# Secure Boot: once sbctl has keys, every path gets a BLAKE2b hash, the config's hash is
-# enrolled into Limine (limine enroll-config) and Limine is signed again.
+# Legacy BIOS (no /sys/firmware/efi): the menu, the wallpaper and limine-bios.sys live in
+# /boot/limine on the FAT /boot, and `limine bios-install` runs again whenever Limine's
+# limine-bios.sys changes, as the boot sector and stage 2 must match it.
+# Secure Boot (UEFI only): once sbctl has keys, every path gets a BLAKE2b hash, the
+# config's hash is enrolled into Limine (limine enroll-config) and Limine is signed again.
 set -euo pipefail
 shopt -s nullglob
 
-# The ESP: /efi as the installer sets it up, or /boot when /boot is the ESP itself
-# (an Arch or CachyOS install moved over with kriss migrate).
-esp=/efi/EFI
-mountpoint -q /efi || esp=/boot/EFI
-[ -f /etc/kernel/cmdline ] && [ -f "$esp/limine/BOOTX64.EFI" ] || exit 0
+# Where Limine lives. UEFI: the ESP at /efi as the installer sets it up, or /boot when
+# /boot is the ESP itself (an Arch or CachyOS install moved over with kriss migrate);
+# dirs lists its menu copies. Legacy BIOS: /boot/limine. rel is that directory as Limine
+# sees it from its own partition (boot()).
+bios=0
+if [ -d /sys/firmware/efi ]; then
+    esp=/efi/EFI
+    mountpoint -q /efi || esp=/boot/EFI
+    [ -f "$esp/limine/BOOTX64.EFI" ] || exit 0
+    dir=$esp/limine rel=EFI/limine dirs=("$esp/limine" "$esp/BOOT")
+else
+    bios=1
+    [ -d /boot/limine ] || exit 0
+    dir=/boot/limine rel=limine dirs=(/boot/limine)
+fi
+[ -f /etc/kernel/cmdline ] || exit 0
 [ -n "${KRISS_ROLLBACK:-}" ] || ! grep -qw kriss_snapshot=1 /proc/cmdline || exit 0
 snaps=${KRISS_SNAPSHOTS:-/.snapshots}
 theme=/usr/share/kriss/theme
@@ -38,7 +53,7 @@ for c in /sys/class/drm/card*-*/; do
     break
 done
 sb=0
-if command -v sbctl >/dev/null && { [ -d /var/lib/sbctl/keys ] || [ -d /usr/share/secureboot/keys ]; }; then
+if (( ! bios )) && command -v sbctl >/dev/null && { [ -d /var/lib/sbctl/keys ] || [ -d /usr/share/secureboot/keys ]; }; then
     sb=1
 fi
 
@@ -90,7 +105,7 @@ xml() {
 menu() {
     cat "$theme/limine.conf" 2>/dev/null || true
     if [ -f "$wp" ]; then
-        echo "wallpaper: $(hashed 'boot():/EFI/limine/kriss-wallpaper.png' "$wp")"
+        echo "wallpaper: $(hashed "boot():/$rel/kriss-wallpaper.png" "$wp")"
     fi
     echo 'timeout: 5'
     local base first=${order[0]:-}
@@ -138,24 +153,29 @@ menu() {
 conf=$(mktemp)
 trap 'rm -f "$conf"' EXIT
 menu >"$conf"
-for d in "$esp/limine" "$esp/BOOT"; do
+if (( bios )) && ! cmp -s /usr/share/limine/limine-bios.sys "$dir/limine-bios.sys"; then
+    # Boot sector and stage 2 first: if that fails, the next run tries again.
+    limine bios-install "/dev/$(lsblk -no PKNAME "$(findmnt -nvo SOURCE /boot)")"
+    cp /usr/share/limine/limine-bios.sys "$dir/limine-bios.sys"
+fi
+for d in "${dirs[@]}"; do
     # EFI/BOOT is ours only when the installer put Limine there (and a limine.conf).
-    [ -f "$d/limine.conf" ] || [ "$d" = "$esp/limine" ] || continue
+    [ -f "$d/limine.conf" ] || [ "$d" = "$dir" ] || continue
     if (( sb )); then
         # Start from a fresh copy, so the enrolled hash and signature are this config's.
         cp /usr/share/limine/BOOTX64.EFI "$d/BOOTX64.EFI"
         limine enroll-config "$d/BOOTX64.EFI" "$(b2sum "$conf" | cut -d' ' -f1)"
         sbctl sign -s "$d/BOOTX64.EFI"
-    elif ! cmp -s /usr/share/limine/BOOTX64.EFI "$d/BOOTX64.EFI"; then
+    elif (( ! bios )) && ! cmp -s /usr/share/limine/BOOTX64.EFI "$d/BOOTX64.EFI"; then
         cp /usr/share/limine/BOOTX64.EFI "$d/BOOTX64.EFI"
     fi
     cp "$conf" "$d/limine.conf.new"
     mv "$d/limine.conf.new" "$d/limine.conf"
 done
 # A missing wallpaper only costs the background, so a full ESP is not an error.
-if [ -f "$wp" ] && ! cmp -s "$wp" "$esp/limine/kriss-wallpaper.png"; then
-    cp "$wp" "$esp/limine/kriss-wallpaper.png" ||
-        echo 'kriss: could not copy the boot menu wallpaper to the ESP' >&2
+if [ -f "$wp" ] && ! cmp -s "$wp" "$dir/kriss-wallpaper.png"; then
+    cp "$wp" "$dir/kriss-wallpaper.png" ||
+        echo 'kriss: could not copy the boot menu wallpaper to the boot partition' >&2
 fi
 
 # Drop kernel copies no listed snapshot needs any more.

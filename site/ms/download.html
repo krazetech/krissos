@@ -64,7 +64,7 @@
         <p class="lede">KrissOS masih baby lagi. Cuba dulu dalam VM atau PC spare, jangan terus hentam PC utama anda. Belum masa lagi, sabar.</p>
       </div>
       <ul class="list reveal">
-        <li><span>PC anda<small>PC Intel dan AMD 64-bit. Geng Mac Apple Silicon, tunggu sat, nanti ada imej sendiri.</small></span></li>
+        <li><span>PC anda<small>PC Intel dan AMD 64-bit, UEFI ka BIOS lama pun boleh. Geng Mac Apple Silicon, tunggu sat, nanti ada imej sendiri.</small></span></li>
         <li><span>Desktop<small>KrissOS Shell by default. Nak KDE Plasma? Pilih ja dalam installer.</small></span></li>
         <li><span>Update<small>Update kecik-kecik selalu, terus mai dari Arch, campur pakej signed kami. Setiap update ambil snapshot dulu, jadi kalau buat hal, patah balik ja.</small></span></li>
         <li><span>Keluaran<small>Build tiap malam masuk <code>preview</code>. Keluaran rasmi pakai nama motor Kriss: <code>110</code>, <code>115</code>, dan seterusnya.</small></span></li>
@@ -77,7 +77,7 @@
       <div class="card note reveal">
         <h2>Dua setting ja, lepas tu boot.</h2>
         <ul class="list">
-          <li><span>On UEFI dulu<small>Dalam virt-manager, GNOME Boxes, VirtualBox atau VMware, pilih UEFI (OVMF) sebelum boot pertama. Installer perlu UEFI, dan itu yang CI test hari-hari.</small></span></li>
+          <li><span>UEFI kalau ada<small>Legacy BIOS (CSM) pun jalan, jadi PC lama boleh install, dan CI test dua-dua hari-hari. Tapi kalau PC atau VM bagi pilih UEFI (OVMF dalam virt-manager, GNOME Boxes, VirtualBox atau VMware), pilih UEFI: Windows 10 dan 11 guna tu, so dual-boot kongsi satu menu boot.</small></span></li>
           <li><span>RAM 4 GB atau lebih<small>Sesi live jalan dari RAM. Bagi dua core CPU dan on 3D acceleration, baru smooth. Kedekut RAM, lembab la.</small></span></li>
           <li><span>Tak payah login<small>Sesi live terus masuk KrissOS Shell. Tekan kekunci Windows, launcher terus keluar.</small></span></li>
         </ul>

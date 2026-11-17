@@ -88,6 +88,7 @@ jobs:
           if-no-files-found: ignore
 
       # Unattended install onto a QEMU disk with the installer's own scripts, then boot it.
+      # The boot test also boots the ISO under SeaBIOS (legacy BIOS).
       - name: Install test
         if: always() && steps.build.outcome == 'success'
         run: |
@@ -95,14 +96,21 @@ jobs:
           df -h /
           iso/install-test.sh out/*.iso install-test
 
+      # The same under SeaBIOS: the installer's legacy BIOS path (Limine bios-install, no ESP).
+      - name: Install test (legacy BIOS)
+        if: always() && steps.build.outcome == 'success'
+        run: |
+          rm -f install-test/disk.qcow2
+          FIRMWARE=bios iso/install-test.sh out/*.iso install-test-bios
+
       - name: Upload install test
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: install-test
           path: |
-            install-test/*.log
-            install-test/*.png
+            install-test*/*.log
+            install-test*/*.png
           if-no-files-found: ignore
 
       # Also when a test fails, so the ISO can be tried by hand.
