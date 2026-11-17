@@ -35,6 +35,7 @@ Item {
         pin: "M12 17v5M9 4h6l-1 6 3 3v2H7v-2l3-3z",
         unpin: "M12 17v5M9 4h6l-1 6 3 3v2H7v-2l3-3zM3 3l18 18",
         close: "M6 6l12 12M18 6L6 18",
+        trash: "M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13",
         lock: "M6 11h12v10H6zM8 11V7a4 4 0 0 1 8 0v4",
         sleep: "M20 14a8 8 0 1 1-10-10 6 6 0 0 0 10 10z",
         restart: "M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5",
