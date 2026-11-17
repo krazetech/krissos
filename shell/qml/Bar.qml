@@ -6,9 +6,10 @@ import Quickshell.Widgets
 import Quickshell.WindowManager
 import Quickshell.Services.SystemTray
 
-// The taskbar: full width along the bottom of each screen, 48 px like Windows 11. Keris launcher, this screen's workspaces, pinned and running
-// apps on the left; tray icons, power profile, quick settings (network, volume,
-// battery), notifications and the clock on the right.
+// The taskbar: full width along the bottom of each screen, 48 px like Windows 11. Keris launcher,
+// the search box, this screen's workspaces and the pinned and running apps on the left (or centred);
+// tray icons, power profile, quick settings (network, volume, battery), notifications and the
+// clock on the right. Options come from shell.json (see Desktop.qml).
 PanelWindow {
     id: bar
 
@@ -22,28 +23,72 @@ PanelWindow {
     WlrLayershell.keyboardFocus: kbIndex >= 0 ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.OnDemand
     anchors { bottom: true; left: true; right: true }
     implicitHeight: Theme.barHeight
-    // Maximized and snapped windows stop at the bar.
-    exclusiveZone: Theme.barHeight
+    // Maximized and snapped windows stop at the bar, unless it auto-hides.
+    exclusiveZone: Desktop.taskbarAutoHide ? 0 : Theme.barHeight
     color: "transparent"
     // Frosted glass: cosmic-comp blurs what is behind the bar.
     BackgroundEffect.blurRegion: Region { item: body }
 
-    // Pinned apps first, then anything else that has a window open.
-    readonly property var apps: {
+    // This bar's windows: the ones on its screen, when every screen has a bar.
+    readonly property var wins: Desktop.taskbarAllScreens
+        ? Windows.list.filter(w => !w.output || w.output === bar.screen?.name) : Windows.list
+
+    // Pinned apps first, then anything else that has a window open: one button per app.
+    readonly property var groups: {
         const out = [];
         const seen = {};
-        // ponytail: no overflow handling; a long pin list just crowds the bar.
         for (const e of Desktop.pinnedEntries()) {
             out.push({ entry: e, appId: e.id });
             seen[e.id.toLowerCase()] = true;
         }
-        for (const w of Windows.list) {
+        for (const w of wins) {
             const key = w.appId.toLowerCase();
             if (!key || seen[key]) continue;
             seen[key] = true;
             out.push({ entry: DesktopEntries.heuristicLookup(w.appId), appId: w.appId });
         }
         return out;
+    }
+    // Uncombined: a labelled button per window, in place of its app's.
+    readonly property var loose: {
+        const out = [];
+        for (const g of groups) {
+            const ws = Windows.forApp(g.appId, wins);
+            if (ws.length === 0) out.push(g);
+            for (const w of ws) out.push({ entry: g.entry, appId: g.appId, win: w });
+        }
+        return out;
+    }
+    // The room for app buttons, left of the tray.
+    readonly property real room: right.x - appRow.x - 16
+    // What the uncombined buttons need at full width.
+    readonly property real looseWidth: loose.reduce((sum, a) => sum + (a.win ? 168 : Theme.barButton) + appRow.spacing, 0)
+    readonly property bool combined: Desktop.taskbarCombine === "full" ? looseWidth > room : Desktop.taskbarCombine !== "never"
+    // Labelled buttons shrink to fit, as on Windows.
+    // ponytail: at 96 px they stop shrinking and run into the tray; scroll them if that matters.
+    readonly property real labelWidth: {
+        const labels = loose.filter(a => a.win).length;
+        const icons = (loose.length - labels) * (Theme.barButton + appRow.spacing);
+        return Math.max(96, Math.min(168, (room - icons) / Math.max(1, labels) - appRow.spacing));
+    }
+    // ponytail: combined buttons have no overflow handling; a long pin list just crowds the bar.
+    readonly property var apps: combined ? groups : loose
+
+    // Auto-hide: the bar slides off the bottom edge and comes back when the pointer reaches it,
+    // and stays while its menu, one of its panels or the keyboard (Windows+T) is on it.
+    readonly property bool near: hover.hovered || edgeHover.hovered
+    onNearChanged: if (!near) linger.restart()
+    Timer { id: linger; interval: 600 }
+    readonly property bool tucked: Desktop.taskbarAutoHide && !near && !linger.running && !menu.visible && kbIndex < 0
+        && !((Desktop.launcherOpen || Desktop.quickOpen || Desktop.notificationsOpen || Desktop.calendarOpen) && Desktop.screen === bar.screen)
+    mask: tucked ? edgeRegion : null
+    Region { id: edgeRegion; item: edge }
+    Item {
+        id: edge
+        anchors.bottom: parent.bottom
+        width: parent.width
+        height: 2
+        HoverHandler { id: edgeHover }
     }
 
     // The app button under the pointer, or null: the one place hover previews hook in.
@@ -53,8 +98,12 @@ PanelWindow {
 
     Rectangle {
         id: body
-        anchors.fill: parent
+        width: parent.width
+        height: parent.height
+        y: bar.tucked ? height : 0
+        Behavior on y { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
         color: Theme.bar
+        HoverHandler { id: hover }
 
         // Right-click on the bar itself (between the buttons): the taskbar menu, at the pointer.
         MouseArea {
@@ -93,9 +142,12 @@ PanelWindow {
         // A soft rim along the top edge instead of a border.
         Rectangle { width: parent.width; height: 1; color: Theme.rim }
 
+        // Start, search, workspaces and apps: at the left edge, or centred on the bar as on
+        // Windows 11, but never running into the tray.
         RowLayout {
-            anchors.fill: parent
-            anchors.leftMargin: 4
+            id: tasks
+            x: Desktop.taskbarAlignment === "centre" ? Math.max(4, Math.min((bar.width - width) / 2, right.x - width - 8)) : 4
+            height: parent.height
             spacing: 8
 
             // Keris: opens the launcher, like the Start button.
@@ -110,7 +162,7 @@ PanelWindow {
                 Rectangle {
                     anchors.fill: parent
                     radius: Theme.barRadius
-                    color: start.containsMouse || Desktop.launcherOpen && Desktop.screen === bar.screen ? Theme.card : "transparent"
+                    color: start.containsMouse || Desktop.launcherOpen && !Desktop.launcherSearch && Desktop.screen === bar.screen ? Theme.card : "transparent"
                     Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                 }
                 // The KrissOS emblem from kriss-theme.
@@ -124,6 +176,34 @@ PanelWindow {
                     Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                 }
                 hoverEnabled: true
+            }
+
+            // The search box: opens Start ready to search.
+            MouseArea {
+                id: searchBox
+                Layout.preferredWidth: 200
+                Layout.preferredHeight: Theme.barButton - 8
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: bar.toggle("launcherOpen", true)
+                Rectangle {
+                    anchors.fill: parent
+                    radius: height / 2
+                    color: searchBox.containsMouse || Desktop.launcherOpen && Desktop.launcherSearch && Desktop.screen === bar.screen ? Theme.cardHover : Theme.card
+                    Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+                }
+                Row {
+                    anchors.verticalCenter: parent.verticalCenter
+                    x: 12
+                    spacing: 8
+                    Glyph { name: "search"; size: 16; color: Theme.soft }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: Tr.t("Search")
+                        color: Theme.soft
+                        font { family: Theme.sans; pixelSize: 13 }
+                    }
+                }
             }
 
             // Workspaces: dots, the active one stretched into a cyan pill.
@@ -166,8 +246,13 @@ PanelWindow {
                     delegate: AppButton {}
                 }
             }
+        }
 
-            Item { Layout.fillWidth: true }
+        RowLayout {
+            id: right
+            anchors.right: parent.right
+            height: parent.height
+            spacing: 8
 
             // Tray icons (Steam, Discord...): click to open, right-click for the app's menu.
             Row {
@@ -296,11 +381,13 @@ PanelWindow {
         }
     }
 
-    // Open or close one of the panels on this bar's screen (closing the others).
-    function toggle(panel) {
-        const open = !(Desktop[panel] && Desktop.screen === bar.screen);
+    // Open or close one of the panels on this bar's screen (closing the others). search: Start
+    // from the search box, which switches to plain Start (and back) rather than closing.
+    function toggle(panel, search) {
+        const open = !(Desktop[panel] && Desktop.screen === bar.screen && Desktop.launcherSearch === !!search);
         Desktop.launcherOpen = Desktop.notificationsOpen = Desktop.quickOpen = Desktop.calendarOpen = false;
         Desktop.screen = bar.screen;
+        Desktop.launcherSearch = !!search;
         Desktop[panel] = open;
     }
 
@@ -311,7 +398,8 @@ PanelWindow {
     // A taskbar button: launch the app, or bring up, minimize or step through its windows.
     function activate(i, cycle) {
         const a = apps[i];
-        if (a && !Windows.activateApp(a.appId, cycle)) a.entry?.execute();
+        if (a?.win) Windows.toggleWindow(a.win, cycle);
+        else if (a && !Windows.activateApp(a.appId, cycle, wins)) a.entry?.execute();
     }
     function newWindow(i) { apps[i]?.entry?.execute(); }
 
@@ -326,7 +414,7 @@ PanelWindow {
     function jumpList(i, byKeyboard) {
         const a = apps[i], btn = appButtons.itemAt(i);
         if (!a || !btn) return;
-        const e = a.entry, wins = Windows.forApp(a.appId), pinId = e?.id ?? a.appId;
+        const e = a.entry, wins = a.win ? [a.win] : Windows.forApp(a.appId, bar.wins), pinId = e?.id ?? a.appId;
         const out = [];
         const files = Desktop.recentFor(e, 8);
         if (files.length) out.push({ header: Tr.t("Recent") });
@@ -380,7 +468,7 @@ PanelWindow {
         const tools = appEntries([["com.system76.CosmicTerm", Tr.t("Terminal")]]);
         const apps = (tm ? [{ text: Tr.t("Task Manager"), run: () => tm.execute() }] : [])
             .concat(appEntries([[settings, Tr.t("Settings")], ["com.system76.CosmicFiles", Tr.t("Files")]]))
-            .concat([{ text: Tr.t("Search"), run: () => bar.toggle("launcherOpen") }]);
+            .concat([{ text: Tr.t("Search"), run: () => bar.toggle("launcherOpen", true) }]);
         const power = { text: Tr.t("Shut down or sign out"), sub: [
             { text: Tr.t("Sign out"), glyph: "signout", run: () => Qt.quit() },  // the session ends with the shell
             { text: Tr.t("Sleep"), glyph: "sleep", run: () => Quickshell.execDetached(["systemctl", "suspend"]) },
@@ -411,7 +499,7 @@ PanelWindow {
         required property int index
         readonly property string pinId: modelData.entry?.id ?? modelData.appId
         readonly property bool pinned: Desktop.isPinned(pinId)
-        readonly property var wins: Windows.forApp(modelData.appId)
+        readonly property var wins: modelData.win ? [modelData.win] : Windows.forApp(modelData.appId, bar.wins)
         readonly property bool front: wins.some(w => w.active && !w.minimized)
         // What the app sent over D-Bus: progress, a badge count, a call for attention.
         readonly property var info: Windows.entries[pinId.toLowerCase()] ?? {}
@@ -422,7 +510,7 @@ PanelWindow {
         property bool dragging: false
         readonly property real step: width + appRow.spacing
 
-        width: Theme.barButton
+        width: modelData.win ? bar.labelWidth : Theme.barButton
         height: Theme.barButton
         z: dragging ? 1 : 0
         hoverEnabled: true
@@ -482,9 +570,20 @@ PanelWindow {
                 }
             }
             IconImage {
-                anchors.centerIn: parent
+                id: icon
+                x: btn.modelData.win ? 10 : (parent.width - width) / 2
+                anchors.verticalCenter: parent.verticalCenter
                 implicitSize: Theme.barIcon
                 source: Quickshell.iconPath(btn.modelData.entry?.icon ?? btn.modelData.appId, "application-x-executable")
+            }
+            // Uncombined: the window's title.
+            Text {
+                visible: !!btn.modelData.win
+                anchors { left: icon.right; right: parent.right; leftMargin: 8; rightMargin: 10; verticalCenter: parent.verticalCenter }
+                text: btn.modelData.win?.title ?? ""
+                elide: Text.ElideRight
+                color: Theme.fg
+                font { family: Theme.sans; pixelSize: 12 }
             }
         }
         // A badge count, top right.

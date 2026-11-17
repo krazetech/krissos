@@ -52,24 +52,30 @@ Singleton {
         helper.write("activate " + id + "\n");
     }
 
-    // An app's windows, oldest first (the order a click steps through them).
-    function forApp(appId) {
+    // An app's windows, oldest first (the order a click steps through them), out of `among`
+    // (one bar's windows) or all of them.
+    function forApp(appId, among) {
         const key = appId.toLowerCase();
-        return list.filter(w => w.appId.toLowerCase() === key).sort((a, b) => a.id - b.id);
+        return (among ?? list).filter(w => w.appId.toLowerCase() === key).sort((a, b) => a.id - b.id);
     }
 
     // A taskbar button's click, as on Windows. Nothing open: false, so the caller launches
     // the app. One window: bring it up, or minimize it when it is already in front. Several:
     // bring up the one used last, then, while one of them is in front, the next in turn.
     // cycle (Ctrl+click) only ever steps, never minimizes.
-    function activateApp(appId, cycle) {
-        const wins = forApp(appId);
+    function activateApp(appId, cycle, among) {
+        const wins = forApp(appId, among);
         if (wins.length === 0) return false;
         const front = wins.findIndex(w => w.active && !w.minimized);
         if (front < 0) activate((byRecent.find(w => wins.indexOf(w) >= 0) ?? wins[0]).id);
         else if (wins.length > 1) activate(wins[(front + 1) % wins.length].id);
         else if (!cycle) helper.write("minimize " + wins[front].id + "\n");
         return true;
+    }
+
+    // An uncombined button's click: bring the window up, or minimize it when it is in front.
+    function toggleWindow(w, cycle) {
+        helper.write((w.active && !w.minimized && !cycle ? "minimize " : "activate ") + w.id + "\n");
     }
 
     // Windows+D: minimize everything; pressing it again restores what it minimized.

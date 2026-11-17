@@ -6,7 +6,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Services.UPower
 
-// KrissOS Shell: wallpaper, one floating bottom bar per screen, the launcher,
+// KrissOS Shell: wallpaper, the taskbar on each screen, the launcher,
 // notifications, quick settings, the lock screen and the volume and brightness pop-up.
 ShellRoot {
     id: root
@@ -16,6 +16,7 @@ ShellRoot {
         const open = !Desktop[panel];
         Desktop.launcherOpen = Desktop.notificationsOpen = Desktop.quickOpen = Desktop.calendarOpen = false;
         if (open) Desktop.screen = Desktop.focusedScreen();
+        Desktop.launcherSearch = false;
         Desktop[panel] = open;
     }
 
@@ -43,7 +44,7 @@ ShellRoot {
 
     Variants {
         id: bars
-        model: Quickshell.screens
+        model: Desktop.taskbarAllScreens ? Quickshell.screens : Quickshell.screens.slice(0, 1)
         Bar {}
     }
 
