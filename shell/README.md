@@ -62,6 +62,23 @@ gsettings set org.gnome.desktop.interface color-scheme default
 
 The last one switches to the light variant; `prefer-dark` switches back.
 
+## Performance check
+
+`shell/perf-check` measures the running shell against the budget: idle CPU over 10 seconds and
+memory (RSS and PSS) for `qs` and every process it started, then frame pacing for each surface.
+For the frames it opens a nested cosmic-comp window running the same QML with Qt's render timing,
+opens and closes the launcher, quick settings, notifications, the calendar and Show desktop
+through their IPC commands, and sends a toast. A frame fails if it arrives a refresh late in the
+nested window (60 Hz), or takes longer to build than one refresh of your fastest monitor.
+
+```bash
+shell/perf-check
+```
+
+It prints one line per check and exits 1 on any FAIL. `--json` prints the numbers for a pull
+request, and `--no-frames` skips the nested window. A surface that drew nothing (Show desktop
+with no windows open) is SKIP.
+
 ## Login screen
 
 `qml/greeter.qml` is the login screen. It looks like the lock screen, lists other users at the
