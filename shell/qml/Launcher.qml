@@ -94,8 +94,10 @@ PanelWindow {
     // Open, and pin or unpin, for an app; byKeyboard highlights the first item.
     function appMenuFor(entry, item, byKeyboard) {
         appMenu.show(item, [
-            [Tr.t("Open"), () => launch(entry)],
-            [Desktop.isPinned(entry.id) ? Tr.t("Unpin from taskbar") : Tr.t("Pin to taskbar"), () => Desktop.togglePin(entry.id)]
+            { text: Tr.t("Open"), icon: entry.icon, run: () => launch(entry) },
+            Desktop.isPinned(entry.id)
+                ? { text: Tr.t("Unpin from taskbar"), glyph: "unpin", run: () => Desktop.togglePin(entry.id) }
+                : { text: Tr.t("Pin to taskbar"), glyph: "pin", run: () => Desktop.togglePin(entry.id) }
         ], byKeyboard);
     }
     // The menu key (or Shift+F10) on the selected app, as on Windows.
@@ -118,28 +120,11 @@ PanelWindow {
         query = ""; allApps = false; powerMenu = false; current = 0;
         search.text = "";
         search.forceActiveFocus();
-        recentFile.reload();
     }
     onShownChanged: current = 0
     onResultsChanged: current = 0
 
-    // Recently used files, from the list GTK and most other apps keep.
-    FileView {
-        id: recentFile
-        path: Quickshell.env("HOME") + "/.local/share/recently-used.xbel"
-        printErrors: false
-    }
-
-    readonly property var recentAll: {
-        const text = recentFile.text() ?? "";
-        const out = [];
-        const re = /<bookmark\s[^>]*href="([^"]+)"[^>]*modified="([^"]+)"/g;
-        let m;
-        while ((m = re.exec(text)) !== null)
-            out.push({ href: m[1], when: new Date(m[2]), name: decodeURIComponent(m[1].split("/").pop()) });
-        // ponytail: regex over the XBEL file; fine for the few hundred entries it holds.
-        return out.sort((a, b) => b.when - a.when).slice(0, 200);
-    }
+    readonly property var recentAll: Desktop.recent
     readonly property var recent: recentAll.slice(0, 4)
 
     MouseArea {

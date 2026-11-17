@@ -9,6 +9,9 @@
 #   kriss-shell lock       lock the screen (Windows+L)
 #   kriss-shell greeter    the login screen, which greetd runs (see shell/README.md)
 #   kriss-shell desktop    show the desktop, or bring the windows back (Windows+D)
+#   kriss-shell taskbar focus|startMenu|open N|newWindow N|jumpList N
+#                          the taskbar keys: Windows+T, Windows+X, Windows+1…9,
+#                          Windows+Shift+1…9 and Windows+Alt+1…9
 #   kriss-shell switcher next|previous
 #                          the Alt+Tab window switcher (Alt+Tab and Alt+Shift+Tab)
 #   kriss-shell media playPause|next|previous
@@ -39,6 +42,9 @@ desktop)
     ;;
 switcher | media)
     qs -p "$qml" ipc call "$1" "${2:?usage: kriss-shell $1 ACTION}"
+    ;;
+taskbar)
+    qs -p "$qml" ipc call taskbar "${2:?usage: kriss-shell taskbar ACTION [N]}" ${3:+"$3"}
     ;;
 brightness)
     # The brightness keys: set it and show the level, or just set it without the shell.
@@ -163,7 +169,7 @@ greeter)
     wait "$comp"
     ;;
 *)
-    echo "usage: kriss-shell [launcher|quick|notifications|calendar|lock|desktop|switcher next|media playPause|brightness STEP|screenshot [region]|greeter]" >&2
+    echo "usage: kriss-shell [launcher|quick|notifications|calendar|lock|desktop|taskbar ACTION|switcher next|media playPause|brightness STEP|screenshot [region]|greeter]" >&2
     exit 2
     ;;
 esac

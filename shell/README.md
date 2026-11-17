@@ -108,7 +108,28 @@ keyboard rules. Every animation goes through `Theme.ms()`, which is 0 when
 
 Pinned apps (in taskbar order) and Do not disturb are kept in `~/.config/kriss/shell.json`.
 Right-click an app on the bar or in the launcher to pin or unpin it; drag a pinned app along the
-bar to move it. Without the file, the defaults in `qml/Desktop.qml` apply.
+bar to move it. Without the file, the defaults in `qml/Desktop.qml` apply. **Taskbar settings**
+(right-click an empty part of the bar) opens this file until a Personalise page exists.
+
+## Taskbar
+
+It behaves like Windows 11's. Each app has one button, pinned or not, with all its windows on it.
+
+| Do | Does |
+|---|---|
+| Click | Opens the app; with one window, brings it up, or minimizes it when it is in front; with several, brings up the last one used, then steps through the others |
+| Ctrl+click | Steps through the app's windows (never minimizes) |
+| Shift+click, middle click | A new window |
+| Right-click an app | Jump list: recent files for the app, its own tasks (desktop file actions), the app, pin or unpin, close window or close all windows |
+| Right-click Start, Windows+X | Installed apps, power options, system, network, Terminal, Task Manager, Settings, Files, Search, Shut down or sign out, Desktop |
+| Right-click the bar | Task Manager (the first system monitor installed) and Taskbar settings |
+| The strip right of the clock | Show the desktop; again to bring the windows back |
+
+Under each button: a short mark for a running app and a longer accent pill for the app in front.
+Apps that send Unity launcher entries over D-Bus (the way Ubuntu's dock reads them) also get a
+badge count, a progress bar and a red flash when they want attention. Menus work from the
+keyboard the way Radix menus do (arrows, Home, End, Enter, Esc, Right and Left for submenus,
+type a letter to jump). `Bar.previewFor` is the app button under the pointer, for hover previews.
 
 ## Windows shortcuts
 
@@ -121,11 +142,15 @@ bar to move it. Without the file, the defaults in `qml/Desktop.qml` apply.
 | Windows+D | Show the desktop; again to bring the windows back |
 | Windows+E | COSMIC Files |
 | Windows+L | Lock |
-| Menu key, Shift+F10 | In the launcher, the selected app's menu |
+| Menu key, Shift+F10 | In the launcher or on a taskbar button, its menu |
+| Windows+T | Put the keyboard on the taskbar buttons, again to step to the next; arrows move, Enter opens, Shift+Enter opens a new window, Esc leaves |
+| Windows+X | The Start button's menu |
 | Windows+Left / Right | Snap the window to that half (Windows+Shift+Up / Down then makes it a quarter) |
 | Windows+Up / Down | Maximize / minimize |
-| Windows+1…9 | Go to that workspace |
-| Windows+Shift+1…9 | Move the window to that workspace |
+| Windows+1…9 | Open the app on that taskbar button, or switch to it; again to step through its windows |
+| Windows+Shift+1…9 | A new window of the app on that taskbar button |
+| Windows+Alt+1…9 | That taskbar button's jump list |
+| Windows+Ctrl+Left / Right | Previous / next workspace (Windows+Ctrl+Shift+Left / Right takes the window along) |
 | Print Screen | Screenshot of everything, to `~/Pictures/Screenshots` and the clipboard |
 | Windows+Shift+S | Screenshot of a dragged region |
 | Alt+Tab, Alt+Shift+Tab | Switch windows, most recent first; let go of Alt to switch, Esc to cancel |
