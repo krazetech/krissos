@@ -1,6 +1,6 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-shell
-pkgver=0.2.8
+pkgver=0.2.9
 pkgrel=1
 pkgdesc='KrissOS Shell: bar, launcher, quick settings, notifications and lock screen on cosmic-comp'
 arch=('any')
@@ -59,13 +59,14 @@ import kriss_protocols.ext_foreign_toplevel_list_v1'
 package() {
   # ponytail: added here, not in the global array, for the same reason as kriss-settings:
   # CI builds each package alone and --syncdeps cannot resolve [kriss] packages yet.
-  depends+=('kriss-theme>=0.3.1' 'kriss-settings>=0.3.1')
+  depends+=('kriss-theme>=0.5.0' 'kriss-settings>=0.3.1')
 
   install -Dm755 "$_shell/session/kriss-shell" "$pkgdir/usr/bin/kriss-shell"
   install -Dm755 "$_shell/kriss-shell-toplevels" "$pkgdir/usr/bin/kriss-shell-toplevels"
   install -Dm644 "$_shell/session/kriss-shell.desktop" "$pkgdir/usr/share/wayland-sessions/kriss-shell.desktop"
   install -Dm644 -t "$pkgdir/usr/lib/systemd/user" "$_shell/session/kriss-shell-session.target"
   install -Dm644 "$_shell/session/logind.conf" "$pkgdir/usr/lib/systemd/logind.conf.d/50-kriss-shell.conf"
+  install -Dm644 "$_shell/session/greetd.conf" "$pkgdir/usr/lib/systemd/system/greetd.service.d/kriss-shell.conf"
   install -d "$pkgdir/usr/share/kriss-shell" "$pkgdir/usr/lib/kriss-shell"
   cp -r --no-preserve=ownership "$srcdir/qml" "$srcdir/config/cosmic" "$pkgdir/usr/share/kriss-shell/"
   cp -r --no-preserve=ownership "$srcdir/kriss_protocols" "$pkgdir/usr/lib/kriss-shell/"

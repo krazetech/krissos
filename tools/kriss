@@ -136,13 +136,15 @@ nvidia_configure() {
   # Keep nouveau out of the initramfs, as the installer does for nvidia-utils: the kms hook
   # loads it early and the NVIDIA driver must not race with it. nvidia-580xx-utils
   # blacklists nouveau for the rest of the boot.
+  # The boot splash goes too: plymouth needs early KMS (installer/lib/configure).
   f=$ETC/mkinitcpio.conf.d/kriss.conf
-  [[ ! -f $f ]] || sed -i -E '/^HOOKS=/ s/ kms( |\))/\1/' "$f"
+  [[ ! -f $f ]] || sed -i -E '/^HOOKS=/ { s/ (kriss-)?kms( |\))/\2/; s/ plymouth( |\))/\1/; }' "$f"
   # The driver turns modeset on by default (an AUR patch); say it on the command line too,
   # so it holds if that patch ever goes.
   f=$ETC/kernel/cmdline
-  if [[ -f $f ]] && ! grep -qw 'nvidia_drm.modeset=1' "$f"; then
-    sed -i '1s/$/ nvidia_drm.modeset=1/' "$f"
+  if [[ -f $f ]]; then
+    sed -i -E 's/ splash( |$)/\1/' "$f"
+    grep -qw 'nvidia_drm.modeset=1' "$f" || sed -i '1s/$/ nvidia_drm.modeset=1/' "$f"
   fi
 
   igpu=$(nvidia_igpu) || return 0

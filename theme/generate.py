@@ -69,6 +69,38 @@ def main(src, dst):
     for mode, t in (("dark", tokens), ("light", light(tokens))):
         out = render(WALLPAPER.read_text(), {**variants(t), "keris": keris})
         (wp / f"kriss-{mode}.svg").write_text(out)
+    plymouth(dst / "usr/share/plymouth/themes/kriss", values, keris)
+
+
+PLYMOUTH_SIZES = (256, 512)  # the script picks the smallest one at least as big as the logo
+GLOW = 2.6  # the glow image is this many logo widths across; kriss.script and greeter.qml use it
+
+
+def plymouth(out, values, keris):
+    """The boot splash layers, as SVG; the kriss-theme build turns each into a PNG.
+
+    logo (the disc with the keris hilt) and glow (a soft Sky Cyan halo behind it, GLOW
+    times as wide), each at every PLYMOUTH_SIZES; plus the password field and its bullet.
+    The login screen (shell/qml/greeter.qml) draws the same logo and glow to take over.
+    """
+    disc = f'<circle cx="284.5" cy="284.5" r="284.5" fill="{values["accent"]}"/>'
+    hilt = keris.replace("<path ", f'<path fill="{values["bg"]}" ', 1)
+    svg = '<svg xmlns="http://www.w3.org/2000/svg" width="{0}" height="{0}" viewBox="0 0 569 569">{1}</svg>'
+    halo = (f'<defs><radialGradient id="g"><stop offset="0" stop-color="{values["accent"]}" stop-opacity="0.5"/>'
+            f'<stop offset="0.4" stop-color="{values["accent"]}" stop-opacity="0.16"/>'
+            f'<stop offset="0.7" stop-color="{values["accent"]}" stop-opacity="0"/></radialGradient></defs>'
+            '<rect width="569" height="569" fill="url(#g)"/>')
+    for size in PLYMOUTH_SIZES:
+        (out / f"logo-{size}.svg").write_text(svg.format(size, disc + hilt))
+        (out / f"glow-{size}.svg").write_text(svg.format(round(size * GLOW), halo))
+    # 2x the size the script shows them at 1080p, so they only ever scale down.
+    (out / "field.svg").write_text(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="88">'
+        f'<rect x="1" y="1" width="638" height="86" rx="43" fill="{values["surface"]}" '
+        f'stroke="{values["muted"]}" stroke-opacity="0.35" stroke-width="2"/></svg>')
+    (out / "bullet.svg").write_text(
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24">'
+        f'<circle cx="12" cy="12" r="12" fill="{values["accent"]}"/></svg>')
 
 
 def test():
