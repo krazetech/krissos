@@ -63,7 +63,6 @@ exfatprogs
 gptfdisk
 efibootmgr
 limine
-plymouth
 snapper
 snap-pac
 zram-generator
