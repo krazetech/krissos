@@ -1,9 +1,11 @@
 # KrissOS Shell roadmap
 
-The goal: a shell that feels premium and polished, with Windows 11 as the north star, rebuilt
-in the KrissOS look rather than cloned. It must suit a maintainer who uses it every day and
-someone fresh from Windows equally. Features come first and polish follows. The biggest wins
-are first.
+The goal: a shell that feels premium and polished, and familiar to someone fresh from Windows
+without being a clone. Windows habits stay: Start on the Windows key, the taskbar, close at the
+top right, Win+E. Every surface is drawn in the KrissOS look and never copies Windows 11's
+visuals. Judge each choice by one question: would a Windows switcher get this without a
+terminal? It must suit a maintainer who uses it every day and that switcher equally. Features
+come first and polish follows. The biggest wins are first.
 
 Each item is one branch and one PR. Tick an item and link its PR when it merges.
 
@@ -87,7 +89,7 @@ parallel sessions when they touch different files.
 |---|---|---|---|---|
 | 9 | Theme at runtime | `kz/shell-runtime-theme` | M | Theme reads user overrides (accent, light/dark with a schedule) live, with tokens as defaults; changing them needs no rebuild |
 | 10 | Personalise | `kz/shell-personalise` | L | A settings surface for the accent, taskbar (alignment, auto-hide, size, tray items), wallpaper, light/dark, and pins in the taskbar and Start; linked from COSMIC Settings and Start search |
-| 11 | Dock layout and picker | `kz/shell-dock` | L | A dock layout of the same surfaces; `kriss-welcome` offers both with a live preview; the setting switches between them live |
+| 11 | Mac layout and picker | `kz/shell-mac-layout` | L | An optional second layout with macOS habits in the KrissOS look: top bar, centred dock, window buttons on the left. No Apple logo, fonts or icons, and no third-party macOS theme packs. The Windows-familiar layout stays the default; `kriss-welcome` offers both with a live preview, and Settings switches between them live |
 
 ### Wave 5: finish
 

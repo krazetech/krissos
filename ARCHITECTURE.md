@@ -170,8 +170,11 @@ available as the installer's alternative.
   accent; users may pick another in settings. No neon.
 - **Material:** shell surfaces are tinted and blurred (acrylic) through `ext-background-effect`,
   which cosmic-comp and Quickshell both support. Solid surfaces are the fallback when blur is off.
-- **Layouts:** Windows-style (centred taskbar) is the default; a dock layout follows. Users pick
-  one in `kriss-welcome` and can switch in settings. Plan: `docs/shell-roadmap.md`.
+- **Layouts:** the Windows-familiar layout (centred taskbar) is the default. An optional Mac
+  layout follows: top bar, centred dock, window buttons on the left, in the KrissOS look, with no
+  Apple logo, fonts or icons. Users pick one in `kriss-welcome` and can switch in settings.
+  Familiar, never a clone: neither layout copies Windows or macOS visuals. Plan:
+  `docs/shell-roadmap.md`.
 - **Type:** Figtree + JetBrains Mono (OFL) proposed.
 - **Apps:** COSMIC Files, Terminal and Settings get KrissOS dark and light COSMIC themes, built
   from the tokens by libcosmic's own ThemeBuilder (`shell/cosmic-theme/`), and a matching
