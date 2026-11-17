@@ -46,6 +46,10 @@ Kirigami.ScrollablePage {
             }
         }
 
+        LayoutPicker {
+            Layout.fillWidth: true
+        }
+
         Kirigami.FormLayout {
             Layout.fillWidth: true
             QQC2.ComboBox {

@@ -269,3 +269,34 @@ def model_fits(hw):
 def ollama_names(ollama_list):
     """Model names from `ollama list` (a header row, then one model per line)."""
     return [line.split()[0] for line in ollama_list.splitlines()[1:] if line.strip()]
+
+
+# --- Desktop layout ------------------------------------------------------------------------
+# The shell's two layouts (see shell/qml/Desktop.qml): the taskbar, or the top bar and dock.
+LAYOUTS = ("windows", "mac")
+
+
+def shell_config():
+    return pathlib.Path(os.environ.get("XDG_CONFIG_HOME") or pathlib.Path.home() / ".config") / "kriss/shell.json"
+
+
+def read_layout(path):
+    try:
+        layout = json.loads(pathlib.Path(path).read_text()).get("layout")
+    except (OSError, ValueError, AttributeError):
+        layout = None
+    return layout if layout in LAYOUTS else "windows"
+
+
+def write_layout(path, layout):
+    """Set "layout" in shell.json and keep the rest, for when the shell is not running."""
+    path = pathlib.Path(path)
+    try:
+        config = json.loads(path.read_text())
+    except (OSError, ValueError):
+        config = {}
+    if not isinstance(config, dict):
+        config = {}
+    config["layout"] = layout
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(config, indent=4) + "\n")

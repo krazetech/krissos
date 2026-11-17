@@ -251,87 +251,87 @@ Arahan: flatpak install flathub %1</translation>
         <translation>Salin dari Windows berfungsi apabila Windows dipasang bersebelahan KrissOS. Anda masih boleh menyalin fail dari pemacu USB dalam pengurus fail.</translation>
     </message>
     <message>
-        <location filename="../qml/CopyPage.qml" line="71"/>
+        <location filename="../qml/CopyPage.qml" line="75"/>
         <source>Windows</source>
         <translation>Windows</translation>
     </message>
     <message>
-        <location filename="../qml/CopyPage.qml" line="77"/>
+        <location filename="../qml/CopyPage.qml" line="81"/>
         <source>This drive is locked with BitLocker, so KrissOS cannot read it. To copy from it, start Windows and turn off BitLocker (Settings, Privacy and security, Device encryption), or copy your files to a USB drive from Windows.</source>
         <translation>Pemacu ini dikunci dengan BitLocker, jadi KrissOS tidak dapat membacanya. Untuk menyalin daripadanya, mulakan Windows dan matikan BitLocker (Settings, Privacy and security, Device encryption), atau salin fail anda ke pemacu USB dari Windows.</translation>
     </message>
     <message>
-        <location filename="../qml/CopyPage.qml" line="83"/>
+        <location filename="../qml/CopyPage.qml" line="87"/>
         <source>Opening…</source>
         <translation>Membuka…</translation>
     </message>
     <message>
-        <location filename="../qml/CopyPage.qml" line="83"/>
+        <location filename="../qml/CopyPage.qml" line="87"/>
         <source>Open</source>
         <translation>Buka</translation>
     </message>
     <message>
-        <location filename="../qml/CopyPage.qml" line="96"/>
+        <location filename="../qml/CopyPage.qml" line="100"/>
         <source>Windows could not be opened. If Windows uses Fast Startup, start Windows, hold Shift while you choose Shut down, then try again.</source>
         <translation>Windows tidak dapat dibuka. Jika Windows menggunakan Fast Startup, mulakan Windows, tahan Shift semasa memilih Shut down, kemudian cuba lagi.</translation>
     </message>
     <message>
-        <location filename="../qml/CopyPage.qml" line="105"/>
+        <location filename="../qml/CopyPage.qml" line="109"/>
         <source>Windows user:</source>
         <translation>Pengguna Windows:</translation>
     </message>
     <message>
-        <location filename="../qml/CopyPage.qml" line="109"/>
+        <location filename="../qml/CopyPage.qml" line="113"/>
         <source>Copy:</source>
         <translation>Salin:</translation>
     </message>
     <message>
-        <location filename="../qml/CopyPage.qml" line="122"/>
+        <location filename="../qml/CopyPage.qml" line="126"/>
         <source>Edge and Chrome bookmarks</source>
         <translation>Penanda buku Edge dan Chrome</translation>
     </message>
     <message>
-        <location filename="../qml/CopyPage.qml" line="126"/>
+        <location filename="../qml/CopyPage.qml" line="130"/>
         <source>Copy to KrissOS</source>
         <translation>Salin ke KrissOS</translation>
     </message>
     <message>
-        <location filename="../qml/CopyPage.qml" line="136"/>
+        <location filename="../qml/CopyPage.qml" line="140"/>
         <source>%1 bookmarks.html</source>
         <translation>Penanda buku %1.html</translation>
     </message>
     <message>
-        <location filename="../qml/CopyPage.qml" line="144"/>
+        <location filename="../qml/CopyPage.qml" line="148"/>
         <source>This drive has no Windows user folders.</source>
         <translation>Pemacu ini tiada folder pengguna Windows.</translation>
     </message>
     <message>
-        <location filename="../qml/CopyPage.qml" line="152"/>
+        <location filename="../qml/CopyPage.qml" line="156"/>
         <source>Copying… %1 of %2</source>
         <translation>Menyalin… %1 daripada %2</translation>
     </message>
     <message>
-        <location filename="../qml/CopyPage.qml" line="153"/>
+        <location filename="../qml/CopyPage.qml" line="157"/>
         <source>Finding your files…</source>
         <translation>Mencari fail anda…</translation>
     </message>
     <message>
-        <location filename="../qml/CopyPage.qml" line="174"/>
+        <location filename="../qml/CopyPage.qml" line="178"/>
         <source>There is not enough free space here to copy these folders. Free up space or choose fewer folders.</source>
         <translation>Ruang kosong tidak mencukupi untuk menyalin folder ini. Kosongkan ruang atau pilih lebih sedikit folder.</translation>
     </message>
     <message>
-        <location filename="../qml/CopyPage.qml" line="175"/>
+        <location filename="../qml/CopyPage.qml" line="180"/>
         <source>Copied %1 files.</source>
         <translation>%1 fail disalin.</translation>
     </message>
     <message>
-        <location filename="../qml/CopyPage.qml" line="176"/>
+        <location filename="../qml/CopyPage.qml" line="181"/>
         <source>%1 files could not be read and were skipped (OneDrive files that are only online cannot be copied).</source>
         <translation>%1 fail tidak dapat dibaca dan dilangkau (fail OneDrive yang hanya ada dalam talian tidak boleh disalin).</translation>
     </message>
     <message>
-        <location filename="../qml/CopyPage.qml" line="182"/>
+        <location filename="../qml/CopyPage.qml" line="187"/>
         <source>Your bookmarks are saved in %1. To add them to Firefox, open Bookmarks, Manage bookmarks, Import and Backup, Import Bookmarks from HTML.</source>
         <translation>Penanda buku anda disimpan dalam %1. Untuk menambahnya ke Firefox, buka Bookmarks, Manage bookmarks, Import and Backup, Import Bookmarks from HTML.</translation>
     </message>
@@ -339,82 +339,82 @@ Arahan: flatpak install flathub %1</translation>
 <context>
     <name>ExtrasPage</name>
     <message>
-        <location filename="../qml/ExtrasPage.qml" line="13"/>
+        <location filename="../qml/ExtrasPage.qml" line="20"/>
         <source>Video and music codecs</source>
         <translation>Codec video dan muzik</translation>
     </message>
     <message>
-        <location filename="../qml/ExtrasPage.qml" line="14"/>
+        <location filename="../qml/ExtrasPage.qml" line="21"/>
         <source>Play MP4, MKV, MP3, AAC and other common formats in every app.</source>
         <translation>Mainkan MP4, MKV, MP3, AAC dan format biasa lain dalam setiap aplikasi.</translation>
     </message>
     <message>
-        <location filename="../qml/ExtrasPage.qml" line="15"/>
+        <location filename="../qml/ExtrasPage.qml" line="22"/>
         <source>Printers</source>
         <translation>Pencetak</translation>
     </message>
     <message>
-        <location filename="../qml/ExtrasPage.qml" line="16"/>
+        <location filename="../qml/ExtrasPage.qml" line="23"/>
         <source>Printing support, plus a tool to add your printer. Most printers from the last ten years work without a driver.</source>
         <translation>Sokongan pencetakan, serta alat untuk menambah pencetak anda. Kebanyakan pencetak dari sepuluh tahun kebelakangan berfungsi tanpa pemacu.</translation>
     </message>
     <message>
-        <location filename="../qml/ExtrasPage.qml" line="17"/>
+        <location filename="../qml/ExtrasPage.qml" line="24"/>
         <source>Gaming pack</source>
         <translation>Pek permainan</translation>
     </message>
     <message>
-        <location filename="../qml/ExtrasPage.qml" line="18"/>
+        <location filename="../qml/ExtrasPage.qml" line="25"/>
         <source>Steam, GameMode, Gamescope, MangoHud and the latest graphics drivers.</source>
         <translation>Steam, GameMode, Gamescope, MangoHud dan pemacu grafik terkini.</translation>
     </message>
     <message>
-        <location filename="../qml/ExtrasPage.qml" line="19"/>
+        <location filename="../qml/ExtrasPage.qml" line="26"/>
         <source>Local AI (Ollama)</source>
         <translation>AI tempatan (Ollama)</translation>
     </message>
     <message>
-        <location filename="../qml/ExtrasPage.qml" line="20"/>
+        <location filename="../qml/ExtrasPage.qml" line="27"/>
         <source>Run AI models on this PC, using your graphics card when it can. Nothing leaves your computer.</source>
         <translation>Jalankan model AI pada PC ini, menggunakan kad grafik anda apabila boleh. Tiada apa-apa keluar dari komputer anda.</translation>
     </message>
     <message>
-        <location filename="../qml/ExtrasPage.qml" line="21"/>
+        <location filename="../qml/ExtrasPage.qml" line="28"/>
         <source>Codex CLI and Gemini CLI</source>
         <translation>Codex CLI dan Gemini CLI</translation>
     </message>
     <message>
-        <location filename="../qml/ExtrasPage.qml" line="22"/>
+        <location filename="../qml/ExtrasPage.qml" line="29"/>
         <source>AI coding assistants for the terminal, from OpenAI and Google.</source>
         <translation>Pembantu pengekodan AI untuk terminal, daripada OpenAI dan Google.</translation>
     </message>
     <message>
-        <location filename="../qml/ExtrasPage.qml" line="23"/>
+        <location filename="../qml/ExtrasPage.qml" line="30"/>
         <source>Claude Code</source>
         <translation>Claude Code</translation>
     </message>
     <message>
-        <location filename="../qml/ExtrasPage.qml" line="24"/>
+        <location filename="../qml/ExtrasPage.qml" line="31"/>
         <source>Anthropic&apos;s AI coding assistant for the terminal. Installs for your user only, so no password is needed.</source>
         <translation>Pembantu pengekodan AI Anthropic untuk terminal. Dipasang untuk pengguna anda sahaja, jadi kata laluan tidak diperlukan.</translation>
     </message>
     <message>
-        <location filename="../qml/ExtrasPage.qml" line="26"/>
+        <location filename="../qml/ExtrasPage.qml" line="33"/>
         <source>Antigravity</source>
         <translation>Antigravity</translation>
     </message>
     <message>
-        <location filename="../qml/ExtrasPage.qml" line="27"/>
+        <location filename="../qml/ExtrasPage.qml" line="34"/>
         <source>Google&apos;s AI code editor. Download it from its website.</source>
         <translation>Editor kod AI Google. Muat turun dari laman webnya.</translation>
     </message>
     <message>
-        <location filename="../qml/ExtrasPage.qml" line="50"/>
+        <location filename="../qml/ExtrasPage.qml" line="73"/>
         <source>Install %1?</source>
         <translation>Pasang %1?</translation>
     </message>
     <message>
-        <location filename="../qml/ExtrasPage.qml" line="51"/>
+        <location filename="../qml/ExtrasPage.qml" line="74"/>
         <source>You may be asked for your password.
 
 Runs: %1</source>
@@ -423,47 +423,49 @@ Runs: %1</source>
 Menjalankan: %1</translation>
     </message>
     <message>
-        <location filename="../qml/ExtrasPage.qml" line="77"/>
+        <location filename="../qml/ExtrasPage.qml" line="102"/>
         <source>Website</source>
         <translation>Laman web</translation>
     </message>
     <message>
-        <location filename="../qml/ExtrasPage.qml" line="78"/>
+        <location filename="../qml/ExtrasPage.qml" line="103"/>
         <source>Installing…</source>
         <translation>Memasang…</translation>
     </message>
     <message>
-        <location filename="../qml/ExtrasPage.qml" line="79"/>
+        <location filename="../qml/ExtrasPage.qml" line="104"/>
         <source>Installed</source>
         <translation>Dipasang</translation>
     </message>
     <message>
-        <location filename="../qml/ExtrasPage.qml" line="80"/>
+        <location filename="../qml/ExtrasPage.qml" line="106"/>
+        <location filename="../qml/ExtrasPage.qml" line="161"/>
         <source>Failed, try again</source>
         <translation>Gagal, cuba lagi</translation>
     </message>
     <message>
-        <location filename="../qml/ExtrasPage.qml" line="80"/>
+        <location filename="../qml/ExtrasPage.qml" line="106"/>
         <source>Install</source>
         <translation>Pasang</translation>
     </message>
     <message>
-        <location filename="../qml/ExtrasPage.qml" line="14"/>
+        <location filename="../qml/ExtrasPage.qml" line="17"/>
         <source>Install the NVIDIA 580 driver (needs internet)</source>
         <translation>Pasang pemacu NVIDIA 580 (perlu internet)</translation>
     </message>
     <message>
-        <location filename="../qml/ExtrasPage.qml" line="15"/>
+        <location filename="../qml/ExtrasPage.qml" line="18"/>
         <source>Install the NVIDIA 580 driver?</source>
         <translation>Pasang pemacu NVIDIA 580?</translation>
     </message>
     <message>
-        <location filename="../qml/ExtrasPage.qml" line="16"/>
+        <location filename="../qml/ExtrasPage.qml" line="19"/>
         <source>Your NVIDIA graphics card is older than the GeForce 16 series, so it uses the open nouveau driver. NVIDIA&apos;s own 580 driver is faster for games. NVIDIA keeps it in long-term maintenance: it gets fixes but no new features. If you skip this, nouveau stays and everything keeps working. On laptops, the screen stays on the built-in graphics; start an app with prime-run to use the NVIDIA card. This driver cannot switch an older NVIDIA card off when it is idle, as nouveau does. On our test laptop, idle power went from about 4.7 W to 6.8 W, so the battery lasts about a third less when idle (about 1.5 hours less on that laptop). Removing the nvidia-580xx-dkms and nvidia-580xx-utils packages brings nouveau back. Restart after it installs.</source>
         <translation>Kad grafik NVIDIA anda lebih lama daripada siri GeForce 16, jadi ia menggunakan pemacu terbuka nouveau. Pemacu 580 NVIDIA sendiri lebih laju untuk permainan. NVIDIA menyelenggara pemacu ini untuk jangka panjang: ia menerima pembaikan tetapi tiada ciri baharu. Jika anda langkau, nouveau kekal dan semuanya terus berfungsi. Pada komputer riba, skrin kekal pada grafik terbina dalam; mulakan aplikasi dengan prime-run untuk menggunakan kad NVIDIA. Pemacu ini tidak dapat mematikan kad NVIDIA yang lebih lama semasa ia tidak digunakan, seperti yang dilakukan oleh nouveau. Pada komputer riba ujian kami, penggunaan kuasa semasa melahu naik daripada kira-kira 4.7 W kepada 6.8 W, jadi bateri bertahan kira-kira satu pertiga lebih singkat semasa melahu (kira-kira 1.5 jam kurang pada komputer riba itu). Membuang pakej nvidia-580xx-dkms dan nvidia-580xx-utils akan mengembalikan nouveau. Mulakan semula selepas ia dipasang.</translation>
     </message>
     <message>
-        <location filename="../qml/ExtrasPage.qml" line="85"/>
+        <location filename="../qml/ExtrasPage.qml" line="105"/>
+        <location filename="../qml/ExtrasPage.qml" line="160"/>
         <source>Needs internet</source>
         <translation>Perlu internet</translation>
     </message>
@@ -637,6 +639,39 @@ Menjalankan: %1</translation>
     </message>
 </context>
 <context>
+    <name>LayoutPicker</name>
+    <message>
+        <location filename="../qml/LayoutPicker.qml" line="13"/>
+        <source>Desktop layout</source>
+        <translation>Susun atur desktop</translation>
+    </message>
+    <message>
+        <location filename="../qml/LayoutPicker.qml" line="18"/>
+        <source>Pick the one your hands know. It changes straight away, and you can switch back any time: right-click the taskbar or the dock.</source>
+        <translation>Pilih yang biasa anda gunakan. Ia bertukar serta-merta, dan anda boleh menukarnya semula bila-bila masa: klik kanan bar tugas atau dok.</translation>
+    </message>
+    <message>
+        <location filename="../qml/LayoutPicker.qml" line="26"/>
+        <source>Taskbar</source>
+        <translation>Bar tugas</translation>
+    </message>
+    <message>
+        <location filename="../qml/LayoutPicker.qml" line="27"/>
+        <source>Like Windows: Start and your apps along the bottom, window buttons on the right.</source>
+        <translation>Seperti Windows: Mula dan aplikasi anda di bahagian bawah, butang tetingkap di sebelah kanan.</translation>
+    </message>
+    <message>
+        <location filename="../qml/LayoutPicker.qml" line="31"/>
+        <source>Top bar and dock</source>
+        <translation>Bar atas dan dok</translation>
+    </message>
+    <message>
+        <location filename="../qml/LayoutPicker.qml" line="32"/>
+        <source>Like a Mac: a menu bar at the top, a dock at the bottom, window buttons on the left.</source>
+        <translation>Seperti Mac: bar menu di bahagian atas, dok di bahagian bawah, butang tetingkap di sebelah kiri.</translation>
+    </message>
+</context>
+<context>
     <name>Main</name>
     <message>
         <location filename="../qml/Main.qml" line="7"/>
@@ -677,57 +712,57 @@ Menjalankan: %1</translation>
         <translation>Salin fail saya</translation>
     </message>
     <message>
-        <location filename="../qml/WelcomePage.qml" line="12"/>
+        <location filename="../qml/WelcomePage.qml" line="19"/>
         <source>Welcome to KrissOS</source>
         <translation>Selamat datang ke KrissOS</translation>
     </message>
     <message>
-        <location filename="../qml/WelcomePage.qml" line="18"/>
+        <location filename="../qml/WelcomePage.qml" line="26"/>
         <source>Coming from Windows? Start here. Check that your games run, then find a home for each of your apps.</source>
         <translation>Beralih dari Windows? Mula di sini. Semak sama ada permainan anda boleh dimainkan, kemudian cari pengganti untuk setiap aplikasi anda.</translation>
     </message>
     <message>
-        <location filename="../qml/WelcomePage.qml" line="24"/>
+        <location filename="../qml/WelcomePage.qml" line="32"/>
         <source>Check my games</source>
         <translation>Semak permainan saya</translation>
     </message>
     <message>
-        <location filename="../qml/WelcomePage.qml" line="30"/>
+        <location filename="../qml/WelcomePage.qml" line="38"/>
         <source>Bring my apps</source>
         <translation>Bawa aplikasi saya</translation>
     </message>
     <message>
-        <location filename="../qml/WelcomePage.qml" line="39"/>
+        <location filename="../qml/WelcomePage.qml" line="56"/>
         <source>Language:</source>
         <translation>Bahasa:</translation>
     </message>
     <message>
-        <location filename="../qml/WelcomePage.qml" line="45"/>
+        <location filename="../qml/WelcomePage.qml" line="62"/>
         <source>This PC:</source>
         <translation>PC ini:</translation>
     </message>
     <message>
-        <location filename="../qml/WelcomePage.qml" line="46"/>
+        <location filename="../qml/WelcomePage.qml" line="63"/>
         <source>%1 GB RAM · %2 CPU threads · graphics: %3</source>
         <translation>RAM %1 GB · %2 bebenang CPU · grafik: %3</translation>
     </message>
     <message>
-        <location filename="../qml/WelcomePage.qml" line="49"/>
+        <location filename="../qml/WelcomePage.qml" line="66"/>
         <source>unknown</source>
         <translation>tidak diketahui</translation>
     </message>
     <message>
-        <location filename="../qml/WelcomePage.qml" line="52"/>
+        <location filename="../qml/WelcomePage.qml" line="69"/>
         <source>Windows apps:</source>
         <translation>Aplikasi Windows:</translation>
     </message>
     <message>
-        <location filename="../qml/WelcomePage.qml" line="53"/>
+        <location filename="../qml/WelcomePage.qml" line="70"/>
         <source>This PC can run Windows apps in WinBoat</source>
         <translation>PC ini boleh menjalankan aplikasi Windows dalam WinBoat</translation>
     </message>
     <message>
-        <location filename="../qml/WelcomePage.qml" line="54"/>
+        <location filename="../qml/WelcomePage.qml" line="71"/>
         <source>Linux apps and Wine (WinBoat needs a stronger PC)</source>
         <translation>Aplikasi Linux dan Wine (WinBoat perlukan PC yang lebih berkuasa)</translation>
     </message>

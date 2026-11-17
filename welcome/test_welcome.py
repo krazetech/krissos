@@ -209,4 +209,21 @@ have = {(c.findtext("name"), m.findtext("source")) for c in ts.iter("context") f
 for f in (ROOT / "qml").glob("*.qml"):
     for m in re.finditer(r'qsTr\("((?:[^"\\]|\\.)*)"\)', f.read_text()):
         assert (f.stem, json.loads(f'"{m.group(1)}"')) in have, (f.name, m.group(1))
+
+# The desktop layout in shell.json: other settings survive, nonsense reads as the default.
+with tempfile.TemporaryDirectory() as t:
+    cfg = pathlib.Path(t) / "kriss/shell.json"
+    assert logic.read_layout(cfg) == "windows"
+    logic.write_layout(cfg, "mac")
+    assert logic.read_layout(cfg) == "mac"
+    cfg.write_text('{"pinned": ["steam"], "layout": "windows"}')
+    logic.write_layout(cfg, "mac")
+    assert json.loads(cfg.read_text()) == {"pinned": ["steam"], "layout": "mac"}
+    cfg.write_text('{"layout": "amiga"}')
+    assert logic.read_layout(cfg) == "windows"
+    cfg.write_text("[1]")
+    assert logic.read_layout(cfg) == "windows"
+    logic.write_layout(cfg, "mac")
+    assert logic.read_layout(cfg) == "mac"
+
 print("ok")

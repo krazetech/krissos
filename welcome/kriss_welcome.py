@@ -43,6 +43,7 @@ def user_dir(name):
 class Backend(QObject):
     installDone = Signal(str, bool)
     languageChanged = Signal()
+    layoutChanged = Signal()
     onlineChanged = Signal()
     windowsMounted = Signal(str, str)  # mount point, or "" and the error
     copyProgress = Signal(float, float, str)  # bytes done, bytes total, file name
@@ -59,6 +60,7 @@ class Backend(QObject):
         self._games = json.loads((HERE / "data/games.json").read_text())
         self._apps = json.loads((HERE / "data/apps.json").read_text())
         self._procs = {}
+        self._layout = logic.read_layout(logic.shell_config())
         self._mounted = ""  # the Windows partition this app mounted, unmounted after copying
         # NetworkManager's view of the internet, so the extras page can say "needs internet"
         # instead of failing. Qt picks the backend; with none, assume online.
@@ -93,6 +95,26 @@ class Backend(QObject):
         self._lang = lang
         self._engine.retranslate()
         self.languageChanged.emit()
+
+    # Desktop layout: the taskbar, or the top bar and dock
+    @Property(str, notify=layoutChanged)
+    def layout(self):
+        return self._layout
+
+    @Slot(str)
+    def setLayout(self, name):
+        """Switch the running shell live (it saves shell.json itself), or write shell.json for
+        the next time it starts."""
+        if name not in logic.LAYOUTS:
+            return
+
+        def done(ok, _out):
+            if not ok:
+                logic.write_layout(logic.shell_config(), name)
+            self._layout = name
+            self.layoutChanged.emit()
+
+        self._run("layout", ["kriss-shell", "layout", name], done)
 
     @Slot(str, result="QVariantList")
     def searchGames(self, query):
