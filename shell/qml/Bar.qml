@@ -10,8 +10,13 @@ import Quickshell.Services.SystemTray
 // the search box, this screen's workspaces and the pinned and running apps on the left (or centred);
 // tray icons, power profile, quick settings (network, volume, battery), notifications and the
 // clock on the right. Options come from shell.json (see Desktop.qml).
+// The Mac layout ("layout": "mac") uses the same buttons and logic in another shape: the
+// launcher and the apps in a centred dock along the bottom, and a slim top bar (the inline
+// window `top` below) with the system menu, the app in front, the tray, quick settings,
+// notifications and the clock, which move up there from the right of the taskbar.
 PanelWindow {
     id: bar
+    readonly property bool mac: Desktop.mac
 
     required property var modelData
     screen: modelData
@@ -24,12 +29,13 @@ PanelWindow {
     // through Desktop.keysTo (see focusStep).
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
     anchors { bottom: true; left: true; right: true }
-    implicitHeight: Theme.barHeight
+    // The dock floats a little above the screen's edge.
+    implicitHeight: Theme.barHeight + (mac ? Theme.dockGap : 0)
     // Maximized and snapped windows stop at the bar, unless it auto-hides.
-    exclusiveZone: Desktop.taskbarAutoHide ? 0 : Theme.barHeight
+    exclusiveZone: Desktop.taskbarAutoHide ? 0 : implicitHeight
     color: "transparent"
     // Frosted glass: cosmic-comp blurs what is behind the bar.
-    BackgroundEffect.blurRegion: Region { item: body }
+    BackgroundEffect.blurRegion: Region { item: body; radius: body.radius }
 
     // This bar's windows: the ones on its screen, when every screen has a bar.
     readonly property var wins: Desktop.taskbarAllScreens
@@ -65,7 +71,8 @@ PanelWindow {
     readonly property real room: right.x - appRow.x - 16
     // What the uncombined buttons need at full width.
     readonly property real looseWidth: loose.reduce((sum, a) => sum + (a.win ? 168 : Theme.barButton) + appRow.spacing, 0)
-    readonly property bool combined: Desktop.taskbarCombine === "full" ? looseWidth > room : Desktop.taskbarCombine !== "never"
+    // The dock always combines, as on a Mac.
+    readonly property bool combined: mac || (Desktop.taskbarCombine === "full" ? looseWidth > room : Desktop.taskbarCombine !== "never")
     // Labelled buttons shrink to fit, as on Windows.
     // ponytail: at 96 px they stop shrinking and run into the tray; scroll them if that matters.
     readonly property real labelWidth: {
@@ -83,8 +90,10 @@ PanelWindow {
     Timer { id: linger; interval: 600 }
     readonly property bool tucked: Desktop.taskbarAutoHide && !near && !linger.running && !menu.visible && !kb
         && !((Desktop.launcherOpen || Desktop.quickOpen || Desktop.notificationsOpen || Desktop.calendarOpen) && Desktop.screen === bar.screen)
-    mask: tucked ? edgeRegion : null
+    // Clicks beside the dock go through to the windows behind.
+    mask: tucked ? edgeRegion : mac ? dockRegion : null
     Region { id: edgeRegion; item: edge }
+    Region { id: dockRegion; item: body }
     Item {
         id: edge
         anchors.bottom: parent.bottom
@@ -98,12 +107,20 @@ PanelWindow {
     // The bar has the keyboard (Windows+T, Windows+B): Tab, Shift+Tab and the arrows walk
     // every control in reading order, Esc gives the keyboard back.
     property bool kb: false
+    // Which of the bar's windows has it: the taskbar or dock (body), or the Mac top bar.
+    property Item kbOn: body
+    function takeKeys(on) {
+        if (kb && kbOn !== on) kb = false;
+        kbOn = on;
+        kb = true;
+    }
     // Giving the keyboard back also takes the focus off the controls, so no rim stays lit.
     onKbChanged: {
-        if (kb) { Desktop.keysTo(body); return; }
+        if (kb) { Desktop.keysTo(kbOn); return; }
         returnTo = null;
         body.forceActiveFocus();
-        if (Desktop.keysFor === body || Desktop.keysNext === body) Desktop.keysTo(null);
+        topBody.forceActiveFocus();
+        if ([body, topBody].some(b => Desktop.keysFor === b || Desktop.keysNext === b)) Desktop.keysTo(null);
     }
     // The control that opened a panel from the keyboard: Esc in that panel comes back to it.
     property Item returnTo: null
@@ -121,36 +138,45 @@ PanelWindow {
         }
     }
 
+    // Keys any control on the bar leaves alone: arrows, Home and End move along the bar,
+    // Esc gives the keyboard back. Tab and Shift+Tab follow Qt's focus chain, which stays in
+    // the window `on` is in (the taskbar or dock, or the Mac top bar).
+    function barKeys(event, on) {
+        const f = on.Window.activeFocusItem;
+        if (!kb || !f) return;
+        const last = on === topBody ? clockArea : mac ? appButtons.itemAt(appButtons.count - 1) ?? start : sliver;
+        switch (event.key) {
+        case Qt.Key_Left: case Qt.Key_Up: case Qt.Key_Backtab: f.nextItemInFocusChain(false).forceActiveFocus(); break;
+        case Qt.Key_Right: case Qt.Key_Down: f.nextItemInFocusChain(true).forceActiveFocus(); break;
+        case Qt.Key_Tab: f.nextItemInFocusChain(!(event.modifiers & Qt.ShiftModifier)).forceActiveFocus(); break;
+        case Qt.Key_Home: (on === topBody ? system : start).forceActiveFocus(); break;
+        case Qt.Key_End: last.forceActiveFocus(); break;
+        case Qt.Key_Escape: kb = false; break;
+        // On a control with no menu of its own: the taskbar's menu, as a right-click on the bar.
+        case Qt.Key_Menu: barMenu(f, true); break;
+        case Qt.Key_F10: if (event.modifiers & Qt.ShiftModifier) barMenu(f, true); else return; break;
+        default: return;
+        }
+        event.accepted = true;
+    }
+
+    // The taskbar, or in the Mac layout the dock: as wide as its buttons, centred, floating.
     Rectangle {
         id: body
-        width: parent.width
-        height: parent.height
-        y: bar.tucked ? height : 0
+        width: bar.mac ? tasks.width + 16 : parent.width
+        height: Theme.barHeight
+        x: (parent.width - width) / 2
+        y: bar.tucked ? parent.height : 0
         Behavior on y { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
+        Behavior on width { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
+        radius: bar.mac ? Theme.radius : 0
         color: Theme.bar
+        border.width: bar.mac ? Theme.rimWidth : 0
+        border.color: Theme.rim
         HoverHandler { id: hover }
         Accessible.role: Accessible.ToolBar
-        Accessible.name: Tr.t("Taskbar")
-
-        // Keys any control on the bar leaves alone: arrows, Home and End move along the bar,
-        // Esc gives the keyboard back. Tab and Shift+Tab follow Qt's focus chain.
-        Keys.onPressed: event => {
-            const f = body.Window.activeFocusItem;
-            if (!bar.kb || !f) return;
-            switch (event.key) {
-            case Qt.Key_Left: case Qt.Key_Up: case Qt.Key_Backtab: f.nextItemInFocusChain(false).forceActiveFocus(); break;
-            case Qt.Key_Right: case Qt.Key_Down: f.nextItemInFocusChain(true).forceActiveFocus(); break;
-            case Qt.Key_Tab: f.nextItemInFocusChain(!(event.modifiers & Qt.ShiftModifier)).forceActiveFocus(); break;
-            case Qt.Key_Home: start.forceActiveFocus(); break;
-            case Qt.Key_End: sliver.forceActiveFocus(); break;
-            case Qt.Key_Escape: bar.kb = false; break;
-            // On a control with no menu of its own: the taskbar's menu, as a right-click on the bar.
-            case Qt.Key_Menu: bar.barMenu(f, true); break;
-            case Qt.Key_F10: if (event.modifiers & Qt.ShiftModifier) bar.barMenu(f, true); else return; break;
-            default: return;
-            }
-            event.accepted = true;
-        }
+        Accessible.name: bar.mac ? Tr.t("Dock") : Tr.t("Taskbar")
+        Keys.onPressed: event => bar.barKeys(event, body)
 
         // Right-click on the bar itself (between the buttons): the taskbar menu, at the pointer.
         MouseArea {
@@ -162,13 +188,13 @@ PanelWindow {
         }
 
         // A soft rim along the top edge instead of a border.
-        Rectangle { width: parent.width; height: Theme.rimWidth; color: Theme.rim }
+        Rectangle { visible: !bar.mac; width: parent.width; height: Theme.rimWidth; color: Theme.rim }
 
         // Start, search, workspaces and apps: at the left edge, or centred on the bar as on
         // Windows 11, but never running into the tray.
         RowLayout {
             id: tasks
-            x: Desktop.taskbarAlignment === "centre" ? Math.max(4, Math.min((bar.width - width) / 2, right.x - width - 8)) : 4
+            x: bar.mac ? 8 : Desktop.taskbarAlignment === "centre" ? Math.max(4, Math.min((bar.width - width) / 2, right.x - width - 8)) : 4
             height: parent.height
             spacing: 8
 
@@ -176,13 +202,16 @@ PanelWindow {
             BarButton {
                 id: start
                 lit: Desktop.launcherOpen && !Desktop.launcherSearch && Desktop.screen === bar.screen
-                name: Tr.t("Start")
+                name: bar.mac ? Tr.t("Apps") : Tr.t("Start")
                 tip: Tr.t("Apps, files and settings. Right-click or the Menu key for more.")
                 hasMenu: true
                 onActivated: bar.toggle("launcherOpen", false, start)
-                onMenuAsked: byKeyboard => bar.startMenu(byKeyboard)
-                // The KrissOS emblem from kriss-theme.
+                onMenuAsked: byKeyboard => bar.startMenu(byKeyboard, start)
+                // The KrissOS emblem from kriss-theme; in the dock, a grid of apps (the emblem
+                // is the system menu in the top bar).
+                Glyph { visible: bar.mac; anchors.centerIn: parent; name: "apps"; size: 22 }
                 Image {
+                    visible: !bar.mac
                     anchors.centerIn: parent
                     width: Theme.barIcon + 4
                     height: width
@@ -196,6 +225,7 @@ PanelWindow {
             // The search box: opens Start ready to search.
             BarButton {
                 id: searchBox
+                visible: !bar.mac
                 Layout.preferredWidth: Math.max(200, searchRow.implicitWidth + 24)
                 Layout.preferredHeight: Theme.barButton - 8
                 radius: height / 2
@@ -222,7 +252,7 @@ PanelWindow {
             // Task View, as on Windows 11 (Windows+Tab). `taskbarTaskView` in shell.json hides it.
             BarButton {
                 id: taskView
-                visible: Desktop.taskbarTaskView
+                visible: Desktop.taskbarTaskView && !bar.mac
                 lit: Desktop.taskViewOpen && Desktop.screen === bar.screen
                 name: Tr.t("Task View")
                 tip: Tr.t("Your windows and desktops")
@@ -232,6 +262,7 @@ PanelWindow {
 
             // Workspaces: dots, the active one stretched into a cyan pill.
             Row {
+                visible: !bar.mac
                 spacing: 6
                 Layout.leftMargin: 2
                 Repeater {
@@ -277,11 +308,14 @@ PanelWindow {
             }
         }
 
+        // In the Mac layout these move up to the top bar.
         RowLayout {
             id: right
+            parent: bar.mac ? topBody : body
             anchors.right: parent.right
+            anchors.rightMargin: bar.mac ? 6 : 0
             height: parent.height
-            spacing: 8
+            spacing: bar.mac ? 4 : 8
 
             // Tray icons (Steam, Discord...): click to open, right-click for the app's menu.
             // The ^ opens the overflow flyout with the hidden ones; drag an icon onto the ^, or
@@ -366,20 +400,24 @@ PanelWindow {
                 name: Qt.formatDateTime(clock.date, "HH:mm") + ", " + clock.date.toLocaleString(Qt.locale(), "dddd d MMMM yyyy")
                 tip: Tr.t("Calendar")
                 onActivated: bar.toggle("calendarOpen", false, clockArea)
-                Column {
+                // Two lines on the taskbar; one in the top bar, the date before the time.
+                Grid {
                     id: clockText
                     anchors.centerIn: parent
+                    columns: bar.mac ? 2 : 1
+                    columnSpacing: 8
+                    layoutDirection: bar.mac ? Qt.RightToLeft : Qt.LeftToRight
+                    horizontalItemAlignment: Grid.AlignRight
+                    verticalItemAlignment: Grid.AlignVCenter
                     SystemClock { id: clock; precision: SystemClock.Minutes }
                     RollingText {
-                        anchors.right: parent.right
                         text: Qt.formatDateTime(clock.date, "HH:mm")
                         color: Theme.fg
                         font { family: Theme.sans; pixelSize: Theme.sp(13); weight: Font.DemiBold; features: { "tnum": 1 } }
                     }
                     Text {
-                        anchors.right: parent.right
                         text: clock.date.toLocaleString(Qt.locale(), "ddd d MMM")
-                        color: Theme.soft
+                        color: bar.mac ? Theme.fg : Theme.soft
                         font { family: Theme.sans; pixelSize: Theme.sp(11) }
                     }
                 }
@@ -389,6 +427,7 @@ PanelWindow {
             // minimizes everything, the next brings it back (Windows+D does the same).
             BarButton {
                 id: sliver
+                visible: !bar.mac
                 Layout.preferredWidth: 12
                 Layout.fillHeight: true
                 Layout.leftMargin: -4
@@ -426,6 +465,76 @@ PanelWindow {
     onPreviewForChanged: previews.hover(previewFor)
     TrayFlyout { id: overflow; appMenu: menu }
 
+    // The app in front on this bar's screen, for the Mac top bar's app menu.
+    readonly property var frontApp: groups.find(g => Windows.forApp(g.appId, wins).some(w => w.active && !w.minimized)) ?? null
+
+    // The Mac layout's top bar: the KrissOS emblem with the system menu and the name of the
+    // app in front with its menu (the same one its dock icon has) on the left; the right of
+    // the taskbar (`right`, reparented) on the right.
+    PanelWindow {
+        id: top
+        screen: bar.screen
+        visible: bar.mac && bar.visible
+        WlrLayershell.namespace: "kriss-topbar"
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
+        anchors { top: true; left: true; right: true }
+        implicitHeight: Theme.topBarHeight
+        exclusiveZone: Theme.topBarHeight
+        color: "transparent"
+        BackgroundEffect.blurRegion: Region { item: topBody }
+
+        Rectangle {
+            id: topBody
+            anchors.fill: parent
+            color: Theme.bar
+            Accessible.role: Accessible.ToolBar
+            Accessible.name: Tr.t("Top bar")
+            Keys.onPressed: event => bar.barKeys(event, topBody)
+            MouseArea {
+                Accessible.ignored: true  // pointer only; the keyboard has its own way
+                anchors.fill: parent
+                acceptedButtons: Qt.RightButton
+                onClicked: mouse => { topSpot.x = mouse.x; bar.barMenu(topSpot, false); }
+                Item { id: topSpot; width: 1; height: parent.height }
+            }
+            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: Theme.rimWidth; color: Theme.rim }
+
+            RowLayout {
+                x: 6
+                height: parent.height
+                spacing: 2
+                BarButton {
+                    id: system
+                    name: Tr.t("System menu")
+                    tip: Tr.t("Settings, power and more")
+                    onActivated: bar.startMenu(activeFocus, system)
+                    Image {
+                        anchors.centerIn: parent
+                        width: Theme.topBarHeight - 12
+                        height: width
+                        source: "file:///usr/share/pixmaps/krissos.svg"
+                        sourceSize: Qt.size(width * 2, height * 2)
+                    }
+                }
+                BarButton {
+                    id: appName
+                    visible: !!bar.frontApp
+                    Layout.preferredWidth: appText.implicitWidth + 20
+                    name: appText.text
+                    tip: Tr.t("App menu")
+                    onActivated: bar.appMenu(bar.frontApp, appName, activeFocus)
+                    Text {
+                        id: appText
+                        anchors.centerIn: parent
+                        text: bar.frontApp?.entry?.name ?? bar.frontApp?.appId ?? ""
+                        color: Theme.fg
+                        font { family: Theme.sans; pixelSize: Theme.sp(13); weight: Font.DemiBold }
+                    }
+                }
+            }
+        }
+    }
+
     // A taskbar button: launch the app, or bring up, minimize or step through its windows.
     function activate(i, cycle) {
         const a = apps[i];
@@ -439,12 +548,12 @@ PanelWindow {
         const n = apps.length;
         let i = -1;
         for (let j = 0; j < n; j++) if (appButtons.itemAt(j)?.activeFocus) i = j;
-        kb = true;
+        takeKeys(body);
         (n ? appButtons.itemAt((i + 1) % n) : start).forceActiveFocus();
     }
     // Windows+B: the keyboard on the tray, the ^ first, as on Windows.
     function focusTray() {
-        kb = true;
+        takeKeys(mac ? topBody : body);
         const icons = [];
         for (const c of trayRow.children) if (c.visible && c.activeFocusOnTab) icons.push(c);
         (more.visible ? more : icons[0] ?? quick).forceActiveFocus();
@@ -453,8 +562,10 @@ PanelWindow {
     // The jump list, as on Windows 11: the app's recent files and its own tasks (desktop file
     // actions), then the app (a new window), pin or unpin, and close.
     function jumpList(i, byKeyboard) {
-        const a = apps[i], btn = appButtons.itemAt(i);
-        if (!a || !btn) return;
+        if (apps[i] && appButtons.itemAt(i)) appMenu(apps[i], appButtons.itemAt(i), byKeyboard);
+    }
+    // The jump list of app `a` (an entry of `groups` or `apps`), at control `btn`.
+    function appMenu(a, btn, byKeyboard) {
         const e = a.entry, wins = a.win ? [a.win] : Windows.forApp(a.appId, bar.wins), pinId = e?.id ?? a.appId;
         const out = [];
         const files = Desktop.recentFor(e, 8);
@@ -467,8 +578,8 @@ PanelWindow {
         if (out.length) out.push({ sep: true });
         if (e) out.push({ text: e.name, icon: e.icon, run: () => e.execute() });
         out.push(Desktop.isPinned(pinId)
-            ? { text: Tr.t("Unpin from taskbar"), glyph: "unpin", run: () => Desktop.togglePin(pinId) }
-            : { text: Tr.t("Pin to taskbar"), glyph: "pin", run: () => Desktop.togglePin(pinId) });
+            ? { text: mac ? Tr.t("Remove from dock") : Tr.t("Unpin from taskbar"), glyph: "unpin", run: () => Desktop.togglePin(pinId) }
+            : { text: mac ? Tr.t("Keep in dock") : Tr.t("Pin to taskbar"), glyph: "pin", run: () => Desktop.togglePin(pinId) });
         if (wins.length)
             out.push({ text: wins.length > 1 ? Tr.t("Close all windows") : Tr.t("Close window"), glyph: "close",
                        run: () => wins.forEach(w => Windows.close(w.id)) });
@@ -498,8 +609,9 @@ PanelWindow {
             .map(([e, text]) => ({ text: text, run: () => e.execute() }));
     }
 
-    // Right-click on the Start button, or Windows+X: the power-user menu.
-    function startMenu(byKeyboard) {
+    // Right-click on the Start button, or Windows+X: the power-user menu. In the Mac layout
+    // it hangs from the emblem in the top bar.
+    function startMenu(byKeyboard, from) {
         const tm = taskManager();
         const settings = "com.system76.CosmicSettings";
         const system = appEntries([[settings + ".Applications", Tr.t("Installed apps")],
@@ -519,14 +631,17 @@ PanelWindow {
         const out = [];
         for (const group of [system, tools, apps]) if (group.length) out.push(...group, { sep: true });
         out.push(power, { text: Tr.t("Desktop"), run: () => Windows.showDesktop() });
-        menu.show(start, out, byKeyboard);
+        menu.show(from ?? (mac && top.visible ? system : start), out, byKeyboard);
     }
 
     // Right-click on an empty part of the bar.
     function barMenu(item, byKeyboard) {
         const tm = taskManager();
         const out = tm ? [{ text: Tr.t("Task Manager"), icon: tm.icon, run: () => tm.execute() }] : [];
-        out.push({ text: Tr.t("Taskbar settings"), glyph: "sun", run: () => Desktop.personalise("taskbar") });
+        out.push({ text: mac ? Tr.t("Dock settings") : Tr.t("Taskbar settings"), glyph: "sun", run: () => Desktop.personalise("taskbar") });
+        // The other layout, live (also on the Personalise page and in kriss-welcome).
+        out.push(mac ? { text: Tr.t("Switch to the taskbar"), glyph: "taskView", run: () => Desktop.setLayout("windows") }
+                     : { text: Tr.t("Switch to the top bar and dock"), glyph: "apps", run: () => Desktop.setLayout("mac") });
         menu.show(item, out, byKeyboard);
     }
 
@@ -678,14 +793,15 @@ PanelWindow {
             }
         }
         // Running: a short mark; in front: a longer accent pill; wants attention: red.
+        // In the dock: a dot, accent for the app in front.
         Rectangle {
             visible: btn.wins.length > 0 && !track.visible
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: 1
-            width: btn.front ? 16 : 6
-            height: 3
-            radius: 1.5
+            anchors.bottomMargin: bar.mac ? -2 : 1
+            width: bar.mac ? 4 : btn.front ? 16 : 6
+            height: bar.mac ? 4 : 3
+            radius: height / 2
             color: btn.urgent ? Theme.red : btn.front ? Theme.accent : Theme.soft
             Behavior on width { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
         }
@@ -710,7 +826,8 @@ PanelWindow {
         signal menuAsked(bool byKeyboard)
 
         Layout.preferredWidth: Theme.barButton
-        Layout.preferredHeight: Theme.barButton
+        // Shorter in the slim Mac top bar.
+        Layout.preferredHeight: Math.min(Theme.barButton, (parent?.height ?? Theme.barButton) - 4)
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         activeFocusOnTab: true

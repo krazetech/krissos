@@ -20,6 +20,8 @@
 #   kriss-shell personalise [colours|background|taskbar|pins|text]
 #                          the Personalise window, at that page
 #   kriss-shell snap       the snap layouts for the window in front (Windows+Z)
+#   kriss-shell layout windows|mac
+#                          the taskbar, or the Mac layout (top bar and dock); saved, live
 #   kriss-shell switcher next|previous
 #                          the Alt+Tab window switcher (Alt+Tab and Alt+Shift+Tab)
 #   kriss-shell media playPause|next|previous
@@ -65,6 +67,13 @@ personalise)
     ;;
 snap)
     qs -p "$qml" ipc call snap layouts
+    ;;
+layout)
+    case "${2:-}" in
+    windows | mac) qs -p "$qml" ipc call layout set "$2" ;;
+    "") qs -p "$qml" ipc call layout get ;;
+    *) echo "usage: kriss-shell layout windows|mac" >&2; exit 2 ;;
+    esac
     ;;
 switcher | media)
     qs -p "$qml" ipc call "$1" "${2:?usage: kriss-shell $1 ACTION}"
@@ -198,7 +207,7 @@ greeter)
     wait "$comp"
     ;;
 *)
-    echo "usage: kriss-shell [launcher|quick|notifications|calendar|lock|desktop|taskview|desktops add|clipboard|emoji|snap|taskbar ACTION|switcher next|media playPause|brightness STEP|screenshot [region]|greeter]" >&2
+    echo "usage: kriss-shell [launcher|quick|notifications|calendar|lock|desktop|taskview|desktops add|clipboard|emoji|snap|layout windows|mac|taskbar ACTION|switcher next|media playPause|brightness STEP|screenshot [region]|greeter]" >&2
     exit 2
     ;;
 esac

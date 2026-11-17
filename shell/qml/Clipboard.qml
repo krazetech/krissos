@@ -86,8 +86,8 @@ PanelWindow {
         if (placed) return;
         placed = true;
         panel.x = Math.max(Theme.gap, Math.min(width - panel.width - Theme.gap, x === undefined ? (width - panel.width) / 2 : x - panel.width / 2));
-        panel.y = y === undefined ? height - Theme.barHeight - Theme.panelGap - panel.height
-            : y + 24 + panel.height <= height - Theme.barHeight ? y + 24 : Math.max(Theme.gap, y - panel.height - 24);
+        panel.y = y === undefined ? height - Desktop.bottomRoom - Theme.panelGap - panel.height
+            : y + 24 + panel.height <= height - Desktop.bottomRoom ? y + 24 : Math.max(Theme.gap, y - panel.height - 24);
     }
 
     readonly property string helperCmd: "kriss-shell-clipboard"

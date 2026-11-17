@@ -58,8 +58,9 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "kriss-notifications"
     exclusionMode: ExclusionMode.Ignore
-    anchors { bottom: true; right: true }
-    margins { right: Theme.panelGap; bottom: Theme.barHeight + Theme.panelGap }
+    // Over the taskbar's tray; in the Mac layout, under the top bar.
+    anchors { bottom: !Desktop.mac; top: Desktop.mac; right: true }
+    margins { right: Theme.panelGap; bottom: Theme.barHeight + Theme.panelGap; top: Theme.topBarHeight + Theme.panelGap }
     implicitWidth: 380
     // A fixed size, so the cards can move without the window resizing under them every
     // frame; clicks outside the cards go through to the windows behind.
@@ -137,7 +138,8 @@ PanelWindow {
 
     Column {
         id: column
-        anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+        anchors { left: parent.left; right: parent.right }
+        y: Desktop.mac ? 0 : parent.height - height
         spacing: win.gap
         Accessible.role: Accessible.Grouping
         Accessible.name: Tr.t("Notifications")

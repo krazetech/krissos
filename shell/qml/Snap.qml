@@ -43,7 +43,7 @@ Scope {
     readonly property bool assisting: assistZones.length > 0
 
     function workArea(screen) {
-        return Qt.size(screen.width, screen.height - Theme.barHeight);
+        return Qt.size(screen.width, screen.height - Desktop.topRoom - Desktop.bottomRoom);
     }
     function geoOf(w) {
         return w?.geo?.[w.output] ?? null;
@@ -110,9 +110,9 @@ Scope {
         const a = workArea(s), tol = 24;
         for (const key of Object.keys(rest)) {
             const [x, y, zw, zh] = key.split(",").map(Number);
-            if (Math.abs(g[0] - a.width * x / 12) < tol && Math.abs(g[1] - a.height * y / 12) < tol
+            if (Math.abs(g[0] - a.width * x / 12) < tol && Math.abs(g[1] - Desktop.topRoom - a.height * y / 12) < tol
                 && Math.abs(g[0] + g[2] - a.width * (x + zw) / 12) < tol
-                && Math.abs(g[1] + g[3] - a.height * (y + zh) / 12) < tol)
+                && Math.abs(g[1] - Desktop.topRoom + g[3] - a.height * (y + zh) / 12) < tol)
                 return key;
         }
         return "";

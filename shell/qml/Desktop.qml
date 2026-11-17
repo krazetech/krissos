@@ -108,7 +108,7 @@ Singleton {
     property alias taskbarSize: config.taskbarSize
     // What the launcher, quick settings and calendar leave below them for an auto-hidden bar,
     // which reserves no room of its own.
-    readonly property int barRoom: taskbarAutoHide ? Theme.barHeight : 0
+    readonly property int barRoom: taskbarAutoHide ? bottomRoom : 0
     property alias taskbarTaskView: config.taskbarTaskView
     property alias desktopNames: config.desktopNames
     property alias accent: config.accent
@@ -117,6 +117,25 @@ Singleton {
     property alias themeDark: config.themeDark
     property alias wallpaper: config.wallpaper
     property alias contrast: config.contrast
+    property alias layout: config.layout
+    // The Mac layout: a slim top bar and a centred dock in place of the taskbar (see Bar.qml).
+    readonly property bool mac: layout === "mac"
+    // What the bars take at the top and bottom of a screen: the taskbar, or the top bar and dock.
+    readonly property int topRoom: mac ? Theme.topBarHeight : 0
+    readonly property int bottomRoom: Theme.barHeight + (mac ? Theme.dockGap : 0)
+    // `kriss-shell layout windows|mac`, kriss-welcome and the Personalise page.
+    function setLayout(name) {
+        if (name !== "windows" && name !== "mac") return "error: expected windows or mac";
+        layout = name;
+        return "ok";
+    }
+    // Window buttons follow the layout: on the right as on Windows, on the left as on a Mac.
+    // GTK apps and Qt apps with the Adwaita decorations read this; COSMIC apps keep theirs.
+    // Also when shell.json is changed by hand or by kriss-welcome.
+    onLayoutChanged: Quickshell.execDetached(["sh", "-c", 'gsettings set org.gnome.desktop.wm.preferences button-layout "$1"; '
+        + 'for f in "${XDG_CONFIG_HOME:-$HOME/.config}"/gtk-3.0/settings.ini "${XDG_CONFIG_HOME:-$HOME/.config}"/gtk-4.0/settings.ini; do '
+        + '[ -f "$f" ] && sed -i "s/^gtk-decoration-layout=.*/gtk-decoration-layout=$1/" "$f"; done', "sh",
+        layout === "mac" ? "close,minimize,maximize:appmenu" : "appmenu:minimize,maximize,close"])
 
     readonly property string configFile: (Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config") + "/kriss/shell.json"
     FileView {
@@ -165,6 +184,9 @@ Singleton {
             property string wallpaper: "dynamic"
             // "high": the high-contrast colours (see Theme.qml), for low vision.
             property string contrast: "normal"
+            // "windows": the taskbar along the bottom. "mac": a top bar (the app's menu, the
+            // tray, quick settings and the clock) and a centred dock. Switches live.
+            property string layout: "windows"
         }
     }
 

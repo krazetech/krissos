@@ -20,7 +20,7 @@ PanelWindow {
     id: win
 
     // Stays up while the sheet slides away, but lets clicks through to what is behind it.
-    visible: Desktop.quickOpen || panel.y < sheet.closed - 0.5
+    visible: Desktop.quickOpen || Math.abs(panel.y) < sheet.closed - 0.5
     mask: Desktop.quickOpen ? null : noInput
     Region { id: noInput }
     screen: Desktop.screen
@@ -62,6 +62,9 @@ PanelWindow {
     property bool peek: false
     readonly property real peekOffset: panel.height - (tiles.y + tiles.height + body.anchors.topMargin + 20)
     readonly property real target: !Desktop.quickOpen ? sheet.closed : peek ? peekOffset : 0
+    // The sheet rises from the taskbar; in the Mac layout it drops from the top bar, so every
+    // offset below is mirrored (1: down is away, -1: up is away).
+    readonly property int dir: Desktop.mac ? -1 : 1
 
     Connections {
         target: Desktop
@@ -96,7 +99,7 @@ PanelWindow {
     Rectangle {
         anchors.fill: parent
         color: Theme.alpha(Theme.night, 0.3)
-        opacity: Math.max(0, 1 - panel.y / sheet.closed)
+        opacity: Math.max(0, 1 - Math.abs(panel.y) / sheet.closed)
         MouseArea {
             Accessible.ignored: true  // pointer only; the keyboard has its own way
             anchors.fill: parent
@@ -109,9 +112,8 @@ PanelWindow {
         id: sheet
         readonly property real closed: panel.height + 24
         anchors.right: parent.right
-        anchors.bottom: parent.bottom
         anchors.rightMargin: Theme.panelGap
-        anchors.bottomMargin: Theme.panelGap + Desktop.barRoom
+        y: Desktop.mac ? Theme.panelGap : parent.height - height - Theme.panelGap - Desktop.barRoom
         width: panel.width
         height: panel.height
         clip: true
@@ -119,7 +121,7 @@ PanelWindow {
         Rectangle {
             id: panel
             // Vaul's curve: a long, soft ease out.
-            y: dragger.dragging ? dragger.pos : win.target
+            y: (dragger.dragging ? dragger.pos : win.target) * win.dir
             Behavior on y {
                 enabled: !dragger.dragging
                 NumberAnimation { duration: Theme.ms(Theme.slow); easing.type: Easing.BezierSpline; easing.bezierCurve: Theme.sheetCurve }
@@ -148,10 +150,10 @@ PanelWindow {
                 property real lastY: 0
                 property real lastT: 0
                 property real speed: 0  // px per ms, down is positive
-                function pointer(mouse) { return mapToItem(null, mouse.x, mouse.y).y; }
+                function pointer(mouse) { return mapToItem(null, mouse.x, mouse.y).y * win.dir; }
                 onPressed: mouse => {
                     startY = lastY = pointer(mouse);
-                    startOffset = panel.y;
+                    startOffset = panel.y * win.dir;
                     lastT = Date.now();
                     speed = 0;
                 }
@@ -168,7 +170,8 @@ PanelWindow {
                 onReleased: {
                     if (!dragging) return;
                     // A flick down closes; otherwise it settles on the nearest snap point.
-                    const points = [0, win.peekOffset, sheet.closed];
+                    // No peek from the top: it would show the bottom of the sheet, not the tiles.
+                    const points = Desktop.mac ? [0, sheet.closed] : [0, win.peekOffset, sheet.closed];
                     const near = speed > 0.8 ? sheet.closed
                         : points.reduce((a, b) => Math.abs(b - pos) < Math.abs(a - pos) ? b : a);
                     win.peek = near === win.peekOffset;
@@ -180,8 +183,7 @@ PanelWindow {
             // The handle.
             Rectangle {
                 anchors.horizontalCenter: parent.horizontalCenter
-                anchors.top: parent.top
-                anchors.topMargin: 9
+                y: Desktop.mac ? parent.height - height - 9 : 9
                 width: 40; height: 5; radius: 2.5
                 color: Theme.alpha(Theme.fg, 0.25)
             }

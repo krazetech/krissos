@@ -269,7 +269,7 @@ PanelWindow {
         Accessible.role: Accessible.Dialog
         Accessible.name: Tr.t("Start")
         // Over Start: at the left, or centred with a centred taskbar.
-        x: Desktop.taskbarAlignment === "centre" ? (parent.width - width) / 2 : Theme.panelGap
+        x: Desktop.taskbarAlignment === "centre" || Desktop.mac ? (parent.width - width) / 2 : Theme.panelGap
         anchors.bottom: parent.bottom
         anchors.bottomMargin: Theme.panelGap + Desktop.barRoom
         width: 600

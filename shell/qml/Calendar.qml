@@ -33,10 +33,10 @@ PanelWindow {
 
     Rectangle {
         id: card
+        // Under the clock: above the taskbar, or below the Mac top bar.
         anchors.right: parent.right
-        anchors.bottom: parent.bottom
         anchors.rightMargin: Theme.panelGap
-        anchors.bottomMargin: Theme.panelGap + Desktop.barRoom
+        y: Desktop.mac ? Theme.panelGap : parent.height - height - Theme.panelGap - Desktop.barRoom
         width: 336
         height: body.implicitHeight + 36
         radius: Theme.radius
@@ -55,7 +55,7 @@ PanelWindow {
         }
         // Rises a little as it fades in, like the volume pop-up.
         opacity: win.open ? 1 : 0
-        transform: Translate { y: win.open || Theme.reduceMotion ? 0 : 12; Behavior on y { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } } }
+        transform: Translate { y: win.open || Theme.reduceMotion ? 0 : Desktop.mac ? -12 : 12; Behavior on y { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } } }
         Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
 
         // Swallows clicks on the card, so only clicks outside it close the calendar.
