@@ -21,6 +21,7 @@ Singleton {
     function personalise(page) {
         personalisePage = ["colours", "background", "taskbar", "pins", "text"].indexOf(page) >= 0 ? page : "colours";
     }
+    property bool widgetsOpen: false
     property bool locked: false
     // Start opened from the bar's search box: the search field and Recommended, no Pinned.
     property bool launcherSearch: false
@@ -152,6 +153,12 @@ Singleton {
         for f in "\${XDG_CONFIG_HOME:-$HOME/.config}"/gtk-3.0/settings.ini "\${XDG_CONFIG_HOME:-$HOME/.config}"/gtk-4.0/settings.ini; do
             [ -f "$f" ] && sed -i "s/^gtk-decoration-layout=.*/gtk-decoration-layout=$buttons/" "$f"
         done`, "sh", layout])
+    property alias taskbarWidgets: config.taskbarWidgets
+    property alias widgets: config.widgets
+    property alias widgetsHidden: config.widgetsHidden
+    property alias worldClocks: config.worldClocks
+    property alias weatherCity: config.weatherCity
+    property alias aiModel: config.aiModel
 
     readonly property string configFile: (Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config") + "/kriss/shell.json"
     FileView {
@@ -203,6 +210,15 @@ Singleton {
             // "windows": the taskbar along the bottom. "mac": a top bar (the app's menu, the
             // tray, quick settings and the clock) and a centred dock. Switches live.
             property string layout: "windows"
+            // The widgets button at the far left of the taskbar (Windows+W opens the panel either way).
+            property bool taskbarWidgets: true
+            // The widgets panel: card order, the cards hidden from it, the world clocks (tz
+            // names), the city the weather is for, and the local AI model.
+            property list<string> widgets: ["calendar", "clocks", "system", "media", "ai", "weather"]
+            property list<string> widgetsHidden: []
+            property list<string> worldClocks: []
+            property string weatherCity: ""
+            property string aiModel: ""
         }
     }
 

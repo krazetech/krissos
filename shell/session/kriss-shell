@@ -6,6 +6,7 @@
 #   kriss-shell notifications
 #                          open or close the notification center (Windows+N)
 #   kriss-shell calendar   open or close the calendar under the clock (Windows+Alt+D)
+#   kriss-shell widgets    open or close the widgets panel (Windows+W)
 #   kriss-shell lock       lock the screen (Windows+L)
 #   kriss-shell clipboard  open or close the clipboard history (Windows+V)
 #   kriss-shell emoji      open or close the emoji and symbol picker (Windows+.)
@@ -41,7 +42,7 @@ launcher)
     # Fall back to COSMIC's own launcher when the KrissOS Shell is not running.
     qs -p "$qml" ipc call launcher toggle 2>/dev/null || exec cosmic-launcher
     ;;
-quick | notifications | calendar)
+quick | notifications | calendar | widgets)
     qs -p "$qml" ipc call "$1" toggle
     ;;
 lock)
@@ -207,7 +208,7 @@ greeter)
     wait "$comp"
     ;;
 *)
-    echo "usage: kriss-shell [launcher|quick|notifications|calendar|lock|desktop|taskview|desktops add|clipboard|emoji|snap|layout windows|mac|taskbar ACTION|switcher next|media playPause|brightness STEP|screenshot [region]|greeter]" >&2
+    echo "usage: kriss-shell [launcher|quick|notifications|calendar|widgets|lock|desktop|taskview|desktops add|clipboard|emoji|snap|layout windows|mac|taskbar ACTION|switcher next|media playPause|brightness STEP|screenshot [region]|greeter]" >&2
     exit 2
     ;;
 esac

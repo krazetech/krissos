@@ -14,7 +14,7 @@ ShellRoot {
     // Open one panel on the focused window's screen, closing the others.
     function toggle(panel) {
         const open = !Desktop[panel];
-        Desktop.launcherOpen = Desktop.notificationsOpen = Desktop.quickOpen = Desktop.calendarOpen = Desktop.taskViewOpen = false;
+        Desktop.launcherOpen = Desktop.notificationsOpen = Desktop.quickOpen = Desktop.calendarOpen = Desktop.taskViewOpen = Desktop.widgetsOpen = false;
         if (open) Desktop.screen = Desktop.focusedScreen();
         Desktop.launcherSearch = false;
         Desktop[panel] = open;
@@ -99,6 +99,7 @@ ShellRoot {
     Notifications {}
     QuickSettings {}
     Calendar {}
+    Widgets {}
     Lock {}
     Switcher { id: switcher }
     TaskView {}
@@ -136,10 +137,11 @@ ShellRoot {
         function onQuickOpenChanged() { fps.measure("quick " + (Desktop.quickOpen ? "open" : "close")); }
         function onNotificationsOpenChanged() { fps.measure("notifications " + (Desktop.notificationsOpen ? "open" : "close")); }
         function onTaskViewOpenChanged() { fps.measure("taskview " + (Desktop.taskViewOpen ? "open" : "close")); }
+        function onWidgetsOpenChanged() { fps.measure("widgets " + (Desktop.widgetsOpen ? "open" : "close")); }
     }
 
     // cosmic-comp runs `kriss-shell COMMAND` for the Windows-key shortcuts, which calls these.
-    // `kriss-shell launcher|quick|notifications`: Windows, Windows+A and Windows+N; `calendar`: Windows+Alt+D.
+    // `kriss-shell launcher|quick|notifications`: Windows, Windows+A and Windows+N; `calendar`: Windows+Alt+D; `widgets`: Windows+W.
     IpcHandler {
         target: "launcher"
         function toggle(): void { root.toggle("launcherOpen"); }
@@ -158,6 +160,12 @@ ShellRoot {
     IpcHandler {
         target: "calendar"
         function toggle(): void { root.toggle("calendarOpen"); }
+    }
+
+    // Windows+W.
+    IpcHandler {
+        target: "widgets"
+        function toggle(): void { root.toggle("widgetsOpen"); }
     }
 
     IpcHandler {

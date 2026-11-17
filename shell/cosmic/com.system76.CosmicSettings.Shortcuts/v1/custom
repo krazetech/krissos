@@ -16,6 +16,7 @@
     (modifiers: [Super], key: "v"): Spawn("kriss-shell clipboard"),
     (modifiers: [Super], key: "period"): Spawn("kriss-shell emoji"),
     (modifiers: [Super], key: "semicolon"): Spawn("kriss-shell emoji"),
+    (modifiers: [Super], key: "w"): Spawn("kriss-shell widgets"),
     // Snap the window to a half (cosmic-comp's Move on a floating window). Up maximizes and
     // Down minimizes, as on Windows; COSMIC's Windows+Shift+arrows still snap to quarters.
     (modifiers: [Super], key: "Left"): Move(Left),
