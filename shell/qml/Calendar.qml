@@ -56,8 +56,8 @@ PanelWindow {
         id: card
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        anchors.rightMargin: Theme.gap * 1.5
-        anchors.bottomMargin: Theme.gap
+        anchors.rightMargin: Theme.panelGap
+        anchors.bottomMargin: Theme.panelGap
         width: 336
         height: body.implicitHeight + 36
         radius: Theme.radius

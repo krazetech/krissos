@@ -198,7 +198,9 @@ available as the installer's alternative.
 
 - **Style:** soft and rounded. Floating windows with large corner radii and a light rim, and
   no coloured ring around the focused window. Light and dark window themes over a dark wallpaper.
-  One bottom bar holds the launcher, apps and status. Sky Cyan is the only accent; no neon.
+  One taskbar, full width along the bottom edge and 48 px tall like Windows 11, holds the
+  launcher, apps and status, with acrylic blur and a soft top rim. Sky Cyan is the only accent;
+  no neon.
 - **Type:** Figtree + JetBrains Mono (OFL) proposed.
 - **Apps:** COSMIC Files, Terminal and Settings get KrissOS dark and light COSMIC themes, built
   from the tokens by libcosmic's own ThemeBuilder (`shell/cosmic-theme/`), and a matching

@@ -20,7 +20,7 @@ MouseArea {
         : p === PowerProfile.PowerSaver ? ["saver", Tr.t("Power saver")] : ["balanced", Tr.t("Balanced")]
 
     implicitWidth: pill.width
-    implicitHeight: 34
+    implicitHeight: 32
     hoverEnabled: true
     cursorShape: Qt.PointingHandCursor
     scale: pressed ? Theme.pressScale : 1

@@ -6,8 +6,8 @@ import Quickshell.Services.SystemTray
 MouseArea {
     id: tray
     required property SystemTrayItem modelData
-    width: 24
-    height: 24
+    width: Theme.trayIcon
+    height: Theme.trayIcon
     anchors.verticalCenter: parent.verticalCenter
     hoverEnabled: true
     cursorShape: Qt.PointingHandCursor
@@ -22,8 +22,8 @@ MouseArea {
     onWheel: wheel => modelData.scroll(wheel.angleDelta.y, false)
     Rectangle {
         anchors.fill: parent
-        anchors.margins: -5
-        radius: width / 2
+        anchors.margins: -7
+        radius: Theme.barRadius
         color: tray.containsMouse ? Theme.card : "transparent"
         Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
     }

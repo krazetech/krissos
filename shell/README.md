@@ -1,8 +1,9 @@
 # KrissOS Shell
 
-The KrissOS desktop: one floating bottom bar with a system tray, a Windows-style launcher,
-quick settings, notifications and a lock screen, written in QML for [Quickshell](https://quickshell.org) and running on
-`cosmic-comp`. Packaged as `pkgs/kriss-shell`; SDDM lists it as **KrissOS Shell**.
+The KrissOS desktop: one full-width taskbar along the bottom edge with a system tray, a
+Windows-style launcher, quick settings, notifications and a lock screen, written in QML for
+[Quickshell](https://quickshell.org) and running on `cosmic-comp`. Packaged as `pkgs/kriss-shell`;
+SDDM lists it as **KrissOS Shell**.
 
 | Path | What it is |
 |---|---|
