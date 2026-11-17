@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+"""Accessibility checks on the shell's QML, for things a screen reader or reduced motion needs.
+
+    shell/a11y-check        report and exit 1 on a problem
+    shell/a11y-check --test check the checker
+
+1. Every interactive item (MouseArea, TapHandler, TextInput, TextEdit, and inline components
+   built on MouseArea) sets Accessible.name, or says it is not for a screen reader with
+   Accessible.ignored: true (a click-outside-to-close layer, a drag handle).
+2. Accessible names and descriptions are never bare English strings: they go through Tr.t()
+   (shell/i18n-check then makes sure each has a Malay translation).
+3. Every animation length goes through Theme.ms(), which is 0 when animations are off.
+
+The lock and login screens are left out (LATER) while they are being reworked; take them off
+the list once that lands.
+"""
+import pathlib
+import re
+import sys
+
+LATER = {"Lock.qml", "LockFace.qml", "greeter.qml"}
+INTERACTIVE = re.compile(r"(?<![\w.])(MouseArea|TapHandler|TextInput|TextEdit)\s*\{")
+
+
+def own_text(src, start):
+    """The text of the object whose `{` is at src[start], without its nested blocks."""
+    depth, out, i = 0, [], start
+    while i < len(src):
+        c = src[i]
+        if c == "{":
+            depth += 1
+        elif c == "}":
+            depth -= 1
+            if depth == 0:
+                break
+        elif depth == 1:
+            out.append(c)
+        i += 1
+    return "".join(out)
+
+
+def check(name, src):
+    problems = []
+    line = lambda pos: src.count("\n", 0, pos) + 1
+    for m in INTERACTIVE.finditer(src):
+        own = own_text(src, m.end() - 1)
+        if not re.search(r"Accessible\.(name|ignored)\s*:", own):
+            problems.append(f"{name}:{line(m.start())}: {m.group(1)} has no Accessible.name (or Accessible.ignored: true)")
+    for m in re.finditer(r'Accessible\.(name|description)\s*:\s*"', src):
+        problems.append(f"{name}:{line(m.start())}: Accessible.{m.group(1)} is not translated (use Tr.t)")
+    for m in re.finditer(r"\b(duration|highlightMoveDuration|highlightResizeDuration)\s*:\s*([^\n;}]*)", src):
+        if "Theme.ms(" not in m.group(2):
+            problems.append(f"{name}:{line(m.start())}: {m.group(1)} does not go through Theme.ms()")
+    return problems
+
+
+def test():
+    ok = """Item {
+        MouseArea { Accessible.name: Tr.t("Close"); Rectangle { } }
+        MouseArea { anchors.fill: parent; Accessible.ignored: true }
+        NumberAnimation { duration: Theme.ms(Theme.fast) }
+    }"""
+    assert check("t", ok) == [], check("t", ok)
+    # A name on a child does not count for the MouseArea around it.
+    bad = 'MouseArea {\n Text { Accessible.name: Tr.t("x") }\n}'
+    assert len(check("t", bad)) == 1
+    assert len(check("t", 'Item { Accessible.name: "Close" }')) == 1
+    assert len(check("t", "NumberAnimation { duration: 200 }")) == 1
+    assert len(check("t", "component Chip: MouseArea {\n}")) == 1
+    assert check("t", "Item { property MouseArea m }") == []
+    print("ok")
+
+
+if __name__ == "__main__":
+    if sys.argv[1:] == ["--test"]:
+        test()
+        sys.exit(0)
+    qml = pathlib.Path(__file__).resolve().parent / "qml"
+    problems = [p for f in sorted(qml.glob("*.qml")) if f.name not in LATER for p in check(f.name, f.read_text())]
+    print("\n".join(problems))
+    sys.exit(bool(problems))

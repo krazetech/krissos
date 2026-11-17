@@ -13,6 +13,7 @@ SDDM lists it as **KrissOS Shell**.
 | `theme-check` | Tests the light/dark schedule and that every curated accent and its shades pass contrast: `node shell/theme-check` |
 | `i18n-check` | Checks every shell string has a translation; `--list` prints them all |
 | `clipboard-check` | Tests the clipboard history with a fake `wl-paste`: sensitive items are never stored, pinned ones survive `clear` (runs in the package build) |
+| `a11y-check` | Checks every clickable item has a name for screen readers (or says it is pointer only), names go through `Tr.t`, and every animation length goes through `Theme.ms()`; `--test` checks the checker |
 | `kriss-shell-toplevels` | Python helper that lists open windows (the screen and desktop each is on, and whether it is fullscreen) and the desktops, focuses, minimizes, closes or moves windows, switches desktops, and captures window pictures while the taskbar previews or Task View show them. Quickshell can't read or capture windows from cosmic-comp directly |
 | `toplevels-check` | Run inside a cosmic-comp session: checks `kriss-shell-toplevels` still sees a new window after Python's garbage collector runs (`shell/toplevels-check alacritty`; cosmic-term by default) |
 | `kriss-shell-clipboard` | Python helper for the clipboard history: watches the clipboard through `wl-paste --watch`, stores, lists, pins and deletes items, and pastes with a virtual keyboard |
@@ -142,6 +143,7 @@ bar to move it. Without the file, the defaults in `qml/Desktop.qml` apply. **Tas
 | `taskbarAutoHide` | `false` | The bar slides off the bottom edge and comes back when the pointer reaches it |
 | `taskbarCombine` | `"always"` | `"always"`: one button per app. `"never"`: one button per window, with its title. `"full"`: per window until the bar runs out of room |
 | `taskbarAllScreens` | `true` | A bar on every screen, each with the windows on that screen; `false`: one bar, on the first screen, with every window |
+| `contrast` | `"normal"` | `"high"`: pure black and white, a brighter accent, solid panels with no see-through, thicker rims (the `hc_` tokens) |
 
 ### Theme
 
@@ -224,6 +226,7 @@ live pictures over the blurred desktop, and its desktops along the bottom, as on
 | Drag a window onto a desktop | Move it there |
 | New desktop | Add one (Windows+Ctrl+D adds one and switches to it) |
 | Right-click a desktop | Rename or close it; closing moves its windows to the desktop before it |
+| Tab | Move between the windows and the desktops; on a desktop, Enter switches, F2 renames, Delete closes, the Menu key opens its menu |
 
 Desktops are cosmic-comp's workspaces, which it creates and removes by itself: there is always
 one empty desktop at the end, and an empty desktop goes away once you leave it. "New desktop"
@@ -271,7 +274,8 @@ their best match.
 | Windows+V | Clipboard history |
 | Windows+. or Windows+; | Emoji and symbols |
 | Menu key, Shift+F10 | In the launcher or on a taskbar button, its menu |
-| Windows+T | Put the keyboard on the taskbar buttons, again to step to the next; arrows move, Enter opens, Shift+Enter opens a new window, Esc leaves |
+| Windows+T | Put the keyboard on the taskbar's app buttons, again to step to the next; Tab, Shift+Tab and the arrows walk every control on the bar, Enter opens, Shift+Enter opens a new window, Up shows an app's window previews, Esc leaves |
+| Windows+B | Put the keyboard on the tray (the ^ first), as on Windows |
 | Windows+X | The Start button's menu |
 | Windows+Left / Right | Snap the window to that half (Windows+Shift+Up / Down then makes it a quarter) |
 | Windows+Up / Down | Maximize / minimize |
@@ -333,6 +337,42 @@ Emoji are searchable in English and Malay. The emoji, groups and English words c
 GitHub's [gemoji](https://github.com/github/gemoji) (MIT), the Malay words from `emoji/ms.tsv`;
 `emoji/generate` merges them, with the symbols, into `qml/emoji.json`. Recent emoji and the skin
 tone are kept in `~/.local/state/kriss/emoji.json`.
+
+## Accessibility
+
+- **Screen readers.** Every control has an accessible role, name and description (in Malay
+  too), so Orca reads the bar, Start, menus, quick settings, the notification center and the
+  rest. Lists the keyboard moves through without moving the focus (Start's results, Alt+Tab,
+  Task View, emoji) say the item picked; toggles say on or off; a new notification is read
+  out (critical ones cut in; none during Do not disturb); Start says how many results once
+  typing pauses.
+- **Keyboard.** Every surface opens from a key and works without a pointer. The control with
+  the keyboard has a soft accent rim (`FocusRim.qml`). Esc backs out; a panel opened from the
+  bar by keyboard gives the focus back to the button that opened it (`Desktop.back()`). The
+  desktop's right-click menu is pointer only; its entries are in Start's search and
+  Windows+X.
+- **Text size.** Shell text follows `org.gnome.desktop.interface text-scaling-factor` (COSMIC
+  has no setting of its own yet), live: every font size goes through `Theme.sp()`, and the
+  bar, menus and quick settings grow half as fast as the text.
+- **High contrast.** `"contrast": "high"` in `shell.json` (above).
+- **Reduced motion.** Every animation length goes through `Theme.ms()`; `shell/a11y-check`
+  fails on one that doesn't.
+
+cosmic-comp gives the keyboard to a layer surface only as it appears. The bar, the notification
+center (often on screen already with toasts) and the window previews therefore take the keyboard
+through `Desktop.keysTo()`: a 1 px surface appears, takes it and passes each key to them.
+
+To check what a screen reader sees, run the nested session on its own D-Bus with Qt's
+accessibility on, then read the tree with `gi.repository.Atspi` (or Accerciser) on that bus:
+
+```bash
+export QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1
+dbus-run-session -- sh -c '/usr/lib/at-spi-bus-launcher --launch-immediately & sleep 1
+  /usr/lib/at-spi2-registryd --use-gnome-session=false & exec cosmic-comp shell/session/kriss-shell --inside'
+```
+
+with the variables from "Run it nested" above, plus `XDG_CONFIG_HOME`, so text size and
+contrast changes stay in the nested session's own dconf.
 
 ## Translations
 
