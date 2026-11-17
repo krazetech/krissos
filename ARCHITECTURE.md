@@ -92,7 +92,9 @@ is a bonus only: `installer/lib/online` then switches to `linux-kriss`, runs `pa
 and installs KDE Plasma, which is not on the ISO. Offline, Plasma falls back to the shell.
 
 - **Disk:** GPT and UEFI only. Dual-boot alongside Windows is the default, erase disk the
-  other choice; manual partitioning and disk encryption are off for now. `kriss-install`
+  other choice; manual partitioning is off for now. "Encrypt system" (opt-in) puts the
+  btrfs root in LUKS2 and leaves the FAT32 `/boot` plain for Limine; the busybox `encrypt`
+  hook asks for the passphrase at boot. The user's password needs 8 characters. `kriss-install`
   stops before the installer with steps to follow when BitLocker is on, or when the USB
   started in legacy BIOS mode.
 - **Layout:** the ESP at `/efi` holds only Limine, so Windows' small ESP is enough. The

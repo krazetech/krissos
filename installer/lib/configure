@@ -14,6 +14,19 @@ if chr pacman -Q plasma-desktop >/dev/null 2>&1; then desktop=plasma; fi
 # Steam and the lib32 packages (kriss-meta-gaming) need [multilib]; ARCHITECTURE §gaming.
 sed -i "/^#\[multilib\]/,/^#Include/ s/^#//" "$root/etc/pacman.conf"
 
+# --- disk encryption -------------------------------------------------------------
+# With "Encrypt system" ticked, / is a LUKS2 mapping Calamares named luks-<uuid> (the
+# same name its crypttab uses) and /boot is plain FAT32. The busybox encrypt hook asks
+# for the passphrase before / mounts; plymouth, when present, draws the prompt.
+crypt='' cryptdevice=''
+rootdev=$(findmnt -nvo SOURCE "$root")
+if [ "$(lsblk -ndo TYPE "$rootdev")" = crypt ]; then
+  luksdev=/dev/$(lsblk -ndo PKNAME "$rootdev")
+  cryptdevice="cryptdevice=UUID=$(lsblk -ndo UUID "$luksdev"):${rootdev##*/} "
+  crypt=' encrypt'
+  echo "kriss: / is encrypted ($luksdev)"
+fi
+
 # --- initramfs -------------------------------------------------------------------
 # busybox hooks, not systemd, so kriss-snapshot (kriss-settings) can put a RAM overlay
 # over a read-only snapshot booted from the Limine menu. kriss-kms (kriss-settings) is
@@ -27,7 +40,7 @@ if chr pacman -Q nvidia-utils >/dev/null 2>&1; then kms='' splash=''; fi
 mkdir -p "$root/etc/mkinitcpio.conf.d"
 cat >"$root/etc/mkinitcpio.conf.d/kriss.conf" <<EOF
 # Written by the KrissOS installer.
-HOOKS=(base udev autodetect microcode modconf $kms keyboard keymap consolefont block filesystems fsck kriss-snapshot)
+HOOKS=(base udev autodetect microcode modconf $kms keyboard keymap consolefont block$crypt filesystems fsck kriss-snapshot)
 EOF
 
 # --- snapper ---------------------------------------------------------------------
@@ -51,7 +64,7 @@ printf '[zram0]\nzram-size = min(ram / 2, 8192)\ncompression-algorithm = zstd\n'
 # --- Limine ----------------------------------------------------------------------
 esp=$root/efi
 uuid=$(findmnt -nvo UUID "$root")
-echo "root=UUID=$uuid rootflags=subvol=@ rw quiet$splash zswap.enabled=0" >"$root/etc/kernel/cmdline"
+echo "${cryptdevice}root=UUID=$uuid rootflags=subvol=@ rw quiet$splash zswap.enabled=0" >"$root/etc/kernel/cmdline"
 
 install -Dm644 "$root/usr/share/limine/BOOTX64.EFI" "$esp/EFI/limine/BOOTX64.EFI"
 # Firmware that forgets boot entries (and QEMU without saved NVRAM) falls back to
