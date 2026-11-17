@@ -156,7 +156,7 @@ disturb, the Task View button, desktop names, the theme and the wallpaper (`"dyn
 `"static"`) are kept in `~/.config/kriss/shell.json`.
 Right-click an app on the bar or in the launcher to pin or unpin it; drag a pinned app along the
 bar to move it. Without the file, the defaults in `qml/Desktop.qml` apply. **Taskbar settings**
-(right-click an empty part of the bar) opens this file until a Personalise page exists.
+(right-click an empty part of the bar) opens the Personalise window on its Taskbar page.
 
 | Key | Default | Does |
 |---|---|---|
