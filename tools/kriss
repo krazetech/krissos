@@ -65,6 +65,24 @@ cpu_threads() { grep -c '^processor' "$PROC/cpuinfo" || true; }
 # vmx (Intel VT-x) or svm (AMD-V); empty when the firmware has it off.
 cpu_virt() { grep -m1 -ow 'vmx\|svm' "$PROC/cpuinfo" || true; }
 
+# Dedicated graphics memory in MiB, largest GPU first; 0 when there is none (iGPUs share RAM).
+# Lets kriss-welcome say which local AI models fit.
+vram_mb() {
+  local f n max=0
+  if command -v nvidia-smi >/dev/null; then
+    while read -r n; do
+      if [[ $n =~ ^[0-9]+$ ]] && ((n > max)); then max=$n; fi
+    done < <(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null || true)
+  fi
+  # amdgpu reports bytes; an APU shows only its small carve-out here, which welcome ignores.
+  for f in "$SYS"/class/drm/card[0-9]*/device/mem_info_vram_total; do
+    [[ -r $f ]] || continue
+    n=$(($(cat "$f") / 1048576))
+    if ((n > max)); then max=$n; fi
+  done
+  echo "$max"
+}
+
 cmd_hwcheck() {
   local ram_mb cores virt kvm=false ok=true reasons=""
   ram_mb=$(ram_mb) cores=$(cpu_threads) virt=$(cpu_virt)
@@ -78,8 +96,8 @@ cmd_hwcheck() {
   [[ -z $reasons ]] || ok=false
   local legacy=false
   nvidia_legacy_gpu >/dev/null && legacy=true
-  printf '{"ram_mb": %d, "cores": %d, "virt": "%s", "kvm": %s, "gpus": %s, "winboat_ok": %s, "reasons": [%s], "nvidia_legacy": %s}\n' \
-    "$ram_mb" "$cores" "$virt" "$kvm" "$(gpu_vendors)" "$ok" "${reasons%,}" "$legacy"
+  printf '{"ram_mb": %d, "cores": %d, "virt": "%s", "kvm": %s, "gpus": %s, "winboat_ok": %s, "reasons": [%s], "nvidia_legacy": %s, "vram_mb": %d}\n' \
+    "$ram_mb" "$cores" "$virt" "$kvm" "$(gpu_vendors)" "$ok" "${reasons%,}" "$legacy" "$(vram_mb)"
 }
 
 # --- kriss nvidia: the NVIDIA 580 driver for GPUs older than Turing ----------------------

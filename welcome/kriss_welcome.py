@@ -136,6 +136,25 @@ class Backend(QObject):
     def installExtra(self, extra_id):
         self._run(extra_id, logic.extra_command(extra_id, self._hw["gpus"]))
 
+    # Local AI models
+    @Slot(result="QVariantMap")
+    def ollamaModels(self):
+        return logic.model_fits(self._hw)
+
+    @Slot(result="QStringList")
+    def pulledModels(self):
+        try:
+            out = subprocess.run(["ollama", "list"], capture_output=True, text=True, timeout=10).stdout
+        except (OSError, subprocess.SubprocessError):
+            out = ""
+        return logic.ollama_names(out)
+
+    @Slot(str)
+    def pullModel(self, name):
+        """Download one of logic.OLLAMA_MODELS; installDone("pull:" + name, ok) when it ends."""
+        if name in {m["name"] for m in logic.OLLAMA_MODELS}:
+            self._run("pull:" + name, ["ollama", "pull", name])
+
     # Copy from Windows
     @Slot(result="QVariantList")
     def windowsPartitions(self):
