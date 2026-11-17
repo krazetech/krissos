@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 # Build the KrissOS aarch64 image (ARCHITECTURE §13): Arch Linux ARM with the asahi-alarm
 # and [kriss] repos, booting to the KrissOS Shell. The output is the layout the Asahi
 # installer takes: an ESP tree and an ext4 root.img (docs/apple-silicon.md).

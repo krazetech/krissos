@@ -1,4 +1,6 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 # kriss-update-notify: if updates are waiting, show a desktop notification whose "Update"
 # button runs `kriss update` through pkexec. kriss-update-notify.timer runs it.
 set -u

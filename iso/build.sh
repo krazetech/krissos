@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 # Build the KrissOS live ISO. Run as root on Arch (CI runs it in a privileged
 # archlinux container).
 # usage: iso/build.sh OUT_DIR WORK_DIR

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Kraze Tech
 .pragma library
 // Fuzzy matching for the launcher, scored the way cmdk ranks: an exact name, then a
 // prefix, then a word start, then anywhere, then the letters in order. 0 = no match.

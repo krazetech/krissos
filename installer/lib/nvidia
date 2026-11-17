@@ -1,4 +1,6 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 # Print the NVIDIA driver packages this PC needs, or nothing.
 # usage: nvidia KERNEL   (the kernel package, for its headers)
 # NVIDIA's open kernel modules support Turing (GTX 16xx / RTX 20xx) and newer, which

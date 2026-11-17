@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 """Refresh games.json from the AreWeAntiCheatYet list (MIT). Run from anywhere:
     python welcome/data/refresh-games.py
 Keeps only the fields kriss-welcome shows, to keep the package small."""

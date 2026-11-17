@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 """Run: QT_QPA_PLATFORM=offscreen python welcome/smoke_qml.py (needs PySide6 and Kirigami).
 Opens every page and fails on any QML warning from our own files."""
 import os

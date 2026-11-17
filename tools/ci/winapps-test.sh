@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 # Checks kriss winapps' detection against fixture /proc, /sys, /dev and /etc trees and
 # stub podman, podman-compose, xfreerdp3 and winboat. Touches nothing outside a temp dir.
 set -euo pipefail

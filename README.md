@@ -89,4 +89,5 @@ Packages are signed by `KrissOS Packages`, fingerprint
 
 ## License
 
-GPL-3.0-or-later. Kernel patches keep their upstream licenses and credits.
+GPL-3.0-or-later, copyright Kraze Tech. Kernel patches keep their upstream licenses and credits.
+The KrissOS name and logo are trademarks: see [TRADEMARKS.md](TRADEMARKS.md) for what forks and redistributors can do.

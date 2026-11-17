@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Kraze Tech
 // One slide: English first, Bahasa Melayu under it. Rendered from theme/tokens.json.
 // ponytail: both languages on every slide, because Calamares has no Malay UI
 // translation to switch to; move to qsTr() and lang/*.qm once it does.

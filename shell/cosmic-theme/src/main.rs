@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Kraze Tech
 //! Builds the KrissOS COSMIC theme with libcosmic's own ThemeBuilder, the same code
 //! COSMIC Settings runs when you change the accent, so every derived colour (hover,
 //! pressed, dividers, text on accent) is exactly what COSMIC would compute.

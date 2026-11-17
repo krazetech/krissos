@@ -1,4 +1,6 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 # Push the shell's QML from this checkout to a test machine running the KrissOS Shell.
 # Quickshell reloads changed files on its own, so edits show up within seconds.
 # usage: shell/dev-push [user@host | local]   (or set KRISS_DEV_HOST)

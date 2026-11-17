@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 # Make a local Docker image named `alarm` from the official Arch Linux ARM rootfs. Run on
 # an arm64 host (GitHub's ubuntu-24.04-arm): Arch publishes no aarch64 container image,
 # and we take no third-party one.

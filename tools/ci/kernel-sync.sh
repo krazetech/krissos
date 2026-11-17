@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 # Sync pkgs/linux-kriss with the latest CachyOS kernel patch release: regenerate the
 # patch series, config, SOURCES.md and the version fields of the PKGBUILD.
 # Does nothing when the PKGBUILD already tracks the latest upstream tag.

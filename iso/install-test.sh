@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 # Install the ISO onto a blank QEMU disk with iso/test/autoinstall (the installer's own
 # steps, unattended), then boot the disk through Limine and wait for the KrissOS login
 # screen. No network card at all (-nic none): installing must never need the internet.

@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 # Self-check for publish.sh: two publishes against a directory standing in for the
 # GitHub release. Needs pacman's repo-add, gpg and bsdtar (any Arch container).
 set -euo pipefail

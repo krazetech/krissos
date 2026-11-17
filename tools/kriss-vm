@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 # kriss-vm: hand one GPU to a Windows VM (VFIO + Looking Glass) and take it back.
 #
 # The approach follows Omarchy PR #3454 (https://github.com/basecamp/omarchy/pull/3454, by

@@ -1,4 +1,6 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 # Start the KrissOS installer (Calamares) from the live session.
 #   kriss-install                     check the PC, then start the installer
 #   kriss-install --boot              the same, only when the boot menu's "Install KrissOS"
