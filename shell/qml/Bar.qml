@@ -255,13 +255,40 @@ PanelWindow {
             spacing: 8
 
             // Tray icons (Steam, Discord...): click to open, right-click for the app's menu.
+            // The ^ opens the overflow flyout with the hidden ones; drag an icon onto the ^, or
+            // up off the bar, to hide it there. The ^ shows when something is hidden or dragged.
+            MouseArea {
+                id: more
+                property bool dragging: false
+                readonly property bool open: overflow.visible && overflow.screen === bar.screen
+                visible: dragging || SystemTray.items.values.some(i => Desktop.isTrayHidden(i.id))
+                Layout.preferredWidth: 28
+                Layout.preferredHeight: Theme.barButton
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: open ? overflow.close() : overflow.show(bar.screen, mapToItem(null, width / 2, 0).x, false)
+                Rectangle {
+                    anchors.fill: parent
+                    radius: Theme.barRadius
+                    color: more.containsMouse || more.open || more.dragging ? Theme.card : "transparent"
+                    Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+                }
+                Glyph { anchors.centerIn: parent; name: more.open ? "down" : "up"; size: 16 }
+            }
             Row {
                 spacing: 14
-                Layout.leftMargin: 4
                 Layout.rightMargin: 4
                 Repeater {
                     model: SystemTray.items
-                    delegate: TrayIcon {}
+                    delegate: TrayIcon {
+                        visible: !Desktop.isTrayHidden(modelData.id)
+                        appMenu: menu
+                        onDraggingChanged: more.dragging = dragging
+                        onDropped: (x, y) => {
+                            const p = more.mapFromItem(null, x, y);
+                            if (y < 0 || more.contains(p)) Desktop.setTrayHidden(modelData.id, true);
+                        }
+                    }
                 }
             }
 
@@ -394,6 +421,7 @@ PanelWindow {
     Menu { id: menu }
     Previews { id: previews; screen: bar.screen }
     onPreviewForChanged: previews.hover(previewFor)
+    TrayFlyout { id: overflow; appMenu: menu }
 
     // A taskbar button: launch the app, or bring up, minimize or step through its windows.
     function activate(i, cycle) {
