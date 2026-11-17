@@ -78,8 +78,8 @@ Scope {
                 source: ghost.shot?.url ?? ""
                 opacity: root.fading ? 0 : 1
                 scale: root.fading ? 1.06 : 1
-                Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
-                Behavior on scale { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+                Behavior on opacity { NumberAnimation { duration: Theme.ms(300); easing.type: Easing.OutCubic } }
+                Behavior on scale { NumberAnimation { duration: Theme.ms(300); easing.type: Easing.OutCubic } }
             }
         }
     }

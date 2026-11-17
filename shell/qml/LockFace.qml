@@ -54,6 +54,7 @@ FocusScope {
     // A click anywhere brings up the field; any key does too (the key is typed into it).
     MouseArea {
         anchors.fill: parent
+        Accessible.ignored: true  // any key does the same; the field is named
         onClicked: face.ask("")
     }
     Item {
@@ -245,11 +246,11 @@ FocusScope {
                     transform: Translate { id: nudge }
                     SequentialAnimation {
                         id: shake
-                        NumberAnimation { target: nudge; property: "x"; to: -12; duration: 50; easing.type: Easing.OutQuad }
-                        NumberAnimation { target: nudge; property: "x"; to: 10; duration: 80; easing.type: Easing.InOutQuad }
-                        NumberAnimation { target: nudge; property: "x"; to: -7; duration: 80; easing.type: Easing.InOutQuad }
-                        NumberAnimation { target: nudge; property: "x"; to: 4; duration: 80; easing.type: Easing.InOutQuad }
-                        NumberAnimation { target: nudge; property: "x"; to: 0; duration: 70; easing.type: Easing.OutQuad }
+                        NumberAnimation { target: nudge; property: "x"; to: -12; duration: Theme.ms(50); easing.type: Easing.OutQuad }
+                        NumberAnimation { target: nudge; property: "x"; to: 10; duration: Theme.ms(80); easing.type: Easing.InOutQuad }
+                        NumberAnimation { target: nudge; property: "x"; to: -7; duration: Theme.ms(80); easing.type: Easing.InOutQuad }
+                        NumberAnimation { target: nudge; property: "x"; to: 4; duration: Theme.ms(80); easing.type: Easing.InOutQuad }
+                        NumberAnimation { target: nudge; property: "x"; to: 0; duration: Theme.ms(70); easing.type: Easing.OutQuad }
                     }
                     Connections {
                         target: face.host

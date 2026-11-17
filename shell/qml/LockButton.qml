@@ -37,6 +37,7 @@ Rectangle {
     MouseArea {
         id: area
         anchors.fill: parent
+        Accessible.ignored: true  // the button itself carries the name and the press
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         onClicked: btn.clicked()
