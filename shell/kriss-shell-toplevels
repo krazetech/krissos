@@ -10,7 +10,7 @@ through ext-image-copy-capture.
 
 stdout: one JSON array per change, e.g.
   [{"id": 3, "appId": "firefox", "title": "Inbox", "active": true, "minimized": false,
-    "output": "DP-1"}]
+    "fullscreen": false, "output": "DP-1"}]
   and, while previews are captured, one object per new picture:
   {"thumb": 3, "url": "file:///run/user/1000/kriss-shell-thumbs-wayland-1/3.bmp?7"}
 stdin:  one command per line: "activate ID", "minimize ID", "close ID", or
@@ -41,7 +41,7 @@ from kriss_protocols.ext_image_capture_source_v1 import (  # noqa: E402
 from kriss_protocols.ext_image_copy_capture_v1 import ExtImageCopyCaptureManagerV1  # noqa: E402
 from kriss_protocols.wayland import WlOutput, WlSeat, WlShm  # noqa: E402
 
-MINIMIZED, ACTIVATED = 1, 2  # zcosmic_toplevel_handle_v1.state entries
+MINIMIZED, ACTIVATED, FULLSCREEN = 1, 2, 3  # zcosmic_toplevel_handle_v1.state entries
 # 32-bit wl_shm formats the previews can use: (red, green, blue, alpha) bit masks of a
 # little-endian pixel. cosmic-comp 1.11 offers only ABGR and XBGR for shm.
 FORMATS = {
@@ -178,7 +178,7 @@ class Toplevels:
         # every later new window fail ("Cannot find display") once Python's cycle collector ran.
         self.registry = None
         self.globals = {}
-        self.windows = {}  # id -> {"appId", "title", "active", "minimized", "output"}
+        self.windows = {}  # id -> {"appId", "title", "active", "minimized", "fullscreen", "output"}
         self.handles = {}  # id -> (ext handle, cosmic handle)
         self.outputs = {}  # wl_output proxy -> connector name, e.g. "DP-1"
         self.captures = {}  # id -> Capture, only while the shell shows that window's preview
@@ -221,7 +221,7 @@ class Toplevels:
     def on_toplevel(self, _list, handle):
         wid = self.next_id
         self.next_id += 1
-        win = {"appId": "", "title": "", "active": False, "minimized": False, "output": ""}
+        win = {"appId": "", "title": "", "active": False, "minimized": False, "fullscreen": False, "output": ""}
         self.windows[wid] = win
         cosmic = self.globals["zcosmic_toplevel_info_v1"].get_cosmic_toplevel(handle)
         self.handles[wid] = (handle, cosmic)
@@ -231,7 +231,7 @@ class Toplevels:
 
         def on_state(_h, raw):
             s = states(raw)
-            win["active"], win["minimized"] = ACTIVATED in s, MINIMIZED in s
+            win["active"], win["minimized"], win["fullscreen"] = ACTIVATED in s, MINIMIZED in s, FULLSCREEN in s
             self.emit()
 
         def on_closed(_h):

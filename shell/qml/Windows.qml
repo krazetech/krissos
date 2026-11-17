@@ -9,7 +9,7 @@ import Quickshell.Io
 Singleton {
     id: root
 
-    // [{id, appId, title, active, minimized, output}], as the helper reports them.
+    // [{id, appId, title, active, minimized, fullscreen, output}], as the helper reports them.
     property var raw: []
     // The same, with each appId swapped for the pinned app it belongs to. A window's id
     // can name another desktop file for the same program (KDE System Settings runs as
@@ -46,6 +46,13 @@ Singleton {
     // an empty list stops capturing.
     function capture(ids, size) {
         helper.write("thumbs " + Math.round(size) + " " + ids.join(" ") + "\n");
+    }
+
+    // Whether a fullscreen window is in front on this screen: the one there used last is
+    // fullscreen and not minimized. Its bar hides and toasts wait behind the bell.
+    function fullscreenOn(screen) {
+        const top = byRecent.find(w => w.output === screen?.name && !w.minimized);
+        return !!top?.fullscreen;
     }
 
     function activate(id) {
