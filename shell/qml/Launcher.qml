@@ -142,7 +142,7 @@ PanelWindow {
                     score: Fuzzy.best([e.name, e.genericName, ...e.keywords], q)
                 })), 6) },
                 { key: "setting", title: Tr.t("Settings"), items: ranked(providers.settingRows(q, Tr.lang === "ms")
-                    .map(r => Object.assign(r, { run: () => { Quickshell.execDetached(r.exec); close(); } })), 4) },
+                    .map(r => Object.assign(r, { run: () => { if (r.open) r.open(); else Quickshell.execDetached(r.exec); close(); } })), 4) },
                 { key: "action", title: Tr.t("Commands"), items: installRow.concat(ranked(actions.map(a => ({
                     kind: "action", label: a[1], glyph: a[0], run: a[2],
                     // Its words count a little less than its name.
