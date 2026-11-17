@@ -6,16 +6,18 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Services.Greetd
 
-// The login screen: the lock screen's face, with other users at the bottom left (as on
-// Windows) and the desktop to start at the bottom right. greetd runs it on cosmic-comp
-// through `kriss-shell greeter`.
+// The login screen: the lock screen's face, with the users (pictures and names) at the
+// bottom left, as on Windows, and the desktop to start at the bottom right. greetd runs it
+// on cosmic-comp through `kriss-shell greeter`. It opens on the boot splash's keris, which
+// opens out into the login screen (below).
 ShellRoot {
     id: root
 
     property string password: ""
     property string message: ""
     property bool checking: false
-    readonly property string hint: Tr.t("Press Enter to sign in")
+    readonly property string hint: Tr.t("Press any key to sign in")
+    readonly property string verb: Tr.t("Sign in")
 
     property var users: []      // [[login, name to show]]
     property int user: 0
@@ -145,32 +147,83 @@ ShellRoot {
                 layer.enabled: win.open < 1
                 layer.effect: MultiEffect { maskEnabled: true; maskSource: hole }
 
-                LockFace { host: root }
+                LockFace { id: face; host: root }
 
-                // Other users, as on Windows.
+                // The users, as on Windows: picture and name; the one signing in is lit.
                 Column {
-                    anchors { left: parent.left; bottom: parent.bottom; margins: 36 }
-                    spacing: 6
+                    anchors { left: parent.left; bottom: parent.bottom; margins: 28 }
+                    spacing: 4
                     visible: root.users.length > 1
                     Repeater {
                         model: root.users
-                        delegate: Choice {
+                        delegate: LockButton {
+                            id: userChip
                             required property var modelData
                             required property int index
-                            label: modelData[1]
-                            current: index === root.user
-                            onClicked: { root.user = index; root.message = ""; }
+                            implicitWidth: userRow.implicitWidth + 20
+                            implicitHeight: 44
+                            accessibleName: modelData[1]
+                            color: Theme.alpha(Theme.nightFg, index === root.user ? 0.16 : activeFocus ? 0.12 : 0)
+                            onClicked: { root.user = index; root.message = ""; face.ask(""); }
+                            Row {
+                                id: userRow
+                                anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
+                                spacing: 10
+                                Avatar {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    size: 32
+                                    name: userChip.modelData[1]
+                                    faces: ["/var/lib/AccountsService/icons/" + userChip.modelData[0]]
+                                }
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: userChip.modelData[1]
+                                    color: Theme.alpha(Theme.nightFg, userChip.index === root.user ? 1 : 0.75)
+                                    font { family: Theme.sans; pixelSize: 14; weight: Font.DemiBold }
+                                }
+                            }
                         }
                     }
                 }
 
-                // The desktop to start; a click picks the next one.
-                Choice {
-                    anchors { right: parent.right; bottom: parent.bottom; margins: 36 }
+                // The desktop to start: a pill that opens the list above it.
+                LockButton {
+                    id: sessionPill
+                    property bool open: false
+                    anchors { right: parent.right; bottom: parent.bottom; margins: 28 }
                     visible: root.sessions.length > 1
+                    glyph: open ? "down" : "up"
                     label: root.sessions.length ? root.sessions[root.session][0] : ""
-                    current: true
-                    onClicked: root.session = (root.session + 1) % root.sessions.length
+                    accessibleName: Tr.t("Desktop: %1", label)
+                    onClicked: open = !open
+                    Keys.onEscapePressed: open = false
+                }
+                Rectangle {
+                    anchors { right: sessionPill.right; bottom: sessionPill.top; bottomMargin: 8 }
+                    visible: sessionPill.open && sessionPill.visible
+                    width: sessionList.implicitWidth + 12
+                    height: sessionList.implicitHeight + 12
+                    radius: Theme.radiusSmall
+                    color: Theme.alpha(Theme.night, 0.72)
+                    border.width: 1
+                    border.color: Theme.alpha(Theme.nightFg, 0.12)
+                    Column {
+                        id: sessionList
+                        anchors.centerIn: parent
+                        spacing: 2
+                        Repeater {
+                            model: root.sessions
+                            delegate: LockButton {
+                                required property var modelData
+                                required property int index
+                                width: Math.max(implicitWidth, sessionList.width)
+                                glyph: index === root.session ? "check" : ""
+                                label: modelData[0]
+                                onClicked: { root.session = index; sessionPill.open = false; sessionPill.forceActiveFocus(); }
+                                Keys.onEscapePressed: { sessionPill.open = false; sessionPill.forceActiveFocus(); }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -203,26 +256,6 @@ ShellRoot {
                 opacity: win.intro * Math.max(0, 1 - win.open * 3)
                 visible: opacity > 0
             }
-        }
-    }
-
-    component Choice: MouseArea {
-        property string label
-        property bool current
-        width: text.implicitWidth + 28
-        height: 36
-        cursorShape: Qt.PointingHandCursor
-        Rectangle {
-            anchors.fill: parent
-            radius: height / 2
-            color: Theme.alpha(Theme.nightFg, parent.current ? 0.14 : 0.0)
-        }
-        Text {
-            id: text
-            anchors.centerIn: parent
-            text: parent.label
-            color: Theme.alpha(Theme.nightFg, parent.current ? 1 : 0.7)
-            font { family: Theme.sans; pixelSize: 14; weight: Font.DemiBold }
         }
     }
 }

@@ -109,6 +109,7 @@ Singleton {
     property alias themeLight: config.themeLight
     property alias themeDark: config.themeDark
     property alias contrast: config.contrast
+    property alias wallpaper: config.wallpaper
 
     readonly property string configFile: (Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config") + "/kriss/shell.json"
     FileView {
@@ -152,6 +153,9 @@ Singleton {
             property string themeDark: "19:00"
             // "high": the high-contrast colours (see Theme.qml), for low vision.
             property string contrast: "normal"
+            // "dynamic": the time-of-day wallpaper; anything else: the plain one for the
+            // light or dark theme.
+            property string wallpaper: "dynamic"
         }
     }
 

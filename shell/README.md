@@ -97,10 +97,32 @@ It prints one line per check and exits 1 on any FAIL. `--json` prints the number
 request, and `--no-frames` skips the nested window. A surface that drew nothing (Show desktop
 with no windows open) is SKIP.
 
+## Lock screen
+
+`qml/Lock.qml` with `qml/LockFace.qml`: the date and a big light clock high up over the blurred
+time-of-day wallpaper, the user's picture and name low down. Any key or click brings up the
+password field (the key is typed into it), Esc puts it away. A wrong password shakes the field, or
+gives it a red rim with reduced motion. Caps lock and the keyboard layout show by the field,
+battery and network top right, and what's playing (with its controls) under the clock. Every
+control is reached with Tab and has an accessible name. Unlocking fades and grows the lock away
+over the desktop.
+
+## Time-of-day wallpaper
+
+`theme/generate.py` renders `theme/wallpaper.svg` four more times, as
+`/usr/share/backgrounds/kriss/kriss-dawn.svg`, `-day`, `-dusk` and `-night`: the same scene under
+a sky and sun mixed from the tokens. `qml/DynamicWallpaper.qml` blends between neighbours by the
+clock (night until 4:30, dawn by 6:00, day 8:00 to 16:30, dusk by 18:30, night by 20:30), one
+small step a minute, and draws nothing in between. The lock and login screens always use it;
+the desktop does while `"wallpaper": "dynamic"` (the default) is in `shell.json`, and shows the
+plain light or dark wallpaper with any other value. To try a build of the wallpapers that is not
+installed, point `KRISS_WALLPAPERS` at its `usr/share/backgrounds/kriss`.
+
 ## Login screen
 
-`qml/greeter.qml` is the login screen. It looks like the lock screen, lists other users at the
-bottom left and the desktop to start at the bottom right. [greetd](https://sr.ht/~kennylevinsen/greetd/)
+`qml/greeter.qml` is the login screen. It looks like the lock screen, lists the users (picture
+and name) at the bottom left and the desktop to start at the bottom right. It opens on the boot
+splash's last frame, the emblem on black, and fades into the login screen over 400 ms. [greetd](https://sr.ht/~kennylevinsen/greetd/)
 runs it on cosmic-comp. To use it, put this in `/etc/greetd/config.toml` and enable `greetd`
 in place of SDDM:
 
@@ -130,7 +152,8 @@ takes focus.
 ## Settings
 
 Pinned apps (in taskbar order), the tray icons hidden in the overflow (`trayHidden`), Do not
-disturb, the Task View button, desktop names and the theme are kept in `~/.config/kriss/shell.json`.
+disturb, the Task View button, desktop names, the theme and the wallpaper (`"dynamic"` or
+`"static"`) are kept in `~/.config/kriss/shell.json`.
 Right-click an app on the bar or in the launcher to pin or unpin it; drag a pinned app along the
 bar to move it. Without the file, the defaults in `qml/Desktop.qml` apply. **Taskbar settings**
 (right-click an empty part of the bar) opens this file until a Personalise page exists.

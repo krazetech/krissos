@@ -24,6 +24,7 @@ ShellRoot {
         model: Quickshell.screens
 
         PanelWindow {
+            id: wallWin
             required property var modelData
             screen: modelData
             WlrLayershell.layer: WlrLayer.Background
@@ -34,10 +35,16 @@ ShellRoot {
             anchors { top: true; bottom: true; left: true; right: true }
             color: Theme.night
 
+            readonly property bool dynamic: Desktop.wallpaper === "dynamic"
+            Loader {
+                anchors.fill: parent
+                active: wallWin.dynamic
+                sourceComponent: DynamicWallpaper {}
+            }
             Image {
                 anchors.fill: parent
                 // kriss-theme's wallpaper for the current light or dark theme.
-                source: "file:///usr/share/backgrounds/kriss/kriss-" + (Theme.dark ? "dark" : "light") + ".svg"
+                source: wallWin.dynamic ? "" : "file://" + Theme.wallpapers + "/kriss-" + (Theme.dark ? "dark" : "light") + ".svg"
                 sourceSize: Qt.size(parent.width, parent.height)
                 fillMode: Image.PreserveAspectCrop
             }

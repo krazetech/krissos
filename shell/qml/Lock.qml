@@ -4,15 +4,16 @@ import Quickshell.Wayland
 import Quickshell.Services.Pam
 import Quickshell.Io
 
-// The lock screen: blurred wallpaper, the time, and a password field checked by PAM.
-// One surface per screen; they share the typed password.
+// The lock screen (LockFace) with a password checked by PAM. One surface per screen; they
+// share the typed password. Unlocking fades and scales the lock away over the desktop.
 Scope {
     id: root
 
     property string password: ""
     property string message: ""
     property bool checking: false
-    readonly property string hint: Tr.t("Press Enter to unlock")
+    readonly property string hint: Tr.t("Press any key to unlock")
+    readonly property string verb: Tr.t("Unlock")
     readonly property string userName: Quickshell.env("USER") ?? ""
     // Where the user's picture may be: their own, then the one COSMIC Settings sets.
     readonly property var faces: [Quickshell.env("HOME") + "/.face", "/var/lib/AccountsService/icons/" + userName]
@@ -31,9 +32,54 @@ Scope {
             root.checking = false;
             root.password = "";
             if (result === PamResult.Success) {
-                Desktop.locked = false;
+                root.unlock();
             } else {
                 root.message = Tr.t("That password didn't work. Try again.");
+            }
+        }
+    }
+
+    // The unlock: the session lock hides the desktop until it ends, so each screen's lock is
+    // pictured first, the picture goes up over the desktop (under the lock, unseen), and once
+    // the lock ends the picture fades and grows away. Reduced motion just unlocks.
+    signal picture
+    property var pictures: ({})  // screen name: grabToImage result (its url lives as long as it)
+    property bool fading: false
+    function unlock() {
+        if (Theme.reduceMotion) { Desktop.locked = false; return; }
+        pictures = {};
+        picture();
+        handover.restart();
+    }
+    Timer {
+        id: handover
+        interval: 150  // the pictures are taken and their windows drawn
+        onTriggered: { root.fading = true; Desktop.locked = false; fadeEnd.restart(); }
+    }
+    Timer { id: fadeEnd; interval: 360; onTriggered: { root.fading = false; root.pictures = {}; } }
+
+    Variants {
+        model: Quickshell.screens
+        PanelWindow {
+            id: ghost
+            required property var modelData
+            screen: modelData
+            readonly property var shot: root.pictures[modelData.name] ?? null
+            visible: shot !== null
+            anchors { top: true; bottom: true; left: true; right: true }
+            exclusionMode: ExclusionMode.Ignore
+            color: "transparent"
+            mask: Region {}
+            WlrLayershell.layer: WlrLayer.Overlay
+            WlrLayershell.namespace: "kriss-unlock"
+            WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+            Image {
+                anchors.fill: parent
+                source: ghost.shot?.url ?? ""
+                opacity: root.fading ? 0 : 1
+                scale: root.fading ? 1.06 : 1
+                Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+                Behavior on scale { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
             }
         }
     }
@@ -108,9 +154,20 @@ Scope {
         locked: root.engaged
 
         WlSessionLockSurface {
+            id: surface
             color: Theme.night
 
-            LockFace { host: root }
+            LockFace {
+                id: lockFace
+                host: root
+                Connections {
+                    target: root
+                    function onPicture() {
+                        const name = surface.screen?.name ?? "";
+                        lockFace.grabToImage(r => root.pictures = Object.assign({}, root.pictures, { [name]: r }));
+                    }
+                }
+            }
         }
     }
 }
