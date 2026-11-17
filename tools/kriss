@@ -444,6 +444,7 @@ Commands:
   version    Show the kriss and KrissOS versions
   hwcheck    Print hardware facts (RAM, CPU, GPU, VM support) as JSON
   rollback   Keep the snapshot booted from the boot menu as your system
+  migrate    Turn this Arch or CachyOS install into KrissOS (try --dry-run first)
   winapps check   Check this PC is ready for Windows apps in WinBoat (read-only)
   winapps setup   Fix what is missing (asks first), then open WinBoat
   nvidia check    Say whether this PC's NVIDIA GPU can use the NVIDIA 580 driver
@@ -462,6 +463,7 @@ main() {
     winapps) cmd_winapps "${@:2}" ;;
     nvidia) cmd_nvidia "${@:2}" ;;
     rollback) cmd_rollback "${@:2}" ;;
+    migrate) exec kriss-migrate "${@:2}" ;;
     help | --help | -h) cmd_help ;;
     --kapcai) cmd_kapcai ;;
     *) die "unknown command '$1'. Run 'kriss help'." ;;
