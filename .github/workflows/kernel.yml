@@ -121,7 +121,7 @@ jobs:
       contents: write
     # Shared with pkgs.yml; see the note there.
     concurrency:
-      group: repo-x86_64
+      group: testing-x86_64
       cancel-in-progress: false
     steps:
       - name: Install tools
@@ -134,9 +134,10 @@ jobs:
           path: out
           merge-multiple: true
 
-      - name: Sign and publish
+      - name: Sign and publish to testing
         env:
           KRISS_GPG_KEY: ${{ secrets.KRISS_GPG_KEY }}
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          CHANNEL: testing
         run: tools/ci/publish.sh out

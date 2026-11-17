@@ -32,11 +32,15 @@ jobs:
           df -h /
 
       # mkarchiso needs mounts, so the container must be privileged.
+      # Tagged releases install from [kriss]; nightly and PR ISOs from [kriss-testing], so
+      # their boot and install tests check what promote.yml would move to [kriss] next.
       - name: Build ISO
         id: build
+        env:
+          KRISS_CHANNEL: ${{ startsWith(github.ref, 'refs/tags/') && 'stable' || 'testing' }}
         run: |
           mkdir -p out
-          sudo docker run --rm --privileged -v "$PWD:/src" -v "$RUNNER_TEMP:/work" archlinux:latest \
+          sudo docker run --rm --privileged -e KRISS_CHANNEL -v "$PWD:/src" -v "$RUNNER_TEMP:/work" archlinux:latest \
             /src/iso/build.sh /src/out /work
           sudo chown -R "$USER" out
           cd out && sha256sum -- *.iso > sha256sums.txt

@@ -242,14 +242,56 @@ cmd_tune() {
 
 # Update everything, after a btrfs snapshot when snapper is set up, so a bad update rolls back
 # from the boot menu. Runs as root: the update notice calls it through pkexec.
+snapshot() { # DESCRIPTION
+  if command -v snapper >/dev/null && snapper list-configs 2>/dev/null | grep -q '^root '; then
+    snapper -c root create --cleanup-algorithm number --description "$1"
+  fi
+}
+
 cmd_update() {
   ((EUID == 0)) || die "update needs root. Run: pkexec kriss update"
-  if command -v snapper >/dev/null && snapper list-configs 2>/dev/null | grep -q '^root '; then
-    snapper -c root create --cleanup-algorithm number --description 'before kriss update'
-  fi
+  snapshot 'before kriss update'
   pacman -Syu --noconfirm
   if command -v flatpak >/dev/null; then
     flatpak update --noninteractive --assumeyes
+  fi
+}
+
+# kriss channel [stable|testing]: which KrissOS repo this PC updates from.
+#   stable   [kriss], the default: packages after they have been through testing.
+#   testing  [kriss-testing] ahead of [kriss]: every merge to main, before it is promoted.
+# Going back to stable downgrades what came from testing, after a snapshot, so the system
+# matches [kriss] again. Arch's own repos are not touched.
+# shellcheck disable=SC2016 # $arch is pacman's
+readonly TESTING_SERVER='https://github.com/krazetech/krissos/releases/download/testing-$arch'
+
+channel_now() { if grep -q '^\[kriss-testing\]' "$ETC/pacman.conf"; then echo testing; else echo stable; fi; }
+
+cmd_channel() {
+  local want=${1:-} conf=$ETC/pacman.conf new
+  if [[ -z $want ]]; then channel_now; return; fi
+  case $want in stable | testing) ;; *) die "unknown channel '$want'. Use stable or testing." ;; esac
+  if [[ $want == "$(channel_now)" ]]; then echo "kriss: already on $want."; return; fi
+  ((EUID == 0)) || exec sudo "$0" channel "$want"
+  grep -q '^\[kriss\]' "$conf" || die "$conf has no [kriss] repo, so there is no channel to switch."
+  if [[ $want == testing ]]; then
+    new=$(awk -v srv="$TESTING_SERVER" '$0 == "[kriss]" && !done {
+            print "[kriss-testing]"; print "# Added by kriss channel testing. kriss channel stable removes it."
+            print "SigLevel = Required"; print "Server = " srv; print ""; done = 1 } 1' "$conf")
+  else
+    # The section runs from its header to the next one, comments and blank lines included.
+    new=$(awk '/^\[/ { skip = ($0 == "[kriss-testing]") } !skip' "$conf")
+  fi
+  # Write in place, so the file keeps its owner and mode.
+  printf '%s\n' "$new" >"$conf"
+  if [[ $want == testing ]]; then
+    echo "kriss: updates now include [kriss-testing]. Run kriss update to get them."
+    echo "kriss: to go back, run: kriss channel stable"
+  else
+    echo "kriss: back on stable. Putting back the [kriss] versions of anything from testing."
+    snapshot 'before kriss channel stable'
+    # -uu allows the downgrades; pacman asks before it changes anything.
+    pacman -Syuu
   fi
 }
 
@@ -446,6 +488,9 @@ Commands:
   version    Show the kriss and KrissOS versions
   hwcheck    Print hardware facts (RAM, CPU, GPU, VM support) as JSON
   rollback   Keep the snapshot booted from the boot menu as your system
+  channel    Show which update channel this PC is on (stable or testing)
+  channel testing   Get updates from [kriss-testing] before they reach everyone
+  channel stable    Go back to [kriss] (downgrades what came from testing, after a snapshot)
   migrate    Turn this Arch or CachyOS install into KrissOS (try --dry-run first)
   winapps check   Check this PC is ready for Windows apps in WinBoat (read-only)
   winapps setup   Fix what is missing (asks first), then open WinBoat
@@ -465,6 +510,7 @@ main() {
     winapps) cmd_winapps "${@:2}" ;;
     nvidia) cmd_nvidia "${@:2}" ;;
     rollback) cmd_rollback "${@:2}" ;;
+    channel) cmd_channel "${@:2}" ;;
     migrate) exec kriss-migrate "${@:2}" ;;
     help | --help | -h) cmd_help ;;
     --kapcai) cmd_kapcai ;;

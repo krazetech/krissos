@@ -2,6 +2,10 @@
 # Build the KrissOS live ISO. Run as root on Arch (CI runs it in a privileged
 # archlinux container).
 # usage: iso/build.sh OUT_DIR WORK_DIR
+# env: KRISS_CHANNEL  stable (the default): packages from [kriss], as for a release.
+#                     testing: [kriss-testing] ahead of [kriss], so nightly and PR ISOs test
+#                     what is about to be promoted. Only the build sees it: the live system
+#                     and installs keep [kriss] alone (`kriss channel testing` opts in).
 set -euo pipefail
 
 here=$(cd "$(dirname "$0")" && pwd)
@@ -31,24 +35,37 @@ chown -R builder "$src" "$local_repo"
 for p in kriss-keyring kriss-settings kriss-theme kriss-tools kriss-shell kriss-installer; do
   su builder -c "cd '$src/pkgs/$p' && PKGDEST='$local_repo' makepkg --noconfirm --nodeps"
 done
-# Calamares and cosmic-comp-kriss take a while to compile: build them only when [kriss]
-# lacks this version.
-pacman --config "$here/pacman.conf" -Sy
+# The repos this build installs from. Until the first publish there is no [kriss-testing].
+conf=$work/pacman.conf
+cp "$here/pacman.conf" "$conf"
+testing_url=https://github.com/krazetech/krissos/releases/download/testing-x86_64
+add_testing() { sed -i "/^\[kriss\]/i [kriss-testing]\nSigLevel = Required\nServer = $testing_url\n" "$1"; }
+if [ "${KRISS_CHANNEL:-stable}" = testing ]; then
+  if curl -fsIL -o /dev/null "$testing_url/kriss-testing.db"; then
+    add_testing "$conf"
+  else
+    echo "There is no [kriss-testing] yet; building from [kriss]."
+  fi
+fi
+# Calamares and cosmic-comp-kriss take a while to compile: build them only when the repos
+# lack this version. pacman lists repos in order, so [kriss-testing] wins when it is there.
+pacman --config "$conf" -Sy
 for p in calamares cosmic-comp-kriss; do
   dir=$src/pkgs/$p
   want=$(source "$dir/PKGBUILD" && echo "$pkgver-$pkgrel")
-  have=$(pacman --config "$here/pacman.conf" -Sl kriss | awk -v p="$p" '$2 == p {print $3}')
+  have=$(pacman --config "$conf" -Sl | awk -v p="$p" '$2 == p {print $3; exit}')
   if [ "$want" != "$have" ]; then
-    echo "Building $p $want ([kriss] has '${have:-none}')"
+    echo "Building $p $want (the repos have '${have:-none}')"
     (source "$dir/PKGBUILD" && pacman -S --noconfirm --needed "${depends[@]}" "${makedepends[@]}")
     su builder -c "cd '$dir' && PKGDEST='$local_repo' makepkg --noconfirm --nodeps"
   fi
 done
 repo-add "$local_repo/kriss-local.db.tar.zst" "$local_repo"/*.pkg.tar.zst
 # sed -i replaces the pacman.conf symlink with a file, so the live system's copy keeps
-# only the published repo.
+# only the published [kriss]. Order: this checkout, then [kriss-testing], then [kriss].
 sed -i "/^\[kriss\]/i [kriss-local]\nSigLevel = Optional TrustAll\nServer = file://$local_repo\n" \
   "$profile/pacman.conf"
+if grep -q '^\[kriss-testing\]' "$conf"; then add_testing "$profile/pacman.conf"; fi
 
 # BIOS boot menu background: the logo above the menu (systemd-boot shows no images).
 python "$here/../theme/generate.py" "$here/../theme/templates/usr/share/pixmaps" "$work/logo"

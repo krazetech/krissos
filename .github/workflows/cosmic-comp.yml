@@ -47,7 +47,7 @@ jobs:
       contents: write
     # Shared with pkgs.yml and kernel.yml; see the note in pkgs.yml.
     concurrency:
-      group: repo-x86_64
+      group: testing-x86_64
       cancel-in-progress: false
     steps:
       - name: Install tools
@@ -60,9 +60,10 @@ jobs:
           name: cosmic-comp-kriss
           path: out
 
-      - name: Sign and publish
+      - name: Sign and publish to testing
         env:
           KRISS_GPG_KEY: ${{ secrets.KRISS_GPG_KEY }}
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          CHANNEL: testing
         run: tools/ci/publish.sh out

@@ -15,14 +15,17 @@ published=""
 for dir; do
   echo "::group::$dir"
   # Pinned builds of other people's packages are large (the NVIDIA driver is ~400 MB) and
-  # change only on a bump, so skip one whose exact version is already published.
+  # change only on a bump, so skip one whose exact version is already published, in
+  # [kriss-testing] or (once promoted) [kriss].
   case ${dir%/} in pkgs/winboat | pkgs/nvidia-580xx-utils | pkgs/lib32-nvidia-580xx-utils)
-    : "${published:=$(curl -fsSL "https://github.com/${GITHUB_REPOSITORY:-krazetech/krissos}/releases/download/repo-$(uname -m)/kriss.db" \
-      | bsdtar -tf - 2>/dev/null | cut -d/ -f1 | sort -u || true)}"
+    : "${published:=$(for r in testing-$(uname -m)/kriss-testing repo-$(uname -m)/kriss; do
+        curl -fsSL "https://github.com/${GITHUB_REPOSITORY:-krazetech/krissos}/releases/download/$r.db" \
+          | bsdtar -tf - 2>/dev/null | cut -d/ -f1 || true
+      done | sort -u)}"
     # shellcheck disable=SC1091,SC2154 # pkgname, pkgver and pkgrel come from the PKGBUILD
     v=$(. "$dir/PKGBUILD" && echo "${pkgname[0]}-$pkgver-$pkgrel")
     if grep -qxF "$v" <<<"$published"; then
-      echo "$v is already in [kriss]; skipped"
+      echo "$v is already published; skipped"
       echo "::endgroup::"
       continue
     fi ;;
