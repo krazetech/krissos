@@ -14,10 +14,8 @@ mkdir -p "$out"
 disk=$out/disk.qcow2
 # Lowercase letters only, so sendkey can type it as is.
 passphrase=krisskrisskriss
-qemu() {
-  qemu-system-x86_64 -name kriss-install-test -enable-kvm -cpu host -smp 4 -m 4096 -device virtio-vga \
-    -display none -nic none -drive "file=$disk,if=virtio,format=qcow2" -monitor "unix:$out/mon,server,nowait" "$@"
-}
+qemu=(qemu-system-x86_64 -name kriss-install-test -enable-kvm -cpu host -smp 4 -m 4096 -device virtio-vga -display none -nic none
+      -drive "file=$disk,if=virtio,format=qcow2" -monitor "unix:$out/mon,server,nowait")
 mon() { echo "$1" | socat - "UNIX-CONNECT:$out/mon" >/dev/null; }
 shot() { mon "screendump $out/$1.png -f png"; }
 
@@ -31,7 +29,7 @@ install_disk() {
   local name=$1; shift
   rm -f "$disk" "$out/mon"
   qemu-img create -f qcow2 "$disk" 40G
-  timeout 30m qemu -bios "$ovmf" -cdrom "$iso" \
+  timeout 30m "${qemu[@]}" -bios "$ovmf" -cdrom "$iso" \
     -kernel "$tmp"/kriss/boot/x86_64/vmlinuz-* -initrd "$tmp"/kriss/boot/x86_64/initramfs-*.img \
     -fw_cfg "name=opt/kriss/autoinstall,file=$here/test/autoinstall" \
     -append "$opts $* console=ttyS0,115200 systemd.journald.forward_to_console=1 \
@@ -65,7 +63,7 @@ unlock() {
 boot() {
   local name=$1 ok=0; shift
   rm -f "$out/mon" "$out/serial"
-  qemu -bios "$ovmf" "$@" \
+  "${qemu[@]}" -bios "$ovmf" "$@" \
     -chardev "socket,id=ser,path=$out/serial,server=on,wait=off,logfile=$out/$name.log" -serial chardev:ser &
   pid=$!
   sleep 4
