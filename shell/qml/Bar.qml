@@ -202,6 +202,8 @@ PanelWindow {
             MouseArea {
                 id: widgetsBtn
                 visible: Desktop.taskbarWidgets
+                Accessible.role: Accessible.Button
+                Accessible.name: Tr.t("Widgets")
                 Layout.preferredWidth: Theme.barButton
                 Layout.preferredHeight: Theme.barButton
                 hoverEnabled: true

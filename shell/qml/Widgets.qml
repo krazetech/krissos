@@ -83,6 +83,7 @@ PanelWindow {
     // A click beside the panel closes it.
     MouseArea {
         anchors.fill: parent
+        Accessible.ignored: true
         onClicked: win.close()
     }
 
@@ -107,7 +108,7 @@ PanelWindow {
         }
 
         // Keeps clicks on the panel from closing it.
-        MouseArea { anchors.fill: parent }
+        MouseArea { anchors.fill: parent; Accessible.ignored: true }
 
         // Has the keyboard when no card does: Tab or Down goes to the first card.
         Item {
@@ -162,7 +163,11 @@ PanelWindow {
         id: b
         property string glyph
         property string label
+        // What a screen reader says; the label, or set it for a glyph-only button.
+        property string name: label
         property bool primary: false
+        Accessible.role: Accessible.Button
+        Accessible.name: name
         implicitWidth: label ? row.implicitWidth + 20 : 32
         implicitHeight: 32
         hoverEnabled: true
@@ -206,6 +211,7 @@ PanelWindow {
         TextInput {
             id: input
             anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
+            Accessible.name: f.placeholder
             verticalAlignment: TextInput.AlignVCenter
             color: Theme.fg
             selectionColor: Theme.accent
@@ -315,6 +321,7 @@ PanelWindow {
                 MouseArea {
                     id: grip
                     Layout.fillWidth: true
+                    Accessible.ignored: true // a drag handle; Alt+Up / Alt+Down move the card
                     implicitHeight: 28
                     property real pressY: 0
                     property bool dragging: false
@@ -345,6 +352,7 @@ PanelWindow {
                 Btn {
                     id: more
                     glyph: "more"
+                    name: Tr.t("Widget options")
                     onClicked: menu.show(more, c.menuEntries(), false)
                 }
             }
@@ -627,6 +635,8 @@ PanelWindow {
                     implicitHeight: 32
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
+                    Accessible.role: Accessible.Button
+                    Accessible.name: modelData
                     onClicked: clocks.choose(modelData)
                     Rectangle {
                         anchors.fill: parent
@@ -918,6 +928,7 @@ PanelWindow {
                 }
                 Btn {
                     glyph: ai.xhr ? "stop" : "send"
+                    name: ai.xhr ? Tr.t("Stop") : Tr.t("Send")
                     primary: true
                     enabled: ai.xhr !== null || prompt.text.trim() !== ""
                     onClicked: ai.xhr ? ai.stop() : ai.ask(prompt.text)
@@ -948,6 +959,7 @@ PanelWindow {
                 TextEdit {
                     id: answerText
                     width: parent.width
+                    Accessible.name: Tr.t("Answer")
                     readOnly: true
                     selectByMouse: true
                     wrapMode: Text.Wrap
