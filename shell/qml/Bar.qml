@@ -305,6 +305,8 @@ PanelWindow {
     }
 
     Menu { id: menu }
+    Previews { id: previews; screen: bar.screen }
+    onPreviewForChanged: previews.hover(previewFor)
 
     // A taskbar button: launch the app, or bring up, minimize or step through its windows.
     function activate(i, cycle) {
