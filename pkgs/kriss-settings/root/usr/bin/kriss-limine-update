@@ -26,18 +26,18 @@ shopt -s nullglob
 
 # Where Limine lives. UEFI: the ESP at /efi as the installer sets it up, or /boot when
 # /boot is the ESP itself (an Arch or CachyOS install moved over with kriss migrate);
-# dirs lists its menu copies. Legacy BIOS: /boot/limine. base is that directory as Limine
+# dirs lists its menu copies. Legacy BIOS: /boot/limine. rel is that directory as Limine
 # sees it from its own partition (boot()).
 bios=0
 if [ -d /sys/firmware/efi ]; then
     esp=/efi/EFI
     mountpoint -q /efi || esp=/boot/EFI
     [ -f "$esp/limine/BOOTX64.EFI" ] || exit 0
-    dir=$esp/limine base=EFI/limine dirs=("$esp/limine" "$esp/BOOT")
+    dir=$esp/limine rel=EFI/limine dirs=("$esp/limine" "$esp/BOOT")
 else
     bios=1
     [ -d /boot/limine ] || exit 0
-    dir=/boot/limine base=limine dirs=(/boot/limine)
+    dir=/boot/limine rel=limine dirs=(/boot/limine)
 fi
 [ -f /etc/kernel/cmdline ] || exit 0
 [ -n "${KRISS_ROLLBACK:-}" ] || ! grep -qw kriss_snapshot=1 /proc/cmdline || exit 0
@@ -105,7 +105,7 @@ xml() {
 menu() {
     cat "$theme/limine.conf" 2>/dev/null || true
     if [ -f "$wp" ]; then
-        echo "wallpaper: $(hashed "boot():/$base/kriss-wallpaper.png" "$wp")"
+        echo "wallpaper: $(hashed "boot():/$rel/kriss-wallpaper.png" "$wp")"
     fi
     echo 'timeout: 5'
     local base first=${order[0]:-}

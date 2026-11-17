@@ -101,8 +101,10 @@ and installs KDE Plasma, which is not on the ISO. Offline, Plasma falls back to 
   kernels go on a 2 GiB FAT32 `/boot` (XBOOTLDR), because Limine reads only FAT. btrfs
   root with `@`, `@home`, `@cache`, `@log` and `@snapshots`; zram, no swap partition.
   Legacy BIOS has no ESP: `limine-bios.sys` and `limine.conf` go in `/boot/limine` on the
-  FAT32 `/boot`, and `limine bios-install` writes the boot sector, with stage 2 embedded
-  in the GPT, so no bios_boot partition. `kriss-limine-update` tells the two apart by
+  FAT32 `/boot`, and `limine bios-install` writes the boot sector and its stage 2 into a
+  BIOS boot partition. Calamares can't add one for BIOS only, so `installer/lib/configure`
+  makes it in the free space before the first partition (sectors 34-2047, which Calamares
+  leaves on BIOS). `kriss-limine-update` tells the two apart by
   `/sys/firmware/efi` and runs `bios-install` again whenever Limine's boot code changes.
 - **Boot menu:** `kriss-limine-update` (`kriss-settings`) writes `limine.conf` after every
   kernel, initramfs or Limine change (pacman hook and mkinitcpio post hook) and whenever

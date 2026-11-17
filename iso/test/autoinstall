@@ -81,8 +81,10 @@ grep -q 'subvol=@snapshots/[0-9]*/snapshot.* kriss_snapshot=1' "$conf"
 if [ -n "$efi" ]; then
   cmp -s "$conf" "$t/efi/EFI/BOOT/limine.conf"
 else
-  # Limine's BIOS boot code: in the first sector (sgdisk left it zeroed), and
-  # limine-bios.sys next to the menu.
+  # Limine's BIOS boot code: in the first sector (sgdisk left it zeroed), its stage 2 in
+  # the BIOS boot partition configure added, and limine-bios.sys next to the menu.
+  sgdisk -p "$disk"
+  sgdisk -p "$disk" | grep -q 'EF02 *BIOSBOOT'
   [ "$(dd if="$disk" bs=440 count=1 status=none | tr -d '\0' | wc -c)" -gt 0 ]
   cmp -s "$t/usr/share/limine/limine-bios.sys" "$dir/limine-bios.sys"
 fi

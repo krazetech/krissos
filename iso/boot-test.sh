@@ -20,6 +20,7 @@ keys() {
     c=${1:i:1}
     case $c in
     ' ') c=spc ;; =) c=equal ;; ,) c=comma ;; .) c='dot' ;; -) c=minus ;; _) c=shift-minus ;;
+    [A-Z]) c=shift-${c,,} ;;
     esac
     mon "sendkey $c"
   done
