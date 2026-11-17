@@ -173,6 +173,10 @@ class Capture:
 class Toplevels:
     def __init__(self, display):
         self.display = display
+        # pywayland only holds proxies weakly (a WeakSet and WeakValueDictionaries), so every
+        # proxy that must outlive the call that made it is kept here. A lost wl_registry made
+        # every later new window fail ("Cannot find display") once Python's cycle collector ran.
+        self.registry = None
         self.globals = {}
         self.windows = {}  # id -> {"appId", "title", "active", "minimized", "output"}
         self.handles = {}  # id -> (ext handle, cosmic handle)
@@ -195,13 +199,14 @@ class Toplevels:
             # Every screen, including ones plugged in later. ponytail: unplugged ones
             # are not forgotten; a stale name in the dict is harmless.
             output = registry.bind(name, WlOutput, 4)
+            self.outputs[output] = ""
             output.dispatcher["name"] = lambda o, n: self.outputs.__setitem__(o, n)
         elif interface in wanted and interface not in self.globals:
             iface, ours = wanted[interface]
             self.globals[interface] = registry.bind(name, iface, min(version, ours))
 
     def start(self):
-        registry = self.display.get_registry()
+        self.registry = registry = self.display.get_registry()
         registry.dispatcher["global"] = self.on_global
         self.display.roundtrip()
         missing = {"ext_foreign_toplevel_list_v1", "zcosmic_toplevel_info_v1",

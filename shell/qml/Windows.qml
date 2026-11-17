@@ -136,6 +136,9 @@ Singleton {
                 }
             }
         }
+        // Its errors, such as a traceback from a Wayland event it could not handle, go to the
+        // shell log (`qs log`), one log line per line.
+        stderr: SplitParser { onRead: line => console.warn("kriss-shell-toplevels:", line) }
         // ponytail: restart forever with a fixed delay; a crash loop only costs a log line every 2 s.
         onExited: (code, status) => { root.thumbs = {}; restart.start(); }
     }

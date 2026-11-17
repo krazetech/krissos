@@ -12,6 +12,7 @@ SDDM lists it as **KrissOS Shell**.
 | `fuzzy-check` | Tests the launcher's fuzzy ranking and the menus' type-ahead: `node shell/fuzzy-check` |
 | `i18n-check` | Checks every shell string has a translation; `--list` prints them all |
 | `kriss-shell-toplevels` | Python helper that lists open windows (and the screen each is on), focuses, minimizes or closes them, and captures the taskbar's window previews while they are shown. Quickshell can't read or capture windows from cosmic-comp directly |
+| `toplevels-check` | Run inside a cosmic-comp session: checks `kriss-shell-toplevels` still sees a new window after Python's garbage collector runs (`shell/toplevels-check alacritty`; cosmic-term by default) |
 | `protocols/` | COSMIC protocol files the helper's bindings are generated from |
 | `session/kriss-shell` | Starts the session and the login screen, and handles the commands the shortcuts below run |
 | `cosmic/` | Defaults copied key by key into `~/.config/cosmic` (same layout) on first start: the shortcuts below, the KrissOS theme builder keys (accent, backgrounds, corners), no coloured ring around the focused window, Papirus icons and the COSMIC Terminal colours. Existing user values are left alone |
