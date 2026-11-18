@@ -3,13 +3,16 @@
 # steps, unattended), then boot the disk through Limine and wait for the KrissOS login
 # screen. No network card at all (-nic none): installing must never need the internet.
 # Then the same again with "Encrypt system": the passphrase is typed at boot.
-# Needs qemu-system-x86, ovmf, libarchive-tools and socat.
-# usage: iso/install-test.sh ISO OUT_DIR
+# FIRMWARE=bios does it all under SeaBIOS (QEMU's default firmware) instead of OVMF, so
+# the installer takes its legacy BIOS path. Needs qemu-system-x86, ovmf, libarchive-tools
+# and socat.
+# usage: [FIRMWARE=uefi|bios] iso/install-test.sh ISO OUT_DIR
 set -euo pipefail
 
 iso=$1 out=$2
 here=$(cd "$(dirname "$0")" && pwd)
-ovmf=${OVMF:-/usr/share/ovmf/OVMF.fd}
+fw=(-bios "${OVMF:-/usr/share/ovmf/OVMF.fd}")
+[ "${FIRMWARE:-uefi}" = uefi ] || fw=()
 mkdir -p "$out"
 disk=$out/disk.qcow2
 # Lowercase letters only, so sendkey can type it as is.
@@ -29,7 +32,7 @@ install_disk() {
   local name=$1; shift
   rm -f "$disk" "$out/mon"
   qemu-img create -f qcow2 "$disk" 40G
-  timeout 30m "${qemu[@]}" -bios "$ovmf" -cdrom "$iso" \
+  timeout 30m "${qemu[@]}" "${fw[@]}" -cdrom "$iso" \
     -kernel "$tmp"/kriss/boot/x86_64/vmlinuz-* -initrd "$tmp"/kriss/boot/x86_64/initramfs-*.img \
     -fw_cfg "name=opt/kriss/autoinstall,file=$here/test/autoinstall" \
     -append "$opts $* console=ttyS0,115200 systemd.journald.forward_to_console=1 \
@@ -63,7 +66,7 @@ unlock() {
 boot() {
   local name=$1 ok=0; shift
   rm -f "$out/mon" "$out/serial"
-  "${qemu[@]}" -bios "$ovmf" "$@" \
+  "${qemu[@]}" "${fw[@]}" "$@" \
     -chardev "socket,id=ser,path=$out/serial,server=on,wait=off,logfile=$out/$name.log" -serial chardev:ser &
   pid=$!
   sleep 4
@@ -87,7 +90,8 @@ boot() {
 # 1. Unattended install.
 install_disk install
 
-# 2. The installed disk, as firmware boots it: Limine from EFI/BOOT, then KrissOS.
+# 2. The installed disk, as firmware boots it: Limine from EFI/BOOT (UEFI) or from the
+#    disk's boot sector (BIOS), then KrissOS.
 boot limine
 # X11 apps (Steam, most games) need Xwayland under cosmic-comp.
 if grep -q 'Failed to start Xwayland' "$out/limine.log"; then echo 'cosmic-comp could not start Xwayland.' >&2; exit 1; fi

@@ -4,22 +4,29 @@
 # live system like unpackfs.conf, runs the installer's own unlive, online and configure
 # steps, and stands in for Calamares' fstab, locale and users jobs. iso/install-test.sh
 # hands it to the live ISO through QEMU's fw_cfg and systemd.run=, with no network: the
-# install must work offline.
+# install must work offline. Under SeaBIOS (no /sys/firmware/efi) it lays the disk out as
+# Calamares does on legacy BIOS: GPT without an ESP, Limine on the FAT /boot.
 set -euxo pipefail
 
 disk=/dev/vda t=/target
 # kriss_test_luks=PASSPHRASE on the live command line: "Encrypt system" ticked, so / goes
 # in LUKS2 as Calamares names it (luks-<uuid>) and KRISSBOOT stays plain (noEncrypt).
 luks=$(sed -n 's/.*kriss_test_luks=\([^ ]*\).*/\1/p' /proc/cmdline)
-sgdisk -Z -n1:0:+512M -t1:ef00 -n2:0:+2G -t2:ea00 -n3:0:0 -t3:8304 "$disk"
-udevadm settle
-mkfs.fat -F32 -n EFI "${disk}1"
-mkfs.fat -F32 -n KRISSBOOT "${disk}2"
-rootdev=${disk}3
+if [ -d /sys/firmware/efi ]; then
+  sgdisk -Z -n1:0:+512M -t1:ef00 -n2:0:+2G -t2:ea00 -n3:0:0 -t3:8304 "$disk"
+  udevadm settle
+  mkfs.fat -F32 -n EFI "${disk}1"
+  efi=${disk}1 boot=${disk}2 rootdev=${disk}3
+else
+  sgdisk -Z -n1:0:+2G -t1:ea00 -n2:0:0 -t2:8304 "$disk"
+  udevadm settle
+  efi='' boot=${disk}1 rootdev=${disk}2
+fi
+mkfs.fat -F32 -n KRISSBOOT "$boot"
 if [ -n "$luks" ]; then
-  printf %s "$luks" | cryptsetup luksFormat --type luks2 --batch-mode "${disk}3" -
-  luksuuid=$(cryptsetup luksUUID "${disk}3")
-  printf %s "$luks" | cryptsetup open "${disk}3" "luks-$luksuuid" -
+  printf %s "$luks" | cryptsetup luksFormat --type luks2 --batch-mode "$rootdev" -
+  luksuuid=$(cryptsetup luksUUID "$rootdev")
+  printf %s "$luks" | cryptsetup open "$rootdev" "luks-$luksuuid" -
   rootdev=/dev/mapper/luks-$luksuuid
 fi
 mkfs.btrfs -f -L KrissOS "$rootdev"
@@ -29,13 +36,13 @@ for s in @ @home @cache @log @snapshots; do btrfs subvolume create "$t/$s"; done
 umount "$t"
 o=noatime,compress=zstd:1
 mount -o "$o,subvol=@" "$rootdev" "$t"
-mkdir -p "$t"/{home,var/cache,var/log,.snapshots,efi,boot}
+mkdir -p "$t"/{home,var/cache,var/log,.snapshots,boot}
 mount -o "$o,subvol=@home" "$rootdev" "$t/home"
 mount -o "$o,subvol=@cache" "$rootdev" "$t/var/cache"
 mount -o "$o,subvol=@log" "$rootdev" "$t/var/log"
 mount -o "$o,subvol=@snapshots" "$rootdev" "$t/.snapshots"
-mount -o umask=0077 "${disk}1" "$t/efi"
-mount "${disk}2" "$t/boot"
+if [ -n "$efi" ]; then mkdir "$t/efi" && mount -o umask=0077 "$efi" "$t/efi"; fi
+mount "$boot" "$t/boot"
 
 # Calamares' unpackfs (sourcefs: file is an rsync of the mounted live image).
 rsync -aHAX /run/archiso/airootfs/ "$t/"
@@ -80,22 +87,32 @@ fi
 sed -i 's/$/ console=ttyS0,115200 systemd.journald.forward_to_console=1/' "$t/etc/kernel/cmdline"
 arch-chroot "$t" snapper --no-dbus -c root create -d 'install test'
 arch-chroot "$t" kriss-limine-update
-conf=$t/efi/EFI/limine/limine.conf
+if [ -n "$efi" ]; then dir=$t/efi/EFI/limine base=EFI/limine; else dir=$t/boot/limine base=limine; fi
+conf=$dir/limine.conf
 cat "$conf" "$t/etc/fstab"
 # The menu: themed, versioned kernel entries under KrissOS, the snapshot under Snapshots.
 grep -q '^interface_branding: KrissOS' "$conf"
-grep -q '^wallpaper: boot():/EFI/limine/kriss-wallpaper.png' "$conf"
-test -s "$t/efi/EFI/limine/kriss-wallpaper.png"
+grep -q "^wallpaper: boot():/$base/kriss-wallpaper.png" "$conf"
+test -s "$dir/kriss-wallpaper.png"
 grep -q '^/+KrissOS' "$conf"
 grep -Eq '^//linux-kriss[a-z-]* [0-9]+\.[0-9]+' "$conf"  # linux-kriss online, linux-kriss-generic from the USB offline
 grep -Eq '^default_entry: KrissOS/linux-kriss[a-z-]* [0-9]' "$conf"
 grep -q '^//Snapshots' "$conf"
 grep -q '^    ///.* install test (#[0-9]*)$' "$conf"
 grep -q 'subvol=@snapshots/[0-9]*/snapshot.* kriss_snapshot=1' "$conf"
-cmp -s "$conf" "$t/efi/EFI/BOOT/limine.conf"
+if [ -n "$efi" ]; then
+  cmp -s "$conf" "$t/efi/EFI/BOOT/limine.conf"
+else
+  # Limine's BIOS boot code: in the first sector (sgdisk left it zeroed), its stage 2 in
+  # the BIOS boot partition configure added, and limine-bios.sys next to the menu.
+  sgdisk -p "$disk"
+  sgdisk -p "$disk" | grep -q 'EF02 *BIOSBOOT'
+  [ "$(dd if="$disk" bs=440 count=1 status=none | tr -d '\0' | wc -c)" -gt 0 ]
+  cmp -s "$t/usr/share/limine/limine-bios.sys" "$dir/limine-bios.sys"
+fi
 # One line, so install-test.sh can boot the snapshot entry from it.
 echo "kriss-limine-conf: $(base64 -w0 "$conf")"
-ls -l "$t/efi/EFI/BOOT" "$t/boot"
+ls -lR "$t/boot" ${efi:+"$t/efi"}
 umount -R "$t" || { fuser -vm "$t" || true; exit 1; }
 if [ -n "$luks" ]; then cryptsetup close "luks-$luksuuid"; fi
 echo 'kriss-autoinstall: done'

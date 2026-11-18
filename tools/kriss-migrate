@@ -137,7 +137,10 @@ preflight() {
   [[ $(uname -m) == x86_64 ]] || die "this is for x86_64 PCs; this one is $(uname -m)."
   ((EUID == 0)) || die "run it as root: sudo kriss migrate$( ((!DRY)) || echo " --dry-run")"
   arch_based /etc/os-release || die "this is not Arch or a distribution built on Arch's repos."
-  [[ -d /sys/firmware/efi ]] || die "KrissOS boots with Limine on UEFI; this PC started in BIOS mode."
+  # ponytail: UEFI only. A legacy BIOS install would need Limine's menu and limine-bios.sys
+  # in /boot/limine on a FAT /boot (Arch BIOS installs rarely have one, so: repartitioning)
+  # and `limine bios-install`; the KrissOS installer does BIOS installs.
+  [[ -d /sys/firmware/efi ]] || die "kriss migrate works only on UEFI PCs for now; this one started in BIOS mode. The KrissOS installer supports BIOS."
   pacman -Q limine >/dev/null 2>&1 || die "this system does not boot with Limine. Switch to Limine first."
   [[ $(findmnt -no FSTYPE /) == btrfs && $(findmnt -no FSROOT /) == /@ ]] ||
     die "/ has to be the btrfs subvolume @ (found $(findmnt -no FSTYPE,FSROOT /))."
