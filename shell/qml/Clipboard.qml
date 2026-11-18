@@ -165,7 +165,7 @@ PanelWindow {
 
     // The emoji or symbol grid: rows of a header or up to `cols` cells, the cells in one flat
     // list (what `current` counts), and each cell's row and column for up and down.
-    property var emoji: []  // emoji.json: [[group, [[char, name, words, tones], ...]], ...]
+    property var emoji: []  // emoji.json: [[group, [[char, name, " words", tones], ...]], ...]
     readonly property var view: {
         const rows = [], flat = [], pos = [];
         if (tab === "clipboard" || !emoji.length) return { rows, flat, pos };
@@ -185,7 +185,8 @@ PanelWindow {
             }
         };
         if (words.length) {
-            add("", every.filter(e => words.every(w => e[2].includes(w))));
+            // Each word matches the start of one of its words (they are stored " a b c").
+            add("", every.filter(e => words.every(w => e[2].includes(" " + w))));
         } else {
             if (tab === "emoji") {
                 const byChar = new Map(every.map(e => [e[0], e]));

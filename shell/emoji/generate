@@ -9,10 +9,11 @@ GitHub, Inc.), here the copy oh-my-zsh ships. Unicode CLDR has no copy available
 the build machine, so the Malay words are this folder's ms.tsv, written for KrissOS.
 Symbols: the sets below, named from Python's Unicode database.
 
-emoji.json: [[group, [[character, English name, search words, skin tones 0 or 1], ...]], ...]
+emoji.json: [[group, [[character, English name, " word word ...", skin tones 0 or 1], ...]], ...]
 """
 import json
 import pathlib
+import re
 import sys
 import unicodedata
 
@@ -22,6 +23,12 @@ src = sys.argv[1] if len(sys.argv) > 1 else "/usr/share/oh-my-zsh/plugins/emoji/
 
 def bare(s):
     return s.replace("️", "")
+
+
+def search_words(s):
+    """Words split on anything but letters and digits, each once, with a space before each,
+    so the picker can match the start of a word: "bulan" finds the moon, not the ambulance."""
+    return " " + " ".join(dict.fromkeys(re.sub(r"[\W_]+", " ", s.lower()).split()))
 
 
 ms = {}
@@ -34,7 +41,9 @@ groups, seen = {}, set()
 for e in json.load(open(src)):
     ch = e["emoji"]
     en = [e["description"]] + [a.replace("_", " ") for a in e.get("aliases", [])] + e.get("tags", [])
-    words = " ".join(dict.fromkeys(en + [ms.get(bare(ch), "")])).lower().strip()
+    # Every flag is a "bendera", whether or not ms.tsv names its country.
+    malay = ms.get(bare(ch), "") + (" bendera" if e["category"] == "Flags" else "")
+    words = search_words(" ".join(en + [malay]))
     groups.setdefault(e["category"], []).append([ch, e["description"], words, int(bool(e.get("skin_tones")))])
     seen.add(bare(ch))
 for ch in ms.keys() - seen:
@@ -51,7 +60,7 @@ SYMBOLS = [
 # A symbol that is also an emoji gets U+FE0E, so it shows (and pastes) as text, not a picture.
 for name, malay, chars in SYMBOLS:
     groups[name] = [[c + ("\ufe0e" if c in seen else ""), unicodedata.name(c).lower(),
-                     unicodedata.name(c).lower() + " " + malay, 0] for c in chars]
+                     search_words(unicodedata.name(c) + " " + malay), 0] for c in chars]
 
 out = here.parent / "qml" / "emoji.json"
 out.write_text(json.dumps(list(groups.items()), ensure_ascii=False, separators=(",", ":")) + "\n")

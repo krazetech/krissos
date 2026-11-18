@@ -99,6 +99,9 @@ def store():
     if not mime:
         return
     data = read(mime)
+    # A new selection (maybe a password) may have replaced the one whose types were checked.
+    if paste_types() != types:
+        return
     if not data or len(data) > MAX_BYTES or (text and not data.strip()):
         return
     ext = ".txt" if text else (mimetypes.guess_extension(mime) or ".img")

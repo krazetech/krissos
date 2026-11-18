@@ -11,6 +11,7 @@ SDDM lists it as **KrissOS Shell**.
 | `qml/i18n/` | Translations, one `<lang>.json` per language (`ms` is Bahasa Melayu). See below |
 | `fuzzy-check` | Tests the launcher's fuzzy ranking and the menus' type-ahead: `node shell/fuzzy-check` |
 | `i18n-check` | Checks every shell string has a translation; `--list` prints them all |
+| `clipboard-check` | Tests the clipboard history with a fake `wl-paste`: sensitive items are never stored, pinned ones survive `clear` (runs in the package build) |
 | `kriss-shell-toplevels` | Python helper that lists open windows (the screen and desktop each is on, and whether it is fullscreen) and the desktops, focuses, minimizes, closes or moves windows, switches desktops, and captures window pictures while the taskbar previews or Task View show them. Quickshell can't read or capture windows from cosmic-comp directly |
 | `toplevels-check` | Run inside a cosmic-comp session: checks `kriss-shell-toplevels` still sees a new window after Python's garbage collector runs (`shell/toplevels-check alacritty`; cosmic-term by default) |
 | `kriss-shell-clipboard` | Python helper for the clipboard history: watches the clipboard through `wl-paste --watch`, stores, lists, pins and deletes items, and pastes with a virtual keyboard |

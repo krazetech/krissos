@@ -50,6 +50,8 @@ check() {
   sh -n "$_shell/session/kriss-shell"
   # Every shell string has a Bahasa Melayu translation.
   python "$_shell/i18n-check"
+  # The clipboard history never stores a password, and keeps pinned items.
+  bash "$_shell/clipboard-check"
   KRISS_SHELL_LIB="$srcdir" python -c '
 import os, sys
 sys.path.insert(0, os.environ["KRISS_SHELL_LIB"])
