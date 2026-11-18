@@ -92,10 +92,12 @@ is a bonus only: `installer/lib/online` then switches to `linux-kriss`, runs `pa
 and installs KDE Plasma, which is not on the ISO. Offline, Plasma falls back to the shell.
 
 - **Disk:** GPT only, on UEFI or legacy BIOS (CSM). Dual-boot alongside Windows is the
-  default, erase disk the other choice; manual partitioning and disk encryption are off
-  for now. `kriss-install` stops before the installer with steps to follow when BitLocker
-  is on, or when the USB started in legacy BIOS mode on a PC whose Windows boots UEFI
-  (`kriss-install --legacy` goes on anyway). An MBR disk, as Windows uses in BIOS mode,
+  default, erase disk the other choice; manual partitioning is off for now. "Encrypt
+  system" (opt-in) puts the btrfs root in LUKS2 and leaves the FAT32 `/boot` plain for
+  Limine; the busybox `encrypt` hook asks for the passphrase at boot. The user's password
+  needs 8 characters. `kriss-install` stops before the installer with steps to follow when
+  BitLocker is on, or when the USB started in legacy BIOS mode on a PC whose Windows boots
+  UEFI (`kriss-install --legacy` goes on anyway). An MBR disk, as Windows uses in BIOS mode,
   gets Calamares' own "partition table is not GPT" message and only *Erase disk*.
 - **Layout:** the ESP at `/efi` holds only Limine, so Windows' small ESP is enough. The
   kernels go on a 2 GiB FAT32 `/boot` (XBOOTLDR), because Limine reads only FAT. btrfs
