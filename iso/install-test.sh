@@ -49,7 +49,10 @@ boot() {
   sleep 4
   shot "$name"
   for _ in $(seq 60); do
-    if grep -q 'Started.*Greeter daemon' "$out/$name.log"; then ok=1; break; fi
+    # agetty starts on ttyS0 at the same moment and its terminal reset can cut systemd's line
+    # short ("Started Greeter daemo["), so greetd's own log of the greeter session counts too.
+    if grep -aqE 'Started.*Greeter daemon|greetd\[[0-9]+\]: pam_unix\(greetd:session\): session opened for user greeter' \
+      "$out/$name.log"; then ok=1; break; fi
     sleep 5
   done
   sleep 30  # let the login screen draw

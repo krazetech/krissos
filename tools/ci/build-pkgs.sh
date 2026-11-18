@@ -8,7 +8,9 @@ set -euo pipefail
 out=$(realpath -m "$1")
 shift
 id builder >/dev/null 2>&1 || useradd -m builder
-echo 'builder ALL=(ALL) NOPASSWD: /usr/bin/pacman' >/etc/sudoers.d/builder
+# makepkg --syncdeps uses this pacman: tools/ci/pacman-retry in the aarch64 container.
+pacman=$(command -v pacman)
+echo "builder ALL=(ALL) NOPASSWD: $pacman" >/etc/sudoers.d/builder
 chown -R builder .
 mkdir -p "$out" && chown builder "$out"
 published=""
@@ -39,7 +41,7 @@ for dir; do
     deps=--nodeps ;;
   esac
   # Arch Linux ARM's makepkg.conf defaults to .pkg.tar.xz; the repo tooling expects zst.
-  su builder -c "cd '$dir' && PKGDEST='$out' PKGEXT=.pkg.tar.zst makepkg $deps --noconfirm --cleanbuild"
+  su builder -c "cd '$dir' && PKGDEST='$out' PKGEXT=.pkg.tar.zst PACMAN='$pacman' makepkg $deps --noconfirm --cleanbuild"
   echo "::endgroup::"
 done
 ls -l "$out"

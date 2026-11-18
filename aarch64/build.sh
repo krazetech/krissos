@@ -84,7 +84,8 @@ rm -rf "$root"
 # The ESP is a plain directory at /boot/efi until it is packed below. m1n1's pacman hook
 # writes m1n1/boot.bin there when the directory exists.
 mkdir -p "$root/boot/efi/m1n1"
-pacstrap -C "$conf" -K "$root" "${pkgs[@]}"
+# -M: the image keeps Arch Linux ARM's own mirrorlist, not the CI one (tools/ci/alarm.sh).
+pacstrap -C "$conf" -K -M "$root" "${pkgs[@]}"
 gpgconf --homedir "$root/etc/pacman.d/gnupg" --kill all 2>/dev/null || true
 
 cp -a "$here/rootfs/." "$root/"
