@@ -91,13 +91,21 @@ the installer itself, and the NVIDIA driver on PCs without a Turing or newer car
 is a bonus only: `installer/lib/online` then switches to `linux-kriss`, runs `pacman -Syu`
 and installs KDE Plasma, which is not on the ISO. Offline, Plasma falls back to the shell.
 
-- **Disk:** GPT and UEFI only. Dual-boot alongside Windows is the default, erase disk the
-  other choice; manual partitioning and disk encryption are off for now. `kriss-install`
-  stops before the installer with steps to follow when BitLocker is on, or when the USB
-  started in legacy BIOS mode.
+- **Disk:** GPT only, on UEFI or legacy BIOS (CSM). Dual-boot alongside Windows is the
+  default, erase disk the other choice; manual partitioning and disk encryption are off
+  for now. `kriss-install` stops before the installer with steps to follow when BitLocker
+  is on, or when the USB started in legacy BIOS mode on a PC whose Windows boots UEFI
+  (`kriss-install --legacy` goes on anyway). An MBR disk, as Windows uses in BIOS mode,
+  gets Calamares' own "partition table is not GPT" message and only *Erase disk*.
 - **Layout:** the ESP at `/efi` holds only Limine, so Windows' small ESP is enough. The
   kernels go on a 2 GiB FAT32 `/boot` (XBOOTLDR), because Limine reads only FAT. btrfs
   root with `@`, `@home`, `@cache`, `@log` and `@snapshots`; zram, no swap partition.
+  Legacy BIOS has no ESP: `limine-bios.sys` and `limine.conf` go in `/boot/limine` on the
+  FAT32 `/boot`, and `limine bios-install` writes the boot sector and its stage 2 into a
+  BIOS boot partition. Calamares can't add one for BIOS only, so `installer/lib/configure`
+  makes it in the free space before the first partition (sectors 34-2047, which Calamares
+  leaves on BIOS). `kriss-limine-update` tells the two apart by
+  `/sys/firmware/efi` and runs `bios-install` again whenever Limine's boot code changes.
 - **Boot menu:** `kriss-limine-update` (`kriss-settings`) writes `limine.conf` after every
   kernel, initramfs or Limine change (pacman hook and mkinitcpio post hook) and whenever
   `/.snapshots` changes (path unit): a `KrissOS` directory with one versioned entry per
@@ -119,7 +127,7 @@ and installs KDE Plasma, which is not on the ISO. Offline, Plasma falls back to 
 - **Secure Boot:** not set up by the installer yet. Once `sbctl` has keys,
   `kriss-limine-update` hashes every path in `limine.conf` (BLAKE2b), enrolls the config's
   hash into Limine with `limine enroll-config` and signs it with `sbctl`; the pacman hook
-  re-signs the rest. Untested on real firmware.
+  re-signs the rest. Untested on real firmware. UEFI only: skipped on legacy BIOS.
 
 ## 3. Repository layout (monorepo, public GitHub org)
 
@@ -151,7 +159,9 @@ krissos/
   - `kernel.yml`: runs on a schedule, checks for new CachyOS kernel patch releases, opens a
     version-bump PR, and builds both kernels.
   - `iso.yml`: builds the live ISO on every tag (`110`, `115`, …), nightly, and on PRs that
-    touch `iso/`, then boots it in QEMU until the KrissOS Shell starts. Tags attach the ISO to a release.
+    touch `iso/`, then boots it in QEMU until the KrissOS Shell and the installer start, and
+    installs it unattended and boots the result, each under both OVMF (UEFI) and SeaBIOS
+    (legacy BIOS). Tags attach the ISO to a release.
     Tags build from `[kriss]`; nightly and PR ISOs from `[kriss-testing]`, so their tests are the
     check before promoting.
 - **Repo hosting:** the pacman database and packages are uploaded as assets to a GitHub
@@ -207,8 +217,15 @@ available as the installer's alternative.
 - **Style:** soft and rounded. Floating windows with large corner radii and a light rim, and
   no coloured ring around the focused window. Light and dark window themes over a dark wallpaper.
   One taskbar, full width along the bottom edge and 48 px tall like Windows 11, holds the
-  launcher, apps and status, with acrylic blur and a soft top rim. Sky Cyan is the only accent;
-  no neon.
+  launcher, apps and status, with acrylic blur and a soft top rim. Sky Cyan is the default and
+  only shipped accent; users may pick another in settings. No neon.
+- **Material:** shell surfaces are tinted and blurred (acrylic) through `ext-background-effect`,
+  which cosmic-comp and Quickshell both support. Solid surfaces are the fallback when blur is off.
+- **Layouts:** the Windows-familiar layout (centred taskbar) is the default. An optional Mac
+  layout follows: top bar, centred dock, window buttons on the left, in the KrissOS look, with no
+  Apple logo, fonts or icons. Users pick one in `kriss-welcome` and can switch in settings.
+  Familiar, never a clone: neither layout copies Windows or macOS visuals. Plan:
+  `docs/shell-roadmap.md`.
 - **Type:** Figtree + JetBrains Mono (OFL) proposed.
 - **Apps:** COSMIC Files, Terminal and Settings get KrissOS dark and light COSMIC themes, built
   from the tokens by libcosmic's own ThemeBuilder (`shell/cosmic-theme/`), and a matching

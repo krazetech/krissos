@@ -2,13 +2,16 @@
 # Install the ISO onto a blank QEMU disk with iso/test/autoinstall (the installer's own
 # steps, unattended), then boot the disk through Limine and wait for the KrissOS login
 # screen. No network card at all (-nic none): installing must never need the internet.
-# Needs qemu-system-x86, ovmf, libarchive-tools and socat.
-# usage: iso/install-test.sh ISO OUT_DIR
+# FIRMWARE=bios does it all under SeaBIOS (QEMU's default firmware) instead of OVMF, so
+# the installer takes its legacy BIOS path. Needs qemu-system-x86, ovmf, libarchive-tools
+# and socat.
+# usage: [FIRMWARE=uefi|bios] iso/install-test.sh ISO OUT_DIR
 set -euo pipefail
 
 iso=$1 out=$2
 here=$(cd "$(dirname "$0")" && pwd)
-ovmf=${OVMF:-/usr/share/ovmf/OVMF.fd}
+fw=(-bios "${OVMF:-/usr/share/ovmf/OVMF.fd}")
+[ "${FIRMWARE:-uefi}" = uefi ] || fw=()
 mkdir -p "$out"
 disk=$out/disk.qcow2
 qemu-img create -f qcow2 "$disk" 40G
@@ -22,7 +25,7 @@ tmp=$(mktemp -d)
 bsdtar -xf "$iso" -C "$tmp" loader/entries/01-krissos.conf 'kriss/boot/x86_64/*'
 opts=$(sed -n 's/^options *//p' "$tmp/loader/entries/01-krissos.conf")
 rm -f "$out/mon"
-timeout 30m "${qemu[@]}" -bios "$ovmf" -cdrom "$iso" \
+timeout 30m "${qemu[@]}" "${fw[@]}" -cdrom "$iso" \
   -kernel "$tmp"/kriss/boot/x86_64/vmlinuz-* -initrd "$tmp"/kriss/boot/x86_64/initramfs-*.img \
   -fw_cfg "name=opt/kriss/autoinstall,file=$here/test/autoinstall" \
   -append "$opts console=ttyS0,115200 systemd.journald.forward_to_console=1 \
@@ -41,7 +44,7 @@ grep 'kriss: ' "$out/install.log" || true
 boot() {
   local name=$1 ok=0; shift
   rm -f "$out/mon"
-  "${qemu[@]}" -bios "$ovmf" -serial "file:$out/$name.log" "$@" &
+  "${qemu[@]}" "${fw[@]}" -serial "file:$out/$name.log" "$@" &
   pid=$!
   sleep 4
   shot "$name"
@@ -56,7 +59,8 @@ boot() {
   (( ok )) || { echo "$name: no login screen within 5 minutes." >&2; return 1; }
 }
 
-# 2. The installed disk, as firmware boots it: Limine from EFI/BOOT, then KrissOS.
+# 2. The installed disk, as firmware boots it: Limine from EFI/BOOT (UEFI) or from the
+#    disk's boot sector (BIOS), then KrissOS.
 boot limine
 # X11 apps (Steam, most games) need Xwayland under cosmic-comp.
 if grep -q 'Failed to start Xwayland' "$out/limine.log"; then echo 'cosmic-comp could not start Xwayland.' >&2; exit 1; fi
