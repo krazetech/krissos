@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/krazetech/krissos/security/advisories/new
+    about: Please report security problems privately here, not in a public issue.
+  - name: Problem with a package from Arch Linux
+    url: https://gitlab.archlinux.org/archlinux/packaging/packages
+    about: If the problem is in an Arch package that KrissOS does not change, report it to Arch.
