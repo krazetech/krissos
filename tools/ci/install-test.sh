@@ -1,9 +1,9 @@
 #!/bin/bash
+# shellcheck disable=SC2016 # the stubs are single-quoted: they expand when they run
 # Checks kriss search, install, remove and update's AUR part against stub pacman, flatpak,
 # git, makepkg and runuser, and a curl that answers the AUR RPC from fixtures. No network.
 # Runs as root, like CI's container: kriss re-runs itself under sudo otherwise.
 set -euo pipefail
-# shellcheck disable=SC2016 # the stubs are single-quoted: they expand when they run
 ((EUID == 0)) || { echo 'install: skipped (needs root, as in CI)'; exit 0; }
 kriss=$(realpath "$(dirname "$0")/../kriss")
 T=$(mktemp -d)

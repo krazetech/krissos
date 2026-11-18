@@ -243,7 +243,7 @@ cmd_tune() {
 # Update everything, after a btrfs snapshot when snapper is set up, so a bad update rolls back
 # from the boot menu. Runs as root: the update notice calls it through pkexec.
 cmd_update() {
-  ((EUID == 0)) || exec sudo "$0" update
+  ((EUID == 0)) || die "update needs root. Run: pkexec kriss update"
   if has_snapper; then
     snapper -c root create --cleanup-algorithm number --description 'before kriss update'
   fi
@@ -579,12 +579,12 @@ aur_build() {
   local name=$1 dir key pkgs
   dir=$AUR_DIR/$(aur_base "$name")
   # makepkg checks signed sources against these keys; it cannot fetch them itself.
-  for key in $(sed -n 's/^\s*validpgpkeys = //p' "$dir/.SRCINFO" 2>/dev/null); do
+  while read -r key <&3; do
     as_user gpg --list-keys "$key" >/dev/null 2>&1 && continue
     ask "$name's sources are signed by key $key. Get that key from keyserver.ubuntu.com? [Y/n]" y ||
       die "stopped: makepkg cannot check $name's sources without the key."
     as_user gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys "$key"
-  done
+  done 3< <(sed -n 's/^\s*validpgpkeys = //p' "$dir/.SRCINFO" 2>/dev/null)
   printf '\nkriss: building %s as %s...\n' "$name" "$BUILDER"
   as_user env -C "$dir" makepkg -cf --noconfirm || die "building $name failed (see above). Nothing after it was installed."
   mapfile -t pkgs < <(as_user env -C "$dir" makepkg --packagelist | grep -E "/$name-[^-/]+-[^-/]+-[^-/]+\.pkg\.tar")
