@@ -23,6 +23,8 @@ Scope {
 
     // Online when NetworkManager says the internet is reachable; checked each time Start opens.
     property bool online: false
+    // WinBoat (Windows apps) runs on x86_64 only.
+    readonly property bool x86: !!has.x86_64
 
     // The latest answers, each with the text it was for, so a slow one never shows for newer text.
     property var files: []
@@ -47,7 +49,7 @@ Scope {
 
     Process {
         id: probe
-        command: ["sh", "-c", "for c in qalc plocate updatedb fd nmcli wl-copy xdg-terminal-exec cosmic-term konsole; do command -v $c >/dev/null && echo $c; done; echo done"]
+        command: ["sh", "-c", "for c in qalc plocate updatedb fd nmcli wl-copy xdg-terminal-exec cosmic-term konsole; do command -v $c >/dev/null && echo $c; done; uname -m; echo done"]
         stdout: StdioCollector {
             onStreamFinished: {
                 const h = {};

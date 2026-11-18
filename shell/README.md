@@ -207,7 +207,7 @@ closed, and lookups wait for 120 ms of no typing.
 | Calculator | `2*(3+4)`, `15% of 80`, `5 km in miles`, `30 c in f`, `1 usd in myr`. Enter copies the answer | `qalc` (libqalculate) for units and currencies, with its own offline rate table; without it, plain sums only. `wl-copy` |
 | Apps | Installed apps by name, generic name and keywords | |
 | Settings | Each COSMIC Settings page, and each KDE System Settings module if installed, by name and words in English and Malay | Their desktop files, read once |
-| Commands | Lock, Sleep, Restart, Shut down, Sign out, Do not disturb, Take a screenshot, Quick settings, Notifications, and Update KrissOS when online. `>` and a command runs it in a terminal | `cosmic-term` (or `xdg-terminal-exec`, `konsole`); `grim` when no screenshot tool is installed |
+| Commands | Lock, Sleep, Restart, Shut down, Sign out, Do not disturb, Take a screenshot, Quick settings, Notifications. `kriss` actions: About this PC (`kriss info`), Check this PC can run Windows apps (`kriss winapps check`, x86_64 only), and online only Update KrissOS and `install NAME` / `pasang NAME` (`kriss install`). `>` and a command runs it in a terminal | `cosmic-term` (or `xdg-terminal-exec`, `konsole`); `grim` when no screenshot tool is installed |
 | Files | Recent files first, then every file and folder in home, by name. Ctrl+Enter, the Open folder button or the menu key opens its folder | `plocate` (its `updatedb` writes `~/.cache/kriss/files.db`, no root), else `fd` or `find` into `files.txt`. Rebuilt when Start opens and the index is over an hour old, at the lowest CPU and disk priority. Hidden folders are left out |
 | Web | “Search the web for …”, last | `nmcli` reporting full connectivity; hidden offline |
 

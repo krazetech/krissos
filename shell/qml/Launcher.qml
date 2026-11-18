@@ -57,6 +57,12 @@ PanelWindow {
             () => { Desktop.dnd = !Desktop.dnd; close(); }, "do not disturb;dnd;quiet;focus;jangan ganggu;senyap"],
         ["camera", Tr.t("Take a screenshot"), () => { close(); screenshot(); },
             "screenshot;screen capture;print screen;snip;snipping tool;tangkapan skrin;cetak skrin"],
+        // kriss actions that work offline: a summary of this PC, and whether it can run
+        // Windows apps in WinBoat (read-only; WinBoat is x86_64 only).
+        ["file", Tr.t("About this PC"), () => { close(); inTerminal("kriss info; kriss version"); },
+            "system info;specs;version;kriss info;perihal pc;maklumat sistem;spesifikasi"],
+        ...(providers.x86 ? [["check", Tr.t("Check this PC can run Windows apps"), () => { close(); inTerminal("kriss winapps check"); },
+            "windows apps;winboat;exe;run windows programs;aplikasi windows;program windows"]] : []),
         // Updates need the internet, so this one is offered only online.
         ...(providers.online ? [["update", Tr.t("Update KrissOS"), () => { close(); inTerminal("pkexec kriss update"); },
             "update;upgrade;windows update;check for updates;kemas kini;naik taraf"]] : [])
@@ -105,6 +111,11 @@ PanelWindow {
             }] }];
         } else {
             const expr = Fuzzy.calcExpr(q);
+            // "install spotify" (online): kriss install, from the safest source that has it, in a
+            // terminal so its questions and the password prompt can be answered. First of all.
+            const pkg = providers.online && /^(install|pasang)\s+\S/i.test(q) ? q.replace(/^\S+\s+/, "") : "";
+            const installRow = pkg ? [{ kind: "action", glyph: "plus", label: Tr.t("Install “%1”", pkg), score: 100000,
+                run: () => { close(); inTerminal("kriss install " + pkg.split(/\s+/).map(w => "'" + w.replace(/'/g, "'\\''") + "'").join(" ")); } }] : [];
             // Recent files first, then the rest of home; the same file once.
             const recentRows = recentAll.filter(f => f.href.startsWith("file:")).map(f => {
                 const s = Fuzzy.score(f.name, q);
@@ -132,11 +143,11 @@ PanelWindow {
                 })), 6) },
                 { key: "setting", title: Tr.t("Settings"), items: ranked(providers.settingRows(q, Tr.lang === "ms")
                     .map(r => Object.assign(r, { run: () => { Quickshell.execDetached(r.exec); close(); } })), 4) },
-                { key: "action", title: Tr.t("Commands"), items: ranked(actions.map(a => ({
+                { key: "action", title: Tr.t("Commands"), items: installRow.concat(ranked(actions.map(a => ({
                     kind: "action", label: a[1], glyph: a[0], run: a[2],
                     // Its words count a little less than its name.
                     score: Math.max(Fuzzy.score(a[1], q), ...a[3].split(";").map(w => Fuzzy.score(w, q) - 100))
-                })), 4) },
+                })), 4)) },
                 { key: "file", title: Tr.t("Files"), items: ranked(recentRows.concat(indexRows), 6).map(r => Object.assign(r, {
                     run: () => { Qt.openUrlExternally(r.href); close(); },
                     alt: () => openFolder(r.href)
