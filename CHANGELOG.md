@@ -34,6 +34,14 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
   need (#33).
 - Apple Silicon preview image, first slice: tested in a VM only (#27, #37, #39).
 - A friendlier website in English and Malay (#58).
+- The live USB boots and installs on older PCs with legacy BIOS (CSM), not only UEFI (#74).
+- `kriss install` finds and installs apps from the KrissOS and Arch repos, Flathub and the
+  AUR in one command, trying the safest source first (#82).
+- Taskbar: buttons that behave like Windows 11's, live window previews, a search box and
+  taskbar options (#50, #51, #55).
+- Shell: a system tray with a Windows 11 style overflow flyout (#54).
+- Shell: desktop icons, a selection box and a right-click menu (#52).
+- Shell: in fullscreen apps and games the taskbar hides and notifications wait (#53).
 
 ### Changed
 
@@ -46,6 +54,7 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 
 - Booting no longer loads nouveau's GSP firmware into the initramfs (#32).
 - kriss-vm boot entries and kriss-welcome pages (#33).
+- A stray duplicate file that stopped the shell from starting (#70).
 
 ## 0.1-alpha
 

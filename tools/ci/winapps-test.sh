@@ -9,7 +9,7 @@ me=$(id -un)
 
 # Only these commands exist for kriss, so "not installed" can be tested on any machine.
 mkdir -p "$t/bin" "$t/proc" "$t/sys/module/kvm_intel" "$t/sys/fs/cgroup" "$t/dev" "$t/etc"
-for c in env bash id grep cut awk cat df sed setsid; do
+for c in env bash id grep cut awk cat df sed setsid uname; do
   ln -s "$(command -v "$c")" "$t/bin/$c"
 done
 stub() { # stub NAME OUTPUT: a command that logs its args and prints OUTPUT

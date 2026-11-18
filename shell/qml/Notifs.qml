@@ -6,7 +6,8 @@ import Quickshell.Services.Notifications
 
 // The notification daemon. Toasts show for a few seconds on the focused screen; every
 // notification stays in the list behind the bell until it is dismissed. Do not disturb
-// stops the toasts, except critical ones (a low battery, say).
+// stops the toasts, except critical ones (a low battery, say). So does a fullscreen window on
+// the toasts' screen: what arrives meanwhile only goes in the list, and never pops up later.
 Singleton {
     id: root
 
@@ -15,6 +16,7 @@ Singleton {
     readonly property var model: server.trackedNotifications
     readonly property int popupMs: 6000
     property var arrived: ({})
+    property var held: ({}) // ids that came while a fullscreen window was in front
     property real now: Date.now()
 
     // Hovering the toasts pauses their timers, as in Sonner; they pick up where they were.
@@ -29,7 +31,7 @@ Singleton {
 
     function isPopup(n) {
         if (n.urgency === NotificationUrgency.Critical) return true;
-        return !Desktop.dnd && now - (arrived[n.id] ?? 0) < popupMs;
+        return !Desktop.dnd && !held[n.id] && !Windows.fullscreenOn(Desktop.screen) && now - (arrived[n.id] ?? 0) < popupMs;
     }
 
     // Taking an action finishes a notification, as on Windows, unless the app asked
@@ -58,11 +60,12 @@ Singleton {
         imageSupported: true
         onNotification: n => {
             n.tracked = true;
-            root.arrived[n.id] = Date.now();
-            root.now = Date.now();
             // Follow the focused window's screen, unless a panel is open on another one.
             if (!Desktop.launcherOpen && !Desktop.notificationsOpen && !Desktop.quickOpen && !Desktop.calendarOpen)
                 Desktop.screen = Desktop.focusedScreen();
+            if (Windows.fullscreenOn(Desktop.screen)) root.held[n.id] = true;
+            root.arrived[n.id] = Date.now();
+            root.now = Date.now();
         }
     }
 
