@@ -13,6 +13,11 @@ pacman=$(command -v pacman)
 echo "builder ALL=(ALL) NOPASSWD: $pacman" >/etc/sudoers.d/builder
 chown -R builder .
 mkdir -p "$out" && chown builder "$out"
+# Sources over https fall back to KrissOS's copy when upstream is down.
+# makepkg uses the first agent that matches, so swap the https one rather than add one.
+# shellcheck disable=SC2016 # expanded by makepkg, not here
+printf 'DLAGENTS=("${DLAGENTS[@]/#https::*/https::%s/tools/ci/fetch-fallback %%o %%u}")\n' "$PWD" \
+  >~builder/.makepkg.conf
 published=""
 for dir; do
   echo "::group::$dir"
