@@ -1,4 +1,4 @@
-Origin: https://github.com/CachyOS/linux tag cachyos-7.3.4-1, commit c99c04b747ef4d0dd72d6bf7ef18ecd9925486a6 (Merge branch '7.3/fixes' into 7.3/base-dev)
+Origin: https://github.com/CachyOS/linux tag cachyos-7.3.5-1, commit f49232608201e6d50e7225af6e52ff11aa4f00b0 (Merge branch '7.3/fixes' into 7.3/base-dev-dev)
 Squashed diff of the upstream commits below; their headers are unmodified.
 
 commit c90c777f9f7ce867fe7154aa9cfd4ebec7fc8292
@@ -876,7 +876,7 @@ index 8141c3a1e..5c0065c87 100644
  	}
  
 diff --git a/drivers/gpu/drm/i915/display/intel_dp.c b/drivers/gpu/drm/i915/display/intel_dp.c
-index 3152122e6..26c4535e7 100644
+index d79b6367c..28cc65fd7 100644
 --- a/drivers/gpu/drm/i915/display/intel_dp.c
 +++ b/drivers/gpu/drm/i915/display/intel_dp.c
 @@ -4785,6 +4785,38 @@ intel_edp_set_sink_rates(struct intel_dp *intel_dp)
@@ -1041,19 +1041,6 @@ index 37d1309e9..dffeec6bd 100644
  	{ "DLL0945", 0 },
  	{ "ELAN0678", 0 },
  	{ "ELAN06FA", 0 },
-diff --git a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/msgbuf.c b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/msgbuf.c
-index 069ba7016..ff47d4827 100644
---- a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/msgbuf.c
-+++ b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/msgbuf.c
-@@ -1639,7 +1639,7 @@ int brcmf_proto_msgbuf_attach(struct brcmf_pub *drvr)
- 	if (!msgbuf->tx_pktids)
- 		goto fail;
- 	msgbuf->rx_pktids = brcmf_msgbuf_init_pktids(NR_RX_PKTIDS,
--						     DMA_FROM_DEVICE);
-+						     DMA_BIDIRECTIONAL);
- 	if (!msgbuf->rx_pktids)
- 		goto fail;
- 
 diff --git a/drivers/net/wireless/intel/iwlwifi/mld/mac80211.c b/drivers/net/wireless/intel/iwlwifi/mld/mac80211.c
 index 3a4c8fda6..a007acbe7 100644
 --- a/drivers/net/wireless/intel/iwlwifi/mld/mac80211.c
@@ -1358,7 +1345,7 @@ index 5d38537dd..7563d55d1 100644
  {
  	struct rq *rq = this_rq();
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 9d657f70c..e413fdc70 100644
+index d35b46339..5b1172567 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
 @@ -13827,12 +13827,15 @@ redo:

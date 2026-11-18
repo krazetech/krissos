@@ -1,4 +1,4 @@
-Origin: https://github.com/CachyOS/linux tag cachyos-7.3.4-1, commit 49268e20b3724dde7b527b857554ca5726f83254 (Merge branch '7.3/cachy' into 7.3/base-dev)
+Origin: https://github.com/CachyOS/linux tag cachyos-7.3.5-1, commit d447fbf05160c62248cedb4d72da5c030c1c3526 (Merge branch '7.3/cachy' into 7.3/base-dev-dev)
 Squashed diff of the upstream commits below; their headers are unmodified.
 
 commit e4cd5992b0dee43530c414418946a007b8227e7d
@@ -734,7 +734,7 @@ index 4e64219c8..d569733f3 100644
  	tsc_early_khz=  [X86,EARLY] Skip early TSC calibration and use the given
  			value instead. Useful when the early TSC frequency discovery
 diff --git a/Makefile b/Makefile
-index 05c5b682a..d75cfb77c 100644
+index 51e278cce..ae4be860f 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -932,11 +932,20 @@ KBUILD_CFLAGS	+= -fno-delete-null-pointer-checks
@@ -3183,7 +3183,7 @@ index 000000000..e55d966a6
 +MODULE_DESCRIPTION(ADIOS_PROGNAME);
 \ No newline at end of file
 diff --git a/block/elevator.c b/block/elevator.c
-index 2161b6eea..e81bf2233 100644
+index 66edf1a57..c94d83bf8 100644
 --- a/block/elevator.c
 +++ b/block/elevator.c
 @@ -740,6 +740,19 @@ void elevator_set_default(struct request_queue *q)
@@ -9452,7 +9452,7 @@ index f294dad43..4a5ae8bd9 100644
  	help
  	  This option turns the kernel into a real-time kernel by replacing
 diff --git a/kernel/fork.c b/kernel/fork.c
-index 8ad346469..cb0a7b19f 100644
+index 48d7ca064..ec222e9cc 100644
 --- a/kernel/fork.c
 +++ b/kernel/fork.c
 @@ -127,6 +127,12 @@
@@ -9468,7 +9468,7 @@ index 8ad346469..cb0a7b19f 100644
  /*
   * Minimum number of threads to boot the kernel
   */
-@@ -2122,6 +2128,11 @@ __latent_entropy struct task_struct *copy_process(
+@@ -2130,6 +2136,11 @@ __latent_entropy struct task_struct *copy_process(
  			return ERR_PTR(-EPERM);
  	}
  
@@ -9480,7 +9480,7 @@ index 8ad346469..cb0a7b19f 100644
  	/*
  	 * Force any signals received before this point to be delivered
  	 * before the fork happens.  Collect up signals sent to multiple
-@@ -3205,6 +3216,10 @@ static int check_unshare_flags(unsigned long unshare_flags)
+@@ -3213,6 +3224,10 @@ static int check_unshare_flags(unsigned long unshare_flags)
  		if (!current_is_single_threaded())
  			return -EINVAL;
  	}
@@ -9491,7 +9491,7 @@ index 8ad346469..cb0a7b19f 100644
  
  	return 0;
  }
-@@ -3438,6 +3453,15 @@ static const struct ctl_table fork_sysctl_table[] = {
+@@ -3446,6 +3461,15 @@ static const struct ctl_table fork_sysctl_table[] = {
  		.mode		= 0644,
  		.proc_handler	= sysctl_max_threads,
  	},
@@ -9548,7 +9548,7 @@ index 1754d9f95..5d38537dd 100644
  		return 1;
  	}
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index b35e23f93..9d657f70c 100644
+index 913630c0b..d35b46339 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
 @@ -82,10 +82,19 @@ unsigned int sysctl_sched_tunable_scaling = SCHED_TUNABLESCALING_LOG;
@@ -9601,7 +9601,7 @@ index a04941551..d9bb55c56 100644
  static int __read_mostly sysctl_compact_memory;
  
 diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 779c02e0b..f36eed66c 100644
+index 5f7e3320d..f9f9a12b9 100644
 --- a/mm/huge_memory.c
 +++ b/mm/huge_memory.c
 @@ -65,7 +65,11 @@ unsigned long transparent_hugepage_flags __read_mostly =
@@ -9617,7 +9617,7 @@ index 779c02e0b..f36eed66c 100644
  	(1<<TRANSPARENT_HUGEPAGE_USE_ZERO_PAGE_FLAG);
  
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 8ca2289d0..d60899225 100644
+index 8714425ff..99f72970a 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
 @@ -275,7 +275,11 @@ const char * const migratetype_names[MIGRATE_TYPES] = {
@@ -9657,7 +9657,7 @@ index 0d9b0d876..046157fe5 100644
  	register_sysctl_init("vm", swap_readahead_sysctl_table);
  }
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 6a53762d5..9a8091a5c 100644
+index 88fd31d13..1256a089e 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
 @@ -198,7 +198,11 @@ struct scan_control {
@@ -9672,7 +9672,7 @@ index 6a53762d5..9a8091a5c 100644
  
  static int sc_swappiness(struct scan_control *sc, struct mem_cgroup *memcg)
  {
-@@ -4203,7 +4207,11 @@ static bool lruvec_is_reclaimable(struct lruvec *lruvec, struct scan_control *sc
+@@ -4206,7 +4210,11 @@ static bool lruvec_is_reclaimable(struct lruvec *lruvec, struct scan_control *sc
  }
  
  /* to protect the working set of the last N jiffies */

@@ -1,4 +1,4 @@
-Origin: https://github.com/CachyOS/linux tag cachyos-7.3.4-1, commit 4a9cb58cea8a6087494c2279670e2132b6373a2c (Merge branch '7.3/hdmi' into 7.3/base-dev)
+Origin: https://github.com/CachyOS/linux tag cachyos-7.3.5-1, commit d7749ea1aedc001907d1a6cec191b0d2d9d4f6be (Merge branch '7.3/hdmi' into 7.3/base-dev-dev)
 Squashed diff of the upstream commits below; their headers are unmodified.
 
 commit bfd02102c6dbd93c02c26ef154211cc6fdd6d1ef
@@ -352,7 +352,7 @@ index 45a69bf43..11f1f223f 100644
 +		drm_connector_set_passive_vrr_capable_property(connector, freesync_capable);
  }
 diff --git a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_freesync.c b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_freesync.c
-index 7e484adb4..db3bc37a1 100644
+index a51cf46d0..6d6e3b3b8 100644
 --- a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_freesync.c
 +++ b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_freesync.c
 @@ -37,6 +37,7 @@
@@ -363,7 +363,7 @@ index 7e484adb4..db3bc37a1 100644
  
  bool amdgpu_dm_is_dc_timing_adjust_needed(struct dm_crtc_state *old_state,
  					  struct dm_crtc_state *new_state)
-@@ -137,6 +138,12 @@ void amdgpu_dm_get_freesync_config_for_crtc(
+@@ -145,6 +146,12 @@ void amdgpu_dm_get_freesync_config_for_crtc(
  		config.vsif_supported = true;
  		config.btr = true;
  
@@ -376,7 +376,7 @@ index 7e484adb4..db3bc37a1 100644
  		if (fs_vid_mode) {
  			config.state = VRR_STATE_ACTIVE_FIXED;
  			config.fixed_refresh_in_uhz = new_crtc_state->freesync_config.fixed_refresh_in_uhz;
-@@ -148,9 +155,18 @@ void amdgpu_dm_get_freesync_config_for_crtc(
+@@ -156,9 +163,18 @@ void amdgpu_dm_get_freesync_config_for_crtc(
  		}
  	} else {
  		config.state = VRR_STATE_UNSUPPORTED;
@@ -395,7 +395,7 @@ index 7e484adb4..db3bc37a1 100644
  }
  EXPORT_IF_KUNIT(amdgpu_dm_get_freesync_config_for_crtc);
  
-@@ -229,6 +245,9 @@ void amdgpu_dm_update_freesync_state_on_stream(
+@@ -254,6 +270,9 @@ void amdgpu_dm_update_freesync_state_on_stream(
  		&vrr_infopacket,
  		pack_sdp_v1_3);
  
@@ -405,7 +405,7 @@ index 7e484adb4..db3bc37a1 100644
  	new_crtc_state->freesync_vrr_info_changed |=
  		(memcmp(&new_crtc_state->vrr_infopacket,
  			&vrr_infopacket,
-@@ -240,6 +259,35 @@ void amdgpu_dm_update_freesync_state_on_stream(
+@@ -265,6 +284,35 @@ void amdgpu_dm_update_freesync_state_on_stream(
  	new_stream->vrr_infopacket = vrr_infopacket;
  	new_stream->allow_freesync = mod_freesync_get_freesync_enabled(&vrr_params);
  
@@ -711,10 +711,10 @@ index 8b4baed06..8dd69ec4a 100644
   * drm_connector_set_panel_orientation - sets the connector's panel_orientation
   * @connector: connector for which to set the panel-orientation property.
 diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
-index 63ead8ba6..bd666dbc3 100644
+index 5295ec122..78daf8c2a 100644
 --- a/drivers/gpu/drm/drm_crtc.c
 +++ b/drivers/gpu/drm/drm_crtc.c
-@@ -322,6 +322,8 @@ static int __drm_crtc_init_with_planes(struct drm_device *dev, struct drm_crtc *
+@@ -319,6 +319,8 @@ static int __drm_crtc_init_with_planes(struct drm_device *dev, struct drm_crtc *
  					   config->prop_out_fence_ptr, 0);
  		drm_object_attach_property(&crtc->base,
  					   config->prop_vrr_enabled, 0);

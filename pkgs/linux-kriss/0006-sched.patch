@@ -1,4 +1,4 @@
-Origin: https://github.com/CachyOS/linux tag cachyos-7.3.4-1, commit aa0b02b8b15ecdd3e8ce7b2382f5ad1dd78e2614 (Merge branch '7.3/sched' into 7.3/base-dev)
+Origin: https://github.com/CachyOS/linux tag cachyos-7.3.5-1, commit 3eb2055f566604f409f31d6b3bec12c86a4a0397 (Merge branch '7.3/sched' into 7.3/base-dev-dev)
 Squashed diff of the upstream commits below; their headers are unmodified.
 
 commit c0606860890da24c657f47202d6c51a92fdb2cd5
@@ -268,7 +268,7 @@ index 06bddaa73..faac7c206 100644
  
  	if (steal >= cputime)
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index e413fdc70..b17461aac 100644
+index 5b1172567..6d01b4dc8 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
 @@ -829,12 +829,6 @@ static u64 ineligible_vruntime(struct cfs_rq *cfs_rq)
