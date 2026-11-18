@@ -12,8 +12,9 @@ cut one. The per-release checklist is the **Release** issue template
 - **Pre-releases** add a suffix: `110-beta1`, `110-rc1`, `110-rc2`. Any tag with a `-` is
   published as a GitHub pre-release. `0.1-alpha` came before this scheme and stays as it is.
 - **Fixes after a release** (an ISO respin for a bad installer bug, say) are `110.1`, `110.2`.
-  Packages in `[kriss]` keep rolling between releases as they do now; a tag is a snapshot of
-  the ISO, not a freeze of the repo.
+  Packages keep rolling between releases: every merge lands in `[kriss-testing]`, and the
+  **promote** workflow moves it to `[kriss]` once the nightly ISO's tests pass (README,
+  "Package repo"). A tag is a snapshot of the ISO, not a freeze of the repo.
 - **`/etc/os-release`** carries the codename in `VERSION_CODENAME`
   (`pkgs/kriss-settings/root/usr/share/kriss/os-release`). Set it to the next codename right
   after a release ships, so nightlies say what they are heading towards.
@@ -80,8 +81,8 @@ that milestone; nothing else does. Milestone description:
 
 - [ ] **Signed or not at all:** tagged releases fail without a good signature (the signing
       change, `docs/signing-key.md`), and the key's rotation plan is written down.
-- [ ] **Testing channel:** updates reach a testing repo before everyone, so a bad package is
-      caught before it lands on `110` installs.
+- [x] **Testing channel:** updates reach a testing repo before everyone, so a bad package is
+      caught before it lands on `110` installs (`[kriss-testing]` and `promote.yml`, #79).
 - [ ] **Security policy:** `SECURITY.md` says how to report a vulnerability, and bugs are
       tracked in GitHub Issues.
 - [ ] **Installer defaults:** no one-character passwords.
@@ -95,8 +96,9 @@ The short version; the issue template has the full checklist.
 
 1. **Freeze.** Open a Release issue from the template, set its milestone, and stop merging
    features for that milestone. Fixes only.
-2. **Release candidate.** Rename **Unreleased** in `CHANGELOG.md` to `110-rc1`, merge, then
-   tag `main`: `git tag -a 110-rc1 -m "KrissOS 110-rc1" && git push origin 110-rc1`. CI builds, boot-tests,
+2. **Release candidate.** Run **promote** (dry run first) so `[kriss]` has what the nightly
+   tested, since tagged ISOs build from `[kriss]`. Rename **Unreleased** in `CHANGELOG.md` to
+   `110-rc1`, merge, then tag `main`: `git tag -a 110-rc1 -m "KrissOS 110-rc1" && git push origin 110-rc1`. CI builds, boot-tests,
    install-tests, signs and publishes the pre-release.
 3. **Test the candidate** on real hardware against the milestone list above. Each bug found is
    an issue on the milestone; fix, then `110-rc2`.
