@@ -56,6 +56,9 @@ jobs:
       - name: Test kriss winapps
         run: tools/ci/winapps-test.sh
 
+      - name: Test the release notes script
+        run: tools/ci/release-notes-test.sh
+
       # The kernels are built by kernel.yml and kernel-asahi.yml, the compositor by cosmic-comp.yml.
       - name: Build packages
         run: tools/ci/build-pkgs.sh out $(ls -d pkgs/*/ | grep -v -e '^pkgs/linux-kriss' -e '^pkgs/cosmic-comp-kriss')
