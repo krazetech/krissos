@@ -63,7 +63,7 @@ Singleton {
             // Do not disturb: no toasts, notifications still collect behind the bell.
             property bool dnd: false
             // Taskbar: "left" or "centre" (Start, search and the apps centred, as on Windows 11).
-            property string taskbarAlignment: "left"
+            property string taskbarAlignment: "centre"
             // Slide the bar off the bottom edge until the pointer reaches it.
             property bool taskbarAutoHide: false
             // Combine an app's windows on one button: "always", "full" (when the bar runs out

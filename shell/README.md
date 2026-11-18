@@ -130,7 +130,7 @@ bar to move it. Without the file, the defaults in `qml/Desktop.qml` apply. **Tas
 |---|---|---|
 | `pinned` | Firefox, Files, Terminal… | Pinned apps, as desktop file ids, in taskbar order |
 | `dnd` | `false` | Do not disturb |
-| `taskbarAlignment` | `"left"` | `"centre"` centres Start, search and the apps, and Start opens above them, as on Windows 11 |
+| `taskbarAlignment` | `"centre"` | Start, search and the apps in the middle, and Start opens above them, as on Windows 11; `"left"` puts them at the left |
 | `taskbarAutoHide` | `false` | The bar slides off the bottom edge and comes back when the pointer reaches it |
 | `taskbarCombine` | `"always"` | `"always"`: one button per app. `"never"`: one button per window, with its title. `"full"`: per window until the bar runs out of room |
 | `taskbarAllScreens` | `true` | A bar on every screen, each with the windows on that screen; `false`: one bar, on the first screen, with every window |
@@ -195,6 +195,24 @@ by side for the sideways swipe.
 ```bash
 qs -p "$dev/qml" ipc call taskview toggle
 ```
+
+## Search
+
+Typing in Start searches everything, as on Windows 11. `qml/Search.qml` holds the providers;
+`qml/fuzzy.js` ranks them (checked by `node shell/fuzzy-check`). Nothing runs while Start is
+closed, and lookups wait for 120 ms of no typing.
+
+| Group | Finds | Needs |
+|---|---|---|
+| Calculator | `2*(3+4)`, `15% of 80`, `5 km in miles`, `30 c in f`, `1 usd in myr`. Enter copies the answer | `qalc` (libqalculate) for units and currencies, with its own offline rate table; without it, plain sums only. `wl-copy` |
+| Apps | Installed apps by name, generic name and keywords | |
+| Settings | Each COSMIC Settings page, and each KDE System Settings module if installed, by name and words in English and Malay | Their desktop files, read once |
+| Commands | Lock, Sleep, Restart, Shut down, Sign out, Do not disturb, Take a screenshot, Quick settings, Notifications. `kriss` actions: About this PC (`kriss info`), Check this PC can run Windows apps (`kriss winapps check`, x86_64 only), and online only Update KrissOS and `install NAME` / `pasang NAME` (`kriss install`). `>` and a command runs it in a terminal | `cosmic-term` (or `xdg-terminal-exec`, `konsole`); `grim` when no screenshot tool is installed |
+| Files | Recent files first, then every file and folder in home, by name. Ctrl+Enter, the Open folder button or the menu key opens its folder | `plocate` (its `updatedb` writes `~/.cache/kriss/files.db`, no root), else `fd` or `find` into `files.txt`. Rebuilt when Start opens and the index is over an hour old, at the lowest CPU and disk priority. Hidden folders are left out |
+| Web | “Search the web for …”, last | `nmcli` reporting full connectivity; hidden offline |
+
+The calculator comes first when it has an answer and the web last; the other groups follow
+their best match.
 
 ## Windows shortcuts
 
