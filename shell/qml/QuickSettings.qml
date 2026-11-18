@@ -108,7 +108,7 @@ PanelWindow {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         anchors.rightMargin: Theme.panelGap
-        anchors.bottomMargin: Theme.panelGap
+        anchors.bottomMargin: Theme.panelGap + Desktop.barRoom
         width: panel.width
         height: panel.height
         clip: true

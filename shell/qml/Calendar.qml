@@ -57,7 +57,7 @@ PanelWindow {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         anchors.rightMargin: Theme.panelGap
-        anchors.bottomMargin: Theme.panelGap
+        anchors.bottomMargin: Theme.panelGap + Desktop.barRoom
         width: 336
         height: body.implicitHeight + 36
         radius: Theme.radius

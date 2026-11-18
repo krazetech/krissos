@@ -49,42 +49,61 @@ printf '[zram0]\nzram-size = min(ram / 2, 8192)\ncompression-algorithm = zstd\n'
   >"$root/etc/systemd/zram-generator.conf"
 
 # --- Limine ----------------------------------------------------------------------
-esp=$root/efi
 uuid=$(findmnt -nvo UUID "$root")
 echo "root=UUID=$uuid rootflags=subvol=@ rw quiet$splash zswap.enabled=0" >"$root/etc/kernel/cmdline"
-
-install -Dm644 "$root/usr/share/limine/BOOTX64.EFI" "$esp/EFI/limine/BOOTX64.EFI"
-# Firmware that forgets boot entries (and QEMU without saved NVRAM) falls back to
-# EFI/BOOT/BOOTX64.EFI. Take that path only when nothing else, like Windows, owns it.
-if [ ! -e "$esp/EFI/BOOT/BOOTX64.EFI" ]; then
-  install -Dm644 "$root/usr/share/limine/BOOTX64.EFI" "$esp/EFI/BOOT/BOOTX64.EFI"
-  touch "$esp/EFI/BOOT/limine.conf"  # kriss-limine-update keeps this copy current too
-fi
-espdev=$(findmnt -nvo SOURCE "$esp")
-disk=/dev/$(lsblk -no PKNAME "$espdev")
-part=$(cat "/sys/class/block/${espdev##*/}/partition")
-efibootmgr --create --disk "$disk" --part "$part" --label KrissOS --loader '\EFI\limine\BOOTX64.EFI' ||
-  echo 'kriss: could not add a firmware boot entry; the fallback path still boots' >&2
-
-# Keep Windows in the menu: look for its boot manager on every FAT partition.
 mkdir -p "$root/etc/kriss/limine.d"
-tmp=$(mktemp -d)
-while read -r dev partuuid; do
-  # Our own ESP is already mounted; look at the others read-only.
-  mnt=$(findmnt -nfo TARGET --source "$dev" || true)
-  if [ -z "$mnt" ]; then
-    mount -o ro "$dev" "$tmp" 2>/dev/null || continue
-    mnt=$tmp
+
+if [ ! -d /sys/firmware/efi ]; then
+  # Legacy BIOS: no ESP. kriss-limine-update puts limine-bios.sys next to limine.conf on
+  # the FAT /boot and runs `limine bios-install` on its disk (now and after Limine updates).
+  # On GPT, Limine keeps its stage 2 in a BIOS boot partition. Calamares cannot make one
+  # on BIOS only, but it starts the first partition at 1 MiB on BIOS, so the space after
+  # the GPT (sectors 34-2047) takes it.
+  bootdev=$(findmnt -nvo SOURCE "$root/boot")
+  disk=/dev/$(lsblk -no PKNAME "$bootdev")
+  if ! lsblk -lno PARTTYPE "$disk" | grep -qix 21686148-6449-6e6f-744e-656564454649; then
+    sgdisk -a 1 -n 0:34:2047 -t 0:ef02 -c 0:BIOSBOOT "$disk" ||
+      { echo "kriss: no room for a BIOS boot partition at the start of $disk" >&2; exit 1; }
   fi
-  if [ -f "$mnt/EFI/Microsoft/Boot/bootmgfw.efi" ]; then
-    printf '/Windows\n    protocol: efi\n    path: guid(%s):/EFI/Microsoft/Boot/bootmgfw.efi\n' \
-      "$partuuid" >"$root/etc/kriss/limine.d/50-windows.conf"
-    echo "kriss: Windows boot manager found on $dev"
+  # ponytail: no Windows entry on BIOS. Windows in BIOS mode needs an MBR disk, which the
+  # partition step does not install next to; kriss-install sends UEFI Windows to UEFI mode.
+  mkdir -p "$root/boot/limine"
+  conf=$root/boot/limine/limine.conf
+else
+  esp=$root/efi
+  conf=$esp/EFI/limine/limine.conf
+  install -Dm644 "$root/usr/share/limine/BOOTX64.EFI" "$esp/EFI/limine/BOOTX64.EFI"
+  # Firmware that forgets boot entries (and QEMU without saved NVRAM) falls back to
+  # EFI/BOOT/BOOTX64.EFI. Take that path only when nothing else, like Windows, owns it.
+  if [ ! -e "$esp/EFI/BOOT/BOOTX64.EFI" ]; then
+    install -Dm644 "$root/usr/share/limine/BOOTX64.EFI" "$esp/EFI/BOOT/BOOTX64.EFI"
+    touch "$esp/EFI/BOOT/limine.conf"  # kriss-limine-update keeps this copy current too
   fi
-  if [ "$mnt" = "$tmp" ]; then umount "$tmp"; fi
-  if [ -f "$root/etc/kriss/limine.d/50-windows.conf" ]; then break; fi
-done < <(lsblk -lnpo PATH,PARTUUID,FSTYPE | awk '$3 == "vfat" {print $1, $2}')
-rmdir "$tmp"
+  espdev=$(findmnt -nvo SOURCE "$esp")
+  disk=/dev/$(lsblk -no PKNAME "$espdev")
+  part=$(cat "/sys/class/block/${espdev##*/}/partition")
+  efibootmgr --create --disk "$disk" --part "$part" --label KrissOS --loader '\EFI\limine\BOOTX64.EFI' ||
+    echo 'kriss: could not add a firmware boot entry; the fallback path still boots' >&2
+
+  # Keep Windows in the menu: look for its boot manager on every FAT partition.
+  tmp=$(mktemp -d)
+  while read -r dev partuuid; do
+    # Our own ESP is already mounted; look at the others read-only.
+    mnt=$(findmnt -nfo TARGET --source "$dev" || true)
+    if [ -z "$mnt" ]; then
+      mount -o ro "$dev" "$tmp" 2>/dev/null || continue
+      mnt=$tmp
+    fi
+    if [ -f "$mnt/EFI/Microsoft/Boot/bootmgfw.efi" ]; then
+      printf '/Windows\n    protocol: efi\n    path: guid(%s):/EFI/Microsoft/Boot/bootmgfw.efi\n' \
+        "$partuuid" >"$root/etc/kriss/limine.d/50-windows.conf"
+      echo "kriss: Windows boot manager found on $dev"
+    fi
+    if [ "$mnt" = "$tmp" ]; then umount "$tmp"; fi
+    if [ -f "$root/etc/kriss/limine.d/50-windows.conf" ]; then break; fi
+  done < <(lsblk -lnpo PATH,PARTUUID,FSTYPE | awk '$3 == "vfat" {print $1, $2}')
+  rmdir "$tmp"
+fi
 
 # --- services --------------------------------------------------------------------
 chr systemctl enable NetworkManager bluetooth fstrim.timer snapper-cleanup.timer kriss-limine-update.path
@@ -103,4 +122,4 @@ esac
 chr mkinitcpio -P
 chr kriss-limine-update
 echo 'kriss: boot menu:'
-cat "$esp/EFI/limine/limine.conf"
+cat "$conf"

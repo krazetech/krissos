@@ -1,5 +1,6 @@
-# Rewrite the Limine menu after kernel, initramfs or Limine updates. Sorts before
-# zz-kriss-sbctl.hook, so the files are final before they are signed.
+# Rewrite the Limine menu after kernel, initramfs or Limine updates; on legacy BIOS,
+# kriss-limine-update also runs limine bios-install when Limine's boot code changed.
+# Sorts before zz-kriss-sbctl.hook, so the files are final before they are signed.
 [Trigger]
 Operation = Install
 Operation = Upgrade
