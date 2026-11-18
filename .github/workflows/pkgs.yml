@@ -28,7 +28,7 @@ jobs:
       - name: Install build tools
         run: |
           printf '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist\n' >> /etc/pacman.conf
-          pacman -Syu --noconfirm --needed git github-cli shellcheck
+          pacman -Syu --noconfirm --needed git github-cli shellcheck jq
 
       - uses: actions/checkout@v4
 
@@ -49,6 +49,9 @@ jobs:
 
       - name: Test kriss migrate
         run: tools/ci/migrate-test.sh
+
+      - name: Test kriss search, install, remove and update (AUR mocked)
+        run: tools/ci/install-test.sh
 
       # The kernels are built by kernel.yml and kernel-asahi.yml, the compositor by cosmic-comp.yml.
       - name: Build packages

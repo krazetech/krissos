@@ -2,7 +2,7 @@
 # kriss: KrissOS system tool.
 set -euo pipefail
 
-readonly KRISS_VERSION="0.3.0"
+readonly KRISS_VERSION="0.4.0"
 readonly OS_RELEASE="${KRISS_OS_RELEASE:-/etc/os-release}"
 # Overridable so tests can point hwcheck and winapps at fixture trees.
 readonly PROC="${KRISS_PROC:-/proc}" SYS="${KRISS_SYS:-/sys}" DEV="${KRISS_DEV:-/dev}" ETC="${KRISS_ETC:-/etc}"
@@ -243,14 +243,16 @@ cmd_tune() {
 # Update everything, after a btrfs snapshot when snapper is set up, so a bad update rolls back
 # from the boot menu. Runs as root: the update notice calls it through pkexec.
 cmd_update() {
-  ((EUID == 0)) || die "update needs root. Run: pkexec kriss update"
-  if command -v snapper >/dev/null && snapper list-configs 2>/dev/null | grep -q '^root '; then
+  ((EUID == 0)) || exec sudo "$0" update
+  if has_snapper; then
     snapper -c root create --cleanup-algorithm number --description 'before kriss update'
   fi
-  pacman -Syu --noconfirm
+  pacman -Syu --noconfirm ||
+    die "the update did not finish. If this PC is offline, connect and run 'kriss update' again."
   if command -v flatpak >/dev/null; then
     flatpak update --noninteractive --assumeyes
   fi
+  aur_update
 }
 
 # kriss rollback: make the snapshot booted from the Limine menu (KrissOS > Snapshots) the
@@ -421,6 +423,337 @@ cmd_winapps() {
   esac
 }
 
+# --- kriss search, install, remove: software from every source, safest first ---------------
+# The repos (KrissOS, then Arch), then Flathub, then the AUR (ARCHITECTURE §14). AUR packages
+# are built with makepkg as the user who ran kriss, never as root, and only after that user has
+# read the build script or what changed in it. snap-pac snapshots before every pacman run.
+AUR_URL=${KRISS_AUR_URL:-https://aur.archlinux.org}
+PKG_CACHE=${KRISS_PKG_CACHE:-/var/cache/pacman/pkg}
+
+ask() { # ask PROMPT y|n: the answer, or the default on an empty line; no at end of input
+  local a
+  read -rp "$1 " a || return 1
+  [[ ${a:-$2} == [yY]* ]]
+}
+has_snapper() { command -v snapper >/dev/null && snapper list-configs 2>/dev/null | grep -q '^root '; }
+uri() { jq -rn --arg s "$1" '$s|@uri'; }
+aur_get() { curl -fsSg --max-time 15 "$AUR_URL/rpc/v5/$1"; }
+# aur_info NAME...: one JSON object per name the AUR has, a line each; fails offline.
+# ponytail: one request for every name; split it if a PC ever has hundreds of AUR packages.
+aur_info() {
+  local q="" n
+  for n; do q+="&arg[]=$(uri "$n")"; done
+  aur_get "info?${q#&}" | jq -c '.results[]'
+}
+
+# fp_pick NAME < "id<TAB>name" rows: the first id, or the id's last part, or name, that is NAME.
+fp_pick() {
+  awk -F'\t' -v q="${1,,}" '{ id = tolower($1); n = split(id, p, ".")
+    if (id == q || p[n] == q || tolower($2) == q) { print $1; f = 1; exit } } END { exit !f }'
+}
+flatpak_find() { command -v flatpak >/dev/null && flatpak search --columns=application,name -- "$1" 2>/dev/null | fp_pick "$1"; }
+flatpak_installed() { command -v flatpak >/dev/null && flatpak list --app --columns=application,name 2>/dev/null | fp_pick "$1"; }
+
+cmd_search() {
+  (($#)) || die "search for what? Example: kriss search spotify"
+  local repo aur fp=""
+  # pacman -Ss: "repo/name version [installed]", then the description indented on the next line.
+  repo=$(pacman -Ss -- "$@" 2>/dev/null | paste - - | awk -F'\t' '{ split($1, f, " "); split(f[1], rn, "/")
+    d = $2; sub(/^ +/, "", d); print rn[1] "\t" rn[2] "\t" d ($1 ~ /\[installed/ ? "  (installed)" : "") }') || true
+  if command -v flatpak >/dev/null; then
+    fp=$(flatpak search --columns=application,name,description -- "$*" 2>/dev/null | awk -F'\t' 'NF >= 2 { print "flathub\t" $1 "\t" $2 ": " $3 }') || true
+  fi
+  aur=$(aur_get "search/$(uri "$*")?by=name-desc" | jq -r '.results | sort_by(-.Popularity)[]
+    | ["aur", .Name, "\(.Description // "")  (\(.NumVotes) votes\(if .OutOfDate then ", out of date" else "" end)\(if .Maintainer == null then ", orphaned" else "" end))"] | @tsv') ||
+    aur=offline
+  section() { # section TITLE ROWS: ten at most, so the safe options stay on screen
+    [[ -n $2 ]] || return 0
+    printf '\n%s\n' "$1"
+    awk -F'\t' 'NR <= 10 { printf "  %-30s %s\n", $2, $3 } END { if (NR > 10) printf "  ... and %d more\n", NR - 10 }' <<<"$2"
+  }
+  section 'KrissOS (made for KrissOS)' "$(awk -F'\t' '$1 == "kriss"' <<<"$repo")"
+  section 'Arch (official, tested)' "$(awk -F'\t' 'NF && $1 != "kriss"' <<<"$repo")"
+  section 'Flathub (app store, sandboxed)' "$fp"
+  if [[ $aur == offline ]]; then
+    printf '\nAUR: not searched. It cannot be reached (no internet?).\n'
+  else
+    section 'AUR (community scripts, built on this PC: kriss shows you the script first)' "$aur"
+  fi
+  [[ -n $repo$fp || ($aur != offline && -n $aur) ]] || { echo "Nothing found for '$*'."; return 1; }
+  printf '\nInstall one with: kriss install NAME\n'
+}
+
+# The user who ran kriss through sudo or pkexec. AUR builds run as them, never as root.
+BUILDER="" AUR_DIR=""
+find_builder() {
+  local u=${SUDO_USER:-}
+  [[ -n $u || -z ${PKEXEC_UID:-} ]] || u=$(id -nu "$PKEXEC_UID")
+  [[ -n $u && $u != root ]] || return 1
+  BUILDER=$u
+  AUR_DIR=${KRISS_AUR_DIR:-$(getent passwd "$u" | cut -d: -f6)/.cache/kriss/aur}
+}
+as_user() { runuser -u "$BUILDER" -- "$@"; }
+
+declare -A AUR_JSON=() AUR_SEEN=() AUR_REVIEWED=()
+AUR_ORDER=() AUR_REPO_DEPS=() AUR_MAKE_ONLY=()
+aur_lookup() { # aur_lookup NAME: 0 found, 1 not in the AUR, 2 AUR unreachable
+  [[ -z ${AUR_JSON[$1]:-} ]] || return 0
+  local j
+  j=$(aur_info "$1") || return 2
+  [[ -n $j ]] || return 1
+  AUR_JSON[$1]=$j
+}
+
+# aur_resolve NAME: NAME's AUR dependencies, then NAME, onto AUR_ORDER (the build order);
+# the repo packages they need onto AUR_REPO_DEPS. pacman itself answers "is it installed"
+# and "does a repo have it" (-T and -Sp), versions and provides included.
+# ponytail: an AUR dependency is looked up by name only, not by what AUR packages provide.
+aur_resolve() {
+  local name=$1 make dep
+  [[ -z ${AUR_SEEN[$name]:-} ]] || return 0
+  AUR_SEEN[$name]=1
+  aur_lookup "$name" || die "'$name' is not in the AUR, or it cannot be reached."
+  while IFS=$'\t' read -r make dep; do
+    pacman -T -- "$dep" >/dev/null && continue
+    if pacman -Sp --print-format %n -- "$dep" >/dev/null 2>&1; then
+      [[ " ${AUR_REPO_DEPS[*]} " == *" $dep "* ]] || AUR_REPO_DEPS+=("$dep")
+      [[ $make == 0 ]] || AUR_MAKE_ONLY+=("${dep%%[<>=]*}")
+    else
+      aur_lookup "${dep%%[<>=]*}" || die "$name needs '$dep', which no repo or AUR package has."
+      aur_resolve "${dep%%[<>=]*}"
+    fi
+  done < <(jq -r '(.Depends // [])[] | "0\t" + .' <<<"${AUR_JSON[$name]}"
+    jq -r '((.MakeDepends // []) + (.CheckDepends // []))[] | "1\t" + .' <<<"${AUR_JSON[$name]}")
+  AUR_ORDER+=("$name")
+}
+
+aur_warn() { # plain-words warnings about an AUR entry, one per line
+  jq -r '(if .OutOfDate then "out of date: flagged on \(.OutOfDate | strftime("%Y-%m-%d")), so it may not build" else empty end),
+    (if .Maintainer == null then "orphaned: nobody looks after it, so fixes may never come" else empty end),
+    (if .NumVotes < 10 then "few users: \(.NumVotes) votes on the AUR" else empty end)' <<<"${AUR_JSON[$1]}"
+}
+aur_base() { jq -r .PackageBase <<<"${AUR_JSON[$1]}"; }
+
+# aur_review NAME: fetch NAME's build files as the builder and show them: everything the
+# first time, what changed since the last build after that. Fails unless the user says yes.
+aur_review() {
+  local name=$1 base dir last f
+  base=$(aur_base "$name") dir=$AUR_DIR/$(aur_base "$name")
+  [[ -z ${AUR_REVIEWED[$base]:-} ]] || return 0
+  if [[ -d $dir/.git ]]; then
+    as_user git -C "$dir" fetch -q origin || die "cannot download $name's build files (no internet?)."
+  else
+    as_user mkdir -p "$AUR_DIR"
+    as_user git clone -q "$AUR_URL/$base.git" "$dir" || die "cannot download $name's build files (no internet?)."
+  fi
+  last=$(cat "$dir/.git/kriss-built" 2>/dev/null || true)
+  printf '\n=== %s: the build script, from the AUR ===\n' "$name"
+  if [[ -n $last ]]; then
+    if [[ -z $(as_user git -C "$dir" diff "$last" origin/HEAD) ]]; then
+      echo "No changes since you last built it."
+      AUR_REVIEWED[$base]=1
+      as_user git -C "$dir" reset -q --hard origin/HEAD
+      return 0
+    fi
+    echo "What changed since you last built it:"
+    as_user git -C "$dir" --no-pager diff "$last" origin/HEAD
+  else
+    # PKGBUILD runs as you to build; .install scripts run as root when pacman installs it.
+    for f in $(as_user git -C "$dir" ls-tree --name-only origin/HEAD); do
+      case $f in
+        PKGBUILD | *.install) printf -- '--- %s\n' "$f"; as_user git -C "$dir" --no-pager show "origin/HEAD:$f" ;;
+        .SRCINFO | .gitignore | .nvchecker.toml) ;;
+        *) printf -- '--- %s (also in the package)\n' "$f" ;;
+      esac
+    done
+  fi
+  printf '\nThis script is written by the AUR community, not checked by Arch or KrissOS.\n'
+  ask "Build $name with it? [y/N]" n || return 1
+  as_user git -C "$dir" reset -q --hard origin/HEAD
+  AUR_REVIEWED[$base]=1
+}
+
+# aur_build NAME AS_DEP: build NAME as the builder and install it. The commit it was built
+# from is kept, so the next update shows only what changed.
+aur_build() {
+  local name=$1 dir key pkgs
+  dir=$AUR_DIR/$(aur_base "$name")
+  # makepkg checks signed sources against these keys; it cannot fetch them itself.
+  for key in $(sed -n 's/^\s*validpgpkeys = //p' "$dir/.SRCINFO" 2>/dev/null); do
+    as_user gpg --list-keys "$key" >/dev/null 2>&1 && continue
+    ask "$name's sources are signed by key $key. Get that key from keyserver.ubuntu.com? [Y/n]" y ||
+      die "stopped: makepkg cannot check $name's sources without the key."
+    as_user gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys "$key"
+  done
+  printf '\nkriss: building %s as %s...\n' "$name" "$BUILDER"
+  as_user env -C "$dir" makepkg -cf --noconfirm || die "building $name failed (see above). Nothing after it was installed."
+  mapfile -t pkgs < <(as_user env -C "$dir" makepkg --packagelist | grep -E "/$name-[^-/]+-[^-/]+-[^-/]+\.pkg\.tar")
+  ((${#pkgs[@]})) || die "makepkg built no package called $name."
+  # --asdeps only for a dependency that is new: pacman keeps the reason of one it upgrades.
+  if [[ $2 == 1 ]] && ! pacman -Q -- "$name" >/dev/null 2>&1; then
+    pacman -U --noconfirm --asdeps -- "${pkgs[@]}"
+  else
+    pacman -U --noconfirm -- "${pkgs[@]}"
+  fi
+  as_user git -C "$dir" rev-parse HEAD | as_user tee "$dir/.git/kriss-built" >/dev/null
+}
+
+# aur_run NAME...: review then build and install NAME... and the AUR packages they need,
+# after AUR_REPO_DEPS. Every review comes before the first change, so a no changes nothing.
+aur_run() {
+  local n orphans
+  for n in "${AUR_ORDER[@]}"; do
+    aur_review "$n" || { echo "kriss: stopped before building $n. Nothing was changed."; exit 1; }
+  done
+  ((${#AUR_REPO_DEPS[@]} == 0)) || pacman -S --needed --noconfirm --asdeps -- "${AUR_REPO_DEPS[@]}"
+  for n in "${AUR_ORDER[@]}"; do
+    if [[ " $* " == *" $n "* ]]; then aur_build "$n" 0; else aur_build "$n" 1; fi
+  done
+  # Build-only tools go again, unless something else now needs them.
+  if ((${#AUR_MAKE_ONLY[@]})); then
+    mapfile -t orphans < <(pacman -Qdtq | grep -xF -f <(printf '%s\n' "${AUR_MAKE_ONLY[@]}") || true)
+    ((${#orphans[@]} == 0)) || pacman -Rns --noconfirm -- "${orphans[@]}"
+  fi
+}
+
+human() { numfmt --to=iec-i --suffix=B "$1"; }
+
+cmd_install() {
+  local only="" n id rc
+  while [[ ${1:-} == --* ]]; do
+    case $1 in
+      --repo | --flatpak | --aur) only=$1 ;;
+      *) die "unknown option '$1'. Use --repo, --flatpak or --aur." ;;
+    esac
+    shift
+  done
+  (($#)) || die "install what? Example: kriss install spotify. Find names with: kriss search WORDS"
+  ((EUID == 0)) || exec sudo "$0" install ${only:+"$only"} "$@"
+  local repo=() flat=() aur=()
+  for n; do
+    if [[ $only != --flatpak && $only != --aur ]] && pacman -Si -- "$n" >/dev/null 2>&1; then repo+=("$n")
+    elif [[ $only != --repo && $only != --aur ]] && id=$(flatpak_find "$n"); then flat+=("$id")
+    elif [[ $only != --repo && $only != --flatpak ]] && { aur_lookup "$n"; rc=$?; ((rc == 0)); }; then aur+=("$n")
+    elif [[ ${rc:-} == 2 ]]; then
+      die "'$n' is not in the KrissOS or Arch repos or on Flathub, and the AUR cannot be reached (no internet?)."
+    else
+      die "'$n' was not found. Look for its name with: kriss search $n"
+    fi
+    rc=""
+  done
+
+  if ((${#aur[@]})); then
+    find_builder || die "AUR packages are built as you, never as root. Run 'kriss install' from your own account, not a root login."
+    pacman -T base-devel >/dev/null || AUR_REPO_DEPS+=(base-devel)
+    for n in "${aur[@]}"; do aur_resolve "$n"; done
+  fi
+
+  # The plan: what, from where, how big, and how to undo it.
+  local rows="" f r s l total=0 extra=0 missing=() want=()
+  want=("${repo[@]}" "${AUR_REPO_DEPS[@]}")
+  if ((${#want[@]})); then
+    rows=$(pacman -Sp --needed --print-format $'%n\t%r\t%s\t%l\t%f' -- "${want[@]}") ||
+      die "pacman cannot work out what ${want[*]} needs (see above)."
+  fi
+  echo "kriss will install:"
+  for n in "${repo[@]}"; do
+    r=$(awk -F'\t' -v n="$n" '$1 == n { print $2 }' <<<"$rows")
+    case $r in
+      "") printf '  %-28s already installed\n' "$n" ;;
+      kriss) printf '  %-28s from KrissOS\n' "$n" ;;
+      *) printf '  %-28s from Arch (official)\n' "$n" ;;
+    esac
+  done
+  for n in "${flat[@]}"; do
+    s=$(flatpak remote-info flathub "$n" 2>/dev/null | sed -n 's/^ *Installed: *//p' || true)
+    printf '  %-28s from Flathub (sandboxed app)%s\n' "$n" "${s:+, $s}"
+  done
+  for n in "${AUR_ORDER[@]}"; do
+    if [[ " ${aur[*]} " == *" $n "* ]]; then
+      printf '  %-28s from the AUR (community script, built on this PC)\n' "$n"
+    else
+      printf '  %-28s from the AUR, needed by the above\n' "$n"
+    fi
+    aur_warn "$n" | sed 's/^/      ! /'
+  done
+  while IFS=$'\t' read -r n r s l f; do
+    [[ -n $n ]] || continue
+    total=$((total + s))
+    [[ " ${repo[*]} " == *" $n "* ]] || extra=$((extra + 1))
+    [[ -e $PKG_CACHE/$f ]] || missing+=("$l")
+  done <<<"$rows"
+  ((extra == 0)) || printf '  plus %d packages they need from the repos\n' "$extra"
+  ((total == 0)) || printf 'Download: %s\n' "$(human "$total")"
+  if ((${#missing[@]})) && ! curl -fsIo /dev/null --max-time 5 "${missing[0]}"; then
+    die "this PC is offline, and ${#missing[@]} of these packages are not downloaded yet. Connect to the internet and try again. Nothing was changed."
+  fi
+  ! has_snapper || echo "A snapshot is taken first."
+  echo "To undo: kriss remove $*, or kriss rollback from the boot menu's KrissOS > Snapshots."
+  ask "Go ahead? [Y/n]" y || return 1
+
+  if ((${#repo[@]})); then
+    pacman -S --needed --noconfirm -- "${repo[@]}" || die "installing ${repo[*]} failed (see above)."
+  fi
+  if ((${#flat[@]})); then
+    flatpak install --noninteractive flathub "${flat[@]}" || die "installing ${flat[*]} from Flathub failed (see above)."
+  fi
+  ((${#aur[@]} == 0)) || aur_run "${aur[@]}"
+  echo "kriss: done. Installed: $*"
+}
+
+cmd_remove() {
+  (($#)) || die "remove what? Example: kriss remove spotify"
+  ((EUID == 0)) || exec sudo "$0" remove "$@"
+  local n id pac=() flat=() also
+  for n; do
+    if pacman -Q -- "$n" >/dev/null 2>&1; then pac+=("$n")
+    elif id=$(flatpak_installed "$n"); then flat+=("$id")
+    else die "'$n' is not installed. List what is with: pacman -Qe, and flatpak list --app"; fi
+  done
+  echo "kriss will remove: ${pac[*]} ${flat[*]}"
+  if ((${#pac[@]})); then
+    also=$(pacman -Rnsp --print-format %n -- "${pac[@]}" | grep -vxF -f <(printf '%s\n' "${pac[@]}") | paste -sd' ' || true)
+    [[ -z $also ]] || echo "  and what only they needed: $also"
+  fi
+  ! has_snapper || echo "A snapshot is taken first."
+  echo "To undo: kriss install $*, or kriss rollback from the boot menu's KrissOS > Snapshots."
+  ask "Go ahead? [Y/n]" y || return 1
+  ((${#pac[@]} == 0)) || pacman -Rns --noconfirm -- "${pac[@]}"
+  ((${#flat[@]} == 0)) || flatpak uninstall --noninteractive -- "${flat[@]}"
+  echo "kriss: done. Removed: $*"
+}
+
+# kriss update's AUR part: packages pacman has from no repo (pacman -Qm) that the AUR has a
+# newer version of. Needs someone to read the changes, so the update notice skips it.
+aur_update() {
+  local name ver new j info up=() gone=()
+  declare -A have=()
+  while read -r name ver; do have[$name]=$ver; done < <(pacman -Qm)
+  ((${#have[@]})) || return 0
+  info=$(aur_info "${!have[@]}") || { echo "kriss: the AUR cannot be reached, so AUR packages were not checked."; return 0; }
+  while read -r j; do
+    [[ -n $j ]] || continue
+    AUR_JSON[$(jq -r .Name <<<"$j")]=$j
+  done <<<"$info"
+  for name in "${!have[@]}"; do
+    if [[ -z ${AUR_JSON[$name]:-} ]]; then gone+=("$name"); continue; fi
+    new=$(jq -r .Version <<<"${AUR_JSON[$name]}")
+    (($(vercmp "$new" "${have[$name]}") > 0)) || continue
+    up+=("$name")
+    printf '  %-28s %s -> %s\n' "$name" "${have[$name]}" "$new"
+    aur_warn "$name" | sed 's/^/      ! /'
+  done
+  ((${#gone[@]} == 0)) || echo "kriss: not in the AUR any more, so kept as they are: ${gone[*]}"
+  ((${#up[@]})) || { echo "kriss: AUR packages are up to date."; return 0; }
+  if [[ ! -t 0 ]]; then
+    echo "kriss: ${#up[@]} AUR packages have updates. Read their changes first: run 'kriss update' in a terminal."
+    return 0
+  fi
+  find_builder || { echo "kriss: AUR packages are built as you, never as root. Run 'kriss update' from your own account."; return 0; }
+  for name in "${up[@]}"; do aur_resolve "$name"; done
+  aur_run "${up[@]}"
+}
+
 cmd_version() {
   printf 'kriss %s\n%s\n' "$KRISS_VERSION" "$(os_field PRETTY_NAME 'not running on KrissOS')"
 }
@@ -443,6 +776,10 @@ Usage: kriss [command]
 
 Commands:
   info       Show a summary of this system (default)
+  search WORDS    Find apps in KrissOS, Arch, Flathub and the AUR, safest first
+  install NAME    Install from the safest place that has it (--repo, --flatpak, --aur to pick)
+  remove NAME     Remove a package or Flatpak app, and what only it needed
+  update     Update everything, AUR packages included, after a snapshot
   version    Show the kriss and KrissOS versions
   hwcheck    Print hardware facts (RAM, CPU, GPU, VM support) as JSON
   rollback   Keep the snapshot booted from the boot menu as your system
@@ -459,6 +796,9 @@ main() {
   case "${1:-info}" in
     info) cmd_info ;;
     update) cmd_update ;;
+    search) cmd_search "${@:2}" ;;
+    install) cmd_install "${@:2}" ;;
+    remove) cmd_remove "${@:2}" ;;
     version | --version | -V) cmd_version ;;
     hwcheck) cmd_hwcheck ;;
     tune) cmd_tune "${@:2}" ;;

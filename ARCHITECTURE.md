@@ -62,7 +62,7 @@ distro team's workload, and it is out of scope.
 | `linux-kriss` | Kernel for x86-64-v3, built with CachyOS patches (EEVDF/BORE, sched_ext) and LTO |
 | `linux-kriss-generic` | The same kernel for baseline x86-64: the live ISO's kernel, kept on CPUs without v3 |
 | `linux-kriss-asahi` | The Asahi kernel for Apple Silicon Macs (aarch64 only, §13) |
-| `kriss-tools` | `kriss` (with `kriss tune`), `kriss-ctl`, `kriss-vm` |
+| `kriss-tools` | `kriss` (with `kriss tune` and `kriss install`), `kriss-ctl`, `kriss-vm` |
 | `kriss-shell` | The KrissOS Shell (panel, dock, launcher, notifications, lock screen) |
 | `kriss-theme` | Wallpapers, icons, cursors, GTK/Qt/terminal colors, Plymouth, Limine, SDDM/greeter |
 | `kriss-settings` | Default configs in `/etc/skel` and `/usr/share/kriss`, plus pacman/snapper/sbctl hooks |
@@ -361,11 +361,40 @@ office users, and creators and AI tinkerers. Every default is checked against on
 | Desktop | The KrissOS Shell (§5) with Windows habits in the KrissOS look: bottom taskbar, Start-style launcher, close button top-right, the Win key opens the menu. Not a Windows 11 clone. KDE Plasma is the installer's alternative |
 | Install | Dual-boot alongside Windows by default. The installer resizes Windows safely, detects BitLocker and stops with clear steps if it's on, and keeps Windows in the boot menu |
 | NVIDIA | The installer detects the GPU and installs the right driver (open modules on Turing and newer), so games work on first boot |
-| Apps | Discover with Flathub on by default, pacman underneath |
+| Apps | Discover with Flathub on by default, pacman underneath. In a terminal, `kriss install` reaches the repos, Flathub and the AUR in one command (below) |
 | Updates | A desktop notification with an Update button (`kriss-update-notify.timer`). One click runs `kriss update`, which takes a btrfs snapshot through snapper first, so a bad update rolls back from the boot menu |
 | Windows apps | WinBoat up front, adapted to the hardware (see `kriss-welcome`). The Windows licence follows WinBoat's own approach; KrissOS adds no licence step |
 | Anti-cheat | Said upfront: gamers check their games before switching, on the website and in `kriss-welcome` |
 | Language | English and Bahasa Melayu from day one: installer, `kriss-welcome`, website |
+
+### `kriss search`, `kriss install`, `kriss remove`: every source, safest first
+
+One command for what people otherwise reach for yay for, with KrissOS's promises kept.
+
+- **Order:** the repos (`[kriss]`, then Arch), then Flathub, then the AUR. `kriss install NAME`
+  takes the first that has NAME (Flathub by exact id, last id part or app name); `--repo`,
+  `--flatpak` or `--aur` picks one. `kriss search` lists all four under plain labels.
+- **Plan first:** what will be installed, from where, the download size, AUR warnings (out of
+  date, orphaned, fewer than 10 votes), and how to undo it (`kriss remove`, or `kriss rollback`
+  from the snapshot snap-pac takes before every pacman run). Nothing changes until "y".
+- **AUR builds never run as root.** `kriss` re-runs itself under sudo and runs git and makepkg
+  as the user who called it (`runuser`); with no such user it refuses. Build files are git
+  clones in `~/.cache/kriss/aur/`. The first install shows the PKGBUILD and `.install` scripts;
+  later ones show the diff from the commit last built. Every AUR package is read and agreed to
+  before the first change, so a "no" leaves the system as it was.
+- **Engine:** pacman and makepkg with a small AUR RPC v5 client (curl and jq), not paru or yay.
+  Both are AUR-only, so shipping one would add a package to `[kriss]` (§2), and their prompts
+  are what this replaces. pacman answers "installed?" and "in a repo?" (`-T`, `-Sp`, versions and
+  provides included); AUR dependencies on AUR packages are resolved by name and built in order;
+  make-only dependencies are removed after, unless something else needs them.
+- **`kriss update`** also updates AUR packages (`pacman -Qm`) that have a newer AUR version,
+  showing what changed. From the update notice there is no terminal to read it in, so it says
+  so and leaves them; packages the AUR no longer has (CachyOS leftovers, say) are named and kept.
+- **Offline:** repo packages already in pacman's cache install without internet (no `-Sy`).
+  Otherwise kriss says the PC is offline before changing anything; search skips the AUR and
+  says so.
+- Tested by `tools/ci/install-test.sh` with stub pacman, flatpak, git, makepkg and a mocked
+  AUR RPC; no network.
 
 ### `kriss-welcome`: the first-boot app
 
