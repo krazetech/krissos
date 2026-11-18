@@ -14,7 +14,7 @@ ShellRoot {
     // Open one panel on the focused window's screen, closing the others.
     function toggle(panel) {
         const open = !Desktop[panel];
-        Desktop.launcherOpen = Desktop.notificationsOpen = Desktop.quickOpen = Desktop.calendarOpen = false;
+        Desktop.launcherOpen = Desktop.notificationsOpen = Desktop.quickOpen = Desktop.calendarOpen = Desktop.taskViewOpen = false;
         if (open) Desktop.screen = Desktop.focusedScreen();
         Desktop.launcherSearch = false;
         Desktop[panel] = open;
@@ -91,6 +91,7 @@ ShellRoot {
     Calendar {}
     Lock {}
     Switcher { id: switcher }
+    TaskView {}
     Osd {}
 
     // KRISS_SHELL_FPS=1: for a second after a panel opens or closes, counts the frames and
@@ -121,6 +122,7 @@ ShellRoot {
         function onLauncherOpenChanged() { fps.measure("launcher " + (Desktop.launcherOpen ? "open" : "close")); }
         function onQuickOpenChanged() { fps.measure("quick " + (Desktop.quickOpen ? "open" : "close")); }
         function onNotificationsOpenChanged() { fps.measure("notifications " + (Desktop.notificationsOpen ? "open" : "close")); }
+        function onTaskViewOpenChanged() { fps.measure("taskview " + (Desktop.taskViewOpen ? "open" : "close")); }
     }
 
     // cosmic-comp runs `kriss-shell COMMAND` for the Windows-key shortcuts, which calls these.
@@ -148,6 +150,22 @@ ShellRoot {
     IpcHandler {
         target: "desktop"
         function toggle(): void { Windows.showDesktop(); }
+    }
+
+    // `kriss-shell taskview`: Windows+Tab. `kriss-shell desktops new|close`: Windows+Ctrl+D and
+    // Windows+Ctrl+F4, on the focused window's screen.
+    IpcHandler {
+        target: "taskview"
+        function toggle(): void { root.toggle("taskViewOpen"); }
+    }
+
+    IpcHandler {
+        target: "desktops"
+        function add(): void { Windows.newDesktop(Desktop.focusedScreen().name); }
+        function close(): void {
+            const d = Windows.desktopsOn(Desktop.focusedScreen().name).find(d => d.active);
+            if (d) Windows.closeDesktop(d.id);
+        }
     }
 
     // `kriss-shell taskbar ACTION [N]`: Windows+T steps through the app buttons, Windows+1…9

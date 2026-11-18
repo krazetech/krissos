@@ -13,6 +13,7 @@ Singleton {
     property bool notificationsOpen: false
     property bool quickOpen: false
     property bool calendarOpen: false
+    property bool taskViewOpen: false
     property bool locked: false
     // Start opened from the bar's search box: the search field and Recommended, no Pinned.
     property bool launcherSearch: false
@@ -41,6 +42,8 @@ Singleton {
     // which reserves no room of its own.
     readonly property int barRoom: taskbarAutoHide ? Theme.barHeight : 0
     property alias trayHidden: config.trayHidden
+    property alias taskbarTaskView: config.taskbarTaskView
+    property alias desktopNames: config.desktopNames
 
     readonly property string configFile: (Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config") + "/kriss/shell.json"
     FileView {
@@ -71,6 +74,10 @@ Singleton {
             property bool taskbarAllScreens: true
             // Tray icons kept in the overflow flyout (^), by the id the app gives its icon.
             property list<string> trayHidden: []
+            // The Task View button on the taskbar, after Start.
+            property bool taskbarTaskView: true
+            // Desktop names given in Task View, by position ("" keeps "Desktop N").
+            property list<string> desktopNames: []
         }
     }
 

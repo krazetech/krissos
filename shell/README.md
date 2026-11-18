@@ -11,7 +11,7 @@ SDDM lists it as **KrissOS Shell**.
 | `qml/i18n/` | Translations, one `<lang>.json` per language (`ms` is Bahasa Melayu). See below |
 | `fuzzy-check` | Tests the launcher's fuzzy ranking and the menus' type-ahead: `node shell/fuzzy-check` |
 | `i18n-check` | Checks every shell string has a translation; `--list` prints them all |
-| `kriss-shell-toplevels` | Python helper that lists open windows (the screen each is on, and whether it is fullscreen), focuses, minimizes or closes them, and captures the taskbar's window previews while they are shown. Quickshell can't read or capture windows from cosmic-comp directly |
+| `kriss-shell-toplevels` | Python helper that lists open windows (the screen and desktop each is on, and whether it is fullscreen) and the desktops, focuses, minimizes, closes or moves windows, switches desktops, and captures window pictures while the taskbar previews or Task View show them. Quickshell can't read or capture windows from cosmic-comp directly |
 | `toplevels-check` | Run inside a cosmic-comp session: checks `kriss-shell-toplevels` still sees a new window after Python's garbage collector runs (`shell/toplevels-check alacritty`; cosmic-term by default) |
 | `protocols/` | COSMIC protocol files the helper's bindings are generated from |
 | `session/kriss-shell` | Starts the session and the login screen, and handles the commands the shortcuts below run |
@@ -120,8 +120,8 @@ takes focus.
 
 ## Settings
 
-Pinned apps (in taskbar order), the tray icons hidden in the overflow (`trayHidden`) and Do not
-disturb are kept in `~/.config/kriss/shell.json`.
+Pinned apps (in taskbar order), the tray icons hidden in the overflow (`trayHidden`), Do not
+disturb, the Task View button and desktop names are kept in `~/.config/kriss/shell.json`.
 Right-click an app on the bar or in the launcher to pin or unpin it; drag a pinned app along the
 bar to move it. Without the file, the defaults in `qml/Desktop.qml` apply. **Taskbar settings**
 (right-click an empty part of the bar) opens this file until a Personalise page exists.
@@ -167,6 +167,35 @@ badge count, a progress bar and a red flash when they want attention. Menus work
 keyboard the way Radix menus do (arrows, Home, End, Enter, Esc, Right and Left for submenus,
 type a letter to jump). `Bar.previewFor` is the app button under the pointer, for hover previews.
 
+## Task View and desktops
+
+Windows+Tab or the button after Start opens Task View on every screen: that screen's windows as
+live pictures over the blurred desktop, and its desktops along the bottom, as on Windows 11.
+
+| Do | Does |
+|---|---|
+| Click a window, or arrows then Enter | Switch to it; Esc or a click on the background leaves |
+| × on a window, middle click, Delete | Close it |
+| Point at a desktop | Show its windows |
+| Click a desktop | Switch to it |
+| Drag a window onto a desktop | Move it there |
+| New desktop | Add one (Windows+Ctrl+D adds one and switches to it) |
+| Right-click a desktop | Rename or close it; closing moves its windows to the desktop before it |
+
+Desktops are cosmic-comp's workspaces, which it creates and removes by itself: there is always
+one empty desktop at the end, and an empty desktop goes away once you leave it. "New desktop"
+shows that spare one, so a new desktop you leave empty disappears. cosmic-comp ignores requests to
+create, remove or rename a workspace, so desktop names live in `desktopNames` in `shell.json`,
+by position. A three- or four-finger swipe left or right switches desktops, and three fingers up
+opens Task View (cosmic-comp-kriss's `0002-three-finger-swipe.patch`; upstream cosmic-comp keeps
+three-finger swipes and does nothing with them). The `cosmic/` defaults lay workspaces out side
+by side for the sideways swipe.
+`taskbarTaskView: false` in `shell.json` hides the button.
+
+```bash
+qs -p "$dev/qml" ipc call taskview toggle
+```
+
 ## Windows shortcuts
 
 | Keys | Does |
@@ -186,7 +215,10 @@ type a letter to jump). `Bar.previewFor` is the app button under the pointer, fo
 | Windows+1…9 | Open the app on that taskbar button, or switch to it; again to step through its windows |
 | Windows+Shift+1…9 | A new window of the app on that taskbar button |
 | Windows+Alt+1…9 | That taskbar button's jump list |
-| Windows+Ctrl+Left / Right | Previous / next workspace (Windows+Ctrl+Shift+Left / Right takes the window along) |
+| Windows+Tab | Task View |
+| Windows+Ctrl+Left / Right | Previous / next desktop (Windows+Ctrl+Shift+Left / Right takes the window along) |
+| Windows+Ctrl+D | A new desktop |
+| Windows+Ctrl+F4 | Close the current desktop; its windows move to the one before it |
 | Print Screen | Screenshot of everything, to `~/Pictures/Screenshots` and the clipboard |
 | Windows+Shift+S | Screenshot of a dragged region |
 | Alt+Tab, Alt+Shift+Tab | Switch windows, most recent first; let go of Alt to switch, Esc to cancel |
