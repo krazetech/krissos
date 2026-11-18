@@ -15,6 +15,7 @@
 #   kriss-shell taskview   open or close Task View (Windows+Tab)
 #   kriss-shell desktops add|close
 #                          a new desktop, or close the current one (Windows+Ctrl+D, Windows+Ctrl+F4)
+#   kriss-shell snap       the snap layouts for the window in front (Windows+Z)
 #   kriss-shell switcher next|previous
 #                          the Alt+Tab window switcher (Alt+Tab and Alt+Shift+Tab)
 #   kriss-shell media playPause|next|previous
@@ -48,6 +49,9 @@ taskview)
     ;;
 desktops)
     qs -p "$qml" ipc call desktops "${2:?usage: kriss-shell desktops add|close}"
+    ;;
+snap)
+    qs -p "$qml" ipc call snap layouts
     ;;
 switcher | media)
     qs -p "$qml" ipc call "$1" "${2:?usage: kriss-shell $1 ACTION}"
@@ -178,7 +182,7 @@ greeter)
     wait "$comp"
     ;;
 *)
-    echo "usage: kriss-shell [launcher|quick|notifications|calendar|lock|desktop|taskview|desktops add|taskbar ACTION|switcher next|media playPause|brightness STEP|screenshot [region]|greeter]" >&2
+    echo "usage: kriss-shell [launcher|quick|notifications|calendar|lock|desktop|taskview|desktops add|snap|taskbar ACTION|switcher next|media playPause|brightness STEP|screenshot [region]|greeter]" >&2
     exit 2
     ;;
 esac

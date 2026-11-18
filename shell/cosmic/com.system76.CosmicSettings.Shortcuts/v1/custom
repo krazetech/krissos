@@ -19,6 +19,8 @@
     (modifiers: [Super], key: "Up"): Maximize,
     (modifiers: [Super], key: "Down"): Minimize,
     (modifiers: [Super, Shift], key: "s"): Spawn("kriss-shell screenshot region"),
+    // Snap layouts for the window in front, as on Windows.
+    (modifiers: [Super], key: "z"): Spawn("kriss-shell snap"),
     // The taskbar, as on Windows: Windows+T steps through the app buttons, Windows+X opens
     // the Start button's menu, Windows+1…9 opens or switches to that app (COSMIC puts
     // workspaces there; they stay on Windows+Ctrl+Left / Right), Windows+Shift+1…9 opens a

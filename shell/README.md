@@ -212,6 +212,7 @@ qs -p "$dev/qml" ipc call taskview toggle
 | Windows+X | The Start button's menu |
 | Windows+Left / Right | Snap the window to that half (Windows+Shift+Up / Down then makes it a quarter) |
 | Windows+Up / Down | Maximize / minimize |
+| Windows+Z | Snap layouts for the window in front: arrows pick a zone, Enter snaps it there, Esc leaves |
 | Windows+1…9 | Open the app on that taskbar button, or switch to it; again to step through its windows |
 | Windows+Shift+1…9 | A new window of the app on that taskbar button |
 | Windows+Alt+1…9 | That taskbar button's jump list |
@@ -225,6 +226,19 @@ qs -p "$dev/qml" ipc call taskview toggle
 | Play/Pause, Next, Previous | The media player that is playing; quick settings shows it too |
 | Power button | Sleep (hold it to shut down), from `/usr/lib/systemd/logind.conf.d/50-kriss-shell.conf` |
 | Alt+F4 | cosmic-comp's own |
+
+## Snap layouts
+
+Drag a window to a side for a half, a corner for a quarter, or the top to maximize: cosmic-comp
+shows where it will go and puts it there. Windows+Z, or resting the pointer on a window's
+maximize button, offers layouts by the window (halves, thirds, quarters); pick a zone and the
+window snaps there. Snap Assist then shows the screen's other windows as live pictures in each
+empty zone of the layout, and after a drag or Windows+Left / Right in the rest of the screen;
+click one, or use the arrows and Enter, to fill the zone, or Esc to leave.
+
+The zones and the maximize button need `cosmic-comp-kriss` (its `kriss_snap_v1`); without it
+Windows+Z does nothing. The maximize button works only on title bars cosmic-comp draws
+(server-side); apps that draw their own (GTK, Firefox, COSMIC apps) have Windows+Z.
 
 ## Translations
 

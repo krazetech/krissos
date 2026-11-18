@@ -34,6 +34,7 @@
  "Do not disturb": "Jangan ganggu",
  "Files": "Fail",
  "Files you open will show up here.": "Fail yang anda buka akan dipaparkan di sini.",
+ "Halves": "Separuh",
  "Installed apps": "Aplikasi yang dipasang",
  "Just now": "Sebentar tadi",
  "Light mode": "Mod cerah",
@@ -64,6 +65,7 @@
  "Power saver": "Penjimat kuasa",
  "Press Enter to sign in": "Tekan Enter untuk log masuk",
  "Press Enter to unlock": "Tekan Enter untuk membuka kunci",
+ "Quarters": "Suku",
  "Quick settings": "Tetapan pantas",
  "Recent": "Terkini",
  "Recommended": "Disyorkan",
@@ -86,6 +88,7 @@
  "Tasks": "Tugas",
  "Terminal": "Terminal",
  "That password didn't work. Try again.": "Kata laluan itu tidak berjaya. Cuba lagi.",
+ "Thirds": "Pertiga",
  "Today at %1": "Hari ini pada %1",
  "Trash": "Tong sampah",
  "Unpin from taskbar": "Nyahsemat daripada bar tugas",
@@ -93,5 +96,6 @@
  "Wi-Fi is off.": "Wi-Fi dimatikan.",
  "Wi-Fi networks": "Rangkaian Wi-Fi",
  "Wrong password. Try again, then Enter": "Kata laluan salah. Cuba lagi, kemudian Enter",
- "Yesterday at %1": "Semalam pada %1"
+ "Yesterday at %1": "Semalam pada %1",
+ "zone %1": "zon %1"
 }

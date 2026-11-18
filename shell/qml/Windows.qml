@@ -9,7 +9,8 @@ import Quickshell.Io
 Singleton {
     id: root
 
-    // [{id, appId, title, active, minimized, fullscreen, output}], as the helper reports them.
+    // [{id, appId, title, active, minimized, fullscreen, output, workspace, geo}], as the helper
+    // reports them; geo[output] is [x, y, width, height] on that screen.
     property var raw: []
     // The same, with each appId swapped for the pinned app it belongs to. A window's id
     // can name another desktop file for the same program (KDE System Settings runs as
@@ -140,6 +141,15 @@ Singleton {
         }
     }
 
+    // Snap layouts, with cosmic-comp-kriss: tile a window into zone [x, y, width, height],
+    // in twelfths of its screen's work area. The pointer resting on a window's maximize
+    // button (or leaving it) comes as maximizeHovered.
+    property bool snapReady: false
+    signal maximizeHovered(int id, bool on)
+    function snap(id, zone) {
+        helper.write("snap " + id + " " + zone.join(" ") + "\n");
+    }
+
     // Progress, badge counts and "needs attention" that apps send the way Ubuntu's dock reads
     // them (com.canonical.Unity.LauncherEntry, on the session bus), by lower-case desktop file
     // id: {"firefox": {"progress": 0.4, "progress-visible": true, "count": 3, "urgent": false}}.
@@ -182,6 +192,8 @@ Singleton {
                     const msg = JSON.parse(line);
                     if (Array.isArray(msg)) root.raw = msg;
                     else if (msg.workspaces) root.workspaces = msg.workspaces;
+                    else if (msg.snap) root.snapReady = true;
+                    else if (msg.hover !== undefined) root.maximizeHovered(msg.hover, msg.on);
                     else if (msg.thumb !== undefined) root.thumbs = Object.assign({}, root.thumbs, { [msg.thumb]: msg.url });
                 } catch (e) {
                     console.warn("kriss-shell-toplevels:", line);
@@ -192,7 +204,7 @@ Singleton {
         // shell log (`qs log`), one log line per line.
         stderr: SplitParser { onRead: line => console.warn("kriss-shell-toplevels:", line) }
         // ponytail: restart forever with a fixed delay; a crash loop only costs a log line every 2 s.
-        onExited: (code, status) => { root.thumbs = {}; root.workspaces = []; restart.start(); }
+        onExited: (code, status) => { root.thumbs = {}; root.workspaces = []; root.snapReady = false; restart.start(); }
     }
 
     Timer {
