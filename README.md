@@ -11,6 +11,8 @@ you start an earlier snapshot from the boot menu.
 Under the hood it is a thin, signed overlay on Arch Linux by Kraze Tech. See
 [ARCHITECTURE.md](ARCHITECTURE.md) for the design, starting with §0, and
 [krazetech.github.io/krissos](https://krazetech.github.io/krissos/) for the site.
+What changed in each release is in [CHANGELOG.md](CHANGELOG.md), and how releases are
+cut is in [docs/releasing.md](docs/releasing.md).
 
 ## Layout
 

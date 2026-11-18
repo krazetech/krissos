@@ -335,7 +335,7 @@ kriss-vm revert         # restore every file `kriss-vm` changed from its backups
 3. Calamares installer with the desktop picker (KrissOS Shell or Plasma), btrfs + snapper and
    sbctl.
 4. `kriss tune` and the gaming metapackage.
-5. `kriss-vm` (desktop first), then the laptop paths for systems with no MUX switch.
+5. `kriss-vm` (desktop first). The laptop paths for systems with no MUX switch come in `115`.
 6. WinBoat tier and the AI setup.
 7. `110`: the first tagged release.
 
