@@ -126,3 +126,5 @@ parallel sessions when they touch different files.
 2. **Snap previews:** can a layer-shell overlay draw the snap preview with cosmic-comp's
    existing tiling hooks, or must it go in the compositor patch?
 3. **Gestures:** does cosmic-comp let us bind three-finger swipes, or do they need the patch too?
+   Answered: they need the patch. cosmic-comp 1.11 takes three-finger swipes and drops them;
+   `0002-three-finger-swipe.patch` gives them the desktop switch and Task View.

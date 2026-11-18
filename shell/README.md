@@ -186,9 +186,10 @@ Desktops are cosmic-comp's workspaces, which it creates and removes by itself: t
 one empty desktop at the end, and an empty desktop goes away once you leave it. "New desktop"
 shows that spare one, so a new desktop you leave empty disappears. cosmic-comp ignores requests to
 create, remove or rename a workspace, so desktop names live in `desktopNames` in `shell.json`,
-by position. A four-finger swipe left or right switches desktops (cosmic-comp's own gesture;
-the `cosmic/` defaults lay workspaces out side by side for it). cosmic-comp keeps three-finger
-swipes to itself and does nothing with them, so the shell can't open Task View on a swipe up.
+by position. A three- or four-finger swipe left or right switches desktops, and three fingers up
+opens Task View (cosmic-comp-kriss's `0002-three-finger-swipe.patch`; upstream cosmic-comp keeps
+three-finger swipes and does nothing with them). The `cosmic/` defaults lay workspaces out side
+by side for the sideways swipe.
 `taskbarTaskView: false` in `shell.json` hides the button.
 
 ```bash
