@@ -1,17 +1,18 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-tools
-pkgver=0.6.3
+pkgver=0.7.0
 pkgrel=1
 pkgdesc='KrissOS system tools'
 arch=('any')
 url='https://github.com/krazetech/krissos'
 license=('GPL-3.0-or-later')
-depends=('bash' 'coreutils' 'glibc' 'grep' 'libnotify' 'pacman-contrib' 'polkit' 'polkit-kde-agent' 'sed')
+depends=('bash' 'coreutils' 'curl' 'gawk' 'git' 'glibc' 'grep' 'jq' 'libnotify' 'pacman' 'pacman-contrib' 'polkit' 'polkit-kde-agent' 'sed' 'sudo' 'util-linux')
 optdepends=('power-profiles-daemon: show and set the power profile (kriss tune)'
             'scx-tools: sched_ext scheduler per profile (kriss tune)'
             'snapper: snapshot before kriss update'
             'btrfs-progs: kriss rollback'
-            'flatpak: update Flatpak apps with kriss update'
+            'flatpak: Flathub apps in kriss search, install, remove and update'
+            'base-devel: build AUR packages (kriss install adds it on the first AUR build)'
             'qemu-desktop: run the GPU passthrough VM (kriss-vm)'
             'libvirt: manage the passthrough VM (kriss-vm)'
             'edk2-ovmf: UEFI firmware for the passthrough VM (kriss-vm)'
