@@ -11,9 +11,12 @@ SDDM lists it as **KrissOS Shell**.
 | `qml/i18n/` | Translations, one `<lang>.json` per language (`ms` is Bahasa Melayu). See below |
 | `fuzzy-check` | Tests the launcher's fuzzy ranking and the menus' type-ahead: `node shell/fuzzy-check` |
 | `i18n-check` | Checks every shell string has a translation; `--list` prints them all |
+| `clipboard-check` | Tests the clipboard history with a fake `wl-paste`: sensitive items are never stored, pinned ones survive `clear` (runs in the package build) |
 | `kriss-shell-toplevels` | Python helper that lists open windows (the screen and desktop each is on, and whether it is fullscreen) and the desktops, focuses, minimizes, closes or moves windows, switches desktops, and captures window pictures while the taskbar previews or Task View show them. Quickshell can't read or capture windows from cosmic-comp directly |
 | `toplevels-check` | Run inside a cosmic-comp session: checks `kriss-shell-toplevels` still sees a new window after Python's garbage collector runs (`shell/toplevels-check alacritty`; cosmic-term by default) |
-| `protocols/` | COSMIC protocol files the helper's bindings are generated from |
+| `kriss-shell-clipboard` | Python helper for the clipboard history: watches the clipboard through `wl-paste --watch`, stores, lists, pins and deletes items, and pastes with a virtual keyboard |
+| `emoji/` | `generate` builds `qml/emoji.json` (emoji, symbols and their English and Malay search words) from gemoji and `ms.tsv`; run it again only when those change |
+| `protocols/` | COSMIC protocol files and the virtual keyboard protocol the helpers' bindings are generated from |
 | `session/kriss-shell` | Starts the session and the login screen, and handles the commands the shortcuts below run |
 | `cosmic/` | Defaults copied key by key into `~/.config/cosmic` (same layout) on first start: the shortcuts below, the KrissOS theme builder keys (accent, backgrounds, corners), no coloured ring around the focused window, Papirus icons and the COSMIC Terminal colours. Existing user values are left alone |
 | `cosmic-theme/` | Builds the full COSMIC dark and light themes from those builder keys with libcosmic's own ThemeBuilder, at package build time |
@@ -225,6 +228,8 @@ their best match.
 | Windows+D | Show the desktop; again to bring the windows back |
 | Windows+E | COSMIC Files |
 | Windows+L | Lock |
+| Windows+V | Clipboard history |
+| Windows+. or Windows+; | Emoji and symbols |
 | Menu key, Shift+F10 | In the launcher or on a taskbar button, its menu |
 | Windows+T | Put the keyboard on the taskbar buttons, again to step to the next; arrows move, Enter opens, Shift+Enter opens a new window, Esc leaves |
 | Windows+X | The Start button's menu |
@@ -257,6 +262,37 @@ click one, or use the arrows and Enter, to fill the zone, or Esc to leave.
 The zones and the maximize button need `cosmic-comp-kriss` (its `kriss_snap_v1`); without it
 Windows+Z does nothing. The maximize button works only on title bars cosmic-comp draws
 (server-side); apps that draw their own (GTK, Firefox, COSMIC apps) have Windows+Z.
+
+## Clipboard history, emoji and symbols
+
+Windows+V and Windows+. open one panel near the pointer, as on Windows 11, with three tabs:
+emoji, symbols and the clipboard history. Picking an item puts it on the clipboard and pastes
+it into the window that had the keyboard: `kriss-shell-clipboard paste` presses Ctrl+V (Ctrl+Shift+V
+in a terminal) through cosmic-comp's virtual keyboard. With no window focused, it only copies.
+
+| Do | Does |
+|---|---|
+| Up / Down, arrows in emoji | Move |
+| Enter, click | Paste |
+| Delete | Remove the item from the history |
+| P, the pin | Pin the item: pinned items stay after signing out and restarting, and Clear all keeps them |
+| Shift+Enter, Menu key, long press, right-click | Skin tones for that emoji; the tone picked stays for every emoji |
+| Tab, Shift+Tab | The next or previous tab |
+| Esc | Clears the search, then closes |
+
+The history keeps the last 50 text and picture items, newest first; copying one again moves it to
+the top. They live in `~/.local/state/kriss/clipboard` (a folder only you can read), one file
+each, pinned ones in `pinned/`; the rest are removed when you sign in and out. Items over 4 MB
+are skipped. Nothing a password manager marks as secret is ever read or stored: `CLIPBOARD_STATE`
+from `wl-paste` (sensitive, or empty), and the MIME types `x-kde-passwordManagerHint` (KeePassXC,
+KDE, `wl-copy --sensitive`), `application/x-nspasteboard-concealed-type`,
+`ExcludeClipboardContentFromMonitorProcessing` and `CanIncludeInClipboardHistory` (unless it
+is 1), the last two from Windows apps.
+
+Emoji are searchable in English and Malay. The emoji, groups and English words come from
+GitHub's [gemoji](https://github.com/github/gemoji) (MIT), the Malay words from `emoji/ms.tsv`;
+`emoji/generate` merges them, with the symbols, into `qml/emoji.json`. Recent emoji and the skin
+tone are kept in `~/.local/state/kriss/emoji.json`.
 
 ## Translations
 

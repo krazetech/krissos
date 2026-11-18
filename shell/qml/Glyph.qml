@@ -59,7 +59,11 @@ Item {
         next: "M5 5l10 7-10 7zM19 5v14",
         prev: "M19 5L9 12l10 7zM5 5v14",
         music: "M9 18V5l11-2v13M6 18a3 3 0 1 0 6 0a3 3 0 1 0-6 0M17 16a3 3 0 1 0 6 0a3 3 0 1 0-6 0",
-        charging: "M13 2L4 14h7l-1 8 9-12h-7z"
+        charging: "M13 2L4 14h7l-1 8 9-12h-7z",
+        clipboard: "M9 3h6v4H9zM9 5H6v16h12V5h-3",
+        smile: "M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0M8.5 14.5a4.5 4.5 0 0 0 7 0M9 9.5h.01M15 9.5h.01",
+        omega: "M4 20h5v-2.5a7 7 0 1 1 6 0V20h5",
+        trash: "M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"
     })
 
     Shape {

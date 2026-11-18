@@ -1,0 +1,603 @@
+# Malay (Bahasa Melayu) search words for common emoji, written for KrissOS.
+# One emoji, a tab, then its words. `generate` merges them into qml/emoji.json.
+😀	senyum gembira muka tersengih
+😃	senyum gembira ketawa
+😄	senyum gembira ketawa mata
+😁	tersengih senyum gigi
+😆	ketawa gelak gembira
+😅	ketawa peluh lega
+🤣	ketawa berguling gelak besar
+😂	ketawa air mata gelak lucu
+🙂	senyum sedikit
+🙃	terbalik muka sindir
+😉	kenyit mata
+😊	senyum malu gembira
+😇	malaikat baik suci
+🥰	sayang cinta hati senyum
+😍	cinta suka mata hati
+🤩	kagum bintang teruja
+😘	cium sayang flying kiss
+😗	cium
+😚	cium mata pejam
+😙	cium senyum
+😋	sedap lazat makan
+😛	jelir lidah
+😜	jelir lidah kenyit gurau
+🤪	gila gurau kelakar
+😝	jelir lidah mata pejam
+🤑	duit wang kaya
+🤗	peluk pelukan
+🤭	tutup mulut tergelak
+🤫	senyap diam syyy
+🤔	fikir berfikir hmm
+🤐	zip mulut diam rahsia
+🤨	curiga angkat kening
+😐	neutral bersahaja
+😑	tiada ekspresi bosan
+😶	tanpa mulut diam
+😏	senyum sinis
+😒	tidak puas hati bosan
+🙄	jeling mata
+😬	serba salah sengih
+🤥	tipu bohong pinokio
+😌	lega tenang
+😔	sedih termenung
+😪	mengantuk
+🤤	meleleh air liur
+😴	tidur mengantuk zzz
+😷	topeng muka sakit
+🤒	demam sakit termometer
+🤕	cedera sakit balutan
+🤢	loya mual
+🤮	muntah
+🤧	bersin selesema
+🥵	panas berpeluh
+🥶	sejuk beku
+🥴	pening mabuk
+😵	pening pitam
+🤯	terkejut letup kepala
+🤠	koboi topi
+🥳	parti sambutan hari jadi
+😎	cermin mata hitam bergaya hebat
+🤓	ulat buku pandai
+🧐	monokel teliti
+😕	keliru
+😟	risau bimbang
+🙁	sedih sedikit
+☹	sedih masam
+😮	terkejut mulut terbuka
+😯	terdiam terkejut
+😲	terkejut sangat
+😳	malu merah muka
+🥺	merayu kesian mata
+😦	terkejut cemberut
+😧	sedih terkejut
+😨	takut
+😰	cemas peluh takut
+😥	kecewa lega
+😢	menangis sedih air mata
+😭	menangis teresak sedih
+😱	menjerit takut seram
+😖	keliru kecewa
+😣	tabah bertahan
+😞	kecewa
+😓	peluh penat
+😩	letih penat
+😫	penat sangat
+🥱	menguap mengantuk
+😤	marah dengus menang
+😡	marah merah
+😠	marah
+🤬	maki marah
+😈	nakal syaitan senyum
+👿	marah syaitan
+💀	tengkorak mati
+☠	tengkorak bahaya racun
+💩	najis tahi
+🤡	badut
+👹	raksasa hantu
+👻	hantu
+👽	makhluk asing alien
+👾	raksasa permainan
+🤖	robot
+😺	kucing senyum
+😹	kucing ketawa
+😻	kucing cinta
+🙈	monyet tutup mata tak nampak
+🙉	monyet tutup telinga tak dengar
+🙊	monyet tutup mulut tak cakap
+💋	cium bibir
+💌	surat cinta
+💘	hati panah cinta
+💝	hati hadiah
+💖	hati berkilau
+💗	hati membesar
+💓	hati berdegup
+💞	hati berputar
+💕	dua hati cinta
+💔	patah hati kecewa
+❤️	hati merah cinta sayang
+🧡	hati jingga oren
+💛	hati kuning
+💚	hati hijau
+💙	hati biru
+💜	hati ungu
+🤎	hati coklat
+🖤	hati hitam
+🤍	hati putih
+💯	seratus markah penuh
+💢	marah simbol
+💥	letupan dentum
+💫	pening bintang
+💦	titis peluh air
+💨	lari laju angin
+💣	bom
+💬	gelembung cakap mesej
+💭	fikir gelembung
+💤	tidur zzz
+👋	lambai hai selamat tinggal
+🤚	angkat tangan
+🖐	tangan jari
+✋	tangan berhenti
+🖖	salam vulcan
+👌	ok baik
+🤏	sedikit cubit
+✌️	damai kemenangan dua
+🤞	jari silang harap semoga
+🤟	sayang awak isyarat
+🤘	rock tanduk
+🤙	telefon saya
+👈	tunjuk kiri
+👉	tunjuk kanan
+👆	tunjuk atas
+👇	tunjuk bawah
+☝️	satu tunjuk atas
+👍	bagus setuju suka ibu jari
+👎	tidak suka tak setuju
+✊	genggam penumbuk
+👊	tumbuk penumbuk
+👏	tepuk tangan tahniah
+🙌	angkat tangan hore
+👐	tangan terbuka
+🤲	tadah tangan doa
+🤝	salam jabat tangan
+🙏	doa terima kasih tolong mohon
+✍️	tulis menulis
+💅	cat kuku
+🤳	swafoto selfie
+💪	kuat otot lengan
+🧠	otak pandai
+👀	mata lihat tengok
+👁	mata
+👂	telinga dengar
+👃	hidung bau
+👅	lidah
+👄	mulut bibir
+🦷	gigi
+👶	bayi
+🧒	kanak-kanak budak
+👦	budak lelaki
+👧	budak perempuan
+🧑	orang dewasa
+👨	lelaki
+👩	perempuan wanita
+🧓	orang tua warga emas
+👴	atuk datuk lelaki tua
+👵	nenek perempuan tua
+🙅	tidak boleh larang
+🙆	boleh ok
+💁	maklumat kaunter
+🙋	angkat tangan tanya
+🙇	tunduk maaf hormat
+🤦	tepuk dahi
+🤷	angkat bahu entah tak tahu
+👨‍⚕	doktor lelaki
+👩‍⚕	doktor perempuan
+👨‍🎓	pelajar graduan lelaki
+👩‍🎓	pelajar graduan perempuan
+👨‍🏫	cikgu guru lelaki
+👩‍🏫	cikgu guru perempuan
+👨‍🍳	tukang masak cef
+👩‍🍳	tukang masak cef
+👨‍💻	pengaturcara komputer lelaki
+👩‍💻	pengaturcara komputer perempuan
+👮	polis
+👷	pekerja binaan
+🧕	tudung hijab perempuan
+🤴	putera raja
+👸	puteri
+👰	pengantin perempuan
+🤵	pengantin lelaki tuksedo
+🤰	mengandung hamil
+👼	bayi malaikat
+🎅	santa klaus krismas
+🦸	adiwira
+🧙	ahli sihir
+🚶	berjalan
+🏃	berlari
+💃	menari tarian perempuan
+🕺	menari tarian lelaki
+🧘	yoga bertenang
+🛌	tidur katil
+👫	pasangan lelaki perempuan
+💑	pasangan cinta
+👪	keluarga
+👣	tapak kaki jejak
+🐵	monyet
+🐒	monyet
+🦧	orang utan
+🐶	anjing
+🐕	anjing
+🐱	kucing
+🐈	kucing
+🦁	singa
+🐯	harimau
+🐅	harimau
+🐴	kuda
+🐎	kuda
+🦄	unikorn
+🦓	kuda belang zebra
+🦌	rusa
+🐮	lembu
+🐄	lembu
+🐃	kerbau
+🐷	babi
+🐐	kambing
+🐑	biri-biri kambing biri
+🐪	unta
+🐫	unta
+🦒	zirafah
+🐘	gajah
+🦏	badak
+🐭	tikus
+🐁	tikus
+🐹	hamster
+🐰	arnab
+🐇	arnab
+🐿	tupai
+🦇	kelawar
+🐻	beruang
+🐨	koala
+🐼	panda
+🐾	tapak kaki haiwan
+🐔	ayam
+🐓	ayam jantan
+🐣	anak ayam menetas
+🐤	anak ayam
+🐦	burung
+🐧	penguin
+🕊	merpati damai
+🦅	helang
+🦆	itik
+🦉	burung hantu
+🦜	burung kakak tua
+🐸	katak
+🐊	buaya
+🐢	penyu kura-kura
+🦎	cicak biawak
+🐍	ular
+🐉	naga
+🐳	ikan paus
+🐬	ikan lumba-lumba
+🐟	ikan
+🐠	ikan tropika
+🦈	jerung
+🐙	sotong kurita
+🐌	siput
+🦋	rama-rama
+🐛	ulat
+🐜	semut
+🐝	lebah
+🐞	kumbang kepik
+🦟	nyamuk
+🕷	labah-labah
+🌸	bunga sakura
+🌹	bunga ros mawar
+🌺	bunga raya
+🌻	bunga matahari
+🌷	bunga tulip
+🌱	anak pokok tunas
+🌲	pokok
+🌳	pokok
+🌴	pokok kelapa palma
+🌵	kaktus
+🍀	daun semanggi tuah
+🍁	daun mapel
+🍂	daun gugur luruh
+🍇	anggur
+🍈	tembikai susu
+🍉	tembikai
+🍊	limau oren
+🍋	lemon limau
+🍌	pisang
+🍍	nanas
+🥭	mangga
+🍎	epal merah
+🍏	epal hijau
+🍐	pir
+🍑	pic
+🍒	ceri
+🍓	strawberi
+🍅	tomato
+🥥	kelapa
+🥑	avokado
+🍆	terung
+🥔	kentang ubi
+🥕	lobak merah
+🌽	jagung
+🌶	cili pedas
+🥒	timun
+🥦	brokoli
+🧄	bawang putih
+🧅	bawang
+🍄	cendawan
+🥜	kacang
+🍞	roti
+🥐	croissant roti
+🧀	keju
+🍗	ayam goreng paha
+🍖	daging tulang
+🥩	daging
+🍔	burger
+🍟	kentang goreng
+🍕	piza
+🌭	hot dog sosej
+🥪	sandwic
+🌮	taco
+🥚	telur
+🍳	telur goreng masak
+🍲	sup periuk
+🥗	salad sayur
+🍿	bertih jagung popcorn
+🍱	bento bekal makanan
+🍙	nasi kepal
+🍚	nasi
+🍛	nasi kari
+🍜	mi sup
+🍝	spageti
+🍣	sushi
+🍤	udang goreng
+🍡	dango kuih
+🥟	ladu
+🦀	ketam
+🦐	udang
+🦑	sotong
+🍦	ais krim
+🍧	ais kacang ais batu
+🍨	ais krim
+🍩	donat
+🍪	biskut kuki
+🎂	kek hari jadi
+🍰	kek
+🧁	kek cawan
+🍫	coklat
+🍬	gula-gula
+🍭	lolipop gula-gula
+🍯	madu
+🍼	botol susu bayi
+🥛	susu
+☕	kopi teh minuman panas
+🍵	teh
+🍺	bir
+🥂	sulang raikan
+🥤	minuman cawan
+🧃	kotak air minuman
+🧊	ais
+🥢	penyepit
+🍽	pinggan makan
+🍴	sudu garpu makan
+🥄	sudu
+🔪	pisau
+🌍	bumi dunia afrika eropah
+🌏	bumi dunia asia
+🌐	dunia internet sfera
+🗺	peta dunia
+🏔	gunung salji
+🌋	gunung berapi
+🏖	pantai payung
+🏝	pulau
+🏠	rumah
+🏡	rumah taman
+🏢	bangunan pejabat
+🏥	hospital
+🏦	bank
+🏨	hotel
+🏪	kedai serbaneka
+🏫	sekolah
+🏭	kilang
+🕌	masjid
+⛪	gereja
+🛕	kuil hindu
+🚗	kereta
+🚕	teksi
+🚌	bas
+🚑	ambulans
+🚒	bomba
+🚓	kereta polis
+🚚	lori
+🏍	motosikal
+🛵	skuter motor
+🚲	basikal
+🚂	kereta api
+🚆	kereta api
+🚇	metro lrt
+⛽	stesen minyak petrol
+🚦	lampu isyarat
+🚢	kapal
+⛵	perahu layar
+✈️	kapal terbang pesawat
+🚁	helikopter
+🚀	roket
+⌛	jam pasir masa
+⏰	jam loceng
+⌚	jam tangan
+🌙	bulan sabit malam
+🌕	bulan penuh purnama
+☀️	matahari cerah panas
+⭐	bintang
+🌟	bintang bersinar
+☁️	awan
+⛅	awan matahari
+🌧	hujan
+⛈	ribut petir hujan
+🌈	pelangi
+☂️	payung
+☔	payung hujan
+⚡	kilat elektrik
+❄️	salji
+🔥	api panas hebat
+💧	titisan air
+🌊	ombak laut
+🎃	labu
+🎄	pokok krismas
+🎆	bunga api
+✨	berkilau
+🎈	belon
+🎉	parti tahniah sambutan
+🎊	parti konfeti
+🧧	sampul merah angpau
+🎀	reben
+🎁	hadiah
+🏆	piala juara
+🏅	pingat
+🥇	pingat emas pertama
+🥈	pingat perak kedua
+🥉	pingat gangsa ketiga
+⚽	bola sepak
+🏀	bola keranjang
+🏐	bola tampar
+🏸	badminton
+🏓	ping pong
+🎮	permainan video game
+🎲	dadu
+🧩	teka-teki jigsaw
+🎨	lukisan seni
+👓	cermin mata
+🕶	cermin mata hitam
+👔	tali leher kemeja
+👕	baju kemeja-t
+👖	seluar jean
+🧣	selendang skarf
+🧤	sarung tangan
+👗	gaun baju
+👜	beg tangan
+🎒	beg sekolah
+👟	kasut sukan
+👠	kasut tumit tinggi
+👑	mahkota raja
+🎓	topi graduasi
+💄	gincu
+💍	cincin
+💎	berlian permata
+🔇	senyap bunyi
+🔊	kuat bunyi pembesar suara
+📢	pengumuman
+🔔	loceng
+🎵	muzik lagu
+🎶	muzik lagu
+🎤	mikrofon nyanyi
+🎧	fon kepala
+🎸	gitar
+🥁	dram
+📱	telefon bimbit
+☎️	telefon
+🔋	bateri
+🔌	palam elektrik
+💻	komputer riba
+🖥	komputer
+🖨	pencetak
+⌨	papan kekunci
+🖱	tetikus
+💾	cakera liut simpan
+📷	kamera
+📺	televisyen tv
+🔍	cari kanta pembesar
+💡	idea mentol lampu
+📖	buku baca
+📚	buku-buku
+📝	nota tulis
+📰	surat khabar berita
+💰	beg duit wang
+💵	duit wang kertas
+💳	kad kredit
+✉️	surat sampul
+📧	emel
+📦	kotak bungkusan pakej
+✏️	pensel
+🖊	pen
+💼	beg bimbit kerja
+📁	folder fail
+📅	kalendar tarikh
+📈	carta naik
+📉	carta turun
+📊	carta bar
+📋	papan klip
+📌	pin tekan
+📎	klip kertas
+✂️	gunting
+🗑	tong sampah
+🔒	kunci berkunci
+🔓	buka kunci
+🔑	kunci
+🔨	tukul
+🔧	sepana
+⚙	gear tetapan
+🧪	tabung uji
+💉	jarum suntikan vaksin
+💊	ubat pil
+🚪	pintu
+🛏	katil
+🚽	tandas
+🚿	pancuran mandi
+🛒	troli beli-belah
+⚠️	amaran
+🚫	dilarang
+⛔	dilarang masuk
+⬆️	anak panah atas
+➡️	anak panah kanan
+⬇️	anak panah bawah
+⬅️	anak panah kiri
+🔄	ulang muat semula
+☪	bulan bintang islam
+☮	damai keamanan
+☯️	yin yang
+✝️	salib
+♻️	kitar semula
+✅	betul siap tanda
+☑️	tanda kotak
+✔️	tanda betul
+❌	salah pangkah batal
+➕	tambah campur
+➖	tolak
+➗	bahagi
+❓	soalan tanda tanya
+❗	seru penting
+©️	hak cipta
+®️	tanda dagangan berdaftar
+™️	tanda dagangan
+🆗	ok
+🆘	tolong kecemasan
+🔴	bulatan merah
+🟢	bulatan hijau
+🔵	bulatan biru
+⚫	bulatan hitam
+⚪	bulatan putih
+🏁	bendera perlumbaan penamat
+🚩	bendera merah
+🏳	bendera putih
+🏳️‍🌈	bendera pelangi
+🇲🇾	malaysia bendera jalur gemilang
+🇸🇬	singapura bendera
+🇮🇩	indonesia bendera
+🇧🇳	brunei bendera
+🇹🇭	thailand siam bendera
+🇵🇭	filipina bendera
+🇻🇳	vietnam bendera
+🇨🇳	china bendera
+🇮🇳	india bendera
+🇯🇵	jepun bendera
+🇰🇷	korea bendera
+🇸🇦	arab saudi bendera
+🇬🇧	britain united kingdom bendera
+🇺🇸	amerika syarikat bendera
+🇦🇺	australia bendera
