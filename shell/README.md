@@ -135,6 +135,14 @@ bar to move it. Without the file, the defaults in `qml/Desktop.qml` apply. **Tas
 | `taskbarCombine` | `"always"` | `"always"`: one button per app. `"never"`: one button per window, with its title. `"full"`: per window until the bar runs out of room |
 | `taskbarAllScreens` | `true` | A bar on every screen, each with the windows on that screen; `false`: one bar, on the first screen, with every window |
 
+## Notification center
+
+The bell, or Windows+N, opens it: every notification not yet dismissed, grouped by app, newest
+app first, with Clear all, a Clear for each app with several and a cross on each card; a Do not
+disturb toggle (toasts stop, critical ones aside); and the month with today marked. The list is
+kept in `~/.local/state/kriss/notifications.json` (`$XDG_STATE_HOME/kriss/`), newest 100, so it
+survives a restart; notifications from before one come back without their buttons.
+
 ## Taskbar
 
 It behaves like Windows 11's. Each app has one button, pinned or not, with all its windows on it.
@@ -165,7 +173,7 @@ type a letter to jump). `Bar.previewFor` is the app button under the pointer, fo
 |---|---|
 | Windows | Launcher |
 | Windows+A | Quick settings |
-| Windows+N | Notifications |
+| Windows+N | Notification center |
 | Windows+Alt+D | Calendar |
 | Windows+D | Show the desktop; again to bring the windows back |
 | Windows+E | COSMIC Files |
