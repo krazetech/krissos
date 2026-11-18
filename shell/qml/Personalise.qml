@@ -300,7 +300,19 @@ FloatingWindow {
         Column {
             spacing: 14
             Card {
+                // The two layouts, switched live (Desktop.setLayout, as kriss-welcome does).
                 Choice {
+                    text: Tr.t("Desktop layout")
+                    detail: Tr.t("The top bar and dock also put window buttons on the left, in apps that allow it.")
+                    value: Desktop.layout
+                    options: [["windows", Tr.t("Taskbar")], ["mac", Tr.t("Top bar and dock")]]
+                    onPicked: v => Desktop.setLayout(v)
+                }
+            }
+            Card {
+                Choice {
+                    // The dock is always centred.
+                    visible: !Desktop.mac
                     text: Tr.t("Taskbar alignment")
                     value: Desktop.taskbarAlignment
                     options: [["left", Tr.t("Left")], ["centre", Tr.t("Centre")]]
