@@ -25,7 +25,8 @@ High contrast was spot-read in code only.
 ## Ranking
 
 Score = severity (1 cosmetic, 2 looks unfinished, 3 broken or fails a rule) × how often a user
-sees it (1 rarely, 2 per session, 3 all the time).
+sees it (1 rarely, 2 per session, 3 all the time). Item 22 is a feature spec the user asked for, not a
+defect. It ranks with the score-6 items because the lock clock is the first thing seen at every wake.
 
 | # | Problem | Sev | Freq | Score | PR |
 |---|---|---|---|---|---|
@@ -37,6 +38,7 @@ sees it (1 rarely, 2 per session, 3 all the time).
 | 6 | Fixed-width panels at 125%+ text: Start, calendar, notification center, Personalise clip | 3 | 2 | 6 | E |
 | 7 | Lock screen, greeter and snap labels ignore the text size | 3 | 2 | 6 | E |
 | 8 | Light mode: white tray icons vanish on the light bar | 2 | 3 | 6 | C |
+| 22 | Lock clock: big, bold, liquid glass, customisable, depth effect (spec, not a defect) | 2 | 3 | 6 | H |
 | 9 | Notification center is a loose stack: oldest on top, group not shown, calendar adrift | 2 | 2 | 4 | D |
 | 10 | Start's Recommended shows junk and look-alike files, all with one icon | 2 | 2 | 4 | F |
 | 11 | The Performance pill is the loudest thing in the bar | 1 | 3 | 3 | A |
@@ -331,6 +333,100 @@ Windows and macOS show the full name and the account picture.
   AccountsService (`/var/lib/AccountsService/icons/$USER`), and fall back to `$USER`. `kriss-welcome`
   already asks for a name.
 
+### 22. Lock clock: big, bold, liquid glass, customisable, with a depth effect (spec)
+![lock clock today](shell-polish-audit/01-clock-digit-gap-lock.png)
+
+The user asked for a lock clock that is bigger and bolder, with a "liquid glass" feel, many options for
+its position and font, and an iOS-style depth effect where the wallpaper's subject sits in front of the
+time. Today the clock is a single thin line: `Font.Light`, at most 176 px (`face.height * 0.16`),
+centred near the top, solid `nightFg`. This is a spec for a new PR, not a defect. Item 1, the digit gap,
+lands first in PR A, and this item builds on it.
+
+Files today: `LockFace.qml:74-95` (date and `RollingText` clock), `LockFace.qml:45-50` (the blurred
+wallpaper `MultiEffect`), `greeter.qml` (the same face before login), `Personalise.qml` (no Lock screen
+page yet), `DynamicWallpaper.qml`.
+
+**1. Big and bold by default.**
+- Default is Inter Display Bold at about 26% of the screen height, capped at 360 px at 1440p, stacked
+  hours over minutes. Heavy is an option. Ship Inter Display in kriss-theme (OFL). It's the display cut
+  of the UI font, so the lock face and the shell stay one family.
+- Use tabular figures, or per-digit slots from item 1, so the time never shifts sideways.
+- The size goes through `Theme.sp()` as a factor (`size * Math.max(1, textScale)`), clamped so the time
+  always fits the screen.
+
+**2. Liquid glass.**
+- **Refraction.** Render the digits once into a `ShaderEffectSource`, used as a mask and height field
+  (blur it for a soft bevel). A small `ShaderEffect` (`.frag` compiled to `.qsb` at build time with
+  qt6-shadertools) samples the blurred wallpaper that `LockFace` already makes. It offsets the lookup by
+  the height field's gradient for a slight lens bend, about 6–10 px at the edges and none in the
+  middle. MultiEffect can't displace, so this needs one custom shader. Keep it to one pass, and redraw
+  only when the minute changes.
+- **Light.** A soft specular band along the top edges (the gradient's upward part, at about 35% white),
+  plus a 1 px bright rim at about 50% white along the glyph edge, and a faint inner shadow at the bottom.
+- **Tint.** Take the wallpaper's average colour under the clock's box (sampled once per wallpaper or
+  time-of-day change), lift it to about 70% lightness, and mix 15–20% into the glass. The glass then
+  belongs to every wallpaper and every time of day of the dynamic one.
+- **Fallbacks.** With reduced transparency (`Theme.solid`, so `transparency: false`) or high contrast,
+  draw solid `nightFg` digits in the same font and size, with a 2 px dark outline in high contrast. With
+  reduced motion, nothing animates (no rolling digits, no light that moves with time).
+- Keep the time readable: under glass, the mean contrast of the digits against the wallpaper behind them
+  stays at 3:1 or more for large text. When the wallpaper is too busy or too light, add a soft dark halo
+  behind the glyphs at 25% opacity.
+
+**3. Personalise > Lock screen.** A new page, saved in `shell.json` under `lockClock`, with a live
+preview: a scaled `LockFace` over the current wallpaper that updates as you pick.
+
+| Key | Values | Default |
+|---|---|---|
+| `position` | `top`, `centre`, `left`, `bottom` | `top` |
+| `stack` | `stacked` (hours over minutes), `line` | `stacked` |
+| `size` | `s`, `m`, `l`, `xl` (about 18/22/26/32% of screen height) | `l` |
+| `weight` | `regular`, `semibold`, `bold`, `heavy` | `bold` |
+| `font` | `inter-display` plus a few OFL display faces bundled in kriss-theme (for example a rounded one, a condensed one and a serif); never Apple fonts and never downloaded | `inter-display` |
+| `style` | `glass`, `solid`, `outline` | `glass` |
+| `date` | on or off | on |
+| `widgets` | the date line's row: media, battery, next event; on or off | on |
+| `depth` | on or off (item 4) | on |
+
+Every option is in `ms.json` too, and works by keyboard alone, like the other Personalise pages.
+
+**4. Depth effect (subject recognition), on the device and offline.**
+- **Mask.** When a wallpaper is set, `kriss-wallpaper-mask` (new, in kriss-theme) runs a small bundled
+  segmentation model once on the CPU through onnxruntime and writes a soft-edged alpha mask. u2netp
+  (about 4.7 MB) is the default. ISNet only if a quality test shows u2netp isn't good enough, since it's
+  far bigger. Store user masks at `~/.cache/kriss/wallpaper-masks/<sha1-of-path-and-mtime>.png`, and
+  bundle the stock wallpapers' masks at build time next to them under `/usr/share/backgrounds/kriss/`.
+  The dynamic wallpaper is one scene, so it needs one mask.
+- **Layers.** Blurred wallpaper, then the clock, then the unblurred subject. The subject is the same
+  wallpaper image masked by the alpha (`MultiEffect { maskEnabled: true }`, which the greeter already
+  uses for its hole).
+- **When to skip.** Measure how much of the time's box the mask covers. When the subject would hide more
+  than about 30% of the digits, or any whole digit, first move the clock to the nearest free position
+  and size from the options in 3. If none fits, draw the clock in front with no depth. Show the reason
+  in Personalise ("The subject would cover the time").
+- **No network, ever.** The model and the runtime come from packages (`onnxruntime` from Arch extra, the
+  model in kriss-theme), and nothing is fetched. With no mask, or if the model fails, the lock screen is
+  just the glass clock.
+- Do the mask work off the lock path: never block locking or the greeter. A missing mask means no depth
+  until it's ready.
+
+**5. Greeter.** The greeter runs as the greeter user before login. It reads the stock wallpaper's bundled
+mask and a copy of the user's `lockClock` choices that `kriss-settings` writes where the greeter can read
+them, falling back to the defaults.
+
+### Done when (PR H)
+
+All of the following:
+- The big bold clock is the default on the lock screen and the greeter.
+- Glass works, with refraction, highlight, rim and a wallpaper tint.
+- Personalise > Lock screen sets every option in 3, with a live preview, and the choices survive a
+  restart.
+- Depth works offline on the stock wallpapers and on a user wallpaper, and skips itself when the
+  subject covers the time.
+- The clock follows the text size.
+- Reduced motion and reduced transparency (and high contrast) give the solid, still clock.
+- `shell/perf-check` shows the lock opens within budget with glass on.
+
 ## Suggested Wave 6 PRs
 
 Small, one branch each, in this order. A and C touch `Theme.qml`, so merge them first and rebase the
@@ -345,6 +441,7 @@ rest.
 | E | `kz/polish-text-size` | 6, 7, 20 | M | At 150% and 200%, no shell surface clips or cuts a label; the lock screen and greeter scale; Personalise grows |
 | F | `kz/polish-start-files` | 10, 16, 21 | S | Recommended and jump lists skip junk and token-like names, use mime icons, and tell same-named files apart; Start and lock show the full name |
 | G | `kz/polish-mac-and-snap` | 15, 17 | M | Win+Z always answers; the dock has its own size; Mac-layout Start opens like Spotlight |
+| H | `kz/lock-clock` | 22 | L | Big bold glass clock on the lock screen and greeter; Personalise > Lock screen sets position, stack, size, weight, font, style, date and widgets with a live preview; offline depth effect from a bundled segmentation model that skips itself when the subject covers the time; follows text size; solid fallback with reduced transparency, high contrast and reduced motion. Lands after A, which fixes the digit slots |
 
 After each PR, re-run the same 8-state capture on the PC with
 [`shell-polish-audit/capture.sh`](shell-polish-audit/capture.sh). It backs up `shell.json` and restores it afterwards.
