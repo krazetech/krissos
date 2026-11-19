@@ -167,17 +167,17 @@ PanelWindow {
             id: header
             visible: opacity > 0
             opacity: win.open ? 1 : 0
-            Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+            Behavior on opacity { NumberAnimation { duration: Theme.ms(win.open ? Theme.fast : Theme.fastExit); easing.type: win.open ? Theme.ease : Theme.easeExit } }
             width: parent.width
             height: Math.max(48, Theme.sp(14) + 30)
-            radius: Theme.radius
+            radius: Theme.rPanel
             color: Theme.bar
             border.width: Theme.rimWidth
             border.color: Theme.rim
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: 18
-                anchors.rightMargin: 10
+                anchors.leftMargin: Theme.s4
+                anchors.rightMargin: Theme.s2
                 Text {
                     Layout.fillWidth: true
                     text: Notifs.all.length ? Tr.t("Notifications") : Tr.t("No new notifications")
@@ -202,12 +202,12 @@ PanelWindow {
                     Accessible.checked: Desktop.dnd
                     Accessible.onToggleAction: Desktop.dnd = !Desktop.dnd
                     Accessible.onPressAction: Desktop.dnd = !Desktop.dnd
-                    FocusRim { radius: 16 }
+                    FocusRim { radius: Theme.rCard + 4 }
                     scale: pressed ? Theme.pressScale : 1
                     Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                     Rectangle {
                         anchors.fill: parent
-                        radius: 14
+                        radius: Theme.rCard
                         color: Desktop.dnd ? Theme.accent : dnd.containsMouse ? Theme.cardHover : Theme.card
                         Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                     }
@@ -231,12 +231,12 @@ PanelWindow {
                     Accessible.name: Tr.t("Clear all")
                     Accessible.onPressAction: Notifs.clear()
                     onVisibleChanged: if (!visible && activeFocus) dnd.forceActiveFocus()
-                    FocusRim { radius: 16 }
+                    FocusRim { radius: Theme.rCard + 4 }
                     scale: pressed ? Theme.pressScale : 1
                     Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                     Rectangle {
                         anchors.fill: parent
-                        radius: 14
+                        radius: Theme.rCard
                         color: clearAll.containsMouse ? Theme.cardHover : Theme.card
                         Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                     }
@@ -295,7 +295,7 @@ PanelWindow {
                             win.cardBlurs = win.cardBlurs.concat([blur]);
                         }
                         Component.onDestruction: win.cardBlurs = win.cardBlurs.filter(r => r !== blur)
-                        Region { id: blur; item: card.opacity > 0 ? card : null; radius: Theme.radius }
+                        Region { id: blur; item: card.opacity > 0 ? card : null; radius: Theme.rPanel }
 
                         width: stack.width
                         height: front ? naturalHeight : win.heightAt(0)
@@ -370,10 +370,10 @@ PanelWindow {
                                 NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Easing.BezierSpline; easing.bezierCurve: win.curve }
                             }
 
-                            FocusRim { target: swipe; anchors.margins: 0; radius: Theme.radius }
+                            FocusRim { target: swipe; anchors.margins: 0; radius: Theme.rPanel }
                             Rectangle {
                                 anchors.fill: parent
-                                radius: Theme.radius
+                                radius: Theme.rPanel
                                 color: Theme.bar
                                 border.width: card.n.urgency === NotificationUrgency.Critical ? 2 : Theme.rimWidth
                                 border.color: card.n.urgency === NotificationUrgency.Critical ? Theme.red : Theme.rim
@@ -388,12 +388,12 @@ PanelWindow {
 
                                 RowLayout {
                                     id: content
-                                    anchors { left: parent.left; right: parent.right; top: parent.top; margins: 14 }
-                                    spacing: 12
+                                    anchors { left: parent.left; right: parent.right; top: parent.top; margins: Theme.s3 }
+                                    spacing: Theme.s3
 
                                     Rectangle {
                                         Layout.alignment: Qt.AlignTop
-                                        implicitWidth: 40; implicitHeight: 40; radius: 12
+                                        implicitWidth: 40; implicitHeight: 40; radius: Theme.rControl
                                         color: Theme.card
                                         IconImage {
                                             id: appIcon
@@ -407,11 +407,11 @@ PanelWindow {
 
                                     ColumnLayout {
                                         Layout.fillWidth: true
-                                        spacing: 3
+                                        spacing: Theme.s0
                                         // App name and when, like the header of a Windows notification.
                                         RowLayout {
                                             Layout.fillWidth: true
-                                            spacing: 8
+                                            spacing: Theme.s2
                                             Text {
                                                 Layout.fillWidth: true
                                                 text: [card.n.appName, Notifs.ago(card.n)].filter(s => s).join(" · ")
@@ -471,8 +471,8 @@ PanelWindow {
                                         Flow {
                                             visible: buttons.count > 0
                                             Layout.fillWidth: true
-                                            Layout.topMargin: 6
-                                            spacing: 6
+                                            Layout.topMargin: Theme.s1
+                                            spacing: Theme.s1
                                             Repeater {
                                                 id: buttons
                                                 model: card.n.actions.filter(a => a.identifier !== "default")
@@ -492,7 +492,7 @@ PanelWindow {
                                                     // The first action is the one most apps expect you to take.
                                                     Rectangle {
                                                         anchors.fill: parent
-                                                        radius: 15
+                                                        radius: height / 2
                                                         color: act.index === 0 ? (act.containsMouse ? Theme.accentHover : Theme.accent)
                                                             : act.containsMouse ? Theme.cardHover : Theme.card
                                                         Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
@@ -521,10 +521,10 @@ PanelWindow {
             id: cal
             visible: opacity > 0
             opacity: win.open ? 1 : 0
-            Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+            Behavior on opacity { NumberAnimation { duration: Theme.ms(win.open ? Theme.fast : Theme.fastExit); easing.type: win.open ? Theme.ease : Theme.easeExit } }
             width: parent.width
             height: month.implicitHeight + 36
-            radius: Theme.radius
+            radius: Theme.rPanel
             color: Theme.bar
             border.width: Theme.rimWidth
             border.color: Theme.rim
@@ -535,7 +535,7 @@ PanelWindow {
             }
             Month {
                 id: month
-                anchors { left: parent.left; right: parent.right; top: parent.top; margins: 18 }
+                anchors { left: parent.left; right: parent.right; top: parent.top; margins: Theme.s4 }
                 // Shift+Tab from the month goes back to the newest card.
                 onBackOut: win.focusCard(0) || (clearAll.visible ? clearAll : dnd).forceActiveFocus()
             }

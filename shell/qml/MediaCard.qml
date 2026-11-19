@@ -8,16 +8,16 @@ ClippingRectangle {
     id: media
     readonly property var p: Desktop.player
     implicitHeight: 72
-    radius: Theme.radiusSmall
+    radius: Theme.rCard
     color: Theme.card
     RowLayout {
         anchors.fill: parent
-        anchors.margins: 10
-        spacing: 12
+        anchors.margins: Theme.s2
+        spacing: Theme.s3
         ClippingRectangle {
             implicitWidth: 52
             implicitHeight: 52
-            radius: 10
+            radius: Theme.rControl
             color: Theme.win
             Glyph { anchors.centerIn: parent; name: "music"; color: Theme.soft; visible: art.status !== Image.Ready }
             Image {
@@ -31,7 +31,7 @@ ClippingRectangle {
         }
         Column {
             Layout.fillWidth: true
-            spacing: 3
+            spacing: Theme.s0
             Text {
                 width: parent.width
                 elide: Text.ElideRight

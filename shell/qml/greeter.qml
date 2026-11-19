@@ -152,7 +152,7 @@ ShellRoot {
                 // The users, as on Windows: picture and name; the one signing in is lit.
                 Column {
                     anchors { left: parent.left; bottom: parent.bottom; margins: 28 }
-                    spacing: 4
+                    spacing: Theme.s1
                     visible: root.users.length > 1
                     Repeater {
                         model: root.users
@@ -167,8 +167,8 @@ ShellRoot {
                             onClicked: { root.user = index; root.message = ""; face.ask(""); }
                             Row {
                                 id: userRow
-                                anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
-                                spacing: 10
+                                anchors { left: parent.left; leftMargin: Theme.s1; verticalCenter: parent.verticalCenter }
+                                spacing: Theme.s2
                                 Avatar {
                                     anchors.verticalCenter: parent.verticalCenter
                                     size: 32
@@ -199,18 +199,18 @@ ShellRoot {
                     Keys.onEscapePressed: open = false
                 }
                 Rectangle {
-                    anchors { right: sessionPill.right; bottom: sessionPill.top; bottomMargin: 8 }
+                    anchors { right: sessionPill.right; bottom: sessionPill.top; bottomMargin: Theme.s2 }
                     visible: sessionPill.open && sessionPill.visible
                     width: sessionList.implicitWidth + 12
                     height: sessionList.implicitHeight + 12
-                    radius: Theme.radiusSmall
+                    radius: Theme.rCard
                     color: Theme.alpha(Theme.night, 0.72)
                     border.width: 1
                     border.color: Theme.alpha(Theme.nightFg, 0.12)
                     Column {
                         id: sessionList
                         anchors.centerIn: parent
-                        spacing: 2
+                        spacing: Theme.s0
                         Repeater {
                             model: root.sessions
                             delegate: LockButton {

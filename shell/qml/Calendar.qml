@@ -40,7 +40,7 @@ PanelWindow {
         y: Desktop.mac ? Theme.panelGap : parent.height - height - Theme.panelGap - Desktop.barRoom
         width: 336
         height: body.implicitHeight + 36
-        radius: Theme.radius
+        radius: Theme.rPanel
         color: Theme.bar
         border.width: Theme.rimWidth
         border.color: Theme.rim
@@ -56,8 +56,8 @@ PanelWindow {
         }
         // Rises a little as it fades in, like the volume pop-up.
         opacity: win.open ? 1 : 0
-        transform: Translate { y: win.open || Theme.reduceMotion ? 0 : Desktop.mac ? -12 : 12; Behavior on y { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } } }
-        Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
+        transform: Translate { y: win.open || Theme.reduceMotion ? 0 : Desktop.mac ? -12 : 12; Behavior on y { NumberAnimation { duration: Theme.ms(win.open ? Theme.normal : Theme.fastExit); easing.type: win.open ? Theme.ease : Theme.easeExit } } }
+        Behavior on opacity { NumberAnimation { duration: Theme.ms(win.open ? Theme.normal : Theme.fastExit); easing.type: win.open ? Theme.ease : Theme.easeExit } }
 
         // Swallows clicks on the card, so only clicks outside it close the calendar.
         MouseArea {
@@ -68,7 +68,7 @@ PanelWindow {
 
         Month {
             id: body
-            anchors { left: parent.left; right: parent.right; top: parent.top; margins: 18 }
+            anchors { left: parent.left; right: parent.right; top: parent.top; margins: Theme.s4 }
         }
     }
 }

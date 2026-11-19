@@ -88,7 +88,6 @@ Singleton {
     readonly property int barHeight: Math.round(48 * barScale * Math.max(1, (1 + textScale) / 2))
     readonly property int barButton: Math.round(40 * barScale * Math.max(1, (1 + textScale) / 2))
     readonly property int barIcon: Math.round(24 * barScale)
-    readonly property int barRadius: 10    // hover and active backgrounds in the bar
     readonly property int trayIcon: 18
     // The Mac layout: the slim top bar, and the room between the dock and the screen's edge.
     readonly property int topBarHeight: Math.round(32 * Math.max(1, (1 + textScale) / 2))
@@ -96,8 +95,21 @@ Singleton {
     // Between the bar and the panels that open from it, and from the screen's edge.
     readonly property int panelGap: 12
     readonly property int gap: 16
-    readonly property int radius: 22
-    readonly property int radiusSmall: 14
+    // The radius scale. Every shape uses one of these, or height / 2 for a pill or a dot
+    // (shell/theme-check fails on a literal radius). A shape inside another follows the
+    // outer one: rPanel around rCard, rCard around rControl.
+    readonly property int rPanel: 22    // Start, quick settings, the calendar, notifications
+    readonly property int rCard: 14     // menus, previews, notification and widget cards
+    readonly property int rControl: 10  // rows, buttons, bar hovers, tiles' insides
+    readonly property int rSmall: 6     // key caps, close buttons, chips inside a row
+    // The spacing scale, on a 4 px grid (s0 is the hairline between two lines of text).
+    readonly property int s0: 2
+    readonly property int s1: 4
+    readonly property int s2: 8
+    readonly property int s3: 12
+    readonly property int s4: 16
+    readonly property int s5: 20
+    readonly property int s6: 24
 
     // Reduced motion: the desktop-wide "animations off" switch (GNOME's enable-animations,
     // which COSMIC and GTK apps follow too). Every duration goes through ms().
@@ -111,6 +123,9 @@ Singleton {
     // And one set of curves: an ease out for anything arriving, hover and press; Vaul's
     // long soft ease out for the sheet; Sonner's, with a touch of settle, for the toasts.
     readonly property int ease: Easing.OutCubic
+    // Leaving is quicker than arriving, and eases in: a panel gets out of the way.
+    readonly property int easeExit: Easing.InCubic
+    readonly property int fastExit: Math.round(fast * 0.8)
     readonly property var sheetCurve: [0.32, 0.72, 0, 1, 1, 1]
     readonly property var settleCurve: [0.21, 1.02, 0.73, 1, 1, 1]
     // Hover and press: a control lights up a little and gives slightly under the pointer.

@@ -274,7 +274,7 @@ PanelWindow {
         anchors.bottomMargin: Theme.panelGap + Desktop.barRoom
         width: 600
         height: body.implicitHeight + body.anchors.topMargin + body.anchors.bottomMargin + foot.height
-        radius: Theme.radius + 4
+        radius: Theme.rPanel
         color: Theme.bar
         border.width: Theme.rimWidth
         border.color: Theme.rim
@@ -284,9 +284,9 @@ PanelWindow {
         opacity: Desktop.launcherOpen ? 1 : 0
         transform: Translate {
             y: Desktop.launcherOpen || Theme.reduceMotion ? 0 : 12
-            Behavior on y { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
+            Behavior on y { NumberAnimation { duration: Theme.ms(Desktop.launcherOpen ? Theme.normal : Theme.fastExit); easing.type: Desktop.launcherOpen ? Theme.ease : Theme.easeExit } }
         }
-        Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+        Behavior on opacity { NumberAnimation { duration: Theme.ms(Desktop.launcherOpen ? Theme.fast : Theme.fastExit); easing.type: Desktop.launcherOpen ? Theme.ease : Theme.easeExit } }
         // The panel grows and shrinks with the results instead of jumping (cmdk does the same).
         Behavior on height { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
 
@@ -295,10 +295,10 @@ PanelWindow {
         ColumnLayout {
             id: body
             anchors { left: parent.left; right: parent.right; top: parent.top }
-            anchors.margins: 22
-            anchors.topMargin: 22
-            anchors.bottomMargin: 14
-            spacing: 14
+            anchors.margins: Theme.s5
+            anchors.topMargin: Theme.s5
+            anchors.bottomMargin: Theme.s3
+            spacing: Theme.s3
 
             // Search.
             Rectangle {
@@ -311,9 +311,9 @@ PanelWindow {
                 border.color: Theme.accent
                 RowLayout {
                     anchors.fill: parent
-                    anchors.leftMargin: 16
-                    anchors.rightMargin: 16
-                    spacing: 10
+                    anchors.leftMargin: Theme.s4
+                    anchors.rightMargin: Theme.s4
+                    spacing: Theme.s2
                     Glyph { name: "search"; size: 18; color: Theme.soft }
                     TextInput {
                         id: search
@@ -407,17 +407,17 @@ PanelWindow {
 
                     Rectangle {
                         anchors.fill: parent
-                        anchors.margins: 2
-                        radius: Theme.radiusSmall
+                        anchors.margins: Theme.s0
+                        radius: Theme.rCard
                         color: cell.pressed ? Theme.cardHover : cell.index === win.current ? Theme.card : "transparent"
                         Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                     }
                     Column {
                         anchors.centerIn: parent
-                        spacing: 6
+                        spacing: Theme.s1
                         Rectangle {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            width: 50; height: 50; radius: 14
+                            width: 50; height: 50; radius: Theme.rCard
                             color: cell.index === win.current ? Theme.win : Theme.card
                             IconImage {
                                 anchors.centerIn: parent
@@ -480,7 +480,7 @@ PanelWindow {
             RowLayout {
                 visible: !win.query && !win.allApps
                 Layout.fillWidth: true
-                Layout.topMargin: 4
+                Layout.topMargin: Theme.s1
                 Text {
                     Layout.fillWidth: true
                     text: Tr.t("Recommended")
@@ -493,8 +493,8 @@ PanelWindow {
                 visible: !win.query && !win.allApps
                 Layout.fillWidth: true
                 columns: 2
-                columnSpacing: 8
-                rowSpacing: 2
+                columnSpacing: Theme.s2
+                rowSpacing: Theme.s0
 
                 Repeater {
                     model: win.recent
@@ -518,21 +518,21 @@ PanelWindow {
                         Accessible.name: fileName
                         Accessible.description: Tr.t("Recommended file, %1", Tr.ago(modelData.when))
                         Accessible.onPressAction: open()
-                        FocusRim { radius: Theme.radiusSmall + 2 }
+                        FocusRim { radius: Theme.rCard + 2 }
 
                         Rectangle {
                             anchors.fill: parent
-                            radius: Theme.radiusSmall
+                            radius: Theme.rCard
                             color: rec.pressed ? Theme.cardHover : rec.containsMouse ? Theme.card : "transparent"
                             Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                         }
                         RowLayout {
                             anchors.fill: parent
-                            anchors.leftMargin: 10
-                            anchors.rightMargin: 10
-                            spacing: 12
+                            anchors.leftMargin: Theme.s2
+                            anchors.rightMargin: Theme.s2
+                            spacing: Theme.s3
                             Rectangle {
-                                implicitWidth: 36; implicitHeight: 36; radius: 10
+                                implicitWidth: 36; implicitHeight: 36; radius: Theme.rControl
                                 color: Theme.card
                                 Glyph { anchors.centerIn: parent; name: "file"; size: 18; color: Theme.accent }
                             }
@@ -579,13 +579,13 @@ PanelWindow {
 
             Row {
                 anchors.left: parent.left
-                anchors.leftMargin: 24
+                anchors.leftMargin: Theme.s6
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 10
+                spacing: Theme.s2
                 Accessible.role: Accessible.StaticText
                 Accessible.name: Tr.t("Signed in as %1", Quickshell.env("USER") ?? "")
                 Rectangle {
-                    width: 34; height: 34; radius: 17
+                    width: 34; height: 34; radius: width / 2
                     color: Theme.accent
                     Text {
                         anchors.centerIn: parent
@@ -605,7 +605,7 @@ PanelWindow {
             MouseArea {
                 id: powerBtn
                 anchors.right: parent.right
-                anchors.rightMargin: 18
+                anchors.rightMargin: Theme.s4
                 anchors.verticalCenter: parent.verticalCenter
                 width: 38; height: 38
                 hoverEnabled: true
@@ -622,12 +622,12 @@ PanelWindow {
                 Accessible.role: Accessible.ButtonMenu
                 Accessible.name: Tr.t("Power")
                 Accessible.onPressAction: toggle()
-                FocusRim { radius: 21 }
+                FocusRim { radius: height / 2 }
                 scale: pressed ? Theme.pressScale : 1
                 Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                 Rectangle {
                     anchors.fill: parent
-                    radius: 19
+                    radius: height / 2
                     color: powerBtn.containsMouse || win.powerMenu ? Theme.card : "transparent"
                     Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                 }
@@ -639,12 +639,12 @@ PanelWindow {
         Rectangle {
             visible: win.powerMenu
             anchors.right: parent.right
-            anchors.rightMargin: 14
+            anchors.rightMargin: Theme.s3
             anchors.bottom: foot.top
             anchors.bottomMargin: -4
             width: 190
             height: menu.implicitHeight + 12
-            radius: Theme.radiusSmall + 2
+            radius: Theme.rCard
             color: Theme.card
             border.width: Theme.rimWidth
             border.color: Theme.line
@@ -672,18 +672,18 @@ PanelWindow {
                         Accessible.role: Accessible.MenuItem
                         Accessible.name: modelData[1]
                         Accessible.onPressAction: modelData[2]()
-                        FocusRim { anchors.margins: 0; radius: 10; border.width: 1; opacity: 0.6 }
+                        FocusRim { anchors.margins: 0; radius: Theme.rControl; border.width: 1; opacity: 0.6 }
                         Rectangle {
                             anchors.fill: parent
-                            radius: 10
+                            radius: Theme.rControl
                             color: item.containsMouse || item.activeFocus ? Theme.win : "transparent"
                             Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                         }
                         Row {
                             anchors.left: parent.left
-                            anchors.leftMargin: 12
+                            anchors.leftMargin: Theme.s3
                             anchors.verticalCenter: parent.verticalCenter
-                            spacing: 12
+                            spacing: Theme.s3
                             Glyph { name: item.modelData[0]; size: 17 }
                             Text {
                                 text: item.modelData[1]
@@ -706,8 +706,8 @@ PanelWindow {
             readonly property var row: parent.row
             height: 30
             verticalAlignment: Text.AlignBottom
-            bottomPadding: 6
-            leftPadding: 12
+            bottomPadding: Theme.s1
+            leftPadding: Theme.s3
             text: row.header
             color: Theme.soft
             font { family: Theme.sans; pixelSize: Theme.sp(12); weight: Font.DemiBold }
@@ -740,15 +740,15 @@ PanelWindow {
 
             Rectangle {
                 anchors.fill: parent
-                radius: Theme.radiusSmall
+                radius: Theme.rCard
                 color: res.pressed ? Theme.cardHover : res.selected ? Theme.card : "transparent"
                 Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
             }
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: 12
-                anchors.rightMargin: 10
-                spacing: 12
+                anchors.leftMargin: Theme.s3
+                anchors.rightMargin: Theme.s2
+                spacing: Theme.s3
                 Item {
                     implicitWidth: 28; implicitHeight: 28
                     readonly property bool iconic: res.row.kind === "app" || res.row.kind === "setting"
@@ -809,7 +809,7 @@ PanelWindow {
                     Accessible.onPressAction: res.row.alt()
                     Rectangle {
                         anchors.fill: parent
-                        radius: 8
+                        radius: Theme.rSmall
                         color: folderBtn.containsMouse ? Theme.cardHover : Theme.win
                         border.width: Theme.rimWidth
                         border.color: Theme.line
@@ -817,7 +817,7 @@ PanelWindow {
                     Row {
                         id: folderRow
                         anchors.centerIn: parent
-                        spacing: 6
+                        spacing: Theme.s1
                         Glyph { anchors.verticalCenter: parent.verticalCenter; name: "folder"; size: 14; color: Theme.soft }
                         Text {
                             text: Tr.t("Open folder")
@@ -835,7 +835,7 @@ PanelWindow {
                 // Enter runs the selected row.
                 Rectangle {
                     visible: res.selected
-                    implicitWidth: Math.max(26, enterKey.implicitWidth + 12); implicitHeight: Math.max(22, enterKey.implicitHeight + 4); radius: 6
+                    implicitWidth: Math.max(26, enterKey.implicitWidth + 12); implicitHeight: Math.max(22, enterKey.implicitHeight + 4); radius: Theme.rSmall
                     Accessible.ignored: true
                     color: Theme.win
                     border.width: Theme.rimWidth
@@ -881,7 +881,7 @@ PanelWindow {
         Row {
             id: chipRow
             anchors.centerIn: parent
-            spacing: 4
+            spacing: Theme.s1
             Text {
                 text: chip.label
                 color: Theme.fg

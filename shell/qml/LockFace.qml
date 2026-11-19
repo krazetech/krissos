@@ -89,7 +89,7 @@ FocusScope {
             anchors.horizontalCenter: parent.horizontalCenter
             text: Qt.formatDateTime(clock.date, "HH:mm")
             color: Theme.nightFg
-            font { family: Theme.sans; pixelSize: time.size; weight: Font.Light; features: { "tnum": 1 } }
+            font { family: Theme.sans; pixelSize: time.size; weight: Font.Light }
             Accessible.role: Accessible.StaticText
             Accessible.name: text
         }
@@ -103,15 +103,15 @@ FocusScope {
             visible: p !== null && p.trackTitle !== ""
             anchors.horizontalCenter: parent.horizontalCenter
             width: 380; height: 68
-            radius: Theme.radiusSmall
+            radius: Theme.rCard
             color: Theme.alpha(Theme.nightFg, 0.12)
             border.width: 1
             border.color: Theme.alpha(Theme.nightFg, 0.1)
 
             Rectangle {
                 id: artBox
-                anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
-                width: 48; height: 48; radius: 10
+                anchors { left: parent.left; leftMargin: Theme.s2; verticalCenter: parent.verticalCenter }
+                width: 48; height: 48; radius: Theme.rControl
                 color: Theme.alpha(Theme.nightFg, 0.1)
                 clip: true
                 Glyph { anchors.centerIn: parent; name: "music"; color: Theme.alpha(Theme.nightFg, 0.7); visible: art.status !== Image.Ready }
@@ -125,8 +125,8 @@ FocusScope {
                 }
             }
             Column {
-                anchors { left: artBox.right; leftMargin: 12; right: controls.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
-                spacing: 3
+                anchors { left: artBox.right; leftMargin: Theme.s3; right: controls.left; rightMargin: Theme.s2; verticalCenter: parent.verticalCenter }
+                spacing: Theme.s0
                 Text {
                     width: parent.width
                     elide: Text.ElideRight
@@ -144,8 +144,8 @@ FocusScope {
             }
             Row {
                 id: controls
-                anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
-                spacing: 2
+                anchors { right: parent.right; rightMargin: Theme.s2; verticalCenter: parent.verticalCenter }
+                spacing: Theme.s0
                 LockButton {
                     glyph: "prev"
                     accessibleName: Tr.t("Previous track")
@@ -170,8 +170,8 @@ FocusScope {
 
     // Battery and network, small, top right.
     Row {
-        anchors { top: parent.top; right: parent.right; margins: 24 }
-        spacing: 16
+        anchors { top: parent.top; right: parent.right; margins: Theme.s6 }
+        spacing: Theme.s4
         Battery {
             tint: Theme.alpha(Theme.nightFg, 0.85)
             Accessible.role: Accessible.StaticText
@@ -192,7 +192,7 @@ FocusScope {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
         anchors.bottomMargin: Math.max(96, Math.round(parent.height * 0.1))
-        spacing: 12
+        spacing: Theme.s3
 
         Avatar {
             anchors.horizontalCenter: parent.horizontalCenter
@@ -236,7 +236,7 @@ FocusScope {
                 Rectangle {
                     id: box
                     anchors.horizontalCenter: parent.horizontalCenter
-                    width: 260; height: 40; radius: 20
+                    width: 260; height: 40; radius: height / 2
                     color: Theme.alpha(Theme.nightFg, 0.14)
                     border.width: face.host.message && Theme.reduceMotion ? 2 : 1
                     border.color: face.host.message && Theme.reduceMotion ? Theme.red
@@ -262,7 +262,7 @@ FocusScope {
 
                     TextInput {
                         id: field
-                        anchors { left: parent.left; right: go.left; top: parent.top; bottom: parent.bottom; leftMargin: 18; rightMargin: 6 }
+                        anchors { left: parent.left; right: go.left; top: parent.top; bottom: parent.bottom; leftMargin: Theme.s4; rightMargin: Theme.s1 }
                         verticalAlignment: TextInput.AlignVCenter
                         echoMode: TextInput.Password
                         passwordCharacter: "•"
@@ -299,7 +299,7 @@ FocusScope {
                     }
                     LockButton {
                         id: go
-                        anchors { right: parent.right; rightMargin: 4; verticalCenter: parent.verticalCenter }
+                        anchors { right: parent.right; rightMargin: Theme.s1; verticalCenter: parent.verticalCenter }
                         implicitWidth: 32; implicitHeight: 32
                         glyph: "chevron"
                         primary: true
@@ -311,8 +311,8 @@ FocusScope {
 
                 // The keyboard layout, beside the field.
                 Rectangle {
-                    anchors { left: box.right; leftMargin: 8; verticalCenter: box.verticalCenter }
-                    width: layoutText.implicitWidth + 14; height: 24; radius: 8
+                    anchors { left: box.right; leftMargin: Theme.s2; verticalCenter: box.verticalCenter }
+                    width: layoutText.implicitWidth + 14; height: 24; radius: Theme.rSmall
                     color: Theme.alpha(Theme.nightFg, 0.1)
                     Accessible.role: Accessible.StaticText
                     Accessible.name: Tr.t("Keyboard layout: %1", xkb.layout)
@@ -328,7 +328,7 @@ FocusScope {
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.top: box.bottom
-                    anchors.topMargin: 10
+                    anchors.topMargin: Theme.s2
                     text: face.host.message || (caps.on ? Tr.t("Caps Lock is on") : "")
                     color: face.host.message ? Theme.red : Theme.alpha(Theme.nightFg, 0.75)
                     font { family: Theme.sans; pixelSize: 13; weight: Font.Medium }
@@ -364,7 +364,7 @@ FocusScope {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
         anchors.bottomMargin: 28
-        spacing: 8
+        spacing: Theme.s2
         Repeater {
             model: [
                 ["sleep", Tr.t("Sleep"), ["systemctl", "suspend"]],

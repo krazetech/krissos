@@ -57,7 +57,7 @@ PanelWindow {
         anchors.centerIn: parent
         width: Math.min(row.implicitWidth + 32, parent.width - Theme.gap * 4)
         height: row.implicitHeight + 32
-        radius: Theme.radius + 4
+        radius: Theme.rPanel
         color: Theme.bar
         border.width: Theme.rimWidth
         border.color: Theme.rim
@@ -68,8 +68,8 @@ PanelWindow {
 
         opacity: win.open ? 1 : 0
         scale: win.open || Theme.reduceMotion ? 1 : 0.96
-        Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
-        Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+        Behavior on opacity { NumberAnimation { duration: Theme.ms(win.open ? Theme.fast : Theme.fastExit); easing.type: win.open ? Theme.ease : Theme.easeExit } }
+        Behavior on scale { NumberAnimation { duration: Theme.ms(win.open ? Theme.fast : Theme.fastExit); easing.type: win.open ? Theme.ease : Theme.easeExit } }
 
         Keys.onPressed: event => {
             settle.stop();
@@ -95,7 +95,7 @@ PanelWindow {
             implicitHeight: Math.max(132, 86 + Theme.sp(12) * 2.6)
             height: implicitHeight
             orientation: ListView.Horizontal
-            spacing: 8
+            spacing: Theme.s2
             interactive: false
             model: win.wins
             currentIndex: win.current
@@ -104,7 +104,7 @@ PanelWindow {
             preferredHighlightEnd: width / 2 + 68
             highlightRangeMode: ListView.ApplyRange
             highlight: Rectangle {
-                radius: Theme.radiusSmall + 2
+                radius: Theme.rCard
                 color: Theme.card
                 border.width: Theme.focusWidth
                 border.color: Theme.accent
@@ -128,7 +128,7 @@ PanelWindow {
                 Column {
                     anchors.centerIn: parent
                     width: parent.width - 20
-                    spacing: 10
+                    spacing: Theme.s2
                     IconImage {
                         anchors.horizontalCenter: parent.horizontalCenter
                         implicitSize: 56

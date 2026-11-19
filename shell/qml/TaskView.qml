@@ -168,7 +168,7 @@ Scope {
                 anchors.fill: parent
                 color: Theme.high ? Theme.night : Theme.alpha(Theme.night, Theme.dark ? 0.55 : 0.35)
                 opacity: tv.open ? 1 : 0
-                Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
+                Behavior on opacity { NumberAnimation { duration: Theme.ms(tv.open ? Theme.normal : Theme.fastExit); easing.type: tv.open ? Theme.ease : Theme.easeExit } }
             }
 
             MouseArea {
@@ -182,7 +182,7 @@ Scope {
                 anchors.fill: parent
                 opacity: backdrop.opacity
                 scale: tv.open || Theme.reduceMotion ? 1 : 0.96
-                Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
+                Behavior on scale { NumberAnimation { duration: Theme.ms(tv.open ? Theme.normal : Theme.fastExit); easing.type: tv.open ? Theme.ease : Theme.easeExit } }
 
                 Item {
                     id: keys
@@ -298,7 +298,7 @@ Scope {
                                 readonly property int wid: card.w?.id ?? 0
                                 width: parent.width
                                 height: parent.height
-                                radius: Theme.radiusSmall
+                                radius: Theme.rCard
                                 color: drag.pressed || drag.containsMouse ? Theme.cardHover : Theme.card
                                 border.width: Theme.focusWidth
                                 border.color: card.lit ? Theme.accent : Theme.high ? Theme.rim : "transparent"
@@ -319,7 +319,7 @@ Scope {
                                     source: Quickshell.iconPath(card.entry?.icon ?? card.w?.appId ?? "", "application-x-executable")
                                 }
                                 Text {
-                                    anchors { left: icon.right; leftMargin: 8; right: close.left; rightMargin: 4; verticalCenter: icon.verticalCenter }
+                                    anchors { left: icon.right; leftMargin: Theme.s2; right: close.left; rightMargin: Theme.s1; verticalCenter: icon.verticalCenter }
                                     text: card.w?.title || card.entry?.name || card.w?.appId || ""
                                     elide: Text.ElideRight
                                     color: Theme.fg
@@ -339,7 +339,7 @@ Scope {
                                     Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                                     Rectangle {
                                         anchors.fill: parent
-                                        radius: 8
+                                        radius: Theme.rSmall
                                         color: close.containsMouse ? Theme.red : "transparent"
                                         Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                                     }
@@ -379,11 +379,11 @@ Scope {
                 // The desktops.
                 ListView {
                     id: deskRow
-                    anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 24 }
+                    anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: Theme.s6 }
                     width: Math.min(contentWidth, parent.width - 96)
                     height: 140
                     orientation: ListView.Horizontal
-                    spacing: 12
+                    spacing: Theme.s3
                     clip: true
                     boundsBehavior: Flickable.StopAtBounds
                     model: pane.strip.length + (pane.canAdd ? 1 : 0)
@@ -419,7 +419,7 @@ Scope {
 
                         Rectangle {
                             anchors.fill: parent
-                            radius: Theme.radiusSmall
+                            radius: Theme.rCard
                             color: deskArea.containsMouse || desk.containsDrag ? Theme.card : "transparent"
                             Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                         }
@@ -439,7 +439,7 @@ Scope {
                             x: 8; y: 8
                             width: deskRow.tileW
                             height: deskRow.tileH
-                            radius: 10
+                            radius: Theme.rControl
                             color: desk.add ? Theme.card : Theme.night
                             border.width: 2
                             border.color: !desk.add && desk.d?.active ? Theme.accent : desk.containsDrag ? Theme.soft : Theme.rim
@@ -448,7 +448,7 @@ Scope {
 
                             Image {
                                 anchors.fill: parent
-                                anchors.margins: 2
+                                anchors.margins: Theme.s0
                                 visible: !desk.add
                                 source: "file:///usr/share/backgrounds/kriss/kriss-" + (Theme.dark ? "dark" : "light") + ".svg"
                                 sourceSize: Qt.size(deskRow.tileW * 2, deskRow.tileH * 2)
@@ -458,7 +458,7 @@ Scope {
                             // Up to five of its windows' icons.
                             Row {
                                 anchors.centerIn: parent
-                                spacing: 6
+                                spacing: Theme.s1
                                 visible: !desk.add
                                 Repeater {
                                     model: desk.deskWins.slice(0, 5)
@@ -484,13 +484,13 @@ Scope {
                                 Accessible.role: Accessible.Button
                                 Accessible.name: Tr.t("Close desktop")
                                 Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
-                                Rectangle { anchors.fill: parent; radius: 7; color: deskClose.containsMouse ? Theme.red : Theme.alpha(Theme.night, 0.6) }
+                                Rectangle { anchors.fill: parent; radius: Theme.rSmall; color: deskClose.containsMouse ? Theme.red : Theme.alpha(Theme.night, 0.6) }
                                 Glyph { anchors.centerIn: parent; name: "close"; size: 12; color: Theme.nightFg }
                             }
                         }
 
                         Text {
-                            anchors { top: tile.bottom; topMargin: 8; horizontalCenter: tile.horizontalCenter }
+                            anchors { top: tile.bottom; topMargin: Theme.s2; horizontalCenter: tile.horizontalCenter }
                             width: tile.width
                             visible: pane.renaming !== desk.index
                             horizontalAlignment: Text.AlignHCenter
@@ -500,9 +500,9 @@ Scope {
                             font { family: Theme.sans; pixelSize: Theme.sp(13); weight: !desk.add && desk.d?.active ? Font.DemiBold : Font.Medium }
                         }
                         Rectangle {
-                            anchors { top: tile.bottom; topMargin: 4; horizontalCenter: tile.horizontalCenter }
+                            anchors { top: tile.bottom; topMargin: Theme.s1; horizontalCenter: tile.horizontalCenter }
                             width: tile.width; height: Math.max(26, Theme.sp(13) + 12)
-                            radius: 8
+                            radius: Theme.rControl
                             visible: pane.renaming === desk.index
                             color: Theme.win
                             border.width: Theme.rimWidth
@@ -510,7 +510,7 @@ Scope {
                             TextInput {
                                 id: nameInput
                                 anchors.fill: parent
-                                anchors.margins: 6
+                                anchors.margins: Theme.s1
                                 verticalAlignment: TextInput.AlignVCenter
                                 horizontalAlignment: TextInput.AlignHCenter
                                 color: Theme.fg

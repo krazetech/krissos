@@ -93,7 +93,7 @@ MouseArea {
     Rectangle {
         anchors.fill: parent
         anchors.margins: -7
-        radius: Theme.barRadius
+        radius: Theme.rControl
         color: tray.containsMouse || tray.kbFocused || tray.activeFocus ? Theme.card : "transparent"
         border.width: tray.kbFocused || tray.activeFocus ? Theme.focusWidth : 0
         border.color: Theme.accent
@@ -118,7 +118,7 @@ MouseArea {
             id: card
             width: Math.min(300, tip.implicitWidth + 20)
             height: tip.implicitHeight + 12
-            radius: 8
+            radius: Theme.rControl
             color: Theme.card
             border.width: Theme.rimWidth
             border.color: Theme.line

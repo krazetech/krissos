@@ -10,7 +10,7 @@ SDDM lists it as **KrissOS Shell**.
 | `qml/` | The shell. `shell.qml` is the entry point. Colours and fonts are `{{token}}` placeholders filled from `theme/tokens.json` at build time |
 | `qml/i18n/` | Translations, one `<lang>.json` per language (`ms` is Bahasa Melayu). See below |
 | `fuzzy-check` | Tests the launcher's fuzzy ranking and the menus' type-ahead: `node shell/fuzzy-check` |
-| `theme-check` | Tests the light/dark schedule and that every curated accent and its shades pass contrast: `node shell/theme-check` |
+| `theme-check` | Tests the light/dark schedule, that every curated accent and its shades pass contrast, and that no QML radius is off the scale in `Theme.qml`: `node shell/theme-check` |
 | `i18n-check` | Checks every shell string has a translation; `--list` prints them all |
 | `clipboard-check` | Tests the clipboard history with a fake `wl-paste`: sensitive items are never stored, pinned ones survive `clear` (runs in the package build) |
 | `a11y-check` | Checks every clickable item has a name for screen readers (or says it is pointer only), names go through `Tr.t`, and every animation length goes through `Theme.ms()`; `--test` checks the checker |

@@ -7,7 +7,7 @@ Rectangle {
     property Item target: parent
     anchors.fill: parent
     anchors.margins: -4
-    radius: 12
+    radius: Theme.rControl + 4
     color: "transparent"
     border.width: Theme.focusWidth
     border.color: Theme.accent

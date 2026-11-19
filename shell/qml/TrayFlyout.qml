@@ -54,7 +54,7 @@ PanelWindow {
         x: Math.max(8, Math.min(fly.width - width - 8, fly.at - width / 2))
         // Above the ^ on the taskbar, below it in the Mac top bar.
         y: Desktop.mac ? Theme.topBarHeight + 8 : fly.height - Theme.barHeight - height - 8
-        radius: Theme.radiusSmall
+        radius: Theme.rCard
         color: Theme.bar
         border.width: Theme.rimWidth
         border.color: Theme.line
