@@ -138,6 +138,15 @@ ShellRoot {
         function onNotificationsOpenChanged() { fps.measure("notifications " + (Desktop.notificationsOpen ? "open" : "close")); }
         function onTaskViewOpenChanged() { fps.measure("taskview " + (Desktop.taskViewOpen ? "open" : "close")); }
         function onWidgetsOpenChanged() { fps.measure("widgets " + (Desktop.widgetsOpen ? "open" : "close")); }
+        // Locking closes what is open, as on Windows; nothing is left to come back, or to act, after.
+        function onLockedChanged() {
+            if (!Desktop.locked) return;
+            Desktop.launcherOpen = Desktop.notificationsOpen = Desktop.quickOpen = Desktop.calendarOpen = Desktop.taskViewOpen = Desktop.widgetsOpen = false;
+            switcher.finish(false);
+            if (clipboard.open) clipboard.close();
+            snapLayouts.closePicker();
+            snapLayouts.closeAssist();
+        }
     }
 
     // cosmic-comp runs `kriss-shell COMMAND` for the Windows-key shortcuts, which calls these.
