@@ -25,6 +25,7 @@ PanelWindow {
     BackgroundEffect.blurRegion: Region { item: card.opacity > 0 ? card : null; radius: card.radius }
 
     onOpenChanged: if (open) { body.reset(); body.focusFirst(); }
+    Binding { when: win.open; target: Desktop; property: "cornerRoom"; value: card.height + Theme.panelGap }
 
     MouseArea {
         Accessible.ignored: true  // pointer only; the keyboard has its own way

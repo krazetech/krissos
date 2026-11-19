@@ -21,6 +21,19 @@ Singleton {
     // The same list as a model, so the stack keeps its cards (and their motion) when one comes or goes.
     readonly property ScriptModel model: ScriptModel { values: root.all }
     readonly property int popupMs: 6000
+    // When the center was last open or closed: the bell's badge counts only what came after.
+    property real seenAt: 0
+    readonly property int unseen: all.filter(n => (n.saved ? n.time : arrived[n.id] ?? 0) > seenAt).length
+    Connections {
+        target: Desktop
+        function onNotificationsOpenChanged() { root.seenAt = Date.now(); seenStore.setText(String(root.seenAt)); }
+    }
+    FileView {
+        id: seenStore
+        path: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/kriss/notifications-seen"
+        blockLoading: true
+        printErrors: false
+    }
     property var arrived: ({})
     property var held: ({}) // ids that came while a fullscreen window was in front
     property real now: Date.now()
@@ -81,6 +94,8 @@ Singleton {
         try { list = JSON.parse(store.text() || "[]"); } catch (e) {}
         saved = list.map((r, i) => Object.assign(r, { id: "s" + i, saved: true, actions: [], resident: false }));
         dedupe();
+        // With no record yet, what is already in the history counts as seen.
+        seenAt = parseFloat(seenStore.text()) || Math.max(0, ...saved.map(s => s.time ?? 0));
         ready = true;
     }
     property bool ready: false

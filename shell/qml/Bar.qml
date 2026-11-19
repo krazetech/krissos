@@ -395,19 +395,24 @@ PanelWindow {
                 id: bell
                 lit: Desktop.notificationsOpen && Desktop.screen === bar.screen
                 name: Tr.t("Notifications")
-                tip: (Notifs.all.length ? Tr.t("%1 notifications", Notifs.all.length) : Tr.t("No new notifications"))
+                tip: (Notifs.unseen ? Tr.t("%1 new notifications", Notifs.unseen) : Tr.t("No new notifications"))
                     + (Desktop.dnd ? ", " + Tr.t("Do not disturb is on") : "")
                 onActivated: bar.toggle("notificationsOpen", false, bell)
                 Glyph { anchors.centerIn: parent; name: Desktop.dnd ? "bellOff" : "bell" }
+                // New since the center was last open: a count in the button's corner, clear
+                // of the bell; a dot past 9.
                 Rectangle {
-                    visible: Notifs.all.length > 0
-                    x: parent.width - width - 4; y: 4
-                    width: Math.max(16, count.implicitWidth + 8); height: Math.max(16, count.implicitHeight); radius: height / 2
+                    readonly property bool dot: Notifs.unseen > 9
+                    visible: Notifs.unseen > 0
+                    x: parent.width - width - (dot ? 7 : 2); y: dot ? 7 : 2
+                    width: dot ? 8 : Math.max(14, count.implicitWidth + 6); height: dot ? 8 : Math.max(14, count.implicitHeight)
+                    radius: height / 2
                     color: Theme.accent
                     Text {
                         id: count
+                        visible: !parent.dot
                         anchors.centerIn: parent
-                        text: Notifs.all.length
+                        text: Notifs.unseen
                         color: Theme.accentInk
                         font { family: Theme.sans; pixelSize: Theme.sp(10); weight: Font.Bold }
                     }

@@ -22,6 +22,9 @@ Singleton {
         personalisePage = ["colours", "background", "taskbar", "pins", "text"].indexOf(page) >= 0 ? page : "colours";
     }
     property bool widgetsOpen: false
+    // The height of quick settings or the calendar while one is open in the toasts' corner,
+    // so toasts arrive above it instead of on top of it (set by those panels).
+    property int cornerRoom: 0
 
     // The focus rim (FocusRim.qml) shows only once a key has moved the focus, as on Windows
     // and macOS. Opening a panel puts the focus in it without a rim, and the pointer taking
