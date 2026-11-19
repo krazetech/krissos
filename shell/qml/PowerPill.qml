@@ -54,7 +54,7 @@ MouseArea {
             anchors.centerIn: parent
             name: pp.look[0]
             size: 18
-            color: pp.loud ? Theme.accent : Theme.fg
+            color: pp.loud ? Theme.accentText : Theme.fg
         }
     }
 

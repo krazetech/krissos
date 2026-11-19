@@ -290,7 +290,7 @@ Scope {
                                         radius: Theme.rSmall
                                         color: zoneArea.lit ? Theme.accent : Theme.card
                                         border.width: 1
-                                        border.color: zoneArea.lit ? Theme.accent : Theme.line
+                                        border.color: zoneArea.lit ? Theme.accentText : Theme.line
                                         scale: zoneArea.pressed ? Theme.pressScale : 1
                                         Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                                         Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
@@ -385,7 +385,7 @@ Scope {
                                 radius: Theme.rCard
                                 color: card.lit ? Theme.card : "transparent"
                                 border.width: card.lit ? 2 : 0
-                                border.color: Theme.accent
+                                border.color: Theme.accentText
                                 Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                             }
                             IconImage {

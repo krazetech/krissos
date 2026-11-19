@@ -402,7 +402,7 @@ PanelWindow {
                                             visible: status === Image.Ready
                                             source: card.n.image || Quickshell.iconPath(card.n.appIcon || card.n.appName.toLowerCase(), true)
                                         }
-                                        Glyph { anchors.centerIn: parent; visible: !appIcon.visible; name: "bell"; size: 20; color: Theme.accent }
+                                        Glyph { anchors.centerIn: parent; visible: !appIcon.visible; name: "bell"; size: 20; color: Theme.accentText }
                                     }
 
                                     ColumnLayout {
@@ -423,7 +423,7 @@ PanelWindow {
                                                 id: clearGroup
                                                 visible: card.groupSize > 1
                                                 text: Tr.t("Clear %1", card.groupSize)
-                                                color: groupHit.containsMouse ? Theme.fg : Theme.accent
+                                                color: groupHit.containsMouse ? Theme.fg : Theme.accentText
                                                 font { family: Theme.sans; pixelSize: Theme.sp(12); weight: Font.DemiBold }
                                                 Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                                                 MouseArea {

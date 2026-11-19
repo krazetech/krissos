@@ -207,7 +207,7 @@ PanelWindow {
         radius: Theme.rCard
         color: Theme.win
         border.width: 1
-        border.color: input.activeFocus ? Theme.accent : Theme.line
+        border.color: input.activeFocus ? Theme.accentText : Theme.line
         TextInput {
             id: input
             anchors { fill: parent; leftMargin: Theme.s3; rightMargin: Theme.s3 }
@@ -240,7 +240,7 @@ PanelWindow {
             anchors.fill: parent
             preferredRendererType: Shape.CurveRenderer
             ShapePath {
-                strokeColor: Theme.accent
+                strokeColor: Theme.accentText
                 strokeWidth: 1.5
                 fillColor: "transparent"
                 joinStyle: ShapePath.RoundJoin
@@ -277,7 +277,7 @@ PanelWindow {
         radius: Theme.rCard
         color: Theme.card
         border.width: activeFocus ? 2 : 1
-        border.color: activeFocus ? Theme.accent : Theme.line
+        border.color: activeFocus ? Theme.accentText : Theme.line
         transform: Translate { id: shift }
 
         function menuEntries() {
@@ -455,7 +455,7 @@ PanelWindow {
                     Text {
                         anchors.centerIn: parent
                         text: day.model.day
-                        color: day.model.today ? Theme.accentInk : day.model.month === grid.month ? Theme.fg : Theme.alpha(Theme.soft, 0.5)
+                        color: day.model.today ? Theme.accentInk : day.model.month === grid.month ? Theme.fg : Theme.alpha(Theme.soft, 0.7)
                         font { family: Theme.sans; pixelSize: 12; weight: day.model.today ? Font.Bold : Font.Normal }
                     }
                     Rectangle {
@@ -463,7 +463,7 @@ PanelWindow {
                         anchors.horizontalCenter: parent.horizontalCenter
                         anchors.bottom: parent.bottom
                         width: 4; height: 4; radius: width / 2
-                        color: Theme.accent
+                        color: Theme.accentText
                     }
                 }
             }
@@ -474,7 +474,7 @@ PanelWindow {
                     required property var modelData
                     Layout.fillWidth: true
                     spacing: Theme.s2
-                    Rectangle { implicitWidth: 3; implicitHeight: 30; radius: implicitWidth / 2; color: Theme.accent }
+                    Rectangle { implicitWidth: 3; implicitHeight: 30; radius: implicitWidth / 2; color: Theme.accentText }
                     Column {
                         Layout.fillWidth: true
                         Text {
@@ -789,12 +789,12 @@ PanelWindow {
                     Layout.fillWidth: true
                     implicitHeight: 6
                     radius: height / 2
-                    color: Theme.line
+                    color: Theme.track
                     Rectangle {
                         width: parent.width * (sys.diskTotal ? sys.diskUsed / sys.diskTotal : 0)
                         height: parent.height
                         radius: height / 2
-                        color: Theme.accent
+                        color: Theme.accentText
                     }
                 }
             }
@@ -1060,7 +1060,7 @@ PanelWindow {
                 visible: wx.cur !== null
                 Layout.fillWidth: true
                 spacing: Theme.s3
-                Glyph { name: wx.kind(wx.cur?.weather_code ?? 0)[0]; size: 40; stroke: 1.6; color: Theme.accent }
+                Glyph { name: wx.kind(wx.cur?.weather_code ?? 0)[0]; size: 40; stroke: 1.6; color: Theme.accentText }
                 Column {
                     Layout.fillWidth: true
                     Text {

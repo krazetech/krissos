@@ -71,7 +71,7 @@ ColumnLayout {
                 anchors.left: parent.left
                 anchors.leftMargin: Theme.s1
                 text: root.monthName
-                color: title.containsMouse ? Theme.accent : Theme.fg
+                color: title.containsMouse ? Theme.accentText : Theme.fg
                 font { family: Theme.sans; pixelSize: Theme.sp(14); weight: Font.DemiBold }
                 Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
             }
@@ -153,7 +153,7 @@ ColumnLayout {
             Text {
                 anchors.centerIn: parent
                 text: day.model.day
-                color: day.isToday ? Theme.accentInk : day.inMonth ? Theme.fg : Theme.alpha(Theme.soft, 0.5)
+                color: day.isToday ? Theme.accentInk : day.inMonth ? Theme.fg : Theme.alpha(Theme.soft, 0.7)
                 font { family: Theme.sans; pixelSize: Theme.sp(13); weight: day.isToday ? Font.Bold : Font.Normal }
             }
         }

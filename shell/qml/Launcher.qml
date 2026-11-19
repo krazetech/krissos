@@ -308,7 +308,7 @@ PanelWindow {
                 radius: height / 2
                 color: Theme.card
                 border.width: 2
-                border.color: Theme.accent
+                border.color: Theme.accentText
                 RowLayout {
                     anchors.fill: parent
                     anchors.leftMargin: Theme.s4
@@ -534,7 +534,7 @@ PanelWindow {
                             Rectangle {
                                 implicitWidth: 36; implicitHeight: 36; radius: Theme.rControl
                                 color: Theme.card
-                                Glyph { anchors.centerIn: parent; name: "file"; size: 18; color: Theme.accent }
+                                Glyph { anchors.centerIn: parent; name: "file"; size: 18; color: Theme.accentText }
                             }
                             Column {
                                 id: recText
@@ -763,7 +763,7 @@ PanelWindow {
                         anchors.centerIn: parent
                         name: res.row.kind === "file" ? (res.row.folder ? "folder" : "file") : res.row.glyph
                         size: 18
-                        color: res.selected ? Theme.accent : Theme.soft
+                        color: res.selected ? Theme.accentText : Theme.soft
                     }
                 }
                 Column {

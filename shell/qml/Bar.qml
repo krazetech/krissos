@@ -309,7 +309,7 @@ PanelWindow {
                             width: modelData.active ? 22 : 8
                             height: 8
                             radius: height / 2
-                            color: modelData.active ? Theme.accent : (modelData.urgent ? Theme.red : Theme.soft)
+                            color: modelData.active ? Theme.accentText : (modelData.urgent ? Theme.red : Theme.soft)
                             opacity: modelData.active ? 1 : 0.6
                             Behavior on width { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
                         }
@@ -810,7 +810,7 @@ PanelWindow {
                 width: parent.width * Math.max(0, Math.min(1, btn.info.progress ?? 0))
                 height: parent.height
                 radius: parent.radius
-                color: Theme.accent
+                color: Theme.accentText
                 Behavior on width { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
             }
         }
@@ -824,7 +824,7 @@ PanelWindow {
             width: bar.mac ? 4 : btn.front ? 16 : 6
             height: bar.mac ? 4 : 3
             radius: height / 2
-            color: btn.urgent ? Theme.red : btn.front ? Theme.accent : Theme.soft
+            color: btn.urgent ? Theme.red : btn.front ? Theme.accentText : Theme.soft
             Behavior on width { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
         }
     }

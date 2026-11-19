@@ -200,7 +200,7 @@ PanelWindow {
                     radius: Theme.rCard
                     color: card.pressed ? Theme.cardHover : card.lit ? Theme.card : "transparent"
                     border.width: Theme.focusWidth
-                    border.color: card.lit && win.byKeyboard ? Theme.accent : "transparent"
+                    border.color: card.lit && win.byKeyboard ? Theme.accentText : "transparent"
                     Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                 }
 
