@@ -47,10 +47,10 @@ if [ "${KRISS_CHANNEL:-stable}" = testing ]; then
     echo "There is no [kriss-testing] yet; building from [kriss]."
   fi
 fi
-# Calamares and cosmic-comp-kriss take a while to compile: build them only when the repos
+# Calamares, cosmic-comp-kriss and cosmic-settings-kriss take a while to compile: build them only when the repos
 # lack this version. pacman lists repos in order, so [kriss-testing] wins when it is there.
 pacman --config "$conf" -Sy
-for p in calamares cosmic-comp-kriss; do
+for p in calamares cosmic-comp-kriss cosmic-settings-kriss; do
   dir=$src/pkgs/$p
   want=$(source "$dir/PKGBUILD" && echo "$pkgver-$pkgrel")
   have=$(pacman --config "$conf" -Sl | awk -v p="$p" '$2 == p {print $3; exit}')

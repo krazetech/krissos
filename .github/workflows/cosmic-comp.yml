@@ -1,13 +1,13 @@
 name: cosmic-comp
 
-# cosmic-comp-kriss is a full Rust compositor build, so it has its own workflow instead of
-# rebuilding with every change under pkgs/.
+# cosmic-comp-kriss and cosmic-settings-kriss are full Rust builds, so they have their own
+# workflow instead of rebuilding with every change under pkgs/.
 on:
   push:
     branches: [main]
-    paths: ['pkgs/cosmic-comp-kriss/**', '.github/workflows/cosmic-comp.yml']
+    paths: ['pkgs/cosmic-comp-kriss/**', 'pkgs/cosmic-settings-kriss/**', '.github/workflows/cosmic-comp.yml']
   pull_request:
-    paths: ['pkgs/cosmic-comp-kriss/**', '.github/workflows/cosmic-comp.yml']
+    paths: ['pkgs/cosmic-comp-kriss/**', 'pkgs/cosmic-settings-kriss/**', '.github/workflows/cosmic-comp.yml']
   workflow_dispatch:
 
 permissions:
@@ -21,19 +21,23 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container: archlinux:base-devel
+    strategy:
+      fail-fast: false
+      matrix:
+        pkg: [cosmic-comp-kriss, cosmic-settings-kriss]
     steps:
       - name: Install build tools
         run: pacman -Syu --noconfirm --needed git
 
       - uses: actions/checkout@v4
 
-      - name: Build cosmic-comp-kriss
-        run: tools/ci/build-pkgs.sh out pkgs/cosmic-comp-kriss
+      - name: Build ${{ matrix.pkg }}
+        run: tools/ci/build-pkgs.sh out pkgs/${{ matrix.pkg }}
 
       # Kept a week, so a PR's build can be tried on a test machine before it is merged.
       - uses: actions/upload-artifact@v4
         with:
-          name: cosmic-comp-kriss
+          name: ${{ matrix.pkg }}
           path: out/*.pkg.tar.zst
           compression-level: 0
           retention-days: 7
@@ -57,7 +61,8 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: cosmic-comp-kriss
+          pattern: cosmic-*-kriss
+          merge-multiple: true
           path: out
 
       - name: Sign and publish to testing

@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Check kriss-shell-clipboard's store rules with a fake wl-paste: sensitive items are never
+# written, pinned items survive `clear` (sign-in and sign-out), a repeat copy is kept once.
+#     shell/clipboard-check
+set -euo pipefail
+here=$(cd "$(dirname "$0")" && pwd)
+t=$(mktemp -d)
+trap 'rm -rf "$t"' EXIT
+mkdir "$t/bin"
+# --list-types prints $TYPES (one per line); --type X prints $DATA.
+cat >"$t/bin/wl-paste" <<'FAKE'
+#!/bin/sh
+case "$*" in *--list-types*) printf '%b\n' "$TYPES" ;; *CanIncludeInClipboardHistory*) printf '%b' "$DWORD" ;; *) printf %s "$DATA" ;; esac
+FAKE
+chmod +x "$t/bin/wl-paste"
+export PATH="$t/bin:$PATH" XDG_STATE_HOME="$t/state"
+dir=$t/state/kriss/clipboard
+clip() { "$here/kriss-shell-clipboard" "$@" </dev/null >/dev/null; }
+count() { find "$dir" -type f ! -name .lock | wc -l | tr -d ' '; }
+fail() { echo "clipboard-check: $*" >&2; exit 1; }
+
+TYPES='text/plain' DATA=hello CLIPBOARD_STATE=data clip store
+[[ $(count) == 1 ]] || fail "plain text was not stored"
+TYPES='text/plain' DATA=hello CLIPBOARD_STATE=data clip store
+[[ $(count) == 1 ]] || fail "a repeat copy was stored twice"
+
+TYPES='text/plain' DATA=hunter2 CLIPBOARD_STATE=sensitive clip store
+TYPES='text/plain\nx-kde-passwordManagerHint' DATA=hunter2 CLIPBOARD_STATE=data clip store
+TYPES='text/plain\napplication/x-nspasteboard-concealed-type' DATA=hunter2 clip store
+TYPES='text/plain\nExcludeClipboardContentFromMonitorProcessing' DATA=hunter2 clip store
+TYPES='text/plain\nCanIncludeInClipboardHistory' DWORD='\0\0\0\0' DATA=hunter2 clip store
+! grep -rq hunter2 "$dir" || fail "a sensitive item was stored"
+TYPES='text/plain\nCanIncludeInClipboardHistory' DWORD='\001\0\0\0' DATA=allowed clip store
+grep -rq allowed "$dir" || fail "CanIncludeInClipboardHistory=1 was not stored"
+
+id=$("$here/kriss-shell-clipboard" list | python3 -c 'import json,sys; print([i["id"] for i in json.load(sys.stdin) if i.get("text") == "hello"][0])')
+clip pin "$id"
+clip clear
+[[ $(count) == 1 && -n $(find "$dir/pinned" -name "$id.*") ]] || fail "clear removed a pinned item or kept an unpinned one"
+[[ $(stat -c %a "$dir" 2>/dev/null || stat -f %Lp "$dir") == 700 ]] || fail "the history folder is not 0700"
+echo ok

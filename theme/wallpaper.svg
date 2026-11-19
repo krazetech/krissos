@@ -28,6 +28,16 @@
       <stop offset="0" stop-color="{{color14}}" stop-opacity="0"/>
       <stop offset="1" stop-color="{{color14}}" stop-opacity="0.28"/>
     </linearGradient>
+    <!-- Time of day (generate.py): the sky behind the scene and a low or high sun. Both are
+         transparent in the plain dark and light wallpapers. -->
+    <linearGradient id="sky" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="2160">
+      <stop offset="0" stop-color="{{sky_top}}" stop-opacity="{{sky_opacity}}"/>
+      <stop offset="1" stop-color="{{sky_bottom}}" stop-opacity="{{sky_opacity}}"/>
+    </linearGradient>
+    <radialGradient id="sun" gradientUnits="userSpaceOnUse" cx="{{sun_x}}" cy="{{sun_y}}" r="1500">
+      <stop offset="0" stop-color="{{sun}}" stop-opacity="{{sun_opacity}}"/>
+      <stop offset="1" stop-color="{{sun}}" stop-opacity="0"/>
+    </radialGradient>
     <!-- Bounding-box units in the traced path's own space, which is y-up: 0 is the foot. -->
     <linearGradient id="keris" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="{{accent}}" stop-opacity="0"/>
@@ -36,6 +46,8 @@
     </linearGradient>
   </defs>
   <rect x="-2000" y="-2000" width="7840" height="6160" fill="{{bg}}"/>
+  <rect x="-2000" y="-2000" width="7840" height="6160" fill="url(#sky)"/>
+  <rect x="-2000" y="-2000" width="7840" height="6160" fill="url(#sun)"/>
   <rect x="-2000" y="-2000" width="7840" height="6160" fill="url(#pool-low)"/>
   <rect x="-2000" y="-2000" width="7840" height="6160" fill="url(#pool-high)"/>
   <rect x="-2000" y="-2000" width="7840" height="6160" fill="url(#halo)"/>

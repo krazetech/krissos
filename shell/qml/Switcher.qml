@@ -26,6 +26,8 @@ PanelWindow {
         }
         current = (current + by + wins.length) % wins.length;
     }
+    // A screen reader stays on the panel; it hears each window as the selection moves.
+    onCurrentChanged: if (open && wins[current]) panel.Accessible.announce(wins[current].title || wins[current].appId)
     function finish(switchTo) {
         if (!open) return;
         open = false;
@@ -48,7 +50,7 @@ PanelWindow {
     color: "transparent"
     BackgroundEffect.blurRegion: Region { item: panel; radius: panel.radius }
 
-    MouseArea { anchors.fill: parent; onClicked: win.finish(false) }
+    MouseArea { anchors.fill: parent; onClicked: win.finish(false); Accessible.ignored: true }
 
     Rectangle {
         id: panel
@@ -57,10 +59,12 @@ PanelWindow {
         height: row.implicitHeight + 32
         radius: Theme.radius + 4
         color: Theme.bar
-        border.width: 1
+        border.width: Theme.rimWidth
         border.color: Theme.rim
         clip: true
         focus: true
+        Accessible.role: Accessible.Dialog
+        Accessible.name: Tr.t("Switch windows")
 
         opacity: win.open ? 1 : 0
         scale: win.open || Theme.reduceMotion ? 1 : 0.96
@@ -88,7 +92,7 @@ PanelWindow {
             anchors.centerIn: parent
             width: parent.width - 32
             implicitWidth: count * 136 + (count - 1) * spacing
-            implicitHeight: 132
+            implicitHeight: Math.max(132, 86 + Theme.sp(12) * 2.6)
             height: implicitHeight
             orientation: ListView.Horizontal
             spacing: 8
@@ -102,7 +106,7 @@ PanelWindow {
             highlight: Rectangle {
                 radius: Theme.radiusSmall + 2
                 color: Theme.card
-                border.width: 2
+                border.width: Theme.focusWidth
                 border.color: Theme.accent
             }
 
@@ -111,10 +115,15 @@ PanelWindow {
                 required property var modelData
                 required property int index
                 width: 136
-                height: 132
+                height: row.height
                 hoverEnabled: true
                 onClicked: { win.current = index; win.finish(true); }
                 readonly property var entry: DesktopEntries.heuristicLookup(modelData.appId)
+                Accessible.role: Accessible.ListItem
+                Accessible.name: modelData.title || entry?.name || modelData.appId
+                Accessible.description: entry?.name ?? ""
+                Accessible.selected: index === win.current
+                Accessible.onPressAction: { win.current = index; win.finish(true); }
 
                 Column {
                     anchors.centerIn: parent
@@ -134,7 +143,7 @@ PanelWindow {
                         wrapMode: Text.Wrap
                         text: cell.modelData.title || cell.entry?.name || cell.modelData.appId
                         color: Theme.fg
-                        font { family: Theme.sans; pixelSize: 12; weight: cell.index === win.current ? Font.DemiBold : Font.Medium }
+                        font { family: Theme.sans; pixelSize: Theme.sp(12); weight: cell.index === win.current ? Font.DemiBold : Font.Medium }
                     }
                 }
             }

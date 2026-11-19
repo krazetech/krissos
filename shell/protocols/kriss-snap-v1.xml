@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<protocol name="kriss_snap_v1">
+  <copyright>
+    SPDX-License-Identifier: GPL-3.0-only
+  </copyright>
+  <description summary="snap layouts for the KrissOS Shell">
+    Lets the shell put a window into a snap zone (a layout's half, third or
+    quarter) and tells it when the pointer rests on a window's maximize
+    button, so it can offer the layouts there. Windows are named by their
+    ext_foreign_toplevel_handle_v1 identifier.
+  </description>
+
+  <interface name="kriss_snap_manager_v1" version="1">
+    <request name="destroy" type="destructor"/>
+
+    <request name="snap">
+      <description summary="tile a window into a zone of its screen">
+        The zone is in twelfths of the screen's work area (without panels),
+        so 0 0 6 12 is the left half and 4 0 4 12 the middle third. The
+        whole area maximizes. Gaps are added as for cosmic-comp's own
+        snapping, and the window goes back to its old size when dragged out.
+      </description>
+      <arg name="toplevel" type="string" summary="ext_foreign_toplevel_handle_v1 identifier"/>
+      <arg name="x" type="uint"/>
+      <arg name="y" type="uint"/>
+      <arg name="width" type="uint"/>
+      <arg name="height" type="uint"/>
+    </request>
+
+    <event name="maximize_hover">
+      <description summary="the pointer entered or left a maximize button">
+        Only for windows with server-side decorations: cosmic-comp can't
+        see the buttons apps draw themselves.
+      </description>
+      <arg name="toplevel" type="string" summary="ext_foreign_toplevel_handle_v1 identifier"/>
+      <arg name="hovered" type="uint" summary="1 entered, 0 left"/>
+    </event>
+  </interface>
+</protocol>

@@ -9,7 +9,8 @@ import Quickshell.Io
 Singleton {
     id: root
 
-    // [{id, appId, title, active, minimized, fullscreen, output}], as the helper reports them.
+    // [{id, appId, title, active, minimized, fullscreen, output, workspace, geo}], as the helper
+    // reports them; geo[output] is [x, y, width, height] on that screen.
     property var raw: []
     // The same, with each appId swapped for the pinned app it belongs to. A window's id
     // can name another desktop file for the same program (KDE System Settings runs as
@@ -102,6 +103,53 @@ Singleton {
         helper.write("close " + id + "\n");
     }
 
+    // Desktops (cosmic-comp's workspaces), every screen's, in order:
+    // [{id, name, active, outputs}]. Windows say which one they are on (`workspace`).
+    property var workspaces: []
+
+    // One screen's desktops; all of them where the compositor does not say which screen.
+    function desktopsOn(screenName) {
+        return workspaces.filter(d => d.outputs.length === 0 || d.outputs.indexOf(screenName) >= 0);
+    }
+    function switchTo(id) {
+        helper.write("workspace " + id + "\n");
+    }
+    function moveTo(winId, deskId) {
+        helper.write("move " + winId + " " + deskId + "\n");
+    }
+    // Windows+Ctrl+D: a new desktop, as on Windows. cosmic-comp can't create one on request,
+    // but always keeps an empty one at the end, so switch to that. Nothing when it is the current one.
+    function newDesktop(screenName) {
+        const desks = desktopsOn(screenName), last = desks[desks.length - 1];
+        if (last && !last.active) switchTo(last.id);
+    }
+    // Close a desktop, as on Windows: its windows move to the one before it (the first
+    // desktop's to the one after), which becomes the current one if this one was. cosmic-comp
+    // then drops the empty desktop itself. Custom names move along with their desktops.
+    function closeDesktop(id) {
+        const all = workspaces.find(d => d.id === id);
+        if (!all) return;
+        const desks = desktopsOn(all.outputs[0] ?? ""), i = desks.findIndex(d => d.id === id);
+        const to = desks[i > 0 ? i - 1 : 1];
+        if (!to) return;
+        for (const w of raw) if (w.workspace === id) moveTo(w.id, to.id);
+        if (all.active) switchTo(to.id);
+        if (i < Desktop.desktopNames.length) {
+            const names = Desktop.desktopNames.slice();
+            names.splice(i, 1);
+            Desktop.desktopNames = names;
+        }
+    }
+
+    // Snap layouts, with cosmic-comp-kriss: tile a window into zone [x, y, width, height],
+    // in twelfths of its screen's work area. The pointer resting on a window's maximize
+    // button (or leaving it) comes as maximizeHovered.
+    property bool snapReady: false
+    signal maximizeHovered(int id, bool on)
+    function snap(id, zone) {
+        helper.write("snap " + id + " " + zone.join(" ") + "\n");
+    }
+
     // Progress, badge counts and "needs attention" that apps send the way Ubuntu's dock reads
     // them (com.canonical.Unity.LauncherEntry, on the session bus), by lower-case desktop file
     // id: {"firefox": {"progress": 0.4, "progress-visible": true, "count": 3, "urgent": false}}.
@@ -143,6 +191,9 @@ Singleton {
                     // Newer helpers also send other messages as objects; only the window list is an array.
                     const msg = JSON.parse(line);
                     if (Array.isArray(msg)) root.raw = msg;
+                    else if (msg.workspaces) root.workspaces = msg.workspaces;
+                    else if (msg.snap) root.snapReady = true;
+                    else if (msg.hover !== undefined) root.maximizeHovered(msg.hover, msg.on);
                     else if (msg.thumb !== undefined) root.thumbs = Object.assign({}, root.thumbs, { [msg.thumb]: msg.url });
                 } catch (e) {
                     console.warn("kriss-shell-toplevels:", line);
@@ -153,7 +204,7 @@ Singleton {
         // shell log (`qs log`), one log line per line.
         stderr: SplitParser { onRead: line => console.warn("kriss-shell-toplevels:", line) }
         // ponytail: restart forever with a fixed delay; a crash loop only costs a log line every 2 s.
-        onExited: (code, status) => { root.thumbs = {}; restart.start(); }
+        onExited: (code, status) => { root.thumbs = {}; root.workspaces = []; root.snapReady = false; restart.start(); }
     }
 
     Timer {

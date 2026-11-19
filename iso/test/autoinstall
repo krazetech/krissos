@@ -9,6 +9,9 @@
 set -euxo pipefail
 
 disk=/dev/vda t=/target
+# kriss_test_luks=PASSPHRASE on the live command line: "Encrypt system" ticked, so / goes
+# in LUKS2 as Calamares names it (luks-<uuid>) and KRISSBOOT stays plain (noEncrypt).
+luks=$(sed -n 's/.*kriss_test_luks=\([^ ]*\).*/\1/p' /proc/cmdline)
 if [ -d /sys/firmware/efi ]; then
   sgdisk -Z -n1:0:+512M -t1:ef00 -n2:0:+2G -t2:ea00 -n3:0:0 -t3:8304 "$disk"
   udevadm settle
@@ -20,6 +23,12 @@ else
   efi='' boot=${disk}1 rootdev=${disk}2
 fi
 mkfs.fat -F32 -n KRISSBOOT "$boot"
+if [ -n "$luks" ]; then
+  printf %s "$luks" | cryptsetup luksFormat --type luks2 --batch-mode "$rootdev" -
+  luksuuid=$(cryptsetup luksUUID "$rootdev")
+  printf %s "$luks" | cryptsetup open "$rootdev" "luks-$luksuuid" -
+  rootdev=/dev/mapper/luks-$luksuuid
+fi
 mkfs.btrfs -f -L KrissOS "$rootdev"
 mkdir -p "$t"
 mount "$rootdev" "$t"
@@ -46,6 +55,8 @@ if grep -q '^live:' "$t/etc/passwd"; then exit 1; fi
 # Calamares' machineid, fstab, locale and users jobs.
 systemd-machine-id-setup --root="$t"
 genfstab -U "$t" >>"$t/etc/fstab"
+# Calamares' fstab job: with / encrypted and /boot plain, crypttab lists / with no key.
+if [ -n "$luks" ]; then echo "luks-$luksuuid UUID=$luksuuid none" >>"$t/etc/crypttab"; fi
 sed -i 's/^#en_US.UTF-8/en_US.UTF-8/' "$t/etc/locale.gen"
 arch-chroot "$t" locale-gen
 echo LANG=en_US.UTF-8 >"$t/etc/locale.conf"
@@ -60,6 +71,17 @@ echo kriss:kriss | arch-chroot "$t" chpasswd
 grep -q ' kriss-kms plymouth ' "$t/etc/mkinitcpio.conf.d/kriss.conf"
 grep -qw splash "$t/etc/kernel/cmdline"
 grep -qx 'Theme=kriss' "$t/etc/plymouth/plymouthd.conf"
+# Encrypted: the encrypt hook before filesystems, cryptdevice= naming the LUKS partition.
+if [ -n "$luks" ]; then
+  grep -q ' block encrypt filesystems ' "$t/etc/mkinitcpio.conf.d/kriss.conf"
+  grep -q "^cryptdevice=UUID=$luksuuid:luks-$luksuuid root=UUID=" "$t/etc/kernel/cmdline"
+  for img in "$t"/boot/initramfs-*.img; do
+    files=$(arch-chroot "$t" lsinitcpio "/boot/${img##*/}")
+    grep -q 'hooks/encrypt$' <<<"$files"
+  done
+elif grep -q encrypt "$t/etc/mkinitcpio.conf.d/kriss.conf"; then
+  exit 1
+fi
 
 # Serial console for the test boot, and one snapshot to prove the Snapshots menu.
 sed -i 's/$/ console=ttyS0,115200 systemd.journald.forward_to_console=1/' "$t/etc/kernel/cmdline"
@@ -92,4 +114,5 @@ fi
 echo "kriss-limine-conf: $(base64 -w0 "$conf")"
 ls -lR "$t/boot" ${efi:+"$t/efi"}
 umount -R "$t" || { fuser -vm "$t" || true; exit 1; }
+if [ -n "$luks" ]; then cryptsetup close "luks-$luksuuid"; fi
 echo 'kriss-autoinstall: done'
