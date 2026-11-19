@@ -523,14 +523,10 @@ PanelWindow {
     }
 
     // Right-click on an empty part of the bar.
-    // ponytail: Taskbar settings opens shell.json until a Personalise page exists.
     function barMenu(item, byKeyboard) {
         const tm = taskManager();
         const out = tm ? [{ text: Tr.t("Task Manager"), icon: tm.icon, run: () => tm.execute() }] : [];
-        // In a text editor if one is installed: the system's choice for JSON can be anything.
-        const editor = ["com.system76.CosmicEdit", "org.gnome.TextEditor", "org.kde.kate", "org.kde.kwrite", "org.xfce.mousepad"]
-            .map(id => DesktopEntries.byId(id)).find(e => e) ?? null;
-        out.push({ text: Tr.t("Taskbar settings"), glyph: "sun", run: () => bar.openWith(editor, "file://" + Desktop.configFile) });
+        out.push({ text: Tr.t("Taskbar settings"), glyph: "sun", run: () => Desktop.personalise("taskbar") });
         menu.show(item, out, byKeyboard);
     }
 

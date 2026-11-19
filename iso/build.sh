@@ -31,10 +31,10 @@ chown -R builder "$src" "$local_repo"
 for p in kriss-keyring kriss-settings kriss-theme kriss-tools kriss-shell kriss-installer; do
   su builder -c "cd '$src/pkgs/$p' && PKGDEST='$local_repo' makepkg --noconfirm --nodeps"
 done
-# Calamares and cosmic-comp-kriss take a while to compile: build them only when [kriss]
+# Calamares, cosmic-comp-kriss and cosmic-settings-kriss take a while to compile: build them only when [kriss]
 # lacks this version.
 pacman --config "$here/pacman.conf" -Sy
-for p in calamares cosmic-comp-kriss; do
+for p in calamares cosmic-comp-kriss cosmic-settings-kriss; do
   dir=$src/pkgs/$p
   want=$(source "$dir/PKGBUILD" && echo "$pkgver-$pkgrel")
   have=$(pacman --config "$here/pacman.conf" -Sl kriss | awk -v p="$p" '$2 == p {print $3}')

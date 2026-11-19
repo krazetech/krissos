@@ -3,9 +3,9 @@ name: packages
 on:
   push:
     branches: [main]
-    paths: ['pkgs/**', '!pkgs/linux-kriss/**', '!pkgs/linux-kriss-asahi/**', '!pkgs/cosmic-comp-kriss/**', 'tools/**', 'shell/**', 'theme/**', 'installer/**', '.github/workflows/pkgs.yml']
+    paths: ['pkgs/**', '!pkgs/linux-kriss/**', '!pkgs/linux-kriss-asahi/**', '!pkgs/cosmic-comp-kriss/**', '!pkgs/cosmic-settings-kriss/**', 'tools/**', 'shell/**', 'theme/**', 'installer/**', '.github/workflows/pkgs.yml']
   pull_request:
-    paths: ['pkgs/**', '!pkgs/linux-kriss/**', '!pkgs/linux-kriss-asahi/**', '!pkgs/cosmic-comp-kriss/**', 'tools/**', 'shell/**', 'theme/**', 'installer/**', '.github/workflows/pkgs.yml']
+    paths: ['pkgs/**', '!pkgs/linux-kriss/**', '!pkgs/linux-kriss-asahi/**', '!pkgs/cosmic-comp-kriss/**', '!pkgs/cosmic-settings-kriss/**', 'tools/**', 'shell/**', 'theme/**', 'installer/**', '.github/workflows/pkgs.yml']
   workflow_dispatch:
 
 permissions:
@@ -59,9 +59,9 @@ jobs:
       - name: Test the release notes script
         run: tools/ci/release-notes-test.sh
 
-      # The kernels are built by kernel.yml and kernel-asahi.yml, the compositor by cosmic-comp.yml.
+      # The kernels are built by kernel.yml and kernel-asahi.yml, the compositor and settings app by cosmic-comp.yml.
       - name: Build packages
-        run: tools/ci/build-pkgs.sh out $(ls -d pkgs/*/ | grep -v -e '^pkgs/linux-kriss' -e '^pkgs/cosmic-comp-kriss')
+        run: tools/ci/build-pkgs.sh out $(ls -d pkgs/*/ | grep -v -e '^pkgs/linux-kriss' -e '^pkgs/cosmic-comp-kriss' -e '^pkgs/cosmic-settings-kriss')
 
       - name: Sign and publish
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'

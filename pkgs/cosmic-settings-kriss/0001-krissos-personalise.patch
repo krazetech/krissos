@@ -1,0 +1,222 @@
+diff --git a/cosmic-settings/src/app.rs b/cosmic-settings/src/app.rs
+index b77f643..5a99ece 100644
+--- a/cosmic-settings/src/app.rs
++++ b/cosmic-settings/src/app.rs
+@@ -96,7 +96,7 @@ impl SettingsApp {
+             #[cfg(feature = "page-display")]
+             PageCommands::Displays => self.pages.page_id::<display::Page>(),
+             #[cfg(feature = "wayland")]
+-            PageCommands::Dock => self.pages.page_id::<desktop::dock::Page>(),
++            PageCommands::Dock => self.pages.page_id::<desktop::dock::Page>().or_else(|| self.pages.page_id::<desktop::personalise::Page>()),
+             #[cfg(feature = "wayland")]
+             PageCommands::DockApplet => self.pages.page_id::<desktop::dock::applets::Page>(),
+             #[cfg(feature = "page-input")]
+@@ -112,7 +112,7 @@ impl SettingsApp {
+             #[cfg(feature = "page-networking")]
+             PageCommands::Network => self.pages.page_id::<networking::Page>(),
+             #[cfg(feature = "wayland")]
+-            PageCommands::Panel => self.pages.page_id::<desktop::panel::Page>(),
++            PageCommands::Panel => self.pages.page_id::<desktop::panel::Page>().or_else(|| self.pages.page_id::<desktop::personalise::Page>()),
+             #[cfg(feature = "wayland")]
+             PageCommands::PanelApplet => {
+                 self.pages.page_id::<desktop::panel::applets_inner::Page>()
+@@ -132,7 +132,7 @@ impl SettingsApp {
+             PageCommands::Users => self.pages.page_id::<system::users::Page>(),
+             #[cfg(feature = "page-networking")]
+             PageCommands::Vpn => self.pages.page_id::<networking::vpn::Page>(),
+-            PageCommands::Wallpaper => self.pages.page_id::<desktop::wallpaper::Page>(),
++            PageCommands::Wallpaper => self.pages.page_id::<desktop::wallpaper::Page>().or_else(|| self.pages.page_id::<desktop::personalise::Page>()),
+             #[cfg(feature = "page-window-management")]
+             PageCommands::WindowManagement => {
+                 self.pages.page_id::<desktop::window_management::Page>()
+diff --git a/cosmic-settings/src/pages/desktop/mod.rs b/cosmic-settings/src/pages/desktop/mod.rs
+index 0f7282f..e1a87e5 100644
+--- a/cosmic-settings/src/pages/desktop/mod.rs
++++ b/cosmic-settings/src/pages/desktop/mod.rs
+@@ -6,6 +6,7 @@ pub mod appearance;
+ pub mod dock;
+ #[cfg(feature = "wayland")]
+ pub mod panel;
++pub mod personalise;
+ pub mod wallpaper;
+ #[cfg(feature = "page-window-management")]
+ pub mod window_management;
+@@ -35,11 +36,17 @@ impl page::AutoBind<crate::pages::Message> for Page {
+     fn sub_pages(
+         mut page: page::Insert<crate::pages::Message>,
+     ) -> page::Insert<crate::pages::Message> {
+-        page = page.sub_page::<wallpaper::Page>();
++        // KrissOS: the shell's Personalise window takes over the wallpaper, panel and dock.
++        let kriss = personalise::active();
++        if kriss {
++            page = page.sub_page::<personalise::Page>();
++        } else {
++            page = page.sub_page::<wallpaper::Page>();
++        }
+         page = page.sub_page::<appearance::Page>();
+ 
+         #[cfg(feature = "wayland")]
+-        {
++        if !kriss {
+             page = page.sub_page::<panel::Page>();
+             page = page.sub_page::<dock::Page>();
+         }
+@@ -59,8 +66,15 @@ impl page::AutoBind<crate::pages::Message> for Page {
+ }
+ 
+ #[derive(Copy, Clone, Debug)]
+-pub enum Message {}
++pub enum Message {
++    /// KrissOS: open the shell's Personalise window at this page.
++    Personalise(&'static str),
++}
+ 
+ impl Page {
+-    pub fn update(&mut self, _message: Message) {}
++    pub fn update(&mut self, message: Message) {
++        match message {
++            Message::Personalise(page) => personalise::open(page),
++        }
++    }
+ }
+diff --git a/cosmic-settings/src/pages/desktop/personalise.rs b/cosmic-settings/src/pages/desktop/personalise.rs
+new file mode 100644
+index 0000000..a1c402b
+--- /dev/null
++++ b/cosmic-settings/src/pages/desktop/personalise.rs
+@@ -0,0 +1,91 @@
++// Copyright 2026 Kraze Tech
++// SPDX-License-Identifier: GPL-3.0-only
++
++// KrissOS: in the KrissOS Shell session, the shell draws the wallpaper and the taskbar, so
++// its own Personalise window replaces the Wallpaper, Panel and Dock pages. This page links
++// to each of that window's pages.
++
++use cosmic::widget::{self, settings};
++use cosmic::{Apply, Element};
++use cosmic_settings_page::{self as page, Section, section};
++use slotmap::SlotMap;
++
++/// The Personalise window's pages, as `kriss-shell personalise` names them.
++const PAGES: [&str; 5] = ["colours", "background", "taskbar", "pins", "text"];
++
++/// True in the KrissOS Shell session, which sets XDG_CURRENT_DESKTOP=KrissOS:COSMIC.
++pub fn active() -> bool {
++    std::env::var("XDG_CURRENT_DESKTOP").is_ok_and(|d| d.split(':').any(|d| d == "KrissOS"))
++}
++
++/// Opens the Personalise window at that page.
++pub fn open(page: &'static str) {
++    // The thread reaps the short-lived `kriss-shell` process.
++    std::thread::spawn(move || {
++        if let Err(err) = std::process::Command::new("kriss-shell")
++            .args(["personalise", page])
++            .status()
++        {
++            tracing::error!(?err, "failed to open Personalise");
++        }
++    });
++}
++
++#[derive(Default)]
++pub struct Page;
++
++impl page::Page<crate::pages::Message> for Page {
++    fn info(&self) -> page::Info {
++        page::Info::new("personalise", "preferences-desktop-wallpaper-symbolic")
++            .title(fl!("kriss-personalise"))
++            .description(fl!("kriss-personalise-desc"))
++    }
++
++    fn content(
++        &self,
++        sections: &mut SlotMap<section::Entity, Section<crate::pages::Message>>,
++    ) -> Option<page::Content> {
++        Some(vec![sections.insert(links())])
++    }
++}
++
++impl page::AutoBind<crate::pages::Message> for Page {}
++
++fn links() -> Section<crate::pages::Message> {
++    // A title and a description for each of PAGES, in order.
++    let mut descriptions = slab::Slab::new();
++    for text in [
++        fl!("kriss-colours"),
++        fl!("kriss-colours-desc"),
++        fl!("kriss-background"),
++        fl!("kriss-background-desc"),
++        fl!("kriss-taskbar"),
++        fl!("kriss-taskbar-desc"),
++        fl!("kriss-pins"),
++        fl!("kriss-pins-desc"),
++        fl!("kriss-text"),
++        fl!("kriss-text-desc"),
++    ] {
++        descriptions.insert(text);
++    }
++
++    Section::default()
++        .title(fl!("kriss-personalise"))
++        .descriptions(descriptions)
++        .view::<Page>(move |_binder, _page, section| {
++            let d = &section.descriptions;
++            // No heading: the page's own title already says Personalise.
++            let mut list = settings::section();
++            for (i, id) in PAGES.into_iter().enumerate() {
++                list = list.add(
++                    settings::item::builder(&d[i * 2])
++                        .description(&d[i * 2 + 1])
++                        .control(
++                            widget::button::standard(fl!("kriss-open"))
++                                .on_press(crate::pages::desktop::Message::Personalise(id)),
++                        ),
++                );
++            }
++            list.apply(Element::from).map(crate::pages::Message::Desktop)
++        })
++}
+diff --git a/i18n/en/cosmic_settings.ftl b/i18n/en/cosmic_settings.ftl
+index b27e2f7..90d81b2 100644
+--- a/i18n/en/cosmic_settings.ftl
++++ b/i18n/en/cosmic_settings.ftl
+@@ -1109,3 +1109,19 @@ full-name = Full name
+ invalid-username = Invalid username
+ password-mismatch = Password and confirmation must match
+ save = Save
++
++## KrissOS: the shell's Personalise window, linked from Desktop
++
++kriss-personalise = Personalise
++kriss-personalise-desc = Colours, background, taskbar, pinned apps and text size, in the KrissOS Shell's Personalise window.
++kriss-open = Open
++kriss-colours = Colours
++kriss-colours-desc = Accent colour, dark or light mode
++kriss-background = Background
++kriss-background-desc = Wallpaper and pictures
++kriss-taskbar = Taskbar
++kriss-taskbar-desc = Alignment, size, auto-hide and tray icons
++kriss-pins = Pinned apps
++kriss-pins-desc = The apps pinned to Start and the taskbar
++kriss-text = Text and contrast
++kriss-text-desc = Text size and high contrast
+diff --git a/i18n/ms/cosmic_settings.ftl b/i18n/ms/cosmic_settings.ftl
+index e69de29..ce820d3 100644
+--- a/i18n/ms/cosmic_settings.ftl
++++ b/i18n/ms/cosmic_settings.ftl
+@@ -0,0 +1,15 @@
++## KrissOS: the shell's Personalise window, linked from Desktop
++
++kriss-personalise = Peribadikan
++kriss-personalise-desc = Warna, latar belakang, bar tugas, aplikasi disematkan dan saiz teks, dalam tetingkap Peribadikan KrissOS Shell.
++kriss-open = Buka
++kriss-colours = Warna
++kriss-colours-desc = Warna aksen, mod gelap atau cerah
++kriss-background = Latar belakang
++kriss-background-desc = Kertas dinding dan gambar
++kriss-taskbar = Bar tugas
++kriss-taskbar-desc = Penjajaran, saiz, sembunyi automatik dan ikon dulang
++kriss-pins = Aplikasi disematkan
++kriss-pins-desc = Aplikasi yang disematkan pada Mula dan bar tugas
++kriss-text = Teks dan kontras
++kriss-text-desc = Saiz teks dan kontras tinggi

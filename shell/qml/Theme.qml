@@ -80,9 +80,11 @@ Singleton {
     // Geometry is not a token: it only lives here.
     // The taskbar, sized like Windows 11's: 48 tall, 40 px buttons, 24 px icons.
     // They grow half as fast as the text, so the two-line clock still fits at large text sizes.
-    readonly property int barHeight: Math.round(48 * Math.max(1, (1 + textScale) / 2))
-    readonly property int barButton: Math.round(40 * Math.max(1, (1 + textScale) / 2))
-    readonly property int barIcon: 24
+    // Small and large scale all three, from Personalise's taskbar size.
+    readonly property real barScale: ({ small: 0.84, large: 1.17 })[Desktop.taskbarSize] ?? 1
+    readonly property int barHeight: Math.round(48 * barScale * Math.max(1, (1 + textScale) / 2))
+    readonly property int barButton: Math.round(40 * barScale * Math.max(1, (1 + textScale) / 2))
+    readonly property int barIcon: Math.round(24 * barScale)
     readonly property int barRadius: 10    // hover and active backgrounds in the bar
     readonly property int trayIcon: 18
     // Between the bar and the panels that open from it, and from the screen's edge.

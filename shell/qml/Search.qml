@@ -152,7 +152,7 @@ Scope {
     // Settings: each page of COSMIC Settings, and each KDE System Settings module when KDE's
     // is installed, read once from their desktop files (they are hidden from the app list, so
     // DesktopEntries leaves them out). The COSMIC Panel and Dock pages are left out: the
-    // KrissOS taskbar replaces both. Each is {id, name, nameMs, words, icon, exec}.
+    // KrissOS taskbar replaces both; so are COSMIC's and KDE's Wallpaper, as the shell draws its own. Each is {id, name, nameMs, words, icon, exec}.
     property var settings: []
     Process {
         id: pages
@@ -171,7 +171,7 @@ Scope {
             onStreamFinished: {
                 const seen = {};
                 root.settings = text.split("\n").map(l => l.split("\t")).filter(f => {
-                    if (f.length < 6 || !f[1] || !f[5] || seen[f[0]] || /\.(Panel|Dock)$/.test(f[0])) return false;
+                    if (f.length < 6 || !f[1] || !f[5] || seen[f[0]] || /\.(Panel|Dock|Wallpaper)$|^kcm_wallpaper$/.test(f[0])) return false;
                     return seen[f[0]] = true;
                 }).map(f => ({ id: f[0], name: f[1], nameMs: f[2], words: f[3].split(";").filter(w => w), icon: f[4],
                     exec: f[5].split(" ").filter(a => a && !a.startsWith("%")) }));
@@ -206,15 +206,27 @@ Scope {
         touchpad: ["Pad sentuh", "pad sentuh;gerak isyarat;touchpad;trackpad;gestures"],
         users: ["Pengguna", "pengguna;akaun;kata laluan;users;accounts;password;sign-in options"],
         vpn: ["VPN", "vpn;rangkaian peribadi maya;private network"],
-        wallpaper: ["Kertas dinding", "kertas dinding;latar belakang;wallpaper;background;desktop background;personalise"],
         windowmanagement: ["Pengurusan tetingkap", "tetingkap;jubin;window management;windows;snap;tiling;focus"],
         wired: ["Berwayar", "berwayar;ethernet;kabel;wired;cable;lan"],
         wireless: ["Wi-Fi", "wifi;wi-fi;wayarles;tanpa wayar;internet;wireless"],
         workspaces: ["Ruang kerja", "ruang kerja;desktop maya;workspaces;virtual desktops;task view"]
     })
 
+    // The shell's own Personalise pages (Personalise.qml), with the words people look for them by.
+    // Their words count in full, so "wallpaper" finds the page above a file of that name.
+    readonly property var ownPages: [
+        ["colours", Tr.t("Personalise"), "preferences-desktop-theme", "accent;accent colour;color;colours;dark mode;light mode;theme;personalise;personalize;warna;warna aksen;mod gelap;tema;peribadikan"],
+        ["background", Tr.t("Background"), "preferences-desktop-wallpaper", "wallpaper;background;desktop background;picture;kertas dinding;latar belakang;gambar"],
+        ["taskbar", Tr.t("Taskbar"), "preferences-desktop", "taskbar;taskbar alignment;auto-hide;tray;system tray;combine;bar tugas;dulang"],
+        ["pins", Tr.t("Pinned apps"), "preferences-desktop", "pins;pinned;start;pin to taskbar;unpin;sematkan;disematkan"],
+        ["text", Tr.t("Text and contrast"), "preferences-desktop-font", "text size;font size;bigger text;high contrast;saiz teks;teks besar;kontras tinggi"]
+    ]
+
     function settingRows(q, malay) {
-        return settings.map(e => {
+        return ownPages.map(p => ({
+            kind: "setting", label: p[1], icon: p[2], open: () => Desktop.personalise(p[0]), detail: "",
+            score: Math.max(Fuzzy.score(p[1], q), ...p[3].split(";").map(x => Fuzzy.score(x, q)).filter(x => x >= 500))
+        })).concat(settings.map(e => {
             const w = pageWords[e.id.split(".").pop().toLowerCase()];
             return {
                 kind: "setting", label: malay && (e.nameMs || w) ? e.nameMs || w[0] : e.name, icon: e.icon, exec: e.exec,
@@ -224,6 +236,6 @@ Scope {
                 score: Math.max(Fuzzy.best([e.name, e.nameMs], q),
                     ...[...e.words, ...(w ? w[1].split(";") : [])].map(x => Fuzzy.score(x, q) - 100).filter(x => x >= 500))
             };
-        });
+        }));
     }
 }

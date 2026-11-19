@@ -43,8 +43,10 @@ ShellRoot {
             }
             Image {
                 anchors.fill: parent
-                // kriss-theme's wallpaper for the current light or dark theme.
-                source: wallWin.dynamic ? "" : "file://" + Theme.wallpapers + "/kriss-" + (Theme.dark ? "dark" : "light") + ".svg"
+                // The user's picture, else kriss-theme's wallpaper for the current light or dark theme.
+                source: wallWin.dynamic ? "" : Desktop.wallpaper.startsWith("/") ? Desktop.fileUrl(Desktop.wallpaper)
+                    : "file://" + Theme.wallpapers + "/kriss-" + (Theme.dark ? "dark" : "light") + ".svg"
+                asynchronous: true
                 sourceSize: Qt.size(parent.width, parent.height)
                 fillMode: Image.PreserveAspectCrop
             }
@@ -63,7 +65,7 @@ ShellRoot {
                     const s = "com.system76.CosmicSettings";
                     deskMenu.show(spot, [].concat(
                         open(s + ".Displays", Tr.t("Display settings")),
-                        open(s + ".Wallpaper", Tr.t("Personalise")),
+                        [{ text: Tr.t("Personalise"), glyph: "image", run: () => Desktop.personalise("background") }],
                         [{ sep: true }],
                         open("com.system76.CosmicTerm", Tr.t("Open in Terminal")),
                         open(s, Tr.t("Settings"))), false);
@@ -103,6 +105,7 @@ ShellRoot {
     Snap { id: snapLayouts }
     Clipboard { id: clipboard }
     Osd {}
+    Personalise {}
 
     // KRISS_SHELL_FPS=1: for a second after a panel opens or closes, counts the frames and
     // logs the rate and the slowest frame (read it with `qs log`), to check motion on real hardware.
@@ -218,6 +221,12 @@ ShellRoot {
     IpcHandler {
         target: "theme"
         function set(key: string, value: string): string { return Theme.set(key, value); }
+    }
+
+    // `kriss-shell personalise [colours|background|taskbar|pins|text]`: the Personalise window.
+    IpcHandler {
+        target: "personalise"
+        function open(page: string): void { Desktop.personalise(page); }
     }
 
     IpcHandler {

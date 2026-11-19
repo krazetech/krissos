@@ -15,6 +15,12 @@ Singleton {
     property bool quickOpen: false
     property bool calendarOpen: false
     property bool taskViewOpen: false
+    // The Personalise window's open page ("colours", "background", "taskbar", "pins" or
+    // "text"); empty while it is closed.
+    property string personalisePage: ""
+    function personalise(page) {
+        personalisePage = ["colours", "background", "taskbar", "pins", "text"].indexOf(page) >= 0 ? page : "colours";
+    }
     property bool locked: false
     // Start opened from the bar's search box: the search field and Recommended, no Pinned.
     property bool launcherSearch: false
@@ -94,22 +100,23 @@ Singleton {
     // ~/.config/kriss/shell.json. Missing keys keep the defaults below.
     property alias pinned: config.pinned
     property alias dnd: config.dnd
+    property alias trayHidden: config.trayHidden
     property alias taskbarAlignment: config.taskbarAlignment
     property alias taskbarAutoHide: config.taskbarAutoHide
     property alias taskbarCombine: config.taskbarCombine
     property alias taskbarAllScreens: config.taskbarAllScreens
+    property alias taskbarSize: config.taskbarSize
     // What the launcher, quick settings and calendar leave below them for an auto-hidden bar,
     // which reserves no room of its own.
     readonly property int barRoom: taskbarAutoHide ? Theme.barHeight : 0
-    property alias trayHidden: config.trayHidden
     property alias taskbarTaskView: config.taskbarTaskView
     property alias desktopNames: config.desktopNames
     property alias accent: config.accent
     property alias theme: config.theme
     property alias themeLight: config.themeLight
     property alias themeDark: config.themeDark
-    property alias contrast: config.contrast
     property alias wallpaper: config.wallpaper
+    property alias contrast: config.contrast
 
     readonly property string configFile: (Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config") + "/kriss/shell.json"
     FileView {
@@ -129,6 +136,8 @@ Singleton {
             ]
             // Do not disturb: no toasts, notifications still collect behind the bell.
             property bool dnd: false
+            // Tray icons kept in the overflow flyout (^), by the id the app gives its icon.
+            property list<string> trayHidden: []
             // Taskbar: "left" or "centre" (Start, search and the apps centred, as on Windows 11).
             property string taskbarAlignment: "centre"
             // Slide the bar off the bottom edge until the pointer reaches it.
@@ -139,8 +148,8 @@ Singleton {
             // A bar on every screen, each with the windows on that screen; false: one bar,
             // on the first screen, with every window.
             property bool taskbarAllScreens: true
-            // Tray icons kept in the overflow flyout (^), by the id the app gives its icon.
-            property list<string> trayHidden: []
+            // "small", "medium" or "large": the bar's height and its icons (Theme.barScale).
+            property string taskbarSize: "medium"
             // The Task View button on the taskbar, after Start.
             property bool taskbarTaskView: true
             // Desktop names given in Task View, by position ("" keeps "Desktop N").
@@ -151,13 +160,16 @@ Singleton {
             property string theme: "system"
             property string themeLight: "07:00"
             property string themeDark: "19:00"
+            // "dynamic": the time-of-day wallpaper; a path ("/..."): that picture; anything
+            // else: the plain one for the light or dark theme.
+            property string wallpaper: "dynamic"
             // "high": the high-contrast colours (see Theme.qml), for low vision.
             property string contrast: "normal"
-            // "dynamic": the time-of-day wallpaper; anything else: the plain one for the
-            // light or dark theme.
-            property string wallpaper: "dynamic"
         }
     }
+
+    // A path as a file: URL, safe for spaces and #.
+    function fileUrl(path) { return "file://" + path.split("/").map(encodeURIComponent).join("/"); }
 
     function isPinned(id) {
         return pinned.indexOf(id) >= 0;
