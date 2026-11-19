@@ -1,0 +1,22 @@
+#!/bin/bash
+# Stand-in for the `gh release` calls publish.sh and promote.sh make, for their self-checks.
+# Each release is a directory under $FAKE_GH_ROOT named after its tag.
+set -euo pipefail
+[ "$1" = release ] || exit 2
+cmd=$2 rel=$FAKE_GH_ROOT/$3
+shift 3
+case $cmd in
+  view)
+    [ -d "$rel" ] || exit 1
+    if [ "${1:-}" = --json ]; then ls "$rel"; fi ;;
+  create) mkdir "$rel" ;;
+  download)
+    [ -d "$rel" ] || exit 1
+    while [ $# -gt 0 ]; do
+      if [ "$1" = -p ]; then cp "$rel/$2" . || exit 1; shift; fi
+      shift
+    done ;;
+  upload) for f; do [ "$f" = --clobber ] || cp "$f" "$rel/"; done ;;
+  delete-asset) rm "$rel/$1" ;;
+  *) exit 2 ;;
+esac

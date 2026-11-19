@@ -4,14 +4,25 @@
 #   kriss-shell launcher   open or close the launcher (cosmic-comp runs this for the Windows key)
 #   kriss-shell quick      open or close quick settings (Windows+A)
 #   kriss-shell notifications
-#                          open or close the notification list (Windows+N)
+#                          open or close the notification center (Windows+N)
 #   kriss-shell calendar   open or close the calendar under the clock (Windows+Alt+D)
+#   kriss-shell widgets    open or close the widgets panel (Windows+W)
 #   kriss-shell lock       lock the screen (Windows+L)
+#   kriss-shell clipboard  open or close the clipboard history (Windows+V)
+#   kriss-shell emoji      open or close the emoji and symbol picker (Windows+.)
 #   kriss-shell greeter    the login screen, which greetd runs (see shell/README.md)
 #   kriss-shell desktop    show the desktop, or bring the windows back (Windows+D)
-#   kriss-shell taskbar focus|startMenu|open N|newWindow N|jumpList N
-#                          the taskbar keys: Windows+T, Windows+X, Windows+1…9,
+#   kriss-shell taskbar focus|tray|startMenu|open N|newWindow N|jumpList N
+#                          the taskbar keys: Windows+T, Windows+B, Windows+X, Windows+1…9,
 #                          Windows+Shift+1…9 and Windows+Alt+1…9
+#   kriss-shell taskview   open or close Task View (Windows+Tab)
+#   kriss-shell desktops add|close
+#                          a new desktop, or close the current one (Windows+Ctrl+D, Windows+Ctrl+F4)
+#   kriss-shell personalise [colours|background|taskbar|pins|text]
+#                          the Personalise window, at that page
+#   kriss-shell snap       the snap layouts for the window in front (Windows+Z)
+#   kriss-shell layout windows|mac
+#                          the taskbar, or the Mac layout (top bar and dock); saved, live
 #   kriss-shell switcher next|previous
 #                          the Alt+Tab window switcher (Alt+Tab and Alt+Shift+Tab)
 #   kriss-shell media playPause|next|previous
@@ -31,7 +42,7 @@ launcher)
     # Fall back to COSMIC's own launcher when the KrissOS Shell is not running.
     qs -p "$qml" ipc call launcher toggle 2>/dev/null || exec cosmic-launcher
     ;;
-quick | notifications | calendar)
+quick | notifications | calendar | widgets)
     qs -p "$qml" ipc call "$1" toggle
     ;;
 lock)
@@ -39,6 +50,31 @@ lock)
     ;;
 desktop)
     qs -p "$qml" ipc call desktop toggle
+    ;;
+taskview)
+    qs -p "$qml" ipc call taskview toggle
+    ;;
+desktops)
+    qs -p "$qml" ipc call desktops "${2:?usage: kriss-shell desktops add|close}"
+    ;;
+clipboard)
+    qs -p "$qml" ipc call clipboard history
+    ;;
+emoji)
+    qs -p "$qml" ipc call clipboard emoji
+    ;;
+personalise)
+    qs -p "$qml" ipc call personalise open "${2:-colours}"
+    ;;
+snap)
+    qs -p "$qml" ipc call snap layouts
+    ;;
+layout)
+    case "${2:-}" in
+    windows | mac) qs -p "$qml" ipc call layout set "$2" ;;
+    "") qs -p "$qml" ipc call layout get ;;
+    *) echo "usage: kriss-shell layout windows|mac" >&2; exit 2 ;;
+    esac
     ;;
 switcher | media)
     qs -p "$qml" ipc call "$1" "${2:?usage: kriss-shell $1 ACTION}"
@@ -160,16 +196,19 @@ greeter)
     # Apps in /etc/xdg/autostart and ~/.config/autostart, such as kriss-welcome on first
     # login, through systemd's XDG autostart units.
     systemctl --user --no-block start kriss-shell-session.target
+    # Clipboard history keeps only pinned items from one session to the next (also after a crash).
+    kriss-shell-clipboard clear 2>/dev/null
     # The ISO boot test waits for this line.
     logger -t kriss-shell "KrissOS Shell started on $WAYLAND_DISPLAY" 2>/dev/null
 
     "$0" --inside
+    kriss-shell-clipboard clear 2>/dev/null
     systemctl --user stop kriss-shell-session.target graphical-session.target
     kill "$daemon" "$comp" 2>/dev/null
     wait "$comp"
     ;;
 *)
-    echo "usage: kriss-shell [launcher|quick|notifications|calendar|lock|desktop|taskbar ACTION|switcher next|media playPause|brightness STEP|screenshot [region]|greeter]" >&2
+    echo "usage: kriss-shell [launcher|quick|notifications|calendar|widgets|lock|desktop|taskview|desktops add|clipboard|emoji|snap|layout windows|mac|taskbar ACTION|switcher next|media playPause|brightness STEP|screenshot [region]|greeter]" >&2
     exit 2
     ;;
 esac

@@ -6,12 +6,17 @@ import Quickshell.Widgets
 import Quickshell.WindowManager
 import Quickshell.Services.SystemTray
 
-// The taskbar: full width along the bottom of each screen, 48 px like Windows 11. Keris launcher,
+// The taskbar: full width along the bottom of each screen, 48 px like Windows 11. Widgets, Keris launcher,
 // the search box, this screen's workspaces and the pinned and running apps on the left (or centred);
 // tray icons, power profile, quick settings (network, volume, battery), notifications and the
 // clock on the right. Options come from shell.json (see Desktop.qml).
+// The Mac layout ("layout": "mac") uses the same buttons and logic in another shape: the
+// launcher and the apps in a centred dock along the bottom, and a slim top bar (the inline
+// window `top` below) with the system menu, the app in front, the tray, quick settings,
+// notifications and the clock, which move up there from the right of the taskbar.
 PanelWindow {
     id: bar
+    readonly property bool mac: Desktop.mac
 
     required property var modelData
     screen: modelData
@@ -19,17 +24,18 @@ PanelWindow {
     visible: !Windows.fullscreenOn(modelData)
 
     WlrLayershell.namespace: "kriss-bar"
-    // Windows+T puts the keyboard on the app buttons (see focusStep). Otherwise on demand: a
-    // surface without the keyboard is never told which modifiers are held, and Shift+click
-    // and Ctrl+click need them.
-    WlrLayershell.keyboardFocus: kbIndex >= 0 ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.OnDemand
+    // On demand: a surface without the keyboard is never told which modifiers are held, and
+    // Shift+click and Ctrl+click need them. Windows+T and Windows+B put the keyboard on the bar
+    // through Desktop.keysTo (see focusStep).
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
     anchors { bottom: true; left: true; right: true }
-    implicitHeight: Theme.barHeight
+    // The dock floats a little above the screen's edge.
+    implicitHeight: Theme.barHeight + (mac ? Theme.dockGap : 0)
     // Maximized and snapped windows stop at the bar, unless it auto-hides.
-    exclusiveZone: Desktop.taskbarAutoHide ? 0 : Theme.barHeight
+    exclusiveZone: Desktop.taskbarAutoHide ? 0 : implicitHeight
     color: "transparent"
     // Frosted glass: cosmic-comp blurs what is behind the bar.
-    BackgroundEffect.blurRegion: Region { item: body }
+    BackgroundEffect.blurRegion: Region { item: body; radius: body.radius }
 
     // This bar's windows: the ones on its screen, when every screen has a bar.
     readonly property var wins: Desktop.taskbarAllScreens
@@ -65,7 +71,8 @@ PanelWindow {
     readonly property real room: right.x - appRow.x - 16
     // What the uncombined buttons need at full width.
     readonly property real looseWidth: loose.reduce((sum, a) => sum + (a.win ? 168 : Theme.barButton) + appRow.spacing, 0)
-    readonly property bool combined: Desktop.taskbarCombine === "full" ? looseWidth > room : Desktop.taskbarCombine !== "never"
+    // The dock always combines, as on a Mac.
+    readonly property bool combined: mac || (Desktop.taskbarCombine === "full" ? looseWidth > room : Desktop.taskbarCombine !== "never")
     // Labelled buttons shrink to fit, as on Windows.
     // ponytail: at 96 px they stop shrinking and run into the tray; scroll them if that matters.
     readonly property real labelWidth: {
@@ -81,10 +88,12 @@ PanelWindow {
     readonly property bool near: hover.hovered || edgeHover.hovered
     onNearChanged: if (!near) linger.restart()
     Timer { id: linger; interval: 600 }
-    readonly property bool tucked: Desktop.taskbarAutoHide && !near && !linger.running && !menu.visible && kbIndex < 0
+    readonly property bool tucked: Desktop.taskbarAutoHide && !near && !linger.running && !menu.visible && !kb
         && !((Desktop.launcherOpen || Desktop.quickOpen || Desktop.notificationsOpen || Desktop.calendarOpen) && Desktop.screen === bar.screen)
-    mask: tucked ? edgeRegion : null
+    // Clicks beside the dock go through to the windows behind.
+    mask: tucked ? edgeRegion : mac ? dockRegion : null
     Region { id: edgeRegion; item: edge }
+    Region { id: dockRegion; item: body }
     Item {
         id: edge
         anchors.bottom: parent.bottom
@@ -95,121 +104,187 @@ PanelWindow {
 
     // The app button under the pointer, or null: the one place hover previews hook in.
     property Item previewFor: null
-    // The app button the keyboard is on after Windows+T, or -1 when the bar has no keyboard.
-    property int kbIndex: -1
+    // The bar has the keyboard (Windows+T, Windows+B): Tab, Shift+Tab and the arrows walk
+    // every control in reading order, Esc gives the keyboard back.
+    property bool kb: false
+    // Which of the bar's windows has it: the taskbar or dock (body), or the Mac top bar.
+    property Item kbOn: body
+    function takeKeys(on) {
+        if (kb && kbOn !== on) kb = false;
+        kbOn = on;
+        kb = true;
+    }
+    // Giving the keyboard back also takes the focus off the controls, so no rim stays lit.
+    onKbChanged: {
+        if (kb) { Desktop.keysTo(kbOn); return; }
+        returnTo = null;
+        body.forceActiveFocus();
+        topBody.forceActiveFocus();
+        if ([body, topBody].some(b => Desktop.keysFor === b || Desktop.keysNext === b)) Desktop.keysTo(null);
+    }
+    // The control that opened a panel from the keyboard: Esc in that panel comes back to it.
+    property Item returnTo: null
+    readonly property bool anyOpen: Desktop.launcherOpen || Desktop.quickOpen || Desktop.notificationsOpen
+        || Desktop.calendarOpen || Desktop.taskViewOpen
+    // A panel takes the keyboard from the bar; Esc in it can bring it back (backOut).
+    onAnyOpenChanged: if (anyOpen) kb = false; else returnTo = null
+    Connections {
+        target: Desktop
+        function onBackOut() {
+            if (!bar.returnTo) return;
+            bar.kb = true;
+            bar.returnTo.forceActiveFocus();
+            bar.returnTo = null;
+        }
+    }
 
+    // Keys any control on the bar leaves alone: arrows, Home and End move along the bar,
+    // Esc gives the keyboard back. Tab and Shift+Tab follow Qt's focus chain, which stays in
+    // the window `on` is in (the taskbar or dock, or the Mac top bar).
+    function barKeys(event, on) {
+        const f = on.Window.activeFocusItem;
+        if (!kb || !f) return;
+        const last = on === topBody ? clockArea : mac ? appButtons.itemAt(appButtons.count - 1) ?? start : sliver;
+        switch (event.key) {
+        case Qt.Key_Left: case Qt.Key_Up: case Qt.Key_Backtab: f.nextItemInFocusChain(false).forceActiveFocus(); break;
+        case Qt.Key_Right: case Qt.Key_Down: f.nextItemInFocusChain(true).forceActiveFocus(); break;
+        case Qt.Key_Tab: f.nextItemInFocusChain(!(event.modifiers & Qt.ShiftModifier)).forceActiveFocus(); break;
+        case Qt.Key_Home: (on === topBody ? system : start).forceActiveFocus(); break;
+        case Qt.Key_End: last.forceActiveFocus(); break;
+        case Qt.Key_Escape: kb = false; break;
+        // On a control with no menu of its own: the taskbar's menu, as a right-click on the bar.
+        case Qt.Key_Menu: barMenu(f, true); break;
+        case Qt.Key_F10: if (event.modifiers & Qt.ShiftModifier) barMenu(f, true); else return; break;
+        default: return;
+        }
+        event.accepted = true;
+    }
+
+    // The taskbar, or in the Mac layout the dock: as wide as its buttons, centred, floating.
     Rectangle {
         id: body
-        width: parent.width
-        height: parent.height
-        y: bar.tucked ? height : 0
+        width: bar.mac ? tasks.width + 16 : parent.width
+        height: Theme.barHeight
+        x: (parent.width - width) / 2
+        y: bar.tucked ? parent.height : 0
         Behavior on y { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
+        Behavior on width { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
+        radius: bar.mac ? Theme.radius : 0
         color: Theme.bar
+        border.width: bar.mac ? Theme.rimWidth : 0
+        border.color: Theme.rim
         HoverHandler { id: hover }
+        Accessible.role: Accessible.ToolBar
+        Accessible.name: bar.mac ? Tr.t("Dock") : Tr.t("Taskbar")
+        Keys.onPressed: event => bar.barKeys(event, body)
 
         // Right-click on the bar itself (between the buttons): the taskbar menu, at the pointer.
         MouseArea {
+            Accessible.ignored: true  // pointer only; the keyboard has its own way
             anchors.fill: parent
             acceptedButtons: Qt.RightButton
             onClicked: mouse => { spot.x = mouse.x; bar.barMenu(spot, false); }
             Item { id: spot; width: 1; height: parent.height }
         }
 
-        // Windows+T: arrows move, Enter opens, Shift+Enter opens a new window, the Menu key or
-        // Shift+F10 opens the jump list, Esc gives the keyboard back.
-        Item {
-            id: keys
-            focus: true
-            Keys.onPressed: event => {
-                const n = bar.apps.length, i = bar.kbIndex;
-                if (i < 0) return;
-                const menuKey = event.key === Qt.Key_Menu || event.key === Qt.Key_F10 && event.modifiers & Qt.ShiftModifier;
-                if (menuKey) bar.jumpList(i, true);
-                else switch (event.key) {
-                case Qt.Key_Left: case Qt.Key_Up: bar.kbIndex = Math.max(0, i - 1); break;
-                case Qt.Key_Right: case Qt.Key_Down: bar.kbIndex = Math.min(n - 1, i + 1); break;
-                case Qt.Key_Home: bar.kbIndex = 0; break;
-                case Qt.Key_End: bar.kbIndex = n - 1; break;
-                case Qt.Key_Return: case Qt.Key_Enter: case Qt.Key_Space:
-                    bar.kbIndex = -1;
-                    if (event.modifiers & Qt.ShiftModifier) bar.newWindow(i); else bar.activate(i, false);
-                    break;
-                case Qt.Key_Escape: bar.kbIndex = -1; break;
-                default: return;
-                }
-                event.accepted = true;
-            }
-        }
-
         // A soft rim along the top edge instead of a border.
-        Rectangle { width: parent.width; height: 1; color: Theme.rim }
+        Rectangle { visible: !bar.mac; width: parent.width; height: Theme.rimWidth; color: Theme.rim }
 
         // Start, search, workspaces and apps: at the left edge, or centred on the bar as on
         // Windows 11, but never running into the tray.
         RowLayout {
             id: tasks
-            x: Desktop.taskbarAlignment === "centre" ? Math.max(4, Math.min((bar.width - width) / 2, right.x - width - 8)) : 4
+            x: bar.mac ? 8 : Desktop.taskbarAlignment === "centre" ? Math.max(4, Math.min((bar.width - width) / 2, right.x - width - 8)) : 4
             height: parent.height
             spacing: 8
 
-            // Keris: opens the launcher, like the Start button.
+            // Widgets, at the far left as on Windows 11 (`taskbarWidgets` in shell.json hides it).
             MouseArea {
-                id: start
+                id: widgetsBtn
+                visible: Desktop.taskbarWidgets
+                Accessible.role: Accessible.Button
+                Accessible.name: Tr.t("Widgets")
                 Layout.preferredWidth: Theme.barButton
                 Layout.preferredHeight: Theme.barButton
+                hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                acceptedButtons: Qt.LeftButton | Qt.RightButton
-                onClicked: mouse => mouse.button === Qt.RightButton ? bar.startMenu(false) : bar.toggle("launcherOpen")
-
+                onClicked: bar.toggle("widgetsOpen")
+                scale: pressed ? Theme.pressScale : 1
+                Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                 Rectangle {
                     anchors.fill: parent
                     radius: Theme.barRadius
-                    color: start.containsMouse || Desktop.launcherOpen && !Desktop.launcherSearch && Desktop.screen === bar.screen ? Theme.card : "transparent"
+                    color: widgetsBtn.containsMouse || Desktop.widgetsOpen && Desktop.screen === bar.screen ? Theme.card : "transparent"
                     Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                 }
-                // The KrissOS emblem from kriss-theme.
+                Glyph { anchors.centerIn: parent; name: "widgets" }
+            }
+
+            // Keris: opens the launcher, like the Start button.
+            BarButton {
+                id: start
+                lit: Desktop.launcherOpen && !Desktop.launcherSearch && Desktop.screen === bar.screen
+                name: bar.mac ? Tr.t("Apps") : Tr.t("Start")
+                tip: Tr.t("Apps, files and settings. Right-click or the Menu key for more.")
+                hasMenu: true
+                onActivated: bar.toggle("launcherOpen", false, start)
+                onMenuAsked: byKeyboard => bar.startMenu(byKeyboard, start)
+                // The KrissOS emblem from kriss-theme; in the dock, a grid of apps (the emblem
+                // is the system menu in the top bar).
+                Glyph { visible: bar.mac; anchors.centerIn: parent; name: "apps"; size: 22 }
                 Image {
+                    visible: !bar.mac
                     anchors.centerIn: parent
                     width: Theme.barIcon + 4
                     height: width
                     source: "file:///usr/share/pixmaps/krissos.svg"
                     sourceSize: Qt.size(width * 2, height * 2)
-                    scale: parent.pressed ? Theme.pressScale : parent.containsMouse ? 1.05 : 1
+                    scale: parent.containsMouse && !parent.pressed ? 1.05 : 1
                     Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                 }
-                hoverEnabled: true
             }
 
             // The search box: opens Start ready to search.
-            MouseArea {
+            BarButton {
                 id: searchBox
-                Layout.preferredWidth: 200
+                visible: !bar.mac
+                Layout.preferredWidth: Math.max(200, searchRow.implicitWidth + 24)
                 Layout.preferredHeight: Theme.barButton - 8
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: bar.toggle("launcherOpen", true)
-                Rectangle {
-                    anchors.fill: parent
-                    radius: height / 2
-                    color: searchBox.containsMouse || Desktop.launcherOpen && Desktop.launcherSearch && Desktop.screen === bar.screen ? Theme.cardHover : Theme.card
-                    Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
-                }
+                radius: height / 2
+                lit: true
+                boxed: true
+                litColor: containsMouse || Desktop.launcherOpen && Desktop.launcherSearch && Desktop.screen === bar.screen ? Theme.cardHover : Theme.card
+                name: Tr.t("Search")
+                onActivated: bar.toggle("launcherOpen", true, searchBox)
                 Row {
+                    id: searchRow
                     anchors.verticalCenter: parent.verticalCenter
                     x: 12
                     spacing: 8
-                    Glyph { name: "search"; size: 16; color: Theme.soft }
+                    Glyph { anchors.verticalCenter: parent.verticalCenter; name: "search"; size: 16; color: Theme.soft }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: Tr.t("Search")
                         color: Theme.soft
-                        font { family: Theme.sans; pixelSize: 13 }
+                        font { family: Theme.sans; pixelSize: Theme.sp(13) }
                     }
                 }
             }
 
+            // Task View, as on Windows 11 (Windows+Tab). `taskbarTaskView` in shell.json hides it.
+            BarButton {
+                id: taskView
+                visible: Desktop.taskbarTaskView && !bar.mac
+                lit: Desktop.taskViewOpen && Desktop.screen === bar.screen
+                name: Tr.t("Task View")
+                tip: Tr.t("Your windows and desktops")
+                onActivated: bar.toggle("taskViewOpen", false, taskView)
+                Glyph { anchors.centerIn: parent; name: "taskView"; size: 22 }
+            }
+
             // Workspaces: dots, the active one stretched into a cyan pill.
             Row {
+                visible: !bar.mac
                 spacing: 6
                 Layout.leftMargin: 2
                 Repeater {
@@ -217,12 +292,17 @@ PanelWindow {
                     // which screen a workspace is on.
                     readonly property var mine: WindowManager.screenProjection(bar.screen)?.windowsets ?? []
                     model: (mine.length ? mine : WindowManager.windowsets).filter(w => w.shouldDisplay)
-                    delegate: MouseArea {
+                    delegate: BarButton {
+                        id: ws
                         required property var modelData
+                        required property int index
                         width: dot.width
                         height: 20
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: if (modelData.canActivate) modelData.activate()
+                        litColor: "transparent"
+                        name: Desktop.desktopNames[index] || Tr.t("Desktop %1", index + 1)
+                        role: Accessible.RadioButton
+                        checked: modelData.active
+                        onActivated: if (modelData.canActivate) modelData.activate()
                         Rectangle {
                             id: dot
                             anchors.verticalCenter: parent.verticalCenter
@@ -237,7 +317,7 @@ PanelWindow {
                 }
             }
 
-            Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 20; color: Theme.line }
+            Rectangle { Layout.preferredWidth: Theme.rimWidth; Layout.preferredHeight: 20; color: Theme.line }
 
             Row {
                 id: appRow
@@ -250,34 +330,31 @@ PanelWindow {
             }
         }
 
+        // In the Mac layout these move up to the top bar.
         RowLayout {
             id: right
+            parent: bar.mac ? topBody : body
             anchors.right: parent.right
+            anchors.rightMargin: bar.mac ? 6 : 0
             height: parent.height
-            spacing: 8
+            spacing: bar.mac ? 4 : 8
 
             // Tray icons (Steam, Discord...): click to open, right-click for the app's menu.
             // The ^ opens the overflow flyout with the hidden ones; drag an icon onto the ^, or
             // up off the bar, to hide it there. The ^ shows when something is hidden or dragged.
-            MouseArea {
+            BarButton {
                 id: more
                 property bool dragging: false
                 readonly property bool open: overflow.visible && overflow.screen === bar.screen
                 visible: dragging || SystemTray.items.values.some(i => Desktop.isTrayHidden(i.id))
                 Layout.preferredWidth: 28
-                Layout.preferredHeight: Theme.barButton
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: open ? overflow.close() : overflow.show(bar.screen, mapToItem(null, width / 2, 0).x, false)
-                Rectangle {
-                    anchors.fill: parent
-                    radius: Theme.barRadius
-                    color: more.containsMouse || more.open || more.dragging ? Theme.card : "transparent"
-                    Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
-                }
+                lit: open || dragging
+                name: Tr.t("Show hidden icons")
+                onActivated: open ? overflow.close() : overflow.show(bar.screen, mapToItem(null, width / 2, 0).x, activeFocus)
                 Glyph { anchors.centerIn: parent; name: more.open ? "down" : "up"; size: 16 }
             }
             Row {
+                id: trayRow
                 spacing: 14
                 Layout.rightMargin: 4
                 Repeater {
@@ -297,113 +374,96 @@ PanelWindow {
             PowerPill {}
 
             // Network, volume and battery open quick settings, like on Windows.
-            MouseArea {
+            BarButton {
                 id: quick
-                implicitWidth: status.implicitWidth + 24
-                implicitHeight: Theme.barButton
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: bar.toggle("quickOpen")
-                scale: pressed ? Theme.pressScale : 1
-                Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
-                Rectangle {
-                    anchors.fill: parent
-                    radius: Theme.barRadius
-                    color: quick.containsMouse || Desktop.quickOpen && Desktop.screen === bar.screen ? Theme.card : "transparent"
-                    Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
-                }
+                Layout.preferredWidth: status.implicitWidth + 24
+                lit: Desktop.quickOpen && Desktop.screen === bar.screen
+                name: Tr.t("Quick settings")
+                tip: [network.label, volume.label, battery.visible ? battery.label : ""].filter(s => s).join(", ")
+                onActivated: bar.toggle("quickOpen", false, quick)
                 Row {
                     id: status
                     anchors.centerIn: parent
                     spacing: 12
-                    NetworkGlyph {}
-                    VolumeGlyph {}
-                    Battery {}
+                    NetworkGlyph { id: network }
+                    VolumeGlyph { id: volume }
+                    Battery { id: battery }
                 }
             }
 
-            MouseArea {
+            BarButton {
                 id: bell
-                Layout.preferredWidth: Theme.barButton
-                Layout.preferredHeight: Theme.barButton
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: bar.toggle("notificationsOpen")
-                scale: pressed ? Theme.pressScale : 1
-                Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
-                Rectangle {
-                    anchors.fill: parent
-                    radius: Theme.barRadius
-                    color: bell.containsMouse || Desktop.notificationsOpen && Desktop.screen === bar.screen ? Theme.card : "transparent"
-                    Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
-                }
+                lit: Desktop.notificationsOpen && Desktop.screen === bar.screen
+                name: Tr.t("Notifications")
+                tip: (Notifs.all.length ? Tr.t("%1 notifications", Notifs.all.length) : Tr.t("No new notifications"))
+                    + (Desktop.dnd ? ", " + Tr.t("Do not disturb is on") : "")
+                onActivated: bar.toggle("notificationsOpen", false, bell)
                 Glyph { anchors.centerIn: parent; name: Desktop.dnd ? "bellOff" : "bell" }
                 Rectangle {
                     visible: Notifs.all.length > 0
                     x: parent.width - width - 4; y: 4
-                    width: Math.max(16, count.implicitWidth + 8); height: 16; radius: 8
+                    width: Math.max(16, count.implicitWidth + 8); height: Math.max(16, count.implicitHeight); radius: height / 2
                     color: Theme.accent
                     Text {
                         id: count
                         anchors.centerIn: parent
                         text: Notifs.all.length
                         color: Theme.accentInk
-                        font { family: Theme.sans; pixelSize: 10; weight: Font.Bold }
+                        font { family: Theme.sans; pixelSize: Theme.sp(10); weight: Font.Bold }
                     }
                 }
             }
 
             // The clock opens the calendar, as on Windows.
-            MouseArea {
+            BarButton {
                 id: clockArea
-                implicitWidth: clockText.implicitWidth + 20
-                implicitHeight: Theme.barButton
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: bar.toggle("calendarOpen")
-                scale: pressed ? Theme.pressScale : 1
-                Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
-                Rectangle {
-                    anchors.fill: parent
-                    radius: Theme.barRadius
-                    color: clockArea.containsMouse || Desktop.calendarOpen && Desktop.screen === bar.screen ? Theme.card : "transparent"
-                    Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
-                }
-                Column {
+                Layout.preferredWidth: clockText.implicitWidth + 20
+                lit: Desktop.calendarOpen && Desktop.screen === bar.screen
+                name: Qt.formatDateTime(clock.date, "HH:mm") + ", " + clock.date.toLocaleString(Qt.locale(), "dddd d MMMM yyyy")
+                tip: Tr.t("Calendar")
+                onActivated: bar.toggle("calendarOpen", false, clockArea)
+                // Two lines on the taskbar; one in the top bar, the date before the time.
+                Grid {
                     id: clockText
                     anchors.centerIn: parent
+                    columns: bar.mac ? 2 : 1
+                    columnSpacing: 8
+                    layoutDirection: bar.mac ? Qt.RightToLeft : Qt.LeftToRight
+                    horizontalItemAlignment: Grid.AlignRight
+                    verticalItemAlignment: Grid.AlignVCenter
                     SystemClock { id: clock; precision: SystemClock.Minutes }
                     RollingText {
-                        anchors.right: parent.right
                         text: Qt.formatDateTime(clock.date, "HH:mm")
                         color: Theme.fg
-                        font { family: Theme.sans; pixelSize: 13; weight: Font.DemiBold; features: { "tnum": 1 } }
+                        font { family: Theme.sans; pixelSize: Theme.sp(13); weight: Font.DemiBold; features: { "tnum": 1 } }
                     }
                     Text {
-                        anchors.right: parent.right
                         text: clock.date.toLocaleString(Qt.locale(), "ddd d MMM")
-                        color: Theme.soft
-                        font { family: Theme.sans; pixelSize: 11 }
+                        color: bar.mac ? Theme.fg : Theme.soft
+                        font { family: Theme.sans; pixelSize: Theme.sp(11) }
                     }
                 }
             }
 
             // Show desktop: the thin strip at the far right edge, as on Windows 11. A click
             // minimizes everything, the next brings it back (Windows+D does the same).
-            MouseArea {
+            BarButton {
                 id: sliver
+                visible: !bar.mac
                 Layout.preferredWidth: 12
                 Layout.fillHeight: true
                 Layout.leftMargin: -4
-                hoverEnabled: true
-                onClicked: Windows.showDesktop()
+                litColor: "transparent"
+                cursorShape: Qt.ArrowCursor
+                name: Tr.t("Show desktop")
+                onActivated: Windows.showDesktop()
                 Rectangle {
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
                     width: 1
                     height: 20
                     color: Theme.soft
-                    opacity: sliver.containsMouse ? 1 : 0
+                    opacity: sliver.containsMouse || sliver.activeFocus ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                 }
             }
@@ -412,9 +472,11 @@ PanelWindow {
 
     // Open or close one of the panels on this bar's screen (closing the others). search: Start
     // from the search box, which switches to plain Start (and back) rather than closing.
-    function toggle(panel, search) {
+    // from: the control that did it from the keyboard, which Esc in the panel comes back to.
+    function toggle(panel, search, from) {
         const open = !(Desktop[panel] && Desktop.screen === bar.screen && Desktop.launcherSearch === !!search);
-        Desktop.launcherOpen = Desktop.notificationsOpen = Desktop.quickOpen = Desktop.calendarOpen = false;
+        if (open && from?.activeFocus && kb) { kb = false; returnTo = from; }
+        Desktop.launcherOpen = Desktop.notificationsOpen = Desktop.quickOpen = Desktop.calendarOpen = Desktop.taskViewOpen = Desktop.widgetsOpen = false;
         Desktop.screen = bar.screen;
         Desktop.launcherSearch = !!search;
         Desktop[panel] = open;
@@ -425,6 +487,76 @@ PanelWindow {
     onPreviewForChanged: previews.hover(previewFor)
     TrayFlyout { id: overflow; appMenu: menu }
 
+    // The app in front on this bar's screen, for the Mac top bar's app menu.
+    readonly property var frontApp: groups.find(g => Windows.forApp(g.appId, wins).some(w => w.active && !w.minimized)) ?? null
+
+    // The Mac layout's top bar: the KrissOS emblem with the system menu and the name of the
+    // app in front with its menu (the same one its dock icon has) on the left; the right of
+    // the taskbar (`right`, reparented) on the right.
+    PanelWindow {
+        id: top
+        screen: bar.screen
+        visible: bar.mac && bar.visible
+        WlrLayershell.namespace: "kriss-topbar"
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
+        anchors { top: true; left: true; right: true }
+        implicitHeight: Theme.topBarHeight
+        exclusiveZone: Theme.topBarHeight
+        color: "transparent"
+        BackgroundEffect.blurRegion: Region { item: topBody }
+
+        Rectangle {
+            id: topBody
+            anchors.fill: parent
+            color: Theme.bar
+            Accessible.role: Accessible.ToolBar
+            Accessible.name: Tr.t("Top bar")
+            Keys.onPressed: event => bar.barKeys(event, topBody)
+            MouseArea {
+                Accessible.ignored: true  // pointer only; the keyboard has its own way
+                anchors.fill: parent
+                acceptedButtons: Qt.RightButton
+                onClicked: mouse => { topSpot.x = mouse.x; bar.barMenu(topSpot, false); }
+                Item { id: topSpot; width: 1; height: parent.height }
+            }
+            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: Theme.rimWidth; color: Theme.rim }
+
+            RowLayout {
+                x: 6
+                height: parent.height
+                spacing: 2
+                BarButton {
+                    id: system
+                    name: Tr.t("System menu")
+                    tip: Tr.t("Settings, power and more")
+                    onActivated: bar.startMenu(activeFocus, system)
+                    Image {
+                        anchors.centerIn: parent
+                        width: Theme.topBarHeight - 12
+                        height: width
+                        source: "file:///usr/share/pixmaps/krissos.svg"
+                        sourceSize: Qt.size(width * 2, height * 2)
+                    }
+                }
+                BarButton {
+                    id: appName
+                    visible: !!bar.frontApp
+                    Layout.preferredWidth: appText.implicitWidth + 20
+                    name: appText.text
+                    tip: Tr.t("App menu")
+                    onActivated: bar.appMenu(bar.frontApp, appName, activeFocus)
+                    Text {
+                        id: appText
+                        anchors.centerIn: parent
+                        text: bar.frontApp?.entry?.name ?? bar.frontApp?.appId ?? ""
+                        color: Theme.fg
+                        font { family: Theme.sans; pixelSize: Theme.sp(13); weight: Font.DemiBold }
+                    }
+                }
+            }
+        }
+    }
+
     // A taskbar button: launch the app, or bring up, minimize or step through its windows.
     function activate(i, cycle) {
         const a = apps[i];
@@ -433,17 +565,29 @@ PanelWindow {
     }
     function newWindow(i) { apps[i]?.entry?.execute(); }
 
-    // Windows+T, again to step to the next button.
+    // Windows+T: the keyboard on the first app button, again to step to the next one.
     function focusStep() {
-        kbIndex = apps.length ? (kbIndex + 1) % apps.length : -1;
-        keys.forceActiveFocus();
+        const n = apps.length;
+        let i = -1;
+        for (let j = 0; j < n; j++) if (appButtons.itemAt(j)?.activeFocus) i = j;
+        takeKeys(body);
+        (n ? appButtons.itemAt((i + 1) % n) : start).forceActiveFocus();
+    }
+    // Windows+B: the keyboard on the tray, the ^ first, as on Windows.
+    function focusTray() {
+        takeKeys(mac ? topBody : body);
+        const icons = [];
+        for (const c of trayRow.children) if (c.visible && c.activeFocusOnTab) icons.push(c);
+        (more.visible ? more : icons[0] ?? quick).forceActiveFocus();
     }
 
     // The jump list, as on Windows 11: the app's recent files and its own tasks (desktop file
     // actions), then the app (a new window), pin or unpin, and close.
     function jumpList(i, byKeyboard) {
-        const a = apps[i], btn = appButtons.itemAt(i);
-        if (!a || !btn) return;
+        if (apps[i] && appButtons.itemAt(i)) appMenu(apps[i], appButtons.itemAt(i), byKeyboard);
+    }
+    // The jump list of app `a` (an entry of `groups` or `apps`), at control `btn`.
+    function appMenu(a, btn, byKeyboard) {
         const e = a.entry, wins = a.win ? [a.win] : Windows.forApp(a.appId, bar.wins), pinId = e?.id ?? a.appId;
         const out = [];
         const files = Desktop.recentFor(e, 8);
@@ -456,8 +600,8 @@ PanelWindow {
         if (out.length) out.push({ sep: true });
         if (e) out.push({ text: e.name, icon: e.icon, run: () => e.execute() });
         out.push(Desktop.isPinned(pinId)
-            ? { text: Tr.t("Unpin from taskbar"), glyph: "unpin", run: () => Desktop.togglePin(pinId) }
-            : { text: Tr.t("Pin to taskbar"), glyph: "pin", run: () => Desktop.togglePin(pinId) });
+            ? { text: mac ? Tr.t("Remove from dock") : Tr.t("Unpin from taskbar"), glyph: "unpin", run: () => Desktop.togglePin(pinId) }
+            : { text: mac ? Tr.t("Keep in dock") : Tr.t("Pin to taskbar"), glyph: "pin", run: () => Desktop.togglePin(pinId) });
         if (wins.length)
             out.push({ text: wins.length > 1 ? Tr.t("Close all windows") : Tr.t("Close window"), glyph: "close",
                        run: () => wins.forEach(w => Windows.close(w.id)) });
@@ -487,8 +631,9 @@ PanelWindow {
             .map(([e, text]) => ({ text: text, run: () => e.execute() }));
     }
 
-    // Right-click on the Start button, or Windows+X: the power-user menu.
-    function startMenu(byKeyboard) {
+    // Right-click on the Start button, or Windows+X: the power-user menu. In the Mac layout
+    // it hangs from the emblem in the top bar.
+    function startMenu(byKeyboard, from) {
         const tm = taskManager();
         const settings = "com.system76.CosmicSettings";
         const system = appEntries([[settings + ".Applications", Tr.t("Installed apps")],
@@ -508,18 +653,17 @@ PanelWindow {
         const out = [];
         for (const group of [system, tools, apps]) if (group.length) out.push(...group, { sep: true });
         out.push(power, { text: Tr.t("Desktop"), run: () => Windows.showDesktop() });
-        menu.show(start, out, byKeyboard);
+        menu.show(from ?? (mac && top.visible ? system : start), out, byKeyboard);
     }
 
     // Right-click on an empty part of the bar.
-    // ponytail: Taskbar settings opens shell.json until a Personalise page exists.
     function barMenu(item, byKeyboard) {
         const tm = taskManager();
         const out = tm ? [{ text: Tr.t("Task Manager"), icon: tm.icon, run: () => tm.execute() }] : [];
-        // In a text editor if one is installed: the system's choice for JSON can be anything.
-        const editor = ["com.system76.CosmicEdit", "org.gnome.TextEditor", "org.kde.kate", "org.kde.kwrite", "org.xfce.mousepad"]
-            .map(id => DesktopEntries.byId(id)).find(e => e) ?? null;
-        out.push({ text: Tr.t("Taskbar settings"), glyph: "sun", run: () => bar.openWith(editor, "file://" + Desktop.configFile) });
+        out.push({ text: mac ? Tr.t("Dock settings") : Tr.t("Taskbar settings"), glyph: "sun", run: () => Desktop.personalise("taskbar") });
+        // The other layout, live (also on the Personalise page and in kriss-welcome).
+        out.push(mac ? { text: Tr.t("Switch to the taskbar"), glyph: "taskView", run: () => Desktop.setLayout("windows") }
+                     : { text: Tr.t("Switch to the top bar and dock"), glyph: "apps", run: () => Desktop.setLayout("mac") });
         menu.show(item, out, byKeyboard);
     }
 
@@ -534,7 +678,7 @@ PanelWindow {
         // What the app sent over D-Bus: progress, a badge count, a call for attention.
         readonly property var info: Windows.entries[pinId.toLowerCase()] ?? {}
         readonly property bool urgent: !!info.urgent && !front
-        readonly property bool kbFocused: bar.kbIndex === index
+        readonly property var entryName: modelData.entry?.name ?? modelData.appId
         // Drag a pinned app sideways to reorder the pins.
         property real pressX: 0
         property bool dragging: false
@@ -546,6 +690,28 @@ PanelWindow {
         hoverEnabled: true
         cursorShape: dragging ? Qt.ClosedHandCursor : Qt.PointingHandCursor
         acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
+        activeFocusOnTab: true
+        Accessible.role: Accessible.Button
+        Accessible.name: modelData.win ? (modelData.win.title || entryName) : entryName
+        Accessible.description: [wins.length === 0 ? Tr.t("Not running") : wins.length === 1 ? Tr.t("1 window") : Tr.t("%1 windows", wins.length),
+            pinned ? Tr.t("Pinned") : "", urgent ? Tr.t("Wants attention") : "",
+            info["count-visible"] && info.count > 0 ? Tr.t("%1 new", info.count) : ""].filter(s => s).join(", ")
+        Accessible.onPressAction: bar.activate(index, false)
+        // Enter opens or switches (Shift+Enter: a new window), the Menu key or Shift+F10 the
+        // jump list; the bar moves the focus on.
+        Keys.onPressed: event => {
+            if (event.key === Qt.Key_Menu || event.key === Qt.Key_F10 && event.modifiers & Qt.ShiftModifier) bar.jumpList(index, true);
+            else if (event.key === Qt.Key_Up && wins.length) previews.openFrom(btn);
+            else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
+                if (event.modifiers & Qt.ShiftModifier) bar.newWindow(index); else bar.activate(index, false);
+            } else return;
+            event.accepted = true;
+        }
+        // The keyboard on a button shows its previews too, as the pointer does.
+        onActiveFocusChanged: {
+            if (activeFocus) bar.previewFor = btn;
+            else if (bar.previewFor === btn && !containsMouse) bar.previewFor = null;
+        }
         onContainsMouseChanged: {
             if (containsMouse) bar.previewFor = btn;
             else if (bar.previewFor === btn) bar.previewFor = null;
@@ -573,6 +739,7 @@ PanelWindow {
             else bar.activate(index, mouse.modifiers & Qt.ControlModifier);
         }
         transform: Translate { id: shift }
+        FocusRim { radius: Theme.barRadius + 2 }
 
         Rectangle {
             id: face
@@ -581,8 +748,6 @@ PanelWindow {
             // Lit under the pointer and behind the app in front, clear otherwise.
             color: btn.containsMouse ? (btn.front ? Theme.cardHover : Theme.card) : btn.front ? Theme.card : "transparent"
             Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
-            border.width: btn.kbFocused ? 2 : 0
-            border.color: Theme.accent
             scale: btn.pressed && !btn.dragging ? Theme.pressScale : 1
             Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
             // Wants attention: a red wash that pulses a few times, then stays until the app is in front.
@@ -613,21 +778,21 @@ PanelWindow {
                 text: btn.modelData.win?.title ?? ""
                 elide: Text.ElideRight
                 color: Theme.fg
-                font { family: Theme.sans; pixelSize: 12 }
+                font { family: Theme.sans; pixelSize: Theme.sp(12) }
             }
         }
         // A badge count, top right.
         Rectangle {
             visible: !!btn.info["count-visible"] && btn.info.count > 0
             x: parent.width - width - 2; y: 2
-            width: Math.max(16, badge.implicitWidth + 8); height: 16; radius: 8
+            width: Math.max(16, badge.implicitWidth + 8); height: Math.max(16, badge.implicitHeight); radius: height / 2
             color: Theme.accent
             Text {
                 id: badge
                 anchors.centerIn: parent
                 text: btn.info.count > 99 ? "99+" : (btn.info.count ?? "")
                 color: Theme.accentInk
-                font { family: Theme.sans; pixelSize: 10; weight: Font.Bold; features: { "tnum": 1 } }
+                font { family: Theme.sans; pixelSize: Theme.sp(10); weight: Font.Bold; features: { "tnum": 1 } }
             }
         }
         // Progress the app reports, along the bottom in place of the running mark.
@@ -650,16 +815,69 @@ PanelWindow {
             }
         }
         // Running: a short mark; in front: a longer accent pill; wants attention: red.
+        // In the dock: a dot, accent for the app in front.
         Rectangle {
             visible: btn.wins.length > 0 && !track.visible
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: 1
-            width: btn.front ? 16 : 6
-            height: 3
-            radius: 1.5
+            anchors.bottomMargin: bar.mac ? -2 : 1
+            width: bar.mac ? 4 : btn.front ? 16 : 6
+            height: bar.mac ? 4 : 3
+            radius: height / 2
             color: btn.urgent ? Theme.red : btn.front ? Theme.accent : Theme.soft
             Behavior on width { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
         }
+    }
+
+    // A control on the bar: lit under the pointer or while its panel is open (`lit`, or a
+    // colour of its own in `litColor`), gives a little when pressed, and works from the
+    // keyboard: Enter or Space is a click, the Menu key or Shift+F10 a right-click (with
+    // hasMenu). The bar's own keys move between controls.
+    component BarButton: MouseArea {
+        id: bb
+        property bool lit: false
+        property color litColor: containsMouse || lit ? Theme.card : "transparent"
+        property int radius: Theme.barRadius
+        property string name
+        property string tip
+        property int role: Accessible.Button
+        property bool checked: false
+        property bool hasMenu: false
+        property bool boxed: false       // always drawn as a box (the search pill): outlined in high contrast
+        signal activated()
+        signal menuAsked(bool byKeyboard)
+
+        Layout.preferredWidth: Theme.barButton
+        // Shorter in the slim Mac top bar.
+        Layout.preferredHeight: Math.min(Theme.barButton, (parent?.height ?? Theme.barButton) - 4)
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
+        activeFocusOnTab: true
+        acceptedButtons: hasMenu ? Qt.LeftButton | Qt.RightButton : Qt.LeftButton
+        onClicked: mouse => mouse.button === Qt.RightButton ? menuAsked(false) : activated()
+        scale: pressed ? Theme.pressScale : 1
+        Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+        Keys.onPressed: event => {
+            if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) activated();
+            else if (hasMenu && (event.key === Qt.Key_Menu || event.key === Qt.Key_F10 && event.modifiers & Qt.ShiftModifier)) menuAsked(true);
+            else return;
+            event.accepted = true;
+        }
+        Accessible.role: role
+        Accessible.name: name
+        Accessible.description: tip
+        Accessible.checkable: role === Accessible.RadioButton
+        Accessible.checked: checked
+        Accessible.onPressAction: activated()
+
+        Rectangle {
+            anchors.fill: parent
+            radius: bb.radius
+            color: bb.litColor
+            border.width: Theme.high && bb.boxed ? Theme.rimWidth : 0
+            border.color: Theme.line
+            Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+        }
+        FocusRim { radius: bb.radius + 2 }
     }
 }

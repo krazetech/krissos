@@ -1,0 +1,45 @@
+# Maintainer: Kraze Tech
+# cosmic-settings with a KrissOS patch: in the KrissOS Shell session, Desktop links to the
+# shell's Personalise window in place of the Wallpaper, Panel and Dock pages, which the
+# shell replaces. Other sessions see COSMIC's pages as before.
+# Follows Arch's cosmic-settings PKGBUILD. It replaces cosmic-settings, so pacman never moves
+# back to Arch's build on its own: bump pkgver here when Arch bumps cosmic-settings, rebase
+# the patch on the new tag, and update the patch's b2sum.
+pkgname=cosmic-settings-kriss
+pkgver=1.11.0
+pkgrel=1
+pkgdesc='The settings application for the COSMIC desktop environment, linked to the KrissOS Shell'
+arch=('x86_64')
+url='https://github.com/pop-os/cosmic-settings'
+license=('GPL-3.0-only')
+depends=('accountsservice' 'adw-gtk-theme' 'cosmic-icon-theme' 'cosmic-randr' 'fontconfig'
+         'libgcc' 'glibc' 'iso-codes' 'libinput' 'libpipewire' 'libpulse' 'libxkbcommon'
+         'networkmanager' 'nm-connection-editor' 'pipewire-pulse' 'systemd-libs' 'ttf-opensans'
+         'wayland')
+makedepends=('cargo' 'clang' 'git' 'just' 'mold')
+optdepends=('power-profiles-daemon: power profiles support'
+            'kriss-shell: the Personalise window that Desktop links to')
+provides=("cosmic-settings=1:$pkgver")
+conflicts=('cosmic-settings')
+replaces=('cosmic-settings')
+source=("git+https://github.com/pop-os/cosmic-settings.git#tag=epoch-$pkgver"
+        0001-krissos-personalise.patch)
+b2sums=('5120140aef53b2761b3957cc36120fbe479c3c586cd5f1d31c02114cccb1a96a1e9afc00bcd956dbe742dfbfa96b6f824becc13773e470827d8eec3185ea6fa9'
+        'bda529377a6fb50a463903f5304f07ea8d614cd4dc7bb622949763f3c9cc5134f9a16ab6c68107205f2d500ba187d6c01b72a8ab70698ee5f5913e85af88d356')
+
+prepare() {
+  cd cosmic-settings
+  git apply "$srcdir/0001-krissos-personalise.patch"
+  cargo fetch --locked
+}
+
+build() {
+  cd cosmic-settings
+  RUSTFLAGS+=" -C link-arg=-fuse-ld=mold"
+  just build-release --frozen
+}
+
+package() {
+  cd cosmic-settings
+  just rootdir="$pkgdir" install
+}

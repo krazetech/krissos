@@ -13,14 +13,14 @@ Rectangle {
     signal picked(int i)
     function rowAt(i) { return rows.itemAt(i); }
 
-    width: 264
+    width: Math.round(264 * Math.max(1, (1 + Theme.textScale) / 2))
     height: col.implicitHeight + 12
     radius: Theme.radiusSmall + 2
-    color: Theme.card
-    border.width: 1
+    color: Theme.bar
+    border.width: Theme.rimWidth
     border.color: Theme.line
     // Swallows clicks on the card's padding, so they do not reach the layer that closes the menu.
-    MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons }
+    MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons; Accessible.ignored: true }
 
     Column {
         id: col
@@ -50,13 +50,13 @@ Rectangle {
     Component {
         id: headerRow
         Text {
-            height: 30
+            height: Math.max(30, implicitHeight)
             verticalAlignment: Text.AlignBottom
             bottomPadding: 6
             leftPadding: 12
             text: parent.modelData.header
             color: Theme.soft
-            font { family: Theme.sans; pixelSize: 12; weight: Font.DemiBold }
+            font { family: Theme.sans; pixelSize: Theme.sp(12); weight: Font.DemiBold }
         }
     }
 
@@ -66,8 +66,12 @@ Rectangle {
             id: row
             readonly property var entry: parent.modelData
             readonly property int index: parent.index
-            height: 36
+            height: Math.max(36, label.implicitHeight + 14)
             enabled: !entry.off
+            Accessible.role: Accessible.MenuItem
+            Accessible.name: entry.text
+            Accessible.description: entry.sub ? Tr.t("Submenu") : ""
+            Accessible.onPressAction: box.picked(index)
             opacity: enabled ? 1 : 0.4
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
@@ -78,7 +82,7 @@ Rectangle {
             Rectangle {
                 anchors.fill: parent
                 radius: 10
-                color: row.pressed ? Theme.cardHover : row.index === box.current ? Theme.win : "transparent"
+                color: row.pressed ? Theme.cardHover : row.index === box.current ? Theme.card : "transparent"
                 Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
             }
             IconImage {
@@ -98,7 +102,9 @@ Rectangle {
                 name: row.entry.glyph ?? ""
                 size: 17
             }
+            FocusRim { anchors.margins: 0; radius: 10; border.width: 1; opacity: 0.6 }
             Text {
+                id: label
                 anchors.left: parent.left
                 anchors.leftMargin: row.entry.icon || row.entry.glyph ? 38 : 12
                 anchors.right: parent.right
@@ -107,7 +113,7 @@ Rectangle {
                 text: row.entry.text
                 elide: Text.ElideMiddle
                 color: Theme.fg
-                font { family: Theme.sans; pixelSize: 13; weight: Font.Medium }
+                font { family: Theme.sans; pixelSize: Theme.sp(13); weight: Font.Medium }
             }
             Glyph {
                 visible: !!row.entry.sub

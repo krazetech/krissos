@@ -14,6 +14,8 @@ Scope {
     property string glyph: "volume"
     property real level: 0
     property bool shown: false
+    readonly property string what: glyph === "sun" ? Tr.t("Brightness") : glyph === "mute" ? Tr.t("Sound muted")
+        : glyph === "micOff" ? Tr.t("Microphone muted") : glyph === "mic" ? Tr.t("Microphone") : Tr.t("Volume")
 
     function show(g, l) {
         // Quick settings has its own sliders; no pill over the top of them.
@@ -21,6 +23,7 @@ Scope {
         glyph = g;
         level = Math.max(0, Math.min(1, l));
         shown = true;
+        pill.Accessible.announce(what + " " + Math.round(level * 100) + "%");
         hide.restart();
     }
     Timer { id: hide; interval: 1500; onTriggered: root.shown = false }
@@ -72,11 +75,12 @@ Scope {
         WlrLayershell.namespace: "kriss-osd"
         exclusionMode: ExclusionMode.Ignore
         anchors.bottom: true
-        margins.bottom: Theme.barHeight + Theme.gap * 2
-        implicitWidth: 260
-        implicitHeight: 56
+        margins.bottom: Desktop.bottomRoom + Theme.gap * 2
+        implicitWidth: Math.max(260, Theme.sp(14) * 4 + 200)
+        implicitHeight: Math.max(56, Theme.sp(14) + 36)
         color: "transparent"
         mask: Region {}
+        BackgroundEffect.blurRegion: Region { item: pill.opacity > 0 ? pill : null; radius: pill.radius }
 
         Rectangle {
             id: pill
@@ -85,7 +89,11 @@ Scope {
             radius: height / 2
             color: Theme.bar
             border.color: Theme.rim
+            border.width: Theme.rimWidth
             opacity: root.shown ? 1 : 0
+            // Read out by a screen reader, as the level changes.
+            Accessible.role: Accessible.ProgressBar
+            Accessible.name: root.what
             y: root.shown || Theme.reduceMotion ? 0 : 8
             Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
             Behavior on y { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
@@ -120,12 +128,12 @@ Scope {
                 anchors.right: parent.right
                 anchors.rightMargin: 20
                 anchors.verticalCenter: parent.verticalCenter
-                width: 34
+                width: Math.max(34, implicitWidth)
                 horizontalAlignment: Text.AlignRight
                 text: Math.round(root.level * 100)
                 color: Theme.fg
                 font.family: Theme.sans
-                font.pixelSize: 14
+                font.pixelSize: Theme.sp(14)
                 font.features: { "tnum": 1 }
             }
         }

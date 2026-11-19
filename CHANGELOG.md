@@ -15,6 +15,9 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 
 ### Added
 
+- Updates go through a testing channel first, so a bad package is caught before it reaches
+  you. To try updates early, run `kriss channel testing`; `kriss channel stable` takes you
+  back (#79).
 - Windows apps: WinBoat, with `kriss winapps check` and `kriss winapps setup` to see whether
   a Windows app will run and set it up (#26).
 - The installer works with no internet at all: everything it needs is on the USB stick (#30).

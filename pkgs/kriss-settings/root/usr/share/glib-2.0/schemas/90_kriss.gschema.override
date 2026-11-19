@@ -6,6 +6,9 @@ cursor-theme='{{cursor_theme}}'
 font-name='{{font_sans}} 11'
 document-font-name='{{font_sans}} 11'
 monospace-font-name='{{font_mono}} 11'
+# Smooth grey text like macOS, not coloured LCD fringes (fontconfig: 60-kriss.conf).
+font-antialiasing='grayscale'
+font-hinting='slight'
 
 # Minimise, maximise and close on GTK apps that draw their own title bar (Firefox,
 # GNOME apps), as on Windows. GNOME's default is close only.

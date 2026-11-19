@@ -20,12 +20,24 @@ MouseArea {
         : p === PowerProfile.PowerSaver ? ["saver", Tr.t("Power saver")] : ["balanced", Tr.t("Balanced")]
 
     implicitWidth: pill.width
-    implicitHeight: 32
+    implicitHeight: Math.max(32, row.implicitHeight + 8)
     hoverEnabled: true
     cursorShape: Qt.PointingHandCursor
     scale: pressed ? Theme.pressScale : 1
     Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
-    onClicked: PowerProfiles.profile = order[(order.indexOf(p) + 1) % order.length]
+    onClicked: next()
+    function next() { PowerProfiles.profile = order[(order.indexOf(p) + 1) % order.length]; }
+    activeFocusOnTab: true
+    Keys.onPressed: event => {
+        if (event.key !== Qt.Key_Return && event.key !== Qt.Key_Enter && event.key !== Qt.Key_Space) return;
+        next();
+        event.accepted = true;
+    }
+    Accessible.role: Accessible.Button
+    Accessible.name: Tr.t("Power mode: %1", look[1])
+    Accessible.description: Tr.t("Switches to the next power mode")
+    Accessible.onPressAction: next()
+    onPChanged: if (activeFocus) Accessible.announce(look[1])
 
     Rectangle {
         id: pill
@@ -34,6 +46,7 @@ MouseArea {
         radius: height / 2
         color: pp.containsMouse ? Theme.cardHover : Theme.card
         Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+        FocusRim { radius: parent.radius + 2 }
         border.width: pp.p === PowerProfile.Performance ? 2 : 0
         border.color: Theme.accent
         Row {
@@ -50,7 +63,7 @@ MouseArea {
                 anchors.verticalCenter: parent.verticalCenter
                 text: pp.look[1]
                 color: Theme.fg
-                font { family: Theme.sans; pixelSize: 13; weight: Font.DemiBold }
+                font { family: Theme.sans; pixelSize: Theme.sp(13); weight: Font.DemiBold }
             }
         }
     }

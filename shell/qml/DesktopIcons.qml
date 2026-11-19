@@ -15,9 +15,9 @@ Item {
     property bool showIcons: true
     readonly property string dir: Quickshell.env("HOME") + "/Desktop"
     readonly property int cellW: 92
-    readonly property int cellH: 100
+    readonly property int cellH: Math.max(100, 70 + Math.ceil(Theme.sp(12) * 2.6))
     readonly property int pad: 12
-    readonly property int rows: Math.max(1, Math.floor((height - Theme.barHeight - pad * 2) / cellH))
+    readonly property int rows: Math.max(1, Math.floor((height - Desktop.topRoom - Desktop.bottomRoom - pad * 2) / cellH))
 
     FolderListModel {
         id: folder
@@ -37,9 +37,13 @@ Item {
     }
     property var selected: []   // paths
     property int current: -1    // the icon the keyboard is on
+    // The desktop keeps the keyboard itself, so a screen reader hears the icon it reaches.
+    Accessible.role: Accessible.List
+    Accessible.name: Tr.t("Desktop")
+    onCurrentChanged: if (activeFocus && items[current]) Accessible.announce(items[current].name)
 
     function cellRect(i) {
-        return Qt.rect(pad + Math.floor(i / rows) * cellW, pad + (i % rows) * cellH, cellW, cellH);
+        return Qt.rect(pad + Math.floor(i / rows) * cellW, Desktop.topRoom + pad + (i % rows) * cellH, cellW, cellH);
     }
     function isSelected(path) { return selected.indexOf(path) >= 0; }
     function selectOnly(i) { selected = i >= 0 ? [items[i].path] : []; current = i; }
@@ -61,13 +65,13 @@ Item {
         selected = [];
     }
 
-    function iconMenu(i, item) {
+    function iconMenu(i, item, byKeyboard) {
         if (!isSelected(items[i].path)) selectOnly(i);
         const paths = selected;
         const out = [{ text: Tr.t("Open"), run: () => root.open(paths) }];
         if (!items[i].trash)
             out.push({ sep: true }, { text: Tr.t("Move to trash"), glyph: "trash", run: () => root.trash(paths) });
-        menu.show(item, out, false);
+        menu.show(item, out, !!byKeyboard);
     }
 
     Menu { id: menu }
@@ -77,6 +81,7 @@ Item {
         id: box
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton
+        Accessible.ignored: true  // the selection box is pointer only; the keys select too
         property point from
         property var base: []
         onPressed: mouse => {
@@ -122,6 +127,10 @@ Item {
             x: cell.x; y: cell.y; width: cell.width - 4; height: cell.height - 4
             hoverEnabled: true
             acceptedButtons: Qt.LeftButton | Qt.RightButton
+            Accessible.role: Accessible.ListItem
+            Accessible.name: info.Name ?? modelData.name
+            Accessible.selected: sel
+            Accessible.onPressAction: root.open([modelData.path])
             onPressed: mouse => {
                 root.forceActiveFocus();
                 if (mouse.button === Qt.RightButton) return;
@@ -129,7 +138,7 @@ Item {
                 else if (!sel) root.selectOnly(index);
             }
             onClicked: mouse => {
-                if (mouse.button === Qt.RightButton) root.iconMenu(index, icon);
+                if (mouse.button === Qt.RightButton) root.iconMenu(index, icon, false);
                 else if (!(mouse.modifiers & Qt.ControlModifier)) root.selectOnly(index);
             }
             onDoubleClicked: mouse => { if (mouse.button === Qt.LeftButton) root.open([modelData.path]); }
@@ -150,8 +159,10 @@ Item {
                 anchors.fill: parent
                 radius: Theme.radiusSmall
                 color: icon.sel ? Theme.alpha(Theme.accent, 0.22) : icon.containsMouse ? Theme.alpha(Theme.fg, 0.08) : "transparent"
-                border.width: icon.sel || root.current === icon.index && root.activeFocus ? 1 : 0
-                border.color: Theme.alpha(Theme.accent, 0.7)
+                // The keyboard's icon gets the focus rim; a selected one a fainter line.
+                readonly property bool kb: root.current === icon.index && root.activeFocus
+                border.width: kb ? Theme.focusWidth : icon.sel ? Theme.rimWidth : 0
+                border.color: kb ? Theme.accent : Theme.alpha(Theme.accent, 0.7)
                 Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
             }
             IconImage {
@@ -172,7 +183,7 @@ Item {
                 elide: Text.ElideRight
                 text: icon.info.Name ?? icon.modelData.name
                 color: Theme.fg
-                font { family: Theme.sans; pixelSize: 12; weight: Font.Medium }
+                font { family: Theme.sans; pixelSize: Theme.sp(12); weight: Font.Medium }
             }
         }
     }
@@ -194,7 +205,11 @@ Item {
         case Qt.Key_Delete: trash(selected); break;
         case Qt.Key_Escape: selected = []; current = -1; break;
         case Qt.Key_Menu:
-            if (i >= 0) iconMenu(i, repeater.itemAt(i));
+            if (i >= 0) iconMenu(i, repeater.itemAt(i), true);
+            break;
+        case Qt.Key_F10:
+            if (!(event.modifiers & Qt.ShiftModifier)) return;
+            if (i >= 0) iconMenu(i, repeater.itemAt(i), true);
             break;
         default: return;
         }

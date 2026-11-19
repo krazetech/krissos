@@ -47,7 +47,7 @@ ship.
 |---|---|
 | Base | Arch Linux, x86_64 only at 1.0. Apple Silicon is a separate image, in preview (§13) |
 | Update model | Rolling. Upstream Arch packages come straight from Arch mirrors |
-| Our packages | A single `[kriss]` repo, ideally fewer than 25 packages |
+| Our packages | A `[kriss]` repo, ideally fewer than 25 packages, fed only from a `[kriss-testing]` repo (§4) |
 | Rollback | btrfs + snapper, with snapshots bootable from the Limine menu |
 | Installer | Calamares on an archiso live image |
 | Secure Boot | Supported at 1.0 via `sbctl`. A pacman hook re-signs the kernel and bootloader on every update |
@@ -92,10 +92,12 @@ is a bonus only: `installer/lib/online` then switches to `linux-kriss`, runs `pa
 and installs KDE Plasma, which is not on the ISO. Offline, Plasma falls back to the shell.
 
 - **Disk:** GPT only, on UEFI or legacy BIOS (CSM). Dual-boot alongside Windows is the
-  default, erase disk the other choice; manual partitioning and disk encryption are off
-  for now. `kriss-install` stops before the installer with steps to follow when BitLocker
-  is on, or when the USB started in legacy BIOS mode on a PC whose Windows boots UEFI
-  (`kriss-install --legacy` goes on anyway). An MBR disk, as Windows uses in BIOS mode,
+  default, erase disk the other choice; manual partitioning is off for now. "Encrypt
+  system" (opt-in) puts the btrfs root in LUKS2 and leaves the FAT32 `/boot` plain for
+  Limine; the busybox `encrypt` hook asks for the passphrase at boot. The user's password
+  needs 8 characters. `kriss-install` stops before the installer with steps to follow when
+  BitLocker is on, or when the USB started in legacy BIOS mode on a PC whose Windows boots
+  UEFI (`kriss-install --legacy` goes on anyway). An MBR disk, as Windows uses in BIOS mode,
   gets Calamares' own "partition table is not GPT" message and only *Erase disk*.
 - **Layout:** the ESP at `/efi` holds only Limine, so Windows' small ESP is enough. The
   kernels go on a 2 GiB FAT32 `/boot` (XBOOTLDR), because Limine reads only FAT. btrfs
@@ -151,16 +153,24 @@ krissos/
     code from pull requests on your own machine.
   - Your desktop stays the local box for test builds and VM testing.
 - **Pipelines:**
-  - `pkgs.yml`: rebuilds any package whose PKGBUILD changed, signs it, and publishes it to the
-    repo.
+  - `pkgs.yml`: rebuilds any package whose PKGBUILD changed, signs it, and publishes it to
+    `[kriss-testing]`. `kernel.yml`, `kernel-asahi.yml` and `cosmic-comp.yml` publish there too.
+  - `promote.yml`: run by hand. Moves packages from `[kriss-testing]` to `[kriss]`, the repo
+    installs update from: the same files, signatures checked, never rebuilt. A dry run first by
+    default. Writers to one repo share a concurrency group (`testing-ARCH` or `repo-ARCH`).
   - `kernel.yml`: runs on a schedule, checks for new CachyOS kernel patch releases, opens a
     version-bump PR, and builds both kernels.
   - `iso.yml`: builds the live ISO on every tag (`110`, `115`, …), nightly, and on PRs that
     touch `iso/`, then boots it in QEMU until the KrissOS Shell and the installer start, and
     installs it unattended and boots the result, each under both OVMF (UEFI) and SeaBIOS
     (legacy BIOS). Tags attach the ISO to a release.
+    Tags build from `[kriss]`; nightly and PR ISOs from `[kriss-testing]`, so their tests are the
+    check before promoting.
 - **Repo hosting:** the pacman database and packages are uploaded as assets to a GitHub
-  Release, and pacman fetches them over plain HTTPS. No server to run.
+  Release, and pacman fetches them over plain HTTPS. No server to run. `[kriss]` is on
+  `repo-ARCH`, `[kriss-testing]` on `testing-ARCH`.
+- **Channels:** installs use `[kriss]` only. `kriss channel testing` adds `[kriss-testing]`
+  above it; `kriss channel stable` removes it and downgrades back to `[kriss]` after a snapshot.
 - **Signing:** one GPG key, stored only in a GitHub Actions secret. Its public half ships in
   `kriss-keyring`.
 
@@ -218,7 +228,7 @@ available as the installer's alternative.
   Apple logo, fonts or icons. Users pick one in `kriss-welcome` and can switch in settings.
   Familiar, never a clone: neither layout copies Windows or macOS visuals. Plan:
   `docs/shell-roadmap.md`.
-- **Type:** Figtree + JetBrains Mono (OFL) proposed.
+- **Type:** Inter + JetBrains Mono (OFL, both in Arch's extra repo; Inter is the closest free match to Apple's SF Pro, which may not ship off Apple hardware), rendered like macOS: grey smoothing, light hinting, stem darkening.
 - **Apps:** COSMIC Files, Terminal and Settings get KrissOS dark and light COSMIC themes, built
   from the tokens by libcosmic's own ThemeBuilder (`shell/cosmic-theme/`), and a matching
   COSMIC Terminal scheme. Icons are Papirus-Dark and the cursor is Vimix white, both from
@@ -315,7 +325,7 @@ kriss-vm revert         # restore every file `kriss-vm` changed from its backups
 
 ## 11. Open decisions
 
-1. Font: confirm Figtree.
+1. Font: Inter (decided 2026-11-19).
 2. License for the tooling: GPL-3.0-or-later (assumed) or MIT.
 3. ~~Results of the cosmic-comp layer-shell test.~~ Passed; see §5.
 

@@ -1,0 +1,13 @@
+#!/bin/bash
+# makepkg's https download agent in CI (tools/ci/build-pkgs.sh sets it in DLAGENTS):
+# the upstream URL first, then KrissOS's copy of the same file in the `sources` release,
+# so an upstream outage (Codeberg for Calamares) does not turn the build red. makepkg
+# checks the PKGBUILD's checksum on whichever copy arrives.
+# usage: fetch-fallback OUT URL
+set -uo pipefail
+out=$1 url=$2
+curl -qgb "" -fLC - --retry 3 --retry-delay 3 -o "$out" "$url" && exit 0
+copy="https://github.com/${GITHUB_REPOSITORY:-krazetech/krissos}/releases/download/sources/${url##*/}"
+echo "fetch-fallback: $url failed, trying $copy" >&2
+rm -f "$out"
+exec curl -qgb "" -fL --retry 3 --retry-delay 3 -o "$out" "$copy"

@@ -59,7 +59,7 @@ stranded. Nothing is revoked here: packages and ISOs signed with the old key sta
 up. Installs that do not update in that window (and ISOs older than release A) will fail on
 release B with an unknown-key error. For them, save the release-A keyring package somewhere
 that lasts (attach it to a GitHub release of its own: `publish.sh` prunes superseded packages
-from `repo-x86_64`), and put the one-line fix in the release-B note:
+from the `repo-*` and `testing-*` releases), and put the one-line fix in the release-B note:
 `sudo pacman -U <url of kriss-keyring release A>`. It is signed with the old key, which those
 installs still trust.
 
@@ -71,8 +71,10 @@ installs still trust.
 3. Remove `7C92AE8B…5F87` from `krissos-trusted` and list it in `krissos-revoked`, then bump
    `pkgver` and merge. `pacman-key --populate` then disables it locally. Keep its public key in
    `krissos.gpg` so old ISO signatures still verify by hand.
-4. Run `pkgs.yml` by hand (workflow_dispatch) so every package in the repo is re-signed with the
-   new subkey. Without this, packages published before the switch still carry old-key signatures
+4. Re-sign every package: bump `pkgrel` on all of them (including the kernels and the
+   compositor) so CI rebuilds them into `[kriss-testing]` with the new subkey, then run
+   `promote.yml` with no names. `promote.sh` only moves versions newer than `[kriss]` and keeps
+   the testing signatures, so a rebuild without a bump never reaches users. Without this, packages published before the switch still carry old-key signatures
    and fail on installs that have revoked it. Check: `pacman -Syu` on a fresh VM from the
    current ISO, then on a VM made from the 0.1-alpha ISO.
 5. Delete the old key's secret from the maintainer keyring once a tagged ISO has been built
@@ -88,7 +90,7 @@ keyring update:
 
 - **Every year** (subkeys expire after two, so there is slack): add a new CI subkey offline,
   ship the updated public key in `kriss-keyring` (signed by the current CI subkey), wait two
-  weeks, then replace `KRISS_GPG_KEY` and re-run `pkgs.yml`. The fingerprint users check
+  weeks, then replace `KRISS_GPG_KEY` and re-sign as in release B step 4. The fingerprint users check
   (the primary's) does not change.
 - **Extend the spare subkey's expiry** at the same time, and test it signs a throwaway file.
 - **Before any subkey expires**, check its date: `gpg --show-keys pkgs/kriss-keyring/krissos.gpg`.
@@ -114,7 +116,7 @@ CI did not build.
 - **After section 1 and 2 are done** (CI holds only a subkey): revoke the leaked CI subkey
   offline with the primary, add a new CI subkey, and ship the updated public key in
   `kriss-keyring` signed with the **spare subkey**. Installs already trust the primary, so they
-  accept it. Then set the new subkey in CI and re-run `pkgs.yml` to re-sign everything.
+  accept it. Then set the new subkey in CI and re-sign everything as in release B step 4.
 - **Today, before section 1 is done** (CI holds the only key): there is no clean fix. The least
   bad path is to make the new key as in section 1, ship a keyring that trusts the new key and
   revokes the old one, and sign that one keyring with the old key one last time. Then publish the
