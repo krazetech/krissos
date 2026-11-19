@@ -3,18 +3,43 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "theme.js" as T
 
 // Colours and fonts come from theme/tokens.json: theme/generate.py fills in every
 // placeholder below when kriss-shell is built. Edit the tokens, not the values here.
+// The accent and light or dark are the user's, from shell.json (Desktop.qml), with the
+// tokens as defaults; everything below follows them live.
 Singleton {
     id: root
 
-    // Follows the desktop-wide preference that GTK and Qt apps read too, so the shell
-    // and the windows switch together.
-    property bool dark: true
+    // "dark", "light", "system" (follows color-scheme, which GTK and Qt apps read too) or
+    // "auto" (light from themeLight until themeDark, HH:MM). Anything else is "system".
+    readonly property string mode: T.isMode(Desktop.theme) ? Desktop.theme : "system"
+    property bool systemDark: true
+    property int now: minutesNow()  // minutes after midnight, for "auto"
+    function minutesNow() { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); }
+    readonly property bool dark: mode === "dark" || mode === "system" && systemDark
+        || mode === "auto" && !T.lightAt(now, Desktop.themeLight, Desktop.themeDark)
 
-    readonly property color accent: "{{accent}}"
-    readonly property color accentInk: "{{bg}}"
+    // The accent the user picked (any colour; Sky Cyan by default), adjusted per mode so
+    // it stands out 3:1 from light windows too, and its shades. Black or white text on it.
+    readonly property string chosenAccent: T.parseColor(Desktop.accent) ?? T.parseColor("{{accent}}")
+    readonly property var shade: T.shades(chosenAccent, dark, "{{surface}}", "{{light_bg}}")
+    readonly property color accent: shade.accent
+    readonly property color accentInk: shade.ink
+    readonly property color accentHover: shade.hover
+    readonly property color accentPressed: shade.pressed
+    // KrissOS-safe accents for the settings page: each one passes shell/theme-check.
+    readonly property var accents: [
+        { name: Tr.t("Sky Cyan"), color: "{{accent}}" },
+        { name: Tr.t("Teal"), color: "#2EC4A9" },
+        { name: Tr.t("Green"), color: "#57C785" },
+        { name: Tr.t("Amber"), color: "#E8B04B" },
+        { name: Tr.t("Coral"), color: "#F07A73" },
+        { name: Tr.t("Rose"), color: "#EE6FA0" },
+        { name: Tr.t("Violet"), color: "#B98CF0" },
+        { name: Tr.t("Blue"), color: "#5A9BF0" }
+    ]
     readonly property color red: "{{color1}}"
     readonly property color green: "{{color2}}"
 
@@ -68,15 +93,40 @@ Singleton {
     readonly property color cardHover: Qt.tint(card, alpha(fg, 0.12))
     readonly property real pressScale: 0.95
 
-    // Switches the shell, GTK and Qt apps (through the GNOME setting) and COSMIC apps and
-    // the compositor (through COSMIC's own theme mode) together.
+    // The quick settings switch: picks light or dark outright, leaving "system" and "auto".
     function setDark(on) {
-        dark = on;
+        Desktop.theme = on ? "dark" : "light";
+    }
+
+    // `theme set accent "#hex"` / `theme set mode dark|light|system|auto`, for the settings
+    // page. Saves to shell.json; the bindings above and the watchers below do the rest.
+    function set(key, value) {
+        if (key === "accent" && T.parseColor(value)) Desktop.accent = T.parseColor(value);
+        else if (key === "mode" && T.isMode(value)) Desktop.theme = value;
+        else return "error: expected accent #RRGGBB or mode dark|light|system|auto";
+        return "ok";
+    }
+
+    // Switches GTK and Qt apps (through the GNOME setting, which the Flatpak portal reads
+    // too) and COSMIC apps and the compositor (through COSMIC's own theme mode) with the
+    // shell. In "system" the GNOME setting leads, so only COSMIC's mode is written.
+    function syncMode() {
         Quickshell.execDetached(["sh", "-c",
-            'gsettings set org.gnome.desktop.interface color-scheme "$1"; ' +
+            '[ "$3" = system ] || gsettings set org.gnome.desktop.interface color-scheme "$1"; ' +
             'd="${XDG_CONFIG_HOME:-$HOME/.config}/cosmic/com.system76.CosmicTheme.Mode/v1"; ' +
-            'mkdir -p "$d" && printf %s "$2" > "$d/is_dark"',
-            "sh", on ? "prefer-dark" : "default", on ? "true" : "false"]);
+            '[ "$(cat "$d/is_dark" 2>/dev/null)" = "$2" ] || { mkdir -p "$d" && printf %s "$2" > "$d/is_dark"; }',
+            "sh", dark ? "prefer-dark" : "default", dark ? "true" : "false", mode]);
+    }
+    onDarkChanged: syncMode()
+    onModeChanged: syncMode()
+    // COSMIC builds its own accent shades with libcosmic's ThemeBuilder.
+    onChosenAccentChanged: Quickshell.execDetached(["kriss-cosmic-theme", "--accent", chosenAccent])
+
+    Timer {
+        running: true
+        interval: 60000
+        repeat: true
+        onTriggered: root.now = root.minutesNow()
     }
 
     function alpha(c, a) {
@@ -88,7 +138,7 @@ Singleton {
         command: ["gsettings", "get", "org.gnome.desktop.interface", "color-scheme"]
         running: true
         stdout: SplitParser {
-            onRead: line => root.dark = line.indexOf("light") < 0 && line.indexOf("default") < 0
+            onRead: line => root.systemDark = line.indexOf("light") < 0 && line.indexOf("default") < 0
         }
     }
 
@@ -96,7 +146,7 @@ Singleton {
         command: ["gsettings", "monitor", "org.gnome.desktop.interface", "color-scheme"]
         running: true
         stdout: SplitParser {
-            onRead: line => root.dark = line.indexOf("light") < 0 && line.indexOf("default") < 0
+            onRead: line => root.systemDark = line.indexOf("light") < 0 && line.indexOf("default") < 0
         }
     }
 

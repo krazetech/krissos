@@ -199,6 +199,12 @@ ShellRoot {
         function emoji(): void { clipboard.show("emoji"); }
     }
 
+    // `qs ipc call theme set accent "#24B1E6"`, `qs ipc call theme set mode auto`.
+    IpcHandler {
+        target: "theme"
+        function set(key: string, value: string): string { return Theme.set(key, value); }
+    }
+
     IpcHandler {
         target: "lock"
         function lock(): void { Desktop.locked = true; }
