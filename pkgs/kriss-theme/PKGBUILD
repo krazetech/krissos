@@ -1,17 +1,14 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-theme
-pkgver=0.5.0
+pkgver=0.5.1
 pkgrel=1
 pkgdesc='KrissOS colours, fonts, wallpaper, Plasma, SDDM, Plymouth and Limine theme'
 arch=('any')
 url='https://github.com/krazetech/krissos'
 license=('GPL-3.0-or-later')
-depends=('adw-gtk-theme' 'vimix-cursors' 'papirus-icon-theme' 'qt6ct' 'ttf-jetbrains-mono')
+depends=('adw-gtk-theme' 'vimix-cursors' 'papirus-icon-theme' 'qt6ct' 'ttf-ubuntu-font-family')
 makedepends=('python' 'librsvg')
-# ponytail: Figtree is only in the AUR, so it cannot be a hard dependency until
-# [kriss] carries a pinned build of it. Without it the UI falls back to the next sans.
-optdepends=('ttf-figtree: the KrissOS UI font (AUR)'
-            'plymouth: boot splash'
+optdepends=('plymouth: boot splash'
             'limine: boot menu'
             'plasma-desktop: the KrissOS Plasma colour scheme and global theme'
             'sddm: the KrissOS login screen background')
