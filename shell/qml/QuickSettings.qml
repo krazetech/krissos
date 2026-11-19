@@ -51,6 +51,7 @@ PanelWindow {
     readonly property var source: Pipewire.defaultAudioSource
 
     function close() { Desktop.quickOpen = false; }
+    Binding { when: Desktop.quickOpen; target: Desktop; property: "cornerRoom"; value: panel.height + Theme.panelGap }
 
     // Seconds as "2 h 5 min" or "40 min".
     function span(sec) {
