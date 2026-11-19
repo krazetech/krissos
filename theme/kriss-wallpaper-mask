@@ -1,0 +1,91 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
+"""The subject of a wallpaper as a soft mask, for the lock clock's depth effect.
+
+  kriss-wallpaper-mask IMAGE OUT.png   write IMAGE's mask to OUT.png
+  kriss-wallpaper-mask --cached IMAGE  print the path of IMAGE's mask, making it first if it is
+                                       missing: the one kriss-theme ships next to a stock
+                                       wallpaper (NAME.mask.png), else one in
+                                       ~/.cache/kriss/wallpaper-masks named by the picture's
+                                       path and change time
+
+It runs u2netp, a small salient-object model that kriss-theme ships, on the CPU through
+onnxruntime. Nothing is ever fetched. It prints nothing and exits 1 when it cannot make a mask
+(no onnxruntime, no model, a picture it cannot read): the lock clock then has no depth.
+"""
+import hashlib
+import os
+import subprocess
+import sys
+import tempfile
+
+MODEL = os.environ.get("KRISS_MASK_MODEL", "/usr/share/kriss/models/u2netp.onnx")
+SIDE = 320       # the model's input
+LONGEST = 1920   # a mask wider or taller than this is no sharper on screen
+
+
+def mask(src, out):
+    import numpy as np
+    import onnxruntime
+    from PIL import Image, ImageFilter
+
+    with tempfile.TemporaryDirectory() as tmp:
+        if src.lower().endswith(".svg"):  # Pillow cannot read SVG; render it at 16:9
+            png = os.path.join(tmp, "in.png")
+            subprocess.run(["rsvg-convert", "-w", str(LONGEST), "-o", png, src], check=True)
+            src = png
+        img = Image.open(src).convert("RGB")
+    w, h = img.size
+    x = np.asarray(img.resize((SIDE, SIDE), Image.BILINEAR), dtype=np.float32)
+    x = x / max(float(x.max()), 1e-6)
+    x = (x - np.array([0.485, 0.456, 0.406], np.float32)) / np.array([0.229, 0.224, 0.225], np.float32)
+    x = x.transpose(2, 0, 1)[None]
+
+    opts = onnxruntime.SessionOptions()
+    opts.intra_op_num_threads = 2  # in the background; never the whole CPU
+    session = onnxruntime.InferenceSession(MODEL, opts, providers=["CPUExecutionProvider"])
+    y = session.run(None, {session.get_inputs()[0].name: x})[0][0, 0]
+    y = (y - y.min()) / max(float(y.max() - y.min()), 1e-6)
+
+    scale = min(1.0, LONGEST / max(w, h))
+    size = (max(1, round(w * scale)), max(1, round(h * scale)))
+    m = Image.fromarray((y * 255).astype(np.uint8), "L").resize(size, Image.BILINEAR)
+    m = m.filter(ImageFilter.GaussianBlur(2))  # soft edges, so the cut-out never looks pasted
+    # White, with the subject as the alpha: what Qt's MultiEffect masks with.
+    m = Image.merge("LA", (Image.new("L", size, 255), m))
+    tmp = out + ".part.png"
+    m.save(tmp, optimize=True)
+    os.replace(tmp, out)
+
+
+def cached(src):
+    stock = os.path.splitext(src)[0] + ".mask.png"
+    if os.path.exists(stock):
+        return stock
+    cache = os.path.join(os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache"), "kriss", "wallpaper-masks")
+    key = hashlib.sha1(f"{os.path.abspath(src)}\0{os.stat(src).st_mtime_ns}".encode()).hexdigest()
+    out = os.path.join(cache, key + ".png")
+    if not os.path.exists(out):
+        os.makedirs(cache, exist_ok=True)
+        mask(src, out)
+    return out
+
+
+def main(argv):
+    try:
+        if len(argv) == 3 and argv[1] == "--cached":
+            print(cached(argv[2]))
+        elif len(argv) == 3 and not argv[1].startswith("-"):
+            mask(argv[1], argv[2])
+        else:
+            print(__doc__.strip(), file=sys.stderr)
+            return 2
+    except Exception as e:  # no runtime, no model, an unreadable picture: no depth, quietly
+        print(f"kriss-wallpaper-mask: {e}", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
