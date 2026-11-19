@@ -70,6 +70,10 @@ Singleton {
     readonly property color night: "{{bg}}"
     readonly property color nightFg: "{{fg}}"
 
+    // kriss-theme's wallpapers. KRISS_WALLPAPERS points elsewhere, for a nested test of a
+    // theme/generate.py build that is not installed yet.
+    readonly property string wallpapers: Quickshell.env("KRISS_WALLPAPERS") || "/usr/share/backgrounds/kriss"
+
     readonly property string sans: "{{font_sans}}"
     readonly property string mono: "{{font_mono}}"
 

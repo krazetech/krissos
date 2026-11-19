@@ -15,6 +15,9 @@ When TEMPLATE_DIR is theme/templates (kriss-theme), wallpaper.svg is also
 rendered twice into usr/share/backgrounds/kriss/: kriss-dark.svg
 from the tokens as they are, kriss-light.svg with every light_X token in place of X.
 {{keris}} in it is the emblem's keris path with no fill, so the wallpaper colours it.
+It is rendered four more times for the time-of-day wallpaper, kriss-dawn/day/dusk/night.svg:
+the same scene under a sky and sun mixed from the tokens (see times()). The shell's lock
+screen, login screen and desktop blend between neighbours by the clock.
 """
 import json
 import pathlib
@@ -45,6 +48,34 @@ def light(tokens):
     return {**tokens, **{k[6:]: v for k, v in tokens.items() if k.startswith("light_")}}
 
 
+def mix(a, b, t):
+    """Colour a moved t of the way to colour b, as #RRGGBB."""
+    ca, cb = (tuple(int(c[i:i + 2], 16) for i in (1, 3, 5)) for c in (a, b))
+    return "#" + "".join(f"{round(x + (y - x) * t):02X}" for x, y in zip(ca, cb))
+
+
+# No sky or sun: the plain dark and light wallpapers.
+CLEAR = {"sky_top": "#000000", "sky_bottom": "#000000", "sky_opacity": "0",
+         "sun": "#000000", "sun_opacity": "0", "sun_x": "0", "sun_y": "0"}
+
+
+def times(t):
+    """The lighting for each time of day: a sky (top and horizon) mixed from the dark
+    background and a palette colour, and a sun, low on the left at dawn, high at noon and
+    low on the right at dusk. Night is the dark wallpaper. Kept dark enough everywhere for
+    the lock screen's light text."""
+    bg = t["bg"]
+    return {
+        "dawn": {"sky_top": mix(bg, t["color13"], 0.22), "sky_bottom": mix(bg, t["color9"], 0.42),
+                 "sky_opacity": "1", "sun": mix(t["color11"], t["color9"], 0.5), "sun_opacity": "0.36", "sun_x": "700", "sun_y": "1550"},
+        "day": {"sky_top": mix(bg, t["color4"], 0.48), "sky_bottom": mix(bg, t["color14"], 0.40),
+                "sky_opacity": "1", "sun": t["color15"], "sun_opacity": "0.30", "sun_x": "2900", "sun_y": "120"},
+        "dusk": {"sky_top": mix(bg, t["color5"], 0.24), "sky_bottom": mix(bg, t["color1"], 0.40),
+                 "sky_opacity": "1", "sun": t["color3"], "sun_opacity": "0.40", "sun_x": "3150", "sun_y": "1500"},
+        "night": CLEAR,
+    }
+
+
 def render(text, values):
     return re.sub(r"\{\{([\w.]+)\}\}", lambda m: values[m.group(1)], text)
 
@@ -66,8 +97,9 @@ def main(src, dst):
     wp.mkdir(parents=True, exist_ok=True)
     # Inlined, not <image>: Qt's SVG renderer cannot load an external or nested SVG.
     keris = re.sub(r' fill="[^"]*"', "", re.search(r"<path [^>]*/>", LOGO.read_text()).group(0))
-    for mode, t in (("dark", tokens), ("light", light(tokens))):
-        out = render(WALLPAPER.read_text(), {**variants(t), "keris": keris})
+    for mode, t, sky in (("dark", tokens, CLEAR), ("light", light(tokens), CLEAR),
+                         *((n, tokens, v) for n, v in times(tokens).items())):
+        out = render(WALLPAPER.read_text(), {**variants(t), **sky, "keris": keris})
         (wp / f"kriss-{mode}.svg").write_text(out)
     plymouth(dst / "usr/share/plymouth/themes/kriss", values, keris)
 
@@ -112,7 +144,8 @@ def test():
     assert (v["accent.rf"], v["accent.bf"]) == ("0.161", "0.910")
     assert "font.hex" not in v
     assert light({"bg": "#000000", "light_bg": "#FFFFFF"})["bg"] == "#FFFFFF"
-    json.loads(TOKENS.read_text())
+    assert mix("#000000", "#FF8000", 0.5) == "#804000"
+    assert set(times(json.loads(TOKENS.read_text()))) == {"dawn", "day", "dusk", "night"}
     print("ok")
 
 
