@@ -31,6 +31,9 @@ Singleton {
     // has no setting of its own yet). Every font size goes through sp().
     property real textScale: 1
     function sp(px) { return Math.round(px * textScale); }
+    // Panel widths and other room around text grow half as fast as the text, never shrink:
+    // at 150% text a 336 px panel is 420 px, so labels fit without the panels taking over.
+    function dp(px) { return Math.round(px * Math.max(1, (1 + textScale) / 2)); }
 
     // The accent the user picked (any colour; Sky Cyan by default) and its shades, from
     // theme.js. `accent` fills tiles, chips and switches in the picked colour, with

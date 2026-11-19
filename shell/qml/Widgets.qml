@@ -93,7 +93,7 @@ PanelWindow {
         id: panel
         x: Theme.panelGap
         y: Theme.panelGap
-        width: 420
+        width: Theme.dp(420)
         height: parent.height - 2 * Theme.panelGap
         radius: Theme.rPanel
         color: Theme.bar
@@ -131,7 +131,7 @@ PanelWindow {
                 Layout.fillWidth: true
                 text: Tr.t("Widgets")
                 color: Theme.fg
-                font { family: Theme.sans; pixelSize: 17; weight: Font.DemiBold }
+                font { family: Theme.sans; pixelSize: Theme.sp(17); weight: Font.DemiBold }
             }
             // Brings back a hidden card.
             Btn {
@@ -190,7 +190,7 @@ PanelWindow {
                 visible: !!b.label
                 text: b.label
                 color: b.primary ? Theme.accentInk : Theme.fg
-                font { family: Theme.sans; pixelSize: 12; weight: Font.Medium }
+                font { family: Theme.sans; pixelSize: Theme.sp(12); weight: Font.Medium }
                 anchors.verticalCenter: parent.verticalCenter
             }
         }
@@ -217,7 +217,7 @@ PanelWindow {
             selectionColor: Theme.accent
             selectedTextColor: Theme.accentInk
             clip: true
-            font { family: Theme.sans; pixelSize: 13 }
+            font { family: Theme.sans; pixelSize: Theme.sp(13) }
             onAccepted: f.accepted()
             Text {
                 visible: !input.text
@@ -254,7 +254,7 @@ PanelWindow {
     component Small: Text {
         color: Theme.soft
         elide: Text.ElideRight
-        font { family: Theme.sans; pixelSize: 12 }
+        font { family: Theme.sans; pixelSize: Theme.sp(12) }
     }
 
     // One widget: a rounded card with its title (drag it to move the card) and a ⋯ menu.
@@ -346,7 +346,7 @@ PanelWindow {
                         anchors.verticalCenter: parent.verticalCenter
                         text: win.titles[c.wid]
                         color: Theme.soft
-                        font { family: Theme.sans; pixelSize: 12; weight: Font.DemiBold; capitalization: Font.AllUppercase; letterSpacing: 0.6 }
+                        font { family: Theme.sans; pixelSize: Theme.sp(12); weight: Font.DemiBold; capitalization: Font.AllUppercase; letterSpacing: 0.6 }
                     }
                 }
                 Btn {
@@ -421,7 +421,7 @@ PanelWindow {
             Text {
                 text: cal.today.toLocaleString(Qt.locale(), "dddd, d MMMM")
                 color: Theme.fg
-                font { family: Theme.sans; pixelSize: 15; weight: Font.DemiBold }
+                font { family: Theme.sans; pixelSize: Theme.sp(15); weight: Font.DemiBold }
             }
             C.DayOfWeekRow {
                 Layout.fillWidth: true
@@ -431,7 +431,7 @@ PanelWindow {
                     text: shortName.slice(0, 2)
                     horizontalAlignment: Text.AlignHCenter
                     color: Theme.soft
-                    font { family: Theme.sans; pixelSize: 11; weight: Font.DemiBold }
+                    font { family: Theme.sans; pixelSize: Theme.sp(11); weight: Font.DemiBold }
                 }
             }
             C.MonthGrid {
@@ -456,7 +456,7 @@ PanelWindow {
                         anchors.centerIn: parent
                         text: day.model.day
                         color: day.model.today ? Theme.accentInk : day.model.month === grid.month ? Theme.fg : Theme.alpha(Theme.soft, 0.7)
-                        font { family: Theme.sans; pixelSize: 12; weight: day.model.today ? Font.Bold : Font.Normal }
+                        font { family: Theme.sans; pixelSize: Theme.sp(12); weight: day.model.today ? Font.Bold : Font.Normal }
                     }
                     Rectangle {
                         visible: day.busy && !day.model.today
@@ -482,7 +482,7 @@ PanelWindow {
                             text: modelData.title ?? ""
                             elide: Text.ElideRight
                             color: Theme.fg
-                            font { family: Theme.sans; pixelSize: 13; weight: Font.Medium }
+                            font { family: Theme.sans; pixelSize: Theme.sp(13); weight: Font.Medium }
                         }
                         Small {
                             width: parent.width
@@ -553,7 +553,7 @@ PanelWindow {
                 Layout.fillWidth: true
                 RollingText {
                     text: Qt.formatTime(now.date, "HH:mm")
-                    font { family: Theme.sans; pixelSize: 34; weight: Font.DemiBold }
+                    font { family: Theme.sans; pixelSize: Theme.sp(34); weight: Font.DemiBold }
                 }
                 Item { Layout.fillWidth: true }
                 Small { text: Tr.t("Local time") }
@@ -569,7 +569,7 @@ PanelWindow {
                         Text {
                             text: clocks.city(modelData)
                             color: Theme.fg
-                            font { family: Theme.sans; pixelSize: 13; weight: Font.Medium }
+                            font { family: Theme.sans; pixelSize: Theme.sp(13); weight: Font.Medium }
                         }
                         Small {
                             readonly property date t: clocks.at(modelData) ?? now.date
@@ -579,7 +579,7 @@ PanelWindow {
                     }
                     RollingText {
                         text: clocks.at(modelData) ? Qt.formatTime(clocks.at(modelData), "HH:mm") : "--:--"
-                        font { family: Theme.sans; pixelSize: 18; weight: Font.DemiBold }
+                        font { family: Theme.sans; pixelSize: Theme.sp(18); weight: Font.DemiBold }
                     }
                 }
             }
@@ -648,7 +648,7 @@ PanelWindow {
                         x: 10
                         text: clocks.city(m.modelData) + "  "
                         color: Theme.fg
-                        font { family: Theme.sans; pixelSize: 13 }
+                        font { family: Theme.sans; pixelSize: Theme.sp(13) }
                         Small { anchors.left: parent.right; anchors.verticalCenter: parent.verticalCenter; text: m.modelData }
                     }
                 }
@@ -781,7 +781,7 @@ PanelWindow {
                 Layout.fillWidth: true
                 spacing: Theme.s1
                 RowLayout {
-                    Text { text: Tr.t("Disk (/)"); color: Theme.fg; font { family: Theme.sans; pixelSize: 13; weight: Font.Medium } }
+                    Text { text: Tr.t("Disk (/)"); color: Theme.fg; font { family: Theme.sans; pixelSize: Theme.sp(13); weight: Font.Medium } }
                     Item { Layout.fillWidth: true }
                     Small { text: sys.diskTotal ? Tr.t("%1 of %2 GB", sys.gb(sys.diskUsed), sys.gb(sys.diskTotal)) : "…" }
                 }
@@ -808,7 +808,7 @@ PanelWindow {
         Layout.fillWidth: true
         spacing: Theme.s0
         RowLayout {
-            Text { text: label; color: Theme.fg; font { family: Theme.sans; pixelSize: 13; weight: Font.Medium } }
+            Text { text: label; color: Theme.fg; font { family: Theme.sans; pixelSize: Theme.sp(13); weight: Font.Medium } }
             Item { Layout.fillWidth: true }
             Small { text: value }
         }
@@ -967,7 +967,7 @@ PanelWindow {
                     color: ai.answer ? Theme.fg : Theme.soft
                     selectionColor: Theme.accent
                     selectedTextColor: Theme.accentInk
-                    font { family: Theme.sans; pixelSize: 13 }
+                    font { family: Theme.sans; pixelSize: Theme.sp(13) }
                 }
             }
         }
@@ -1066,7 +1066,7 @@ PanelWindow {
                     Text {
                         text: Math.round(wx.cur?.temperature_2m ?? 0) + " °C"
                         color: Theme.fg
-                        font { family: Theme.sans; pixelSize: 30; weight: Font.DemiBold }
+                        font { family: Theme.sans; pixelSize: Theme.sp(30); weight: Font.DemiBold }
                     }
                     Small { text: wx.kind(wx.cur?.weather_code ?? 0)[1] + " · " + Tr.t("Wind %1 km/h", Math.round(wx.cur?.wind_speed_10m ?? 0)) }
                 }

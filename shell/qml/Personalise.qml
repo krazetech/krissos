@@ -15,9 +15,10 @@ FloatingWindow {
     visible: Desktop.personalisePage !== ""
     title: Tr.t("Personalise")
     color: Theme.win
-    implicitWidth: 820
-    implicitHeight: 640
-    minimumSize: Qt.size(600, 440)
+    // Grows with the text size, like the panels.
+    implicitWidth: Theme.dp(820)
+    implicitHeight: Theme.dp(640)
+    minimumSize: Qt.size(Theme.dp(600), Theme.dp(440))
     // The window's close button.
     onVisibleChanged: {
         if (!visible) Desktop.personalisePage = "";
@@ -63,7 +64,7 @@ FloatingWindow {
         // The pages.
         Rectangle {
             id: side
-            width: 230
+            width: Theme.dp(230)
             height: parent.height
             color: Theme.card
             Accessible.role: Accessible.PageTabList
@@ -73,15 +74,7 @@ FloatingWindow {
                 anchors.fill: parent
                 anchors.margins: Theme.s3
                 spacing: Theme.s1
-                Text {
-                    text: Tr.t("Personalise")
-                    color: Theme.fg
-                    leftPadding: Theme.s2
-                    bottomPadding: Theme.s3
-                    topPadding: Theme.s1
-                    font { family: Theme.sans; pixelSize: Theme.sp(20); weight: Font.DemiBold }
-                    Accessible.ignored: true
-                }
+                // No title here: the window's title bar names it, and the page has its own.
                 Repeater {
                     id: nav
                     model: win.pages
@@ -132,6 +125,8 @@ FloatingWindow {
                             Glyph { name: tab.modelData[1]; size: 18; anchors.verticalCenter: parent.verticalCenter }
                             Text {
                                 text: tab.modelData[2]
+                                width: Math.min(implicitWidth, tab.width - 14 - 18 - Theme.s3 - Theme.s2)
+                                elide: Text.ElideRight
                                 color: Theme.fg
                                 anchors.verticalCenter: parent.verticalCenter
                                 font { family: Theme.sans; pixelSize: Theme.sp(14); weight: tab.on ? Font.DemiBold : Font.Medium }
@@ -690,8 +685,8 @@ FloatingWindow {
         property string glyph
         property bool on
         signal picked()
-        width: 150
-        height: 84 + Theme.sp(12) + 10
+        width: Theme.dp(150)
+        height: Theme.dp(84) + Theme.sp(12) + 10
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         activeFocusOnTab: true

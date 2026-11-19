@@ -114,7 +114,7 @@ PanelWindow {
                 id: cell
                 required property var modelData
                 required property int index
-                width: 136
+                width: Theme.dp(136)
                 height: row.height
                 hoverEnabled: true
                 onClicked: { win.current = index; win.finish(true); }

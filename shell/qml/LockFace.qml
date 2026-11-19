@@ -102,7 +102,7 @@ FocusScope {
             readonly property var p: Mpris.players.values.find(p => p.isPlaying) ?? Mpris.players.values.find(p => p.trackTitle) ?? null
             visible: p !== null && p.trackTitle !== ""
             anchors.horizontalCenter: parent.horizontalCenter
-            width: 380; height: 68
+            width: Theme.dp(380); height: Theme.dp(68)
             radius: Theme.rCard
             color: Theme.alpha(Theme.nightFg, 0.12)
             border.width: 1
@@ -132,14 +132,14 @@ FocusScope {
                     elide: Text.ElideRight
                     text: media.p?.trackTitle ?? ""
                     color: Theme.nightFg
-                    font { family: Theme.sans; pixelSize: 14; weight: Font.DemiBold }
+                    font { family: Theme.sans; pixelSize: Theme.sp(14); weight: Font.DemiBold }
                 }
                 Text {
                     width: parent.width
                     elide: Text.ElideRight
                     text: media.p?.trackArtist || media.p?.identity || ""
                     color: Theme.alpha(Theme.nightFg, 0.7)
-                    font { family: Theme.sans; pixelSize: 12 }
+                    font { family: Theme.sans; pixelSize: Theme.sp(12) }
                 }
             }
             Row {
@@ -204,14 +204,14 @@ FocusScope {
             anchors.horizontalCenter: parent.horizontalCenter
             text: face.host.userName
             color: Theme.nightFg
-            font { family: Theme.sans; pixelSize: 18; weight: Font.DemiBold }
+            font { family: Theme.sans; pixelSize: Theme.sp(18); weight: Font.DemiBold }
         }
 
         // The field and the line under it; the room is kept so nothing jumps.
         Item {
             anchors.horizontalCenter: parent.horizontalCenter
-            width: 320
-            height: 76
+            width: Theme.dp(320)
+            height: Theme.dp(40) + Theme.sp(13) + 24
 
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -219,8 +219,9 @@ FocusScope {
                 opacity: face.asking ? 0 : 1
                 Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.normal) } }
                 text: face.host.hint
-                color: Theme.alpha(Theme.nightFg, 0.7)
-                font { family: Theme.sans; pixelSize: 14 }
+                // 4.5:1 on the brightest time of day of the dynamic wallpaper.
+                color: Theme.alpha(Theme.nightFg, 0.8)
+                font { family: Theme.sans; pixelSize: Theme.sp(14) }
             }
 
             Item {
@@ -236,7 +237,7 @@ FocusScope {
                 Rectangle {
                     id: box
                     anchors.horizontalCenter: parent.horizontalCenter
-                    width: 260; height: 40; radius: height / 2
+                    width: Theme.dp(260); height: Theme.dp(40); radius: height / 2
                     color: Theme.alpha(Theme.nightFg, 0.14)
                     border.width: face.host.message && Theme.reduceMotion ? 2 : 1
                     border.color: face.host.message && Theme.reduceMotion ? Theme.red
@@ -270,7 +271,7 @@ FocusScope {
                         clip: true
                         enabled: face.asking && !face.host.checking
                         activeFocusOnTab: enabled
-                        font { family: Theme.sans; pixelSize: 16; letterSpacing: 2 }
+                        font { family: Theme.sans; pixelSize: Theme.sp(16); letterSpacing: 2 }
                         Accessible.name: Tr.t("Password")
                         onTextChanged: face.host.password = text
                         // Keeps every screen's field in step, and empties it after a try.
@@ -294,7 +295,7 @@ FocusScope {
                             visible: !field.text
                             text: face.host.checking ? Tr.t("Checking…") : Tr.t("Enter password")
                             color: Theme.alpha(Theme.nightFg, 0.6)
-                            font { family: Theme.sans; pixelSize: 14 }
+                            font { family: Theme.sans; pixelSize: Theme.sp(14) }
                         }
                     }
                     LockButton {
@@ -321,7 +322,7 @@ FocusScope {
                         anchors.centerIn: parent
                         text: xkb.layout
                         color: Theme.alpha(Theme.nightFg, 0.75)
-                        font { family: Theme.mono; pixelSize: 11; weight: Font.DemiBold }
+                        font { family: Theme.mono; pixelSize: Theme.sp(11); weight: Font.DemiBold }
                     }
                 }
 
@@ -331,7 +332,7 @@ FocusScope {
                     anchors.topMargin: Theme.s2
                     text: face.host.message || (caps.on ? Tr.t("Caps Lock is on") : "")
                     color: face.host.message ? Theme.red : Theme.alpha(Theme.nightFg, 0.75)
-                    font { family: Theme.sans; pixelSize: 13; weight: Font.Medium }
+                    font { family: Theme.sans; pixelSize: Theme.sp(13); weight: Font.Medium }
                     Accessible.role: Accessible.AlertMessage
                     Accessible.name: text
                 }

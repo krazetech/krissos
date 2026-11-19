@@ -39,7 +39,7 @@ PanelWindow {
         anchors.right: parent.right
         anchors.rightMargin: Theme.panelGap
         y: Desktop.mac ? Theme.panelGap : parent.height - height - Theme.panelGap - Desktop.barRoom
-        width: 336
+        width: Theme.dp(336)
         height: body.implicitHeight + 36
         radius: Theme.rPanel
         color: Theme.bar

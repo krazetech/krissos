@@ -263,7 +263,7 @@ PanelWindow {
         x: Desktop.taskbarAlignment === "centre" || Desktop.mac ? (parent.width - width) / 2 : Theme.panelGap
         anchors.bottom: parent.bottom
         anchors.bottomMargin: Theme.panelGap + Desktop.barRoom
-        width: 600
+        width: Theme.dp(600)
         height: body.implicitHeight + body.anchors.topMargin + body.anchors.bottomMargin + foot.height
         radius: Theme.rPanel
         color: Theme.bar
@@ -371,7 +371,7 @@ PanelWindow {
                 visible: !win.query && !Desktop.launcherSearch && win.shown.length > 0
                 Layout.preferredHeight: Math.min(win.allApps ? 4 : 3, Math.ceil(win.shown.length / columns)) * cellHeight
                 cellWidth: width / columns
-                cellHeight: Math.max(92, 70 + Theme.sp(12) * 1.4)
+                cellHeight: 66 + Theme.sp(12) * 2.7  // room for a name on two lines
                 highlightMoveDuration: Theme.ms(150)
                 clip: true
                 boundsBehavior: Flickable.StopAtBounds
@@ -420,6 +420,9 @@ PanelWindow {
                             anchors.horizontalCenter: parent.horizontalCenter
                             width: grid.cellWidth - 8
                             horizontalAlignment: Text.AlignHCenter
+                            // Two lines before it is cut, as on Windows.
+                            wrapMode: Text.Wrap
+                            maximumLineCount: 2
                             elide: Text.ElideRight
                             text: cell.modelData.name
                             color: Theme.fg
@@ -564,7 +567,7 @@ PanelWindow {
         Rectangle {
             id: foot
             anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-            height: 64
+            height: Theme.dp(64)
             color: "transparent"
             Rectangle { anchors { left: parent.left; right: parent.right; top: parent.top } height: 1; color: Theme.line }
 
@@ -598,7 +601,7 @@ PanelWindow {
                 anchors.right: parent.right
                 anchors.rightMargin: Theme.s4
                 anchors.verticalCenter: parent.verticalCenter
-                width: 38; height: 38
+                width: Theme.dp(38); height: Theme.dp(38)
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: toggle()
@@ -633,7 +636,7 @@ PanelWindow {
             anchors.rightMargin: Theme.s3
             anchors.bottom: foot.top
             anchors.bottomMargin: -4
-            width: 190
+            width: Theme.dp(190)
             height: menu.implicitHeight + 12
             radius: Theme.rCard
             color: Theme.card
@@ -695,7 +698,7 @@ PanelWindow {
         id: groupHeader
         Text {
             readonly property var row: parent.row
-            height: 30
+            height: Math.max(30, Theme.sp(13) + 14)
             verticalAlignment: Text.AlignBottom
             bottomPadding: Theme.s1
             leftPadding: Theme.s3

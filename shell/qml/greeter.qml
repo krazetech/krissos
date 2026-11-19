@@ -179,7 +179,7 @@ ShellRoot {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: userChip.modelData[1]
                                     color: Theme.alpha(Theme.nightFg, userChip.index === root.user ? 1 : 0.75)
-                                    font { family: Theme.sans; pixelSize: 14; weight: Font.DemiBold }
+                                    font { family: Theme.sans; pixelSize: Theme.sp(14); weight: Font.DemiBold }
                                 }
                             }
                         }
