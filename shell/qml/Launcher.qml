@@ -231,8 +231,8 @@ PanelWindow {
     onShownChanged: current = 0
     onResultsChanged: current = 0
 
-    readonly property var recentAll: Desktop.recent
-    readonly property var recent: recentAll.slice(0, 4)
+    readonly property var recentAll: Desktop.recentShown
+    readonly property var recent: Desktop.withFolders(recentAll, 4)
 
     MouseArea {
         Accessible.ignored: true  // pointer only; the keyboard has its own way
@@ -528,7 +528,7 @@ PanelWindow {
                             Rectangle {
                                 implicitWidth: 36; implicitHeight: 36; radius: Theme.rControl
                                 color: Theme.card
-                                Glyph { anchors.centerIn: parent; name: "file"; size: 18; color: Theme.accentText }
+                                IconImage { anchors.centerIn: parent; implicitSize: 24; source: Quickshell.iconPath(Desktop.mimeIcon(rec.modelData)) }
                             }
                             Column {
                                 id: recText
@@ -540,8 +540,11 @@ PanelWindow {
                                     color: Theme.fg
                                     font { family: Theme.sans; pixelSize: Theme.sp(13); weight: Font.DemiBold }
                                 }
+                                // Its folder too, when another file shown has the same name.
                                 Text {
-                                    text: Tr.ago(rec.modelData.when)
+                                    width: parent.width
+                                    elide: Text.ElideRight
+                                    text: [rec.modelData.detail, Tr.ago(rec.modelData.when)].filter(s => s).join(" · ")
                                     color: Theme.soft
                                     font { family: Theme.sans; pixelSize: Theme.sp(11) }
                                 }
@@ -577,20 +580,16 @@ PanelWindow {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: Theme.s2
                 Accessible.role: Accessible.StaticText
-                Accessible.name: Tr.t("Signed in as %1", Quickshell.env("USER") ?? "")
-                Rectangle {
-                    width: 34; height: 34; radius: width / 2
-                    color: Theme.accent
-                    Text {
-                        anchors.centerIn: parent
-                        text: (Quickshell.env("USER") ?? "?").charAt(0).toUpperCase()
-                        color: Theme.accentInk
-                        font { family: Theme.sans; pixelSize: Theme.sp(15); weight: Font.Bold }
-                    }
+                Accessible.name: Tr.t("Signed in as %1", Desktop.personName)
+                Avatar {
+                    size: Theme.dp(34)
+                    name: Desktop.personName
+                    faces: Desktop.faces
+                    border.color: Theme.line
                 }
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: Quickshell.env("USER") ?? ""
+                    text: Desktop.personName
                     color: Theme.fg
                     font { family: Theme.sans; pixelSize: Theme.sp(14); weight: Font.DemiBold }
                 }

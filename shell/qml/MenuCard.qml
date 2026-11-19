@@ -69,7 +69,7 @@ Rectangle {
             height: Math.max(36, label.implicitHeight + 14)
             enabled: !entry.off
             Accessible.role: Accessible.MenuItem
-            Accessible.name: entry.text
+            Accessible.name: entry.detail ? entry.text + ", " + entry.detail : entry.text
             Accessible.description: entry.sub ? Tr.t("Submenu") : ""
             Accessible.onPressAction: box.picked(index)
             opacity: enabled ? 1 : 0.4
@@ -108,12 +108,23 @@ Rectangle {
                 anchors.left: parent.left
                 anchors.leftMargin: row.entry.icon || row.entry.glyph ? 38 : 12
                 anchors.right: parent.right
-                anchors.rightMargin: row.entry.sub ? 30 : 12
+                anchors.rightMargin: (row.entry.sub ? 30 : 12) + (row.entry.detail ? detail.implicitWidth + Theme.s2 : 0)
                 anchors.verticalCenter: parent.verticalCenter
                 text: row.entry.text
                 elide: Text.ElideMiddle
                 color: Theme.fg
                 font { family: Theme.sans; pixelSize: Theme.sp(13); weight: Font.Medium }
+            }
+            // A soft second part, such as a recent file's folder when names repeat.
+            Text {
+                id: detail
+                visible: !!row.entry.detail
+                anchors.right: parent.right
+                anchors.rightMargin: row.entry.sub ? 30 : 12
+                anchors.verticalCenter: parent.verticalCenter
+                text: row.entry.detail ?? ""
+                color: Theme.soft
+                font { family: Theme.sans; pixelSize: Theme.sp(12) }
             }
             Glyph {
                 visible: !!row.entry.sub

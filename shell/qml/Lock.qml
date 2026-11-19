@@ -14,9 +14,9 @@ Scope {
     property bool checking: false
     readonly property string hint: Tr.t("Press any key to unlock")
     readonly property string verb: Tr.t("Unlock")
-    readonly property string userName: Quickshell.env("USER") ?? ""
+    readonly property string userName: Desktop.personName
     // Where the user's picture may be: their own, then the one COSMIC Settings sets.
-    readonly property var faces: [Quickshell.env("HOME") + "/.face", "/var/lib/AccountsService/icons/" + userName]
+    readonly property var faces: Desktop.faces
 
     function submit() {
         if (checking || password === "") return;

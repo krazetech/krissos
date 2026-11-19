@@ -317,11 +317,77 @@ Singleton {
         onFileChanged: reload()
     }
 
+    // The recent files fit to show in Start and the jump lists: local files that are still
+    // there, not hidden or in a cache, and not a name that is really a web address or a token
+    // (a browser's sign-in callback once showed its access token in Recommended).
+    // A folder recorded twice (with and without its closing "/") shows once.
+    readonly property var recentShown: recent.filter((f, i) => recentThere[f.href] && fitToShow(f)
+        && recent.findIndex(g => pathOf(g) === pathOf(f)) === i)
+        .map(f => Object.assign({}, f, { name: pathOf(f).split("/").pop(), folder: recentThere[f.href] === "d" }))
+    function pathOf(f) { return decodeURIComponent(f.href.replace(/^file:\/\//, "").replace(/\/$/, "")); }
+    function fitToShow(f) {
+        if (!f.href.startsWith("file:")) return false;
+        const path = pathOf(f), name = path.split("/").pop();
+        if (/\/\./.test(path) || path.startsWith(Quickshell.env("HOME") + "/.cache/")) return false;
+        if (/[?=&]/.test(name)) return false;
+        return !(name.length > 24 && !/\s/.test(name) && !/\.[A-Za-z0-9]{1,5}$/.test(name));
+    }
+    // Which recent files still exist, by href ("d" for a folder, "f" otherwise), checked in
+    // one go whenever the list changes.
+    property var recentThere: ({})
+    onRecentChanged: {
+        recentCheck.files = recent.filter(f => f.href.startsWith("file:")).map(pathOf);
+        recentCheck.running = true;
+    }
+    Process {
+        id: recentCheck
+        property var files: []
+        command: ["sh", "-c", 'for p; do if [ -d "$p" ]; then printf "d%s\\n" "$p"; elif [ -e "$p" ]; then printf "f%s\\n" "$p"; fi; done', "sh"].concat(files)
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const kind = {}, out = {};
+                for (const line of text.split("\n")) if (line) kind[line.slice(1)] = line[0];
+                for (const f of root.recent) if (f.href.startsWith("file:") && kind[root.pathOf(f)]) out[f.href] = kind[root.pathOf(f)];
+                root.recentThere = out;
+            }
+        }
+    }
+    // A theme icon for a recent file: its type's own, else its kind's, else a page.
+    function mimeIcon(f) {
+        if (f.folder || f.mime === "inode/directory" || f.href.endsWith("/")) return "folder";
+        const top = f.mime.split("/")[0];
+        for (const name of [f.mime.replace("/", "-"), top + "-x-generic"])
+            if (f.mime && Quickshell.iconPath(name, true)) return name;
+        return "text-x-generic";
+    }
+    // Where a file is, to tell files of the same name apart: its folder's name ("Home" for home).
+    function folderOf(f) {
+        const dir = pathOf(f).split("/").slice(0, -1).join("/");
+        return dir === Quickshell.env("HOME") ? Tr.t("Home") : dir.split("/").pop() || "/";
+    }
+    // The first `limit` of `files`, each with `detail`: its folder when another has the same name.
+    function withFolders(files, limit) {
+        const list = files.slice(0, limit);
+        return list.map(f => Object.assign({}, f, {
+            detail: list.filter(g => g.name === f.name).length > 1 ? folderOf(f) : "" }));
+    }
+
     // An app's recent files, for its jump list: those it opened, by command or app name.
     function recentFor(entry, limit) {
         if (!entry) return [];
         const names = [entry.command[0]?.split("/").pop().toLowerCase(), entry.id.toLowerCase(), entry.name.toLowerCase()];
-        return recent.filter(f => f.href.startsWith("file:") && f.apps.some(a => a && names.indexOf(a) >= 0)).slice(0, limit);
+        return withFolders(recentShown.filter(f => f.apps.some(a => a && names.indexOf(a) >= 0)), limit);
+    }
+
+    // The person, as Start and the lock screen show them: the full name from the account
+    // (GECOS, which kriss-welcome fills in), else the login name; and their picture.
+    property string fullName: ""
+    readonly property string personName: fullName || (Quickshell.env("USER") ?? "")
+    readonly property var faces: [Quickshell.env("HOME") + "/.face", "/var/lib/AccountsService/icons/" + (Quickshell.env("USER") ?? "")]
+    Process {
+        running: true
+        command: ["sh", "-c", 'getent passwd "$(id -un)" | cut -d: -f5 | cut -d, -f1']
+        stdout: StdioCollector { onStreamFinished: root.fullName = text.trim() }
     }
 
     function pinnedEntries(limit) {
