@@ -6,7 +6,7 @@ pkgdesc='KrissOS colours, fonts, wallpaper, Plasma, SDDM, Plymouth and Limine th
 arch=('any')
 url='https://github.com/krazetech/krissos'
 license=('GPL-3.0-or-later')
-depends=('adw-gtk-theme' 'vimix-cursors' 'papirus-icon-theme' 'qt6ct' 'ttf-ubuntu-font-family')
+depends=('adw-gtk-theme' 'vimix-cursors' 'papirus-icon-theme' 'qt6ct' 'inter-font' 'ttf-jetbrains-mono')
 makedepends=('python' 'librsvg')
 optdepends=('plymouth: boot splash'
             'limine: boot menu'
