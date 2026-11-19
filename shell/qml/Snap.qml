@@ -217,7 +217,7 @@ Scope {
                 height: tiles.implicitHeight + 24
                 x: g ? Math.max(Theme.gap, Math.min(pane.width - width - Theme.gap, g[0] + g[2] - 60 - width / 2)) : 0
                 y: g ? Math.max(Theme.gap, Math.min(pane.height - height - Theme.gap, g[1] + 40)) : 0
-                radius: Theme.radius
+                radius: Theme.rPanel
                 color: Theme.bar
                 border.width: 1
                 border.color: Theme.rim
@@ -252,7 +252,7 @@ Scope {
                 Row {
                     id: tiles
                     anchors.centerIn: parent
-                    spacing: 12
+                    spacing: Theme.s3
 
                     Repeater {
                         model: snap.layouts.length
@@ -287,7 +287,7 @@ Scope {
 
                                     Rectangle {
                                         anchors.fill: parent
-                                        radius: 5
+                                        radius: Theme.rSmall
                                         color: zoneArea.lit ? Theme.accent : Theme.card
                                         border.width: 1
                                         border.color: zoneArea.lit ? Theme.accent : Theme.line
@@ -332,7 +332,7 @@ Scope {
                 y: r.y + 8
                 width: Math.max(0, r.width - 16)
                 height: Math.max(0, r.height - 16)
-                radius: Theme.radius
+                radius: Theme.rPanel
                 color: Theme.bar
                 border.width: 1
                 border.color: Theme.rim
@@ -358,7 +358,7 @@ Scope {
                 Grid {
                     anchors.centerIn: parent
                     columns: assist.cols
-                    spacing: 12
+                    spacing: Theme.s3
 
                     Repeater {
                         // By position, so a title or focus change updates a card instead of rebuilding it.
@@ -382,7 +382,7 @@ Scope {
                             Rectangle {
                                 anchors.fill: parent
                                 anchors.margins: -6
-                                radius: Theme.radiusSmall
+                                radius: Theme.rCard
                                 color: card.lit ? Theme.card : "transparent"
                                 border.width: card.lit ? 2 : 0
                                 border.color: Theme.accent
@@ -395,7 +395,7 @@ Scope {
                                 source: Quickshell.iconPath(card.entry?.icon ?? card.w?.appId ?? "", "application-x-executable")
                             }
                             Text {
-                                anchors { left: icon.right; leftMargin: 8; right: parent.right; verticalCenter: icon.verticalCenter }
+                                anchors { left: icon.right; leftMargin: Theme.s2; right: parent.right; verticalCenter: icon.verticalCenter }
                                 text: card.w?.title || card.entry?.name || card.w?.appId || ""
                                 elide: Text.ElideRight
                                 color: Theme.fg
@@ -406,7 +406,7 @@ Scope {
                                 y: assist.head
                                 width: parent.width
                                 height: parent.height - assist.head
-                                radius: 8
+                                radius: Theme.rControl
                                 color: Theme.card
                                 clip: true
                                 Image {

@@ -107,7 +107,7 @@ Item {
             width: Math.abs(box.mouseX - box.from.x)
             height: Math.abs(box.mouseY - box.from.y)
             z: 1
-            radius: 4
+            radius: Theme.rSmall
             color: Theme.alpha(Theme.accent, 0.15)
             border.width: 1
             border.color: Theme.alpha(Theme.accent, 0.7)
@@ -157,7 +157,7 @@ Item {
 
             Rectangle {
                 anchors.fill: parent
-                radius: Theme.radiusSmall
+                radius: Theme.rCard
                 color: icon.sel ? Theme.alpha(Theme.accent, 0.22) : icon.containsMouse ? Theme.alpha(Theme.fg, 0.08) : "transparent"
                 // The keyboard's icon gets the focus rim; a selected one a fainter line.
                 readonly property bool kb: root.current === icon.index && root.activeFocus
@@ -176,7 +176,7 @@ Item {
                     : "text-x-generic", "text-x-generic")
             }
             Text {
-                anchors { top: img.bottom; topMargin: 4; left: parent.left; right: parent.right; leftMargin: 4; rightMargin: 4 }
+                anchors { top: img.bottom; topMargin: Theme.s1; left: parent.left; right: parent.right; leftMargin: Theme.s1; rightMargin: Theme.s1 }
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.Wrap
                 maximumLineCount: icon.sel ? 4 : 2

@@ -71,14 +71,14 @@ FloatingWindow {
 
             Column {
                 anchors.fill: parent
-                anchors.margins: 12
-                spacing: 4
+                anchors.margins: Theme.s3
+                spacing: Theme.s1
                 Text {
                     text: Tr.t("Personalise")
                     color: Theme.fg
-                    leftPadding: 8
-                    bottomPadding: 12
-                    topPadding: 4
+                    leftPadding: Theme.s2
+                    bottomPadding: Theme.s3
+                    topPadding: Theme.s1
                     font { family: Theme.sans; pixelSize: Theme.sp(20); weight: Font.DemiBold }
                     Accessible.ignored: true
                 }
@@ -109,10 +109,10 @@ FloatingWindow {
                         Accessible.selectable: true
                         Accessible.selected: on
                         Accessible.onPressAction: clicked(null)
-                        FocusRim { anchors.margins: 0; radius: 10 }
+                        FocusRim { anchors.margins: 0; radius: Theme.rControl }
                         Rectangle {
                             anchors.fill: parent
-                            radius: 10
+                            radius: Theme.rControl
                             color: tab.on ? Theme.cardHover : tab.containsMouse ? Theme.alpha(Theme.fg, 0.06) : "transparent"
                             Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                         }
@@ -122,13 +122,13 @@ FloatingWindow {
                             anchors.verticalCenter: parent.verticalCenter
                             width: 3
                             height: 16
-                            radius: 2
+                            radius: width / 2
                             color: Theme.accent
                         }
                         Row {
                             anchors.verticalCenter: parent.verticalCenter
                             x: 14
-                            spacing: 12
+                            spacing: Theme.s3
                             Glyph { name: tab.modelData[1]; size: 18; anchors.verticalCenter: parent.verticalCenter }
                             Text {
                                 text: tab.modelData[2]
@@ -154,7 +154,7 @@ FloatingWindow {
                 x: 32
                 y: 24
                 width: scroller.width - 64
-                spacing: 14
+                spacing: Theme.s3
                 Text {
                     text: win.pages[win.pageIndex][2]
                     color: Theme.fg
@@ -175,7 +175,7 @@ FloatingWindow {
     Component {
         id: colours
         Column {
-            spacing: 14
+            spacing: Theme.s3
             Card {
                 Choice {
                     text: Tr.t("Choose your mode")
@@ -186,7 +186,7 @@ FloatingWindow {
                 }
                 Row {
                     visible: Theme.mode === "auto"
-                    spacing: 16
+                    spacing: Theme.s4
                     TimeField { text: Tr.t("Light from"); value: Desktop.themeLight; onEdited: v => Desktop.themeLight = v }
                     TimeField { text: Tr.t("Dark from"); value: Desktop.themeDark; onEdited: v => Desktop.themeDark = v }
                 }
@@ -204,7 +204,7 @@ FloatingWindow {
                 Note { text: Theme.high ? Tr.t("High contrast uses its own colours. Your choice comes back when you turn it off.") : Tr.t("Buttons, switches and highlights use it.") }
                 Flow {
                     width: parent.width
-                    spacing: 10
+                    spacing: Theme.s2
                     Repeater {
                         model: Theme.accents
                         MouseArea {
@@ -227,10 +227,10 @@ FloatingWindow {
                             Accessible.checkable: true
                             Accessible.checked: on
                             Accessible.onPressAction: clicked(null)
-                            FocusRim { anchors.margins: -3; radius: 25 }
+                            FocusRim { anchors.margins: -3; radius: Theme.rPanel + 3 }
                             Rectangle {
                                 anchors.fill: parent
-                                radius: 22
+                                radius: Theme.rPanel
                                 color: sw.modelData.color
                                 border.width: sw.on ? 3 : 0
                                 border.color: Theme.fg
@@ -251,7 +251,7 @@ FloatingWindow {
         id: background
         Column {
             id: bgPage
-            spacing: 14
+            spacing: Theme.s3
             readonly property string wall: Desktop.wallpaper
             // Pictures in the shared backgrounds and in Pictures, newest first.
             property var found: []
@@ -271,7 +271,7 @@ FloatingWindow {
                 Note { text: Tr.t("Dynamic moves from dawn to night with the clock. KrissOS follows light and dark.") }
                 Flow {
                     width: parent.width
-                    spacing: 10
+                    spacing: Theme.s2
                     Repeater {
                         model: [["dynamic", Tr.t("Dynamic"), Theme.wallpapers + "/kriss-day.svg"],
                                 ["static", Tr.t("KrissOS"), Theme.wallpapers + "/kriss-" + (Theme.dark ? "dark" : "light") + ".svg"]]
@@ -306,7 +306,7 @@ FloatingWindow {
     Component {
         id: taskbar
         Column {
-            spacing: 14
+            spacing: Theme.s3
             Card {
                 // The two layouts, switched live (Desktop.setLayout, as kriss-welcome does).
                 Choice {
@@ -377,7 +377,7 @@ FloatingWindow {
     Component {
         id: pins
         Column {
-            spacing: 14
+            spacing: Theme.s3
             Card {
                 Note { text: Tr.t("These apps are pinned to Start and the taskbar, in this order. Pin more from Start: right-click an app.") }
                 Note { visible: Desktop.pinned.length === 0; text: Tr.t("Nothing is pinned.") }
@@ -402,7 +402,7 @@ FloatingWindow {
                         }
                         RowLayout {
                             anchors.fill: parent
-                            spacing: 10
+                            spacing: Theme.s2
                             Image {
                                 source: Quickshell.iconPath(pin.entry?.icon ?? "", "application-x-executable")
                                 sourceSize: Qt.size(28, 28)
@@ -449,7 +449,7 @@ FloatingWindow {
     Component {
         id: textPage
         Column {
-            spacing: 14
+            spacing: Theme.s3
             Card {
                 Choice {
                     text: Tr.t("Text size")
@@ -486,7 +486,7 @@ FloatingWindow {
         default property alias content: inner.data
         width: parent?.width ?? 0
         implicitHeight: inner.implicitHeight + 32
-        radius: Theme.radiusSmall
+        radius: Theme.rCard
         color: Theme.card
         border.width: Theme.high ? Theme.rimWidth : 0
         border.color: Theme.line
@@ -495,7 +495,7 @@ FloatingWindow {
             x: 16
             y: 16
             width: parent.width - 32
-            spacing: 12
+            spacing: Theme.s3
         }
     }
 
@@ -522,12 +522,12 @@ FloatingWindow {
         property string value
         signal picked(string v)
         width: parent?.width ?? 0
-        spacing: 8
+        spacing: Theme.s2
         Label { text: choice.text }
         Note { visible: text !== ""; text: choice.detail }
         Flow {
             width: parent.width
-            spacing: 8
+            spacing: Theme.s2
             Repeater {
                 model: choice.options
                 MouseArea {
@@ -597,14 +597,14 @@ FloatingWindow {
         Accessible.checked: checked
         Accessible.onPressAction: toggled()
         Accessible.onToggleAction: toggled()
-        FocusRim { anchors.margins: -4; radius: 12 }
+        FocusRim { anchors.margins: -4; radius: Theme.rControl + 4 }
         Column {
             id: words
             anchors.left: parent.left
             anchors.right: track.left
-            anchors.rightMargin: 16
+            anchors.rightMargin: Theme.s4
             anchors.verticalCenter: parent.verticalCenter
-            spacing: 2
+            spacing: Theme.s0
             Text {
                 width: parent.width
                 wrapMode: Text.WordWrap
@@ -627,7 +627,7 @@ FloatingWindow {
             anchors.verticalCenter: parent.verticalCenter
             width: 44
             height: 24
-            radius: 12
+            radius: height / 2
             color: tg.checked ? (tg.containsMouse ? Theme.accentHover : Theme.accent) : Theme.win
             border.width: tg.checked ? 0 : Theme.rimWidth + 1
             border.color: Theme.soft
@@ -635,7 +635,7 @@ FloatingWindow {
             Rectangle {
                 width: 16
                 height: 16
-                radius: 8
+                radius: height / 2
                 anchors.verticalCenter: parent.verticalCenter
                 x: tg.checked ? parent.width - width - 4 : 4
                 color: tg.checked ? Theme.accentInk : Theme.soft
@@ -650,19 +650,19 @@ FloatingWindow {
         property string text
         property string value
         signal edited(string v)
-        spacing: 6
+        spacing: Theme.s1
         Note { width: implicitWidth; text: tf.text }
         Rectangle {
             width: 96
             height: Math.max(36, Theme.sp(14) + 20)
-            radius: 10
+            radius: Theme.rControl
             color: Theme.win
             border.width: input.activeFocus ? Theme.focusWidth : Theme.rimWidth
             border.color: input.activeFocus ? Theme.accent : Theme.line
             TextInput {
                 id: input
                 anchors.fill: parent
-                anchors.margins: 8
+                anchors.margins: Theme.s2
                 verticalAlignment: TextInput.AlignVCenter
                 horizontalAlignment: TextInput.AlignHCenter
                 text: tf.value
@@ -706,12 +706,12 @@ FloatingWindow {
         Accessible.checkable: !glyph
         Accessible.checked: on
         Accessible.onPressAction: picked()
-        FocusRim { anchors.bottomMargin: Theme.sp(12) + 6; radius: 14 }
+        FocusRim { anchors.bottomMargin: Theme.sp(12) + 6; radius: Theme.rControl + 4 }
         Rectangle {
             id: frame
             width: parent.width
             height: 84
-            radius: 10
+            radius: Theme.rControl
             color: th.containsMouse ? Theme.cardHover : Theme.win
             border.width: th.on ? 3 : Theme.rimWidth
             border.color: th.on ? Theme.accent : Theme.line
@@ -733,7 +733,7 @@ FloatingWindow {
         }
         Text {
             anchors.top: frame.bottom
-            anchors.topMargin: 6
+            anchors.topMargin: Theme.s1
             width: parent.width
             elide: Text.ElideMiddle
             horizontalAlignment: Text.AlignHCenter
@@ -765,10 +765,10 @@ FloatingWindow {
         Accessible.role: Accessible.Button
         Accessible.name: text
         Accessible.onPressAction: if (enabled) picked()
-        FocusRim { radius: 22 }
+        FocusRim { radius: Theme.rCard + 4 }
         Rectangle {
             anchors.fill: parent
-            radius: 18
+            radius: Theme.rCard
             color: ib.containsMouse ? Theme.cardHover : "transparent"
             Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
         }

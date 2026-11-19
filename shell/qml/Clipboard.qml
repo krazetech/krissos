@@ -306,7 +306,7 @@ PanelWindow {
         id: panel
         width: win.cols * win.cell + 32
         height: 460
-        radius: Theme.radius
+        radius: Theme.rPanel
         color: Theme.bar
         border.width: Theme.rimWidth
         border.color: Theme.rim
@@ -317,8 +317,8 @@ PanelWindow {
         opacity: win.open && win.placed ? 1 : 0
         scale: win.open && win.placed || Theme.reduceMotion ? 1 : 0.96
         transformOrigin: Item.Bottom
-        Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
-        Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
+        Behavior on opacity { NumberAnimation { duration: Theme.ms(win.open ? Theme.fast : Theme.fastExit); easing.type: win.open ? Theme.ease : Theme.easeExit } }
+        Behavior on scale { NumberAnimation { duration: Theme.ms(win.open ? Theme.normal : Theme.fastExit); easing.type: win.open ? Theme.ease : Theme.easeExit } }
 
         MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons; Accessible.ignored: true }
 
@@ -349,13 +349,13 @@ PanelWindow {
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 16
-            spacing: 12
+            anchors.margins: Theme.s4
+            spacing: Theme.s3
 
             // The tabs.
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 4
+                spacing: Theme.s1
                 Repeater {
                     model: [["emoji", "smile", Tr.t("Emoji")], ["symbols", "omega", Tr.t("Symbols")], ["clipboard", "clipboard", Tr.t("Clipboard")]]
                     delegate: MouseArea {
@@ -372,16 +372,16 @@ PanelWindow {
                         Accessible.onPressAction: win.setTab(modelData[0])
                         Rectangle {
                             anchors.fill: parent
-                            radius: Theme.barRadius
+                            radius: Theme.rControl
                             color: tabBtn.on || tabBtn.containsMouse ? Theme.cardHover : "transparent"
                             Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast) } }
                         }
                         Glyph { anchors.centerIn: parent; name: tabBtn.modelData[1]; size: 20; color: tabBtn.on ? Theme.accent : Theme.fg }
                         Rectangle {
-                            anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 2 }
+                            anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: Theme.s0 }
                             width: tabBtn.on ? 16 : 0
                             height: 3
-                            radius: 1.5
+                            radius: height / 2
                             color: Theme.accent
                             Behavior on width { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                         }
@@ -432,9 +432,9 @@ PanelWindow {
                 border.color: search.activeFocus ? Theme.accent : Theme.line
                 RowLayout {
                     anchors.fill: parent
-                    anchors.leftMargin: 14
-                    anchors.rightMargin: 14
-                    spacing: 8
+                    anchors.leftMargin: Theme.s3
+                    anchors.rightMargin: Theme.s3
+                    spacing: Theme.s2
                     Glyph { name: "search"; size: 16; color: Theme.soft }
                     TextInput {
                         id: search
@@ -496,7 +496,7 @@ PanelWindow {
                     height: modelData.header ? Math.max(30, Theme.sp(12) + 16) : win.cell
                     Text {
                         visible: !!row.modelData.header
-                        anchors { left: parent.left; leftMargin: 4; bottom: parent.bottom; bottomMargin: 6 }
+                        anchors { left: parent.left; leftMargin: Theme.s1; bottom: parent.bottom; bottomMargin: Theme.s1 }
                         text: row.modelData.header ?? ""
                         color: Theme.soft
                         font { family: Theme.sans; pixelSize: Theme.sp(12); weight: Font.DemiBold }
@@ -525,8 +525,8 @@ PanelWindow {
                                 onPressAndHold: win.showTones(modelData.i)
                                 Rectangle {
                                     anchors.fill: parent
-                                    anchors.margins: 2
-                                    radius: Theme.barRadius
+                                    anchors.margins: Theme.s0
+                                    radius: Theme.rControl
                                     color: cellBtn.on ? Theme.cardHover : "transparent"
                                     border.width: cellBtn.on && search.activeFocus ? Theme.focusWidth : 0
                                     border.color: Theme.accent
@@ -559,7 +559,7 @@ PanelWindow {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 clip: true
-                spacing: 8
+                spacing: Theme.s2
                 boundsBehavior: Flickable.StopAtBounds
                 model: win.items
                 currentIndex: win.current
@@ -583,7 +583,7 @@ PanelWindow {
 
                     Rectangle {
                         anchors.fill: parent
-                        radius: Theme.radiusSmall
+                        radius: Theme.rCard
                         color: entry.on ? Theme.cardHover : Theme.card
                         border.width: entry.on ? Theme.focusWidth : Theme.high ? Theme.rimWidth : 0
                         border.color: entry.on ? Theme.accent : Theme.line
@@ -592,7 +592,7 @@ PanelWindow {
                     Text {
                         id: body
                         visible: !entry.modelData.image
-                        anchors { left: parent.left; right: tools.left; verticalCenter: parent.verticalCenter; leftMargin: 12; rightMargin: 8 }
+                        anchors { left: parent.left; right: tools.left; verticalCenter: parent.verticalCenter; leftMargin: Theme.s3; rightMargin: Theme.s2 }
                         text: (entry.modelData.text ?? "").trim()
                         textFormat: Text.PlainText
                         wrapMode: Text.Wrap
@@ -604,7 +604,7 @@ PanelWindow {
                     Image {
                         id: thumb
                         visible: !!entry.modelData.image
-                        anchors { left: parent.left; top: parent.top; margins: 12 }
+                        anchors { left: parent.left; top: parent.top; margins: Theme.s3 }
                         width: Math.min(implicitWidth, parent.width - 24 - tools.width)
                         height: Math.min(implicitHeight, 110)
                         source: entry.modelData.image ? "file://" + entry.modelData.image : ""
@@ -616,8 +616,8 @@ PanelWindow {
                     }
                     Row {
                         id: tools
-                        anchors { right: parent.right; top: parent.top; margins: 8 }
-                        spacing: 2
+                        anchors { right: parent.right; top: parent.top; margins: Theme.s2 }
+                        spacing: Theme.s0
                         Repeater {
                             model: [
                                 [entry.modelData.pinned ? "unpin" : "pin", entry.modelData.pinned ? Tr.t("Unpin") : Tr.t("Pin"), () => win.togglePin(entry.index)],
@@ -636,7 +636,7 @@ PanelWindow {
                                 Accessible.role: Accessible.Button
                                 Accessible.name: modelData[1]
                                 Accessible.onPressAction: modelData[2]()
-                                Rectangle { anchors.fill: parent; radius: Theme.barRadius; color: tool.containsMouse ? Theme.cardHover : "transparent" }
+                                Rectangle { anchors.fill: parent; radius: Theme.rControl; color: tool.containsMouse ? Theme.cardHover : "transparent" }
                                 Glyph {
                                     anchors.centerIn: parent
                                     name: tool.index === 0 ? "pin" : "trash"
@@ -652,7 +652,7 @@ PanelWindow {
                     anchors.centerIn: parent
                     width: parent.width - 32
                     visible: win.items.length === 0
-                    spacing: 8
+                    spacing: Theme.s2
                     Glyph { anchors.horizontalCenter: parent.horizontalCenter; name: "clipboard"; size: 32; color: Theme.soft }
                     Text {
                         width: parent.width
@@ -678,10 +678,10 @@ PanelWindow {
             visible: win.toneFor >= 0
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: 16
+            anchors.bottomMargin: Theme.s4
             width: toneRow.implicitWidth + 16
             height: win.cell + 16
-            radius: Theme.radiusSmall
+            radius: Theme.rCard
             color: Theme.card
             border.width: Theme.rimWidth
             border.color: Theme.line
@@ -705,8 +705,8 @@ PanelWindow {
                         Accessible.onPressAction: win.pickEmoji(win.toneFor, index)
                         Rectangle {
                             anchors.fill: parent
-                            anchors.margins: 2
-                            radius: Theme.barRadius
+                            anchors.margins: Theme.s0
+                            radius: Theme.rControl
                             color: win.toneCurrent === toneBtn.index ? Theme.cardHover : "transparent"
                             border.width: win.toneCurrent === toneBtn.index ? Theme.focusWidth : 0
                             border.color: Theme.accent

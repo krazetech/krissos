@@ -8,7 +8,7 @@ import Quickshell
 // notification center show it.
 ColumnLayout {
     id: root
-    spacing: 10
+    spacing: Theme.s2
 
     SystemClock { id: clock; precision: SystemClock.Minutes }
     readonly property date today: clock.date
@@ -45,7 +45,7 @@ ColumnLayout {
 
     RowLayout {
         Layout.fillWidth: true
-        spacing: 4
+        spacing: Theme.s1
         MouseArea {
             id: title
             Layout.fillWidth: true
@@ -65,11 +65,11 @@ ColumnLayout {
             Accessible.name: root.monthName
             Accessible.description: Tr.t("Back to this month. Up and Down change the month.")
             Accessible.onPressAction: thisMonth()
-            FocusRim { radius: 10 }
+            FocusRim { radius: Theme.rControl }
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.left: parent.left
-                anchors.leftMargin: 6
+                anchors.leftMargin: Theme.s1
                 text: root.monthName
                 color: title.containsMouse ? Theme.accent : Theme.fg
                 font { family: Theme.sans; pixelSize: Theme.sp(14); weight: Font.DemiBold }
@@ -154,7 +154,7 @@ ColumnLayout {
                 anchors.centerIn: parent
                 text: day.model.day
                 color: day.isToday ? Theme.accentInk : day.inMonth ? Theme.fg : Theme.alpha(Theme.soft, 0.5)
-                font { family: Theme.sans; pixelSize: Theme.sp(13); weight: day.isToday ? Font.Bold : Font.Normal; features: { "tnum": 1 } }
+                font { family: Theme.sans; pixelSize: Theme.sp(13); weight: day.isToday ? Font.Bold : Font.Normal }
             }
         }
     }

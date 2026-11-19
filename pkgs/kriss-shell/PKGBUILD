@@ -9,6 +9,7 @@ license=('GPL-3.0-or-later' 'MIT')
 depends=('cosmic-comp' 'cosmic-settings-daemon' 'xorg-xwayland' 'quickshell' 'python-pywayland' 'glib2' 'dbus'
          'grim' 'slurp' 'wl-clipboard' 'noto-fonts-emoji' 'xdg-user-dirs' 'brightnessctl')
 makedepends=('python' 'python-pywayland' 'wayland' 'wayland-protocols' 'cargo')
+checkdepends=('nodejs')
 optdepends=('greetd: the KrissOS login screen'
             'networkmanager: network status and Wi-Fi in quick settings'
             'bluez: Bluetooth in quick settings'
@@ -54,6 +55,8 @@ check() {
   bash "$_shell/clipboard-check"
   # Every clickable item has a screen reader name; every animation honours reduced motion.
   python "$_shell/a11y-check"
+  # Accent contrast, the light/dark schedule, and no radius off the scale in Theme.qml.
+  node "$_shell/theme-check"
   KRISS_SHELL_LIB="$srcdir" python -c '
 import os, sys
 sys.path.insert(0, os.environ["KRISS_SHELL_LIB"])

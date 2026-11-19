@@ -45,7 +45,7 @@ Rectangle {
     Row {
         id: row
         anchors.centerIn: parent
-        spacing: 8
+        spacing: Theme.s2
         Glyph {
             visible: btn.glyph !== ""
             anchors.verticalCenter: parent.verticalCenter

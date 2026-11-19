@@ -169,7 +169,7 @@ PanelWindow {
         y: bar.tucked ? parent.height : 0
         Behavior on y { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
         Behavior on width { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
-        radius: bar.mac ? Theme.radius : 0
+        radius: bar.mac ? Theme.rPanel : 0
         color: Theme.bar
         border.width: bar.mac ? Theme.rimWidth : 0
         border.color: Theme.rim
@@ -196,7 +196,7 @@ PanelWindow {
             id: tasks
             x: bar.mac ? 8 : Desktop.taskbarAlignment === "centre" ? Math.max(4, Math.min((bar.width - width) / 2, right.x - width - 8)) : 4
             height: parent.height
-            spacing: 8
+            spacing: Theme.s2
 
             // Widgets, at the far left as on Windows 11 (`taskbarWidgets` in shell.json hides it).
             MouseArea {
@@ -213,7 +213,7 @@ PanelWindow {
                 Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                 Rectangle {
                     anchors.fill: parent
-                    radius: Theme.barRadius
+                    radius: Theme.rControl
                     color: widgetsBtn.containsMouse || Desktop.widgetsOpen && Desktop.screen === bar.screen ? Theme.card : "transparent"
                     Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                 }
@@ -260,7 +260,7 @@ PanelWindow {
                     id: searchRow
                     anchors.verticalCenter: parent.verticalCenter
                     x: 12
-                    spacing: 8
+                    spacing: Theme.s2
                     Glyph { anchors.verticalCenter: parent.verticalCenter; name: "search"; size: 16; color: Theme.soft }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
@@ -285,8 +285,8 @@ PanelWindow {
             // Workspaces: dots, the active one stretched into a cyan pill.
             Row {
                 visible: !bar.mac
-                spacing: 6
-                Layout.leftMargin: 2
+                spacing: Theme.s1
+                Layout.leftMargin: Theme.s0
                 Repeater {
                     // This screen's workspaces; all of them if the compositor does not say
                     // which screen a workspace is on.
@@ -308,7 +308,7 @@ PanelWindow {
                             anchors.verticalCenter: parent.verticalCenter
                             width: modelData.active ? 22 : 8
                             height: 8
-                            radius: 4
+                            radius: height / 2
                             color: modelData.active ? Theme.accent : (modelData.urgent ? Theme.red : Theme.soft)
                             opacity: modelData.active ? 1 : 0.6
                             Behavior on width { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
@@ -321,7 +321,7 @@ PanelWindow {
 
             Row {
                 id: appRow
-                spacing: 4
+                spacing: Theme.s1
                 Repeater {
                     id: appButtons
                     model: bar.apps
@@ -337,7 +337,7 @@ PanelWindow {
             anchors.right: parent.right
             anchors.rightMargin: bar.mac ? 6 : 0
             height: parent.height
-            spacing: bar.mac ? 4 : 8
+            spacing: bar.mac ? Theme.s1 : Theme.s2
 
             // Tray icons (Steam, Discord...): click to open, right-click for the app's menu.
             // The ^ opens the overflow flyout with the hidden ones; drag an icon onto the ^, or
@@ -355,8 +355,8 @@ PanelWindow {
             }
             Row {
                 id: trayRow
-                spacing: 14
-                Layout.rightMargin: 4
+                spacing: Theme.s3
+                Layout.rightMargin: Theme.s1
                 Repeater {
                     model: SystemTray.items
                     delegate: TrayIcon {
@@ -384,7 +384,7 @@ PanelWindow {
                 Row {
                     id: status
                     anchors.centerIn: parent
-                    spacing: 12
+                    spacing: Theme.s3
                     NetworkGlyph { id: network }
                     VolumeGlyph { id: volume }
                     Battery { id: battery }
@@ -427,7 +427,7 @@ PanelWindow {
                     id: clockText
                     anchors.centerIn: parent
                     columns: bar.mac ? 2 : 1
-                    columnSpacing: 8
+                    columnSpacing: Theme.s2
                     layoutDirection: bar.mac ? Qt.RightToLeft : Qt.LeftToRight
                     horizontalItemAlignment: Grid.AlignRight
                     verticalItemAlignment: Grid.AlignVCenter
@@ -435,7 +435,7 @@ PanelWindow {
                     RollingText {
                         text: Qt.formatDateTime(clock.date, "HH:mm")
                         color: Theme.fg
-                        font { family: Theme.sans; pixelSize: Theme.sp(13); weight: Font.DemiBold; features: { "tnum": 1 } }
+                        font { family: Theme.sans; pixelSize: Theme.sp(13); weight: Font.DemiBold }
                     }
                     Text {
                         text: clock.date.toLocaleString(Qt.locale(), "ddd d MMM")
@@ -524,7 +524,7 @@ PanelWindow {
             RowLayout {
                 x: 6
                 height: parent.height
-                spacing: 2
+                spacing: Theme.s0
                 BarButton {
                     id: system
                     name: Tr.t("System menu")
@@ -739,12 +739,12 @@ PanelWindow {
             else bar.activate(index, mouse.modifiers & Qt.ControlModifier);
         }
         transform: Translate { id: shift }
-        FocusRim { radius: Theme.barRadius + 2 }
+        FocusRim { radius: Theme.rControl + 2 }
 
         Rectangle {
             id: face
             anchors.fill: parent
-            radius: Theme.barRadius
+            radius: Theme.rControl
             // Lit under the pointer and behind the app in front, clear otherwise.
             color: btn.containsMouse ? (btn.front ? Theme.cardHover : Theme.card) : btn.front ? Theme.card : "transparent"
             Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
@@ -774,7 +774,7 @@ PanelWindow {
             // Uncombined: the window's title.
             Text {
                 visible: !!btn.modelData.win
-                anchors { left: icon.right; right: parent.right; leftMargin: 8; rightMargin: 10; verticalCenter: parent.verticalCenter }
+                anchors { left: icon.right; right: parent.right; leftMargin: Theme.s2; rightMargin: Theme.s2; verticalCenter: parent.verticalCenter }
                 text: btn.modelData.win?.title ?? ""
                 elide: Text.ElideRight
                 color: Theme.fg
@@ -792,7 +792,7 @@ PanelWindow {
                 anchors.centerIn: parent
                 text: btn.info.count > 99 ? "99+" : (btn.info.count ?? "")
                 color: Theme.accentInk
-                font { family: Theme.sans; pixelSize: Theme.sp(10); weight: Font.Bold; features: { "tnum": 1 } }
+                font { family: Theme.sans; pixelSize: Theme.sp(10); weight: Font.Bold }
             }
         }
         // Progress the app reports, along the bottom in place of the running mark.
@@ -804,7 +804,7 @@ PanelWindow {
             anchors.bottomMargin: 1
             width: parent.width - 12
             height: 3
-            radius: 1.5
+            radius: height / 2
             color: Theme.line
             Rectangle {
                 width: parent.width * Math.max(0, Math.min(1, btn.info.progress ?? 0))
@@ -837,7 +837,7 @@ PanelWindow {
         id: bb
         property bool lit: false
         property color litColor: containsMouse || lit ? Theme.card : "transparent"
-        property int radius: Theme.barRadius
+        property int radius: Theme.rControl
         property string name
         property string tip
         property int role: Accessible.Button

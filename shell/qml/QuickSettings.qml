@@ -124,12 +124,17 @@ PanelWindow {
             y: (dragger.dragging ? dragger.pos : win.target) * win.dir
             Behavior on y {
                 enabled: !dragger.dragging
-                NumberAnimation { duration: Theme.ms(Theme.slow); easing.type: Easing.BezierSpline; easing.bezierCurve: Theme.sheetCurve }
+                // Closing is quicker, and eases in: Vaul's curve is for arriving.
+                NumberAnimation {
+                    duration: Theme.ms(Desktop.quickOpen ? Theme.slow : Theme.normal)
+                    easing.type: Desktop.quickOpen ? Easing.BezierSpline : Theme.easeExit
+                    easing.bezierCurve: Theme.sheetCurve
+                }
             }
             // Wider with larger text, so the tile labels still fit.
             width: Math.round(400 * Math.max(1, (1 + Theme.textScale) / 2))
             height: body.implicitHeight + 50
-            radius: Theme.radius + 4
+            radius: Theme.rPanel
             color: Theme.bar
             border.width: Theme.rimWidth
             border.color: Theme.rim
@@ -184,14 +189,14 @@ PanelWindow {
             Rectangle {
                 anchors.horizontalCenter: parent.horizontalCenter
                 y: Desktop.mac ? parent.height - height - 9 : 9
-                width: 40; height: 5; radius: 2.5
+                width: 40; height: 5; radius: height / 2
                 color: Theme.alpha(Theme.fg, 0.25)
             }
 
             ColumnLayout {
                 id: body
-                anchors { left: parent.left; right: parent.right; top: parent.top; margins: 20; topMargin: 30 }
-                spacing: 14
+                anchors { left: parent.left; right: parent.right; top: parent.top; margins: Theme.s5; topMargin: 28 }
+                spacing: Theme.s3
 
                 MediaCard {
                     visible: p !== null && p.trackTitle !== ""
@@ -202,8 +207,8 @@ PanelWindow {
                     id: tiles
                     Layout.fillWidth: true
                     columns: 3
-                    columnSpacing: 8
-                    rowSpacing: 8
+                    columnSpacing: Theme.s2
+                    rowSpacing: Theme.s2
 
                     Tile {
                         visible: win.wifi !== null
@@ -297,7 +302,7 @@ PanelWindow {
                             visible: win.askPsk === net.modelData
                             width: parent.width
                             height: 42
-                            radius: 21
+                            radius: height / 2
                             color: Theme.card
                             border.width: 2
                             border.color: Theme.accent
@@ -308,8 +313,8 @@ PanelWindow {
                                 Accessible.name: Tr.t("Password for %1", net.modelData.name)
                                 Accessible.description: win.pskFailed ? Tr.t("Wrong password. Try again, then Enter") : ""
                                 anchors.fill: parent
-                                anchors.leftMargin: 16
-                                anchors.rightMargin: 16
+                                anchors.leftMargin: Theme.s4
+                                anchors.rightMargin: Theme.s4
                                 verticalAlignment: TextInput.AlignVCenter
                                 echoMode: TextInput.Password
                                 color: Theme.fg
@@ -434,7 +439,7 @@ PanelWindow {
         Layout.fillHeight: true
         Layout.preferredWidth: 1
         implicitHeight: Math.max(64, tileText.implicitHeight + 23 + 16)
-        radius: Theme.radiusSmall
+        radius: Theme.rCard
         readonly property bool hovered: main.containsMouse || arrow.containsMouse
         color: on ? (hovered ? Theme.accentHover : Theme.accent) : hovered ? Theme.cardHover : Theme.card
         readonly property color ink: on ? Theme.accentInk : Theme.fg
@@ -463,13 +468,13 @@ PanelWindow {
             Accessible.checked: !tile.cycles && tile.on
             Accessible.onPressAction: tile.toggled()
             Accessible.onToggleAction: tile.toggled()
-            FocusRim { anchors.rightMargin: tile.list ? -32 : -2; radius: Theme.radiusSmall + 2 }
+            FocusRim { anchors.rightMargin: tile.list ? -32 : -2; radius: Theme.rCard + 2 }
             Column {
                 anchors.left: parent.left
-                anchors.leftMargin: 12
+                anchors.leftMargin: Theme.s3
                 anchors.verticalCenter: parent.verticalCenter
                 width: parent.width - 16
-                spacing: 5
+                spacing: Theme.s1
                 Glyph { name: tile.glyph; size: 18; color: tile.ink }
                 Text {
                     id: tileText
@@ -500,7 +505,7 @@ PanelWindow {
             Accessible.expandable: true
             Accessible.expanded: win.page === tile.list
             Accessible.onPressAction: clicked(null)
-            FocusRim { anchors.margins: 1; radius: 8 }
+            FocusRim { anchors.margins: 1; radius: Theme.rSmall }
             Rectangle { anchors.left: parent.left; anchors.verticalCenter: parent.verticalCenter; width: 1; height: 32; color: Theme.alpha(tile.ink, 0.2) }
             Glyph { anchors.centerIn: parent; name: win.page === tile.list ? "up" : "down"; size: 16; stroke: 1.75; color: tile.ink }
         }
@@ -522,7 +527,7 @@ PanelWindow {
         onValueChanged: if (track.activeFocus) track.Accessible.announce(Math.round(value * 100) + "%")
 
         Layout.fillWidth: true
-        spacing: 10
+        spacing: Theme.s2
         MouseArea {
             implicitWidth: 32; implicitHeight: 32
             cursorShape: Qt.PointingHandCursor
@@ -536,7 +541,7 @@ PanelWindow {
             Accessible.checkable: sl.canMute
             Accessible.checked: sl.muted
             Accessible.onPressAction: if (sl.canMute) sl.glyphClicked()
-            FocusRim { radius: 18 }
+            FocusRim { radius: height / 2 }
             Glyph { anchors.centerIn: parent; name: sl.glyph; size: 19 }
         }
         MouseArea {
@@ -567,22 +572,22 @@ PanelWindow {
                 }
                 event.accepted = true;
             }
-            FocusRim { anchors.margins: -1; radius: 14 }
+            FocusRim { anchors.margins: -1; radius: Theme.rCard }
             onPressed: mouse => set(mouse.x)
             onPositionChanged: mouse => { if (pressed) set(mouse.x); }
             onWheel: wheel => sl.moved(Math.max(0, Math.min(1, sl.value + (wheel.angleDelta.y > 0 ? 0.05 : -0.05))))
             Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
-                width: parent.width; height: 6; radius: 3
+                width: parent.width; height: 6; radius: height / 2
                 color: Theme.card
                 border.width: Theme.high ? 1 : 0
                 border.color: Theme.line
-                Rectangle { width: parent.width * Math.min(1, sl.value); height: parent.height; radius: 3; color: Theme.accent }
+                Rectangle { width: parent.width * Math.min(1, sl.value); height: parent.height; radius: height / 2; color: Theme.accent }
             }
             Rectangle {
                 x: track.width * Math.min(1, sl.value) - width / 2
                 anchors.verticalCenter: parent.verticalCenter
-                width: 18; height: 18; radius: 9
+                width: 18; height: 18; radius: width / 2
                 color: Theme.fg
                 border.width: 4
                 border.color: Theme.accent
@@ -598,7 +603,7 @@ PanelWindow {
                 anchors.right: parent.right
                 text: Math.round(sl.value * 100)
                 color: Theme.soft
-                font { family: Theme.sans; pixelSize: Theme.sp(12); weight: Font.DemiBold; features: { "tnum": 1 } }
+                font { family: Theme.sans; pixelSize: Theme.sp(12); weight: Font.DemiBold }
                 Accessible.ignored: true
             }
         }
@@ -616,7 +621,7 @@ PanelWindow {
             Accessible.expandable: true
             Accessible.expanded: win.page === sl.list
             Accessible.onPressAction: clicked(null)
-            FocusRim { radius: 8 }
+            FocusRim { radius: Theme.rSmall }
             Glyph { anchors.centerIn: parent; name: win.page === sl.list ? "up" : "down"; size: 16; stroke: 1.75; color: Theme.soft }
         }
     }
@@ -631,7 +636,7 @@ PanelWindow {
 
         Layout.fillWidth: true
         implicitHeight: Math.min(col.implicitHeight, 300) + 20
-        radius: Theme.radiusSmall
+        radius: Theme.rCard
         color: Theme.win
         border.width: Theme.rimWidth
         border.color: Theme.line
@@ -640,18 +645,18 @@ PanelWindow {
 
         Flickable {
             anchors.fill: parent
-            anchors.margins: 10
+            anchors.margins: Theme.s2
             contentHeight: col.implicitHeight
             clip: true
             boundsBehavior: Flickable.StopAtBounds
             Column {
                 id: col
                 width: parent.width
-                spacing: 2
+                spacing: Theme.s0
                 Text {
                     text: box.title
                     color: Theme.fg
-                    bottomPadding: 6
+                    bottomPadding: Theme.s1
                     font { family: Theme.sans; pixelSize: Theme.sp(13); weight: Font.DemiBold }
                 }
                 Text {
@@ -699,18 +704,18 @@ PanelWindow {
             }
         }
         onDetailChanged: if (activeFocus && detail) Accessible.announce(detail)
-        FocusRim { anchors.margins: 0; radius: 10 }
+        FocusRim { anchors.margins: 0; radius: Theme.rControl }
         Rectangle {
             anchors.fill: parent
-            radius: 10
+            radius: Theme.rControl
             color: row.pressed ? Theme.cardHover : row.containsMouse ? Theme.card : "transparent"
             Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
         }
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 10
-            anchors.rightMargin: 10
-            spacing: 10
+            anchors.leftMargin: Theme.s2
+            anchors.rightMargin: Theme.s2
+            spacing: Theme.s2
             Glyph { name: row.glyph; size: 17; color: row.current ? Theme.accent : Theme.fg }
             Text {
                 Layout.fillWidth: true

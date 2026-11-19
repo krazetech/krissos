@@ -95,25 +95,25 @@ Scope {
             Accessible.role: Accessible.ProgressBar
             Accessible.name: root.what
             y: root.shown || Theme.reduceMotion ? 0 : 8
-            Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
-            Behavior on y { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+            Behavior on opacity { NumberAnimation { duration: Theme.ms(root.shown ? Theme.fast : Theme.fastExit); easing.type: root.shown ? Theme.ease : Theme.easeExit } }
+            Behavior on y { NumberAnimation { duration: Theme.ms(root.shown ? Theme.fast : Theme.fastExit); easing.type: root.shown ? Theme.ease : Theme.easeExit } }
 
             Glyph {
                 id: icon
                 name: root.glyph
                 anchors.left: parent.left
-                anchors.leftMargin: 20
+                anchors.leftMargin: Theme.s5
                 anchors.verticalCenter: parent.verticalCenter
             }
             Rectangle {
                 id: track
                 anchors.left: icon.right
                 anchors.right: value.left
-                anchors.leftMargin: 14
-                anchors.rightMargin: 14
+                anchors.leftMargin: Theme.s3
+                anchors.rightMargin: Theme.s3
                 anchors.verticalCenter: parent.verticalCenter
                 height: 6
-                radius: 3
+                radius: height / 2
                 color: Theme.line
                 Rectangle {
                     width: track.width * root.level
@@ -126,7 +126,7 @@ Scope {
             Text {
                 id: value
                 anchors.right: parent.right
-                anchors.rightMargin: 20
+                anchors.rightMargin: Theme.s5
                 anchors.verticalCenter: parent.verticalCenter
                 width: Math.max(34, implicitWidth)
                 horizontalAlignment: Text.AlignRight
@@ -134,7 +134,6 @@ Scope {
                 color: Theme.fg
                 font.family: Theme.sans
                 font.pixelSize: Theme.sp(14)
-                font.features: { "tnum": 1 }
             }
         }
     }

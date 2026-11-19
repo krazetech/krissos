@@ -15,7 +15,7 @@ Rectangle {
 
     width: Math.round(264 * Math.max(1, (1 + Theme.textScale) / 2))
     height: col.implicitHeight + 12
-    radius: Theme.radiusSmall + 2
+    radius: Theme.rCard
     color: Theme.bar
     border.width: Theme.rimWidth
     border.color: Theme.line
@@ -52,8 +52,8 @@ Rectangle {
         Text {
             height: Math.max(30, implicitHeight)
             verticalAlignment: Text.AlignBottom
-            bottomPadding: 6
-            leftPadding: 12
+            bottomPadding: Theme.s1
+            leftPadding: Theme.s3
             text: parent.modelData.header
             color: Theme.soft
             font { family: Theme.sans; pixelSize: Theme.sp(12); weight: Font.DemiBold }
@@ -81,7 +81,7 @@ Rectangle {
             onClicked: box.picked(index)
             Rectangle {
                 anchors.fill: parent
-                radius: 10
+                radius: Theme.rControl
                 color: row.pressed ? Theme.cardHover : row.index === box.current ? Theme.card : "transparent"
                 Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
             }
@@ -102,7 +102,7 @@ Rectangle {
                 name: row.entry.glyph ?? ""
                 size: 17
             }
-            FocusRim { anchors.margins: 0; radius: 10; border.width: 1; opacity: 0.6 }
+            FocusRim { anchors.margins: 0; radius: Theme.rControl; border.width: 1; opacity: 0.6 }
             Text {
                 id: label
                 anchors.left: parent.left
@@ -118,7 +118,7 @@ Rectangle {
             Glyph {
                 visible: !!row.entry.sub
                 anchors.right: parent.right
-                anchors.rightMargin: 10
+                anchors.rightMargin: Theme.s2
                 anchors.verticalCenter: parent.verticalCenter
                 name: "chevron"
                 size: 14

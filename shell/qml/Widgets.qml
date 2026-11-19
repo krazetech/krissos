@@ -95,12 +95,12 @@ PanelWindow {
         y: Theme.panelGap
         width: 420
         height: parent.height - 2 * Theme.panelGap
-        radius: Theme.radius
+        radius: Theme.rPanel
         color: Theme.bar
         border.width: 1
         border.color: Theme.rim
         opacity: win.open ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
+        Behavior on opacity { NumberAnimation { duration: Theme.ms(win.open ? Theme.normal : Theme.fastExit); easing.type: win.open ? Theme.ease : Theme.easeExit } }
         // Slides in from the left edge.
         transform: Translate {
             x: win.open || Theme.reduceMotion ? 0 : -48
@@ -126,7 +126,7 @@ PanelWindow {
 
         RowLayout {
             id: head
-            anchors { left: parent.left; right: parent.right; top: parent.top; margins: 18 }
+            anchors { left: parent.left; right: parent.right; top: parent.top; margins: Theme.s4 }
             Text {
                 Layout.fillWidth: true
                 text: Tr.t("Widgets")
@@ -145,7 +145,7 @@ PanelWindow {
 
         Flickable {
             id: flick
-            anchors { left: parent.left; right: parent.right; top: head.bottom; bottom: parent.bottom; margins: 14; topMargin: 12 }
+            anchors { left: parent.left; right: parent.right; top: head.bottom; bottom: parent.bottom; margins: Theme.s3; topMargin: Theme.s3 }
             contentHeight: win.offset(win.shown.length)
             clip: true
             boundsBehavior: Flickable.StopAtBounds
@@ -184,7 +184,7 @@ PanelWindow {
         Row {
             id: row
             anchors.centerIn: parent
-            spacing: 6
+            spacing: Theme.s1
             Glyph { name: b.glyph; size: 16; stroke: b.glyph === "more" ? 3 : 2; color: b.primary ? Theme.accentInk : Theme.fg; anchors.verticalCenter: parent.verticalCenter }
             Text {
                 visible: !!b.label
@@ -204,13 +204,13 @@ PanelWindow {
         property string placeholder
         signal accepted()
         implicitHeight: 38
-        radius: Theme.radiusSmall
+        radius: Theme.rCard
         color: Theme.win
         border.width: 1
         border.color: input.activeFocus ? Theme.accent : Theme.line
         TextInput {
             id: input
-            anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
+            anchors { fill: parent; leftMargin: Theme.s3; rightMargin: Theme.s3 }
             Accessible.name: f.placeholder
             verticalAlignment: TextInput.AlignVCenter
             color: Theme.fg
@@ -274,7 +274,7 @@ PanelWindow {
         y: win.offset(pos)
         Behavior on y { enabled: !c.dragging; NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
         z: dragging ? 1 : 0
-        radius: Theme.radiusSmall + 4
+        radius: Theme.rCard
         color: Theme.card
         border.width: activeFocus ? 2 : 1
         border.color: activeFocus ? Theme.accent : Theme.line
@@ -313,8 +313,8 @@ PanelWindow {
 
         ColumnLayout {
             id: col
-            anchors { left: parent.left; right: parent.right; top: parent.top; margins: 14 }
-            spacing: 10
+            anchors { left: parent.left; right: parent.right; top: parent.top; margins: Theme.s3 }
+            spacing: Theme.s2
 
             RowLayout {
                 Layout.fillWidth: true
@@ -372,7 +372,7 @@ PanelWindow {
         id: calendarW
         ColumnLayout {
             id: cal
-            spacing: 6
+            spacing: Theme.s1
             SystemClock { id: clk; precision: SystemClock.Minutes; enabled: win.open }
             readonly property date today: clk.date
             property var events: []
@@ -449,20 +449,20 @@ PanelWindow {
                     readonly property bool busy: cal.events.some(e => e.start.toDateString() === day.model.date.toDateString())
                     Rectangle {
                         anchors.centerIn: parent
-                        width: 28; height: 28; radius: 14
+                        width: 28; height: 28; radius: width / 2
                         color: day.model.today ? Theme.accent : "transparent"
                     }
                     Text {
                         anchors.centerIn: parent
                         text: day.model.day
                         color: day.model.today ? Theme.accentInk : day.model.month === grid.month ? Theme.fg : Theme.alpha(Theme.soft, 0.5)
-                        font { family: Theme.sans; pixelSize: 12; weight: day.model.today ? Font.Bold : Font.Normal; features: { "tnum": 1 } }
+                        font { family: Theme.sans; pixelSize: 12; weight: day.model.today ? Font.Bold : Font.Normal }
                     }
                     Rectangle {
                         visible: day.busy && !day.model.today
                         anchors.horizontalCenter: parent.horizontalCenter
                         anchors.bottom: parent.bottom
-                        width: 4; height: 4; radius: 2
+                        width: 4; height: 4; radius: width / 2
                         color: Theme.accent
                     }
                 }
@@ -473,8 +473,8 @@ PanelWindow {
                 delegate: RowLayout {
                     required property var modelData
                     Layout.fillWidth: true
-                    spacing: 10
-                    Rectangle { implicitWidth: 3; implicitHeight: 30; radius: 1.5; color: Theme.accent }
+                    spacing: Theme.s2
+                    Rectangle { implicitWidth: 3; implicitHeight: 30; radius: implicitWidth / 2; color: Theme.accent }
                     Column {
                         Layout.fillWidth: true
                         Text {
@@ -502,7 +502,7 @@ PanelWindow {
         id: clocksW
         ColumnLayout {
             id: clocks
-            spacing: 8
+            spacing: Theme.s2
             SystemClock { id: now; precision: SystemClock.Minutes; enabled: win.open }
             property var offsets: ({})   // tz name: minutes east of UTC
             property bool adding: false
@@ -553,7 +553,7 @@ PanelWindow {
                 Layout.fillWidth: true
                 RollingText {
                     text: Qt.formatTime(now.date, "HH:mm")
-                    font { family: Theme.sans; pixelSize: 34; weight: Font.DemiBold; features: { "tnum": 1 } }
+                    font { family: Theme.sans; pixelSize: 34; weight: Font.DemiBold }
                 }
                 Item { Layout.fillWidth: true }
                 Small { text: Tr.t("Local time") }
@@ -579,7 +579,7 @@ PanelWindow {
                     }
                     RollingText {
                         text: clocks.at(modelData) ? Qt.formatTime(clocks.at(modelData), "HH:mm") : "--:--"
-                        font { family: Theme.sans; pixelSize: 18; weight: Font.DemiBold; features: { "tnum": 1 } }
+                        font { family: Theme.sans; pixelSize: 18; weight: Font.DemiBold }
                     }
                 }
             }
@@ -640,7 +640,7 @@ PanelWindow {
                     onClicked: clocks.choose(modelData)
                     Rectangle {
                         anchors.fill: parent
-                        radius: 10
+                        radius: Theme.rControl
                         color: m.index === clocks.pick || m.containsMouse ? Theme.cardHover : "transparent"
                     }
                     Text {
@@ -664,7 +664,7 @@ PanelWindow {
         id: systemW
         ColumnLayout {
             id: sys
-            spacing: 8
+            spacing: Theme.s2
             property var cpuHist: []
             property var gpuHist: []
             property var ramHist: []
@@ -779,21 +779,21 @@ PanelWindow {
             // The disk: a bar, since it barely moves.
             ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 4
+                spacing: Theme.s1
                 RowLayout {
                     Text { text: Tr.t("Disk (/)"); color: Theme.fg; font { family: Theme.sans; pixelSize: 13; weight: Font.Medium } }
                     Item { Layout.fillWidth: true }
-                    Small { text: sys.diskTotal ? Tr.t("%1 of %2 GB", sys.gb(sys.diskUsed), sys.gb(sys.diskTotal)) : "…"; font.features: { "tnum": 1 } }
+                    Small { text: sys.diskTotal ? Tr.t("%1 of %2 GB", sys.gb(sys.diskUsed), sys.gb(sys.diskTotal)) : "…" }
                 }
                 Rectangle {
                     Layout.fillWidth: true
                     implicitHeight: 6
-                    radius: 3
+                    radius: height / 2
                     color: Theme.line
                     Rectangle {
                         width: parent.width * (sys.diskTotal ? sys.diskUsed / sys.diskTotal : 0)
                         height: parent.height
-                        radius: 3
+                        radius: height / 2
                         color: Theme.accent
                     }
                 }
@@ -806,11 +806,11 @@ PanelWindow {
         property string value
         property alias values: line.values
         Layout.fillWidth: true
-        spacing: 2
+        spacing: Theme.s0
         RowLayout {
             Text { text: label; color: Theme.fg; font { family: Theme.sans; pixelSize: 13; weight: Font.Medium } }
             Item { Layout.fillWidth: true }
-            Small { text: value; font.features: { "tnum": 1 } }
+            Small { text: value }
         }
         Spark { id: line; Layout.fillWidth: true }
     }
@@ -840,7 +840,7 @@ PanelWindow {
         id: aiW
         ColumnLayout {
             id: ai
-            spacing: 8
+            spacing: Theme.s2
             readonly property string api: "http://127.0.0.1:11434"
             property string status: "checking"   // checking, down, up
             property var models: []
@@ -917,7 +917,7 @@ PanelWindow {
             RowLayout {
                 visible: ai.status === "up"
                 Layout.fillWidth: true
-                spacing: 6
+                spacing: Theme.s1
                 Field {
                     id: prompt
                     Layout.fillWidth: true
@@ -981,7 +981,7 @@ PanelWindow {
         id: weatherW
         ColumnLayout {
             id: wx
-            spacing: 8
+            spacing: Theme.s2
             property var cache: ({})
             readonly property bool fresh: cache.query === Desktop.weatherCity && Date.now() - (cache.fetched ?? 0) < 30 * 60000
             readonly property var cur: cache.query === Desktop.weatherCity ? cache.data?.current ?? null : null
@@ -1059,14 +1059,14 @@ PanelWindow {
             RowLayout {
                 visible: wx.cur !== null
                 Layout.fillWidth: true
-                spacing: 14
+                spacing: Theme.s3
                 Glyph { name: wx.kind(wx.cur?.weather_code ?? 0)[0]; size: 40; stroke: 1.6; color: Theme.accent }
                 Column {
                     Layout.fillWidth: true
                     Text {
                         text: Math.round(wx.cur?.temperature_2m ?? 0) + " °C"
                         color: Theme.fg
-                        font { family: Theme.sans; pixelSize: 30; weight: Font.DemiBold; features: { "tnum": 1 } }
+                        font { family: Theme.sans; pixelSize: 30; weight: Font.DemiBold }
                     }
                     Small { text: wx.kind(wx.cur?.weather_code ?? 0)[1] + " · " + Tr.t("Wind %1 km/h", Math.round(wx.cur?.wind_speed_10m ?? 0)) }
                 }
@@ -1085,7 +1085,7 @@ PanelWindow {
                     delegate: Column {
                         required property int index
                         Layout.fillWidth: true
-                        spacing: 4
+                        spacing: Theme.s1
                         Small {
                             anchors.horizontalCenter: parent.horizontalCenter
                             text: index === 0 ? Tr.t("Today") : new Date(wx.daily.time[index] + "T12:00").toLocaleString(Qt.locale(), "ddd")
@@ -1094,7 +1094,6 @@ PanelWindow {
                         Small {
                             anchors.horizontalCenter: parent.horizontalCenter
                             text: Math.round(wx.daily.temperature_2m_max[index]) + "° " + Math.round(wx.daily.temperature_2m_min[index]) + "°"
-                            font.features: { "tnum": 1 }
                         }
                     }
                 }

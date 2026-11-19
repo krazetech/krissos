@@ -128,7 +128,7 @@ PanelWindow {
         height: win.cardH + win.pad * 2
         x: Math.max(Theme.gap, Math.min(win.width - width - Theme.gap, win.anchorX - width / 2))
         y: win.height - height - Theme.panelGap
-        radius: Theme.radiusSmall + win.pad
+        radius: Theme.rCard + win.pad
         color: Theme.bar
         border.width: Theme.rimWidth
         border.color: Theme.rim
@@ -140,8 +140,8 @@ PanelWindow {
         Behavior on x { enabled: panel.opacity > 0; NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
         Behavior on width { enabled: panel.opacity > 0; NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
         opacity: win.open ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
-        transform: Translate { y: win.open || Theme.reduceMotion ? 0 : 8; Behavior on y { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } } }
+        Behavior on opacity { NumberAnimation { duration: Theme.ms(win.open ? Theme.fast : Theme.fastExit); easing.type: win.open ? Theme.ease : Theme.easeExit } }
+        transform: Translate { y: win.open || Theme.reduceMotion ? 0 : 8; Behavior on y { NumberAnimation { duration: Theme.ms(win.open ? Theme.fast : Theme.fastExit); easing.type: win.open ? Theme.ease : Theme.easeExit } } }
 
         HoverHandler {
             id: pointer
@@ -197,7 +197,7 @@ PanelWindow {
 
                 Rectangle {
                     anchors.fill: parent
-                    radius: Theme.radiusSmall
+                    radius: Theme.rCard
                     color: card.pressed ? Theme.cardHover : card.lit ? Theme.card : "transparent"
                     border.width: Theme.focusWidth
                     border.color: card.lit && win.byKeyboard ? Theme.accent : "transparent"
@@ -211,7 +211,7 @@ PanelWindow {
                     source: Quickshell.iconPath(card.entry?.icon ?? card.w?.appId ?? "", "application-x-executable")
                 }
                 Text {
-                    anchors { left: icon.right; leftMargin: 8; right: close.left; rightMargin: 4; verticalCenter: icon.verticalCenter }
+                    anchors { left: icon.right; leftMargin: Theme.s2; right: close.left; rightMargin: Theme.s1; verticalCenter: icon.verticalCenter }
                     text: card.w?.title || card.entry?.name || card.w?.appId || ""
                     elide: Text.ElideRight
                     color: Theme.fg
@@ -231,7 +231,7 @@ PanelWindow {
                     Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                     Rectangle {
                         anchors.fill: parent
-                        radius: 8
+                        radius: Theme.rSmall
                         color: close.containsMouse ? Theme.red : "transparent"
                         Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                     }

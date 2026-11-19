@@ -54,4 +54,12 @@ for (const c of ["#000000", "#ffffff", "#ff0000", "#777777", "#0000ff"])
         assert(T.contrast(s.accent, s.ink) >= 4.5, c);
         assert(T.contrast(s.accent, dark ? tokens.surface : tokens.light_bg) >= 3, c);
     }
+// The radius scale: every shape takes Theme.rPanel, rCard, rControl or rSmall, or a size
+// over 2 for a pill or a dot. A number written in a radius is a new radius off the scale.
+const qmlDir = path.join(__dirname, "qml");
+for (const f of fs.readdirSync(qmlDir).filter(f => f.endsWith(".qml") && f !== "Theme.qml"))
+    fs.readFileSync(path.join(qmlDir, f), "utf8").split("\n").forEach((line, i) => {
+        const m = line.match(/\bradius:\s*(-?[0-9.]+)/);
+        assert(!m, `${f}:${i + 1}: literal radius ${m && m[1]}; use the scale in Theme.qml`);
+    });
 console.log("ok");
