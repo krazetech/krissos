@@ -7,6 +7,8 @@ Row {
     visible: dev.isLaptopBattery
     spacing: 6
     anchors.verticalCenter: parent.verticalCenter
+    readonly property string label: (UPower.onBattery ? Tr.t("Battery %1%") : Tr.t("Battery %1%, charging"))
+        .replace("%1", Math.round(dev.percentage * 100))
     Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         width: 22; height: 12; radius: 3.5
@@ -32,6 +34,6 @@ Row {
         anchors.verticalCenter: parent.verticalCenter
         text: Math.round(bat.dev.percentage * 100) + "%"
         color: Theme.fg
-        font { family: Theme.sans; pixelSize: 13; weight: Font.DemiBold; features: { "tnum": 1 } }
+        font { family: Theme.sans; pixelSize: Theme.sp(13); weight: Font.DemiBold; features: { "tnum": 1 } }
     }
 }

@@ -44,6 +44,7 @@ ShellRoot {
 
             // Right-click on the desktop: display settings, personalise, a terminal, as on Windows.
             MouseArea {
+                Accessible.ignored: true  // pointer only; the keyboard has its own way
                 anchors.fill: parent
                 acceptedButtons: Qt.RightButton
                 onClicked: mouse => {
@@ -170,15 +171,22 @@ ShellRoot {
         }
     }
 
-    // `kriss-shell taskbar ACTION [N]`: Windows+T steps through the app buttons, Windows+1…9
+    // `kriss-shell taskbar ACTION [N]`: Windows+T steps through the app buttons, Windows+B goes
+    // to the tray, Windows+1…9
     // opens or switches to the Nth app, Windows+Shift+1…9 opens a new window of it,
     // Windows+Alt+1…9 opens its jump list, Windows+X the Start button's menu.
     IpcHandler {
         target: "taskbar"
         function focus(): void {
             const b = root.bar();
-            for (const o of bars.instances) if (o !== b) o.kbIndex = -1;
+            for (const o of bars.instances) if (o !== b) o.kb = false;
             b.focusStep();
+        }
+        // Windows+B: the tray.
+        function tray(): void {
+            const b = root.bar();
+            for (const o of bars.instances) if (o !== b) o.kb = false;
+            b.focusTray();
         }
         function open(n: int): void { root.bar().activate(n - 1, false); }
         function newWindow(n: int): void { root.bar().newWindow(n - 1); }

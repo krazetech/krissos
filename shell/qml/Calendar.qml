@@ -16,22 +16,19 @@ PanelWindow {
     screen: Desktop.screen
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.namespace: "kriss-calendar"
-    WlrLayershell.keyboardFocus: open ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: open ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     // Leaves the bar uncovered, so the clock closes it again.
     exclusionMode: ExclusionMode.Normal
     exclusiveZone: 0
     anchors { top: true; bottom: true; left: true; right: true }
     color: "transparent"
 
-    onOpenChanged: if (open) body.reset()
+    onOpenChanged: if (open) { body.reset(); body.focusFirst(); }
 
     MouseArea {
+        Accessible.ignored: true  // pointer only; the keyboard has its own way
         anchors.fill: parent
-        focus: win.open
         onClicked: Desktop.calendarOpen = false
-        Keys.onEscapePressed: Desktop.calendarOpen = false
-        Keys.onUpPressed: body.page(-1)
-        Keys.onDownPressed: body.page(1)
     }
 
     Rectangle {
@@ -44,8 +41,18 @@ PanelWindow {
         height: body.implicitHeight + 36
         radius: Theme.radius
         color: Theme.win
-        border.width: 1
+        border.width: Theme.rimWidth
         border.color: Theme.rim
+        Accessible.role: Accessible.Dialog
+        Accessible.name: Tr.t("Calendar")
+        // Page Up and Down page through the months; Esc closes.
+        Keys.onPressed: event => {
+            if (event.key === Qt.Key_Escape) Desktop.back("calendarOpen");
+            else if (event.key === Qt.Key_PageUp) body.page(-1);
+            else if (event.key === Qt.Key_PageDown) body.page(1);
+            else return;
+            event.accepted = true;
+        }
         // Rises a little as it fades in, like the volume pop-up.
         opacity: win.open ? 1 : 0
         transform: Translate { y: win.open || Theme.reduceMotion ? 0 : 12; Behavior on y { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } } }
@@ -53,6 +60,7 @@ PanelWindow {
 
         // Swallows clicks on the card, so only clicks outside it close the calendar.
         MouseArea {
+            Accessible.ignored: true  // pointer only; the keyboard has its own way
             anchors.fill: parent
             onWheel: wheel => body.page(wheel.angleDelta.y > 0 ? -1 : 1)
         }

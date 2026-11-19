@@ -11,8 +11,8 @@
 #   kriss-shell emoji      open or close the emoji and symbol picker (Windows+.)
 #   kriss-shell greeter    the login screen, which greetd runs (see shell/README.md)
 #   kriss-shell desktop    show the desktop, or bring the windows back (Windows+D)
-#   kriss-shell taskbar focus|startMenu|open N|newWindow N|jumpList N
-#                          the taskbar keys: Windows+T, Windows+X, Windows+1…9,
+#   kriss-shell taskbar focus|tray|startMenu|open N|newWindow N|jumpList N
+#                          the taskbar keys: Windows+T, Windows+B, Windows+X, Windows+1…9,
 #                          Windows+Shift+1…9 and Windows+Alt+1…9
 #   kriss-shell taskview   open or close Task View (Windows+Tab)
 #   kriss-shell desktops add|close

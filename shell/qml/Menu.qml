@@ -47,13 +47,14 @@ PanelWindow {
         visible = true;
         card.opacity = 0;
         appear.restart();
-        keys.forceActiveFocus();
+        focusRow(card, current);
     }
 
     function close() {
         if (!visible) return;
         visible = false;
         subOf = -1;
+        Desktop.retakeKeys();
     }
 
     function pickable(e) { return e && !e.header && !e.sep && !e.off; }
@@ -91,15 +92,25 @@ PanelWindow {
 
     // A click anywhere off the card closes the menu, as on Windows.
     MouseArea {
+        Accessible.ignored: true  // pointer only; the keyboard has its own way
         anchors.fill: parent
         acceptedButtons: Qt.AllButtons
         onPressed: menu.close()
     }
 
+    // The highlighted row has the keyboard focus, so a screen reader follows it; the keys
+    // come up to here from it.
+    onCurrentChanged: if (subOf < 0 || subCurrent < 0) focusRow(card, current)
+    onSubCurrentChanged: if (subOf >= 0) focusRow(side, subCurrent)
+    onSubOfChanged: if (subOf < 0) focusRow(card, current)
+    function focusRow(c, i) { (c.rowAt(i)?.item ?? keys).forceActiveFocus(); }
+
     Item {
         id: keys
         anchors.fill: parent
         focus: true
+        Accessible.role: Accessible.PopupMenu
+        Accessible.name: Tr.t("Menu")
         Keys.onPressed: event => {
             const inSub = menu.subOf >= 0 && menu.subCurrent >= 0;
             const list = inSub ? menu.subEntries : menu.entries;
@@ -131,7 +142,6 @@ PanelWindow {
             }
             event.accepted = true;
         }
-    }
 
     // Above the item (below it when there is no room), centred on it and kept on the screen.
     MenuCard {
@@ -152,11 +162,12 @@ PanelWindow {
         visible: menu.subOf >= 0
         entries: menu.subEntries
         current: menu.subCurrent
-        width: 200
+        width: Math.round(200 * Math.max(1, (1 + Theme.textScale) / 2))
         readonly property real rowY: card.y + (card.rowAt(menu.subOf)?.y ?? 0)  // the row's top, less the card's padding
         x: card.x + card.width + width - 4 <= menu.width - 8 ? card.x + card.width - 4 : card.x - width + 4
         y: Math.max(8, Math.min(card.y + card.height - height, rowY))
         onHover: i => { menu.subCurrent = i; menu.current = menu.subOf; }
         onPicked: i => menu.pick(menu.subEntries, i)
+    }
     }
 }

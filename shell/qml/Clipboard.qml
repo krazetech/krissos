@@ -67,6 +67,15 @@ PanelWindow {
         (which === "clipboard" ? keys : search).forceActiveFocus();
     }
 
+    // A screen reader stays on the search field or the key catcher: it hears the tab, the
+    // item or emoji the keys reach, and the skin tone.
+    readonly property string spoken: !open ? ""
+        : toneFor >= 0 ? Tr.t("Skin tone %1 of 6", toneCurrent + 1)
+        : tab === "clipboard" ? (items[current] ? (items[current].text?.trim() || Tr.t("Picture")) + (items[current].pinned ? ", " + Tr.t("pinned") : "") : Tr.t("Nothing here yet"))
+        : view.flat[current]?.[1] ?? ""
+    onSpokenChanged: if (spoken) (tab === "clipboard" ? keys : search).Accessible.announce(spoken)
+    onTabChanged: if (open) (tab === "clipboard" ? keys : search).Accessible.announce(tab === "emoji" ? Tr.t("Emoji") : tab === "symbols" ? Tr.t("Symbols") : Tr.t("Clipboard history"))
+
     function stepTab(by) {
         setTab(tabs[(tabs.indexOf(tab) + by + tabs.length) % tabs.length]);
     }
@@ -285,6 +294,7 @@ PanelWindow {
 
     // A click off the panel closes it; the first pointer position places it.
     MouseArea {
+        Accessible.ignored: true  // pointer only; the keyboard has its own way
         anchors.fill: parent
         hoverEnabled: !win.placed
         acceptedButtons: Qt.AllButtons
@@ -298,9 +308,11 @@ PanelWindow {
         height: 460
         radius: Theme.radius
         color: Theme.bar
-        border.width: 1
+        border.width: Theme.rimWidth
         border.color: Theme.rim
         clip: true
+        Accessible.role: Accessible.Dialog
+        Accessible.name: Tr.t("Clipboard, emoji and symbols")
 
         opacity: win.open && win.placed ? 1 : 0
         scale: win.open && win.placed || Theme.reduceMotion ? 1 : 0.96
@@ -308,11 +320,14 @@ PanelWindow {
         Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
         Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
 
-        MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons }
+        MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons; Accessible.ignored: true }
 
         // The history's keys. The emoji tabs take theirs in the search field.
         Item {
             id: keys
+            Accessible.role: Accessible.List
+            Accessible.name: Tr.t("Clipboard history")
+            Accessible.description: Tr.t("Enter pastes, Delete removes, P pins, Tab changes tab")
             Keys.onPressed: event => {
                 const ctrl = event.modifiers & Qt.ControlModifier;
                 switch (event.key) {
@@ -353,6 +368,8 @@ PanelWindow {
                         onClicked: win.setTab(modelData[0])
                         Accessible.role: Accessible.PageTab
                         Accessible.name: modelData[2]
+                        Accessible.selected: on
+                        Accessible.onPressAction: win.setTab(modelData[0])
                         Rectangle {
                             anchors.fill: parent
                             radius: Theme.barRadius
@@ -375,15 +392,16 @@ PanelWindow {
                     visible: !clearBtn.visible
                     text: win.tab === "emoji" ? Tr.t("Emoji") : win.tab === "symbols" ? Tr.t("Symbols") : Tr.t("Clipboard history")
                     color: Theme.soft
-                    font { family: Theme.sans; pixelSize: 13; weight: Font.DemiBold }
+                    font { family: Theme.sans; pixelSize: Theme.sp(13); weight: Font.DemiBold }
                 }
                 MouseArea {
                     id: clearBtn
                     visible: win.tab === "clipboard" && win.items.some(x => !x.pinned)
                     implicitWidth: clearText.implicitWidth + 24
-                    implicitHeight: 30
+                    implicitHeight: Math.max(30, clearText.implicitHeight + 10)
                     hoverEnabled: true
                     onClicked: win.clearAll()
+                    Accessible.onPressAction: win.clearAll()
                     Accessible.role: Accessible.Button
                     Accessible.name: clearText.text
                     Rectangle {
@@ -398,7 +416,7 @@ PanelWindow {
                         anchors.centerIn: parent
                         text: Tr.t("Clear all")
                         color: Theme.fg
-                        font { family: Theme.sans; pixelSize: 13; weight: Font.Medium }
+                        font { family: Theme.sans; pixelSize: Theme.sp(13); weight: Font.Medium }
                     }
                 }
             }
@@ -407,10 +425,10 @@ PanelWindow {
             Rectangle {
                 visible: win.tab !== "clipboard"
                 Layout.fillWidth: true
-                implicitHeight: 40
+                implicitHeight: Math.max(40, search.implicitHeight + 16)
                 radius: height / 2
                 color: Theme.card
-                border.width: search.activeFocus ? 2 : 1
+                border.width: search.activeFocus ? Theme.focusWidth : Theme.rimWidth
                 border.color: search.activeFocus ? Theme.accent : Theme.line
                 RowLayout {
                     anchors.fill: parent
@@ -424,7 +442,10 @@ PanelWindow {
                         color: Theme.fg
                         clip: true
                         selectionColor: Theme.alpha(Theme.accent, 0.4)
-                        font { family: Theme.sans; pixelSize: 14; weight: Font.Medium }
+                        font { family: Theme.sans; pixelSize: Theme.sp(14); weight: Font.Medium }
+                        Accessible.role: Accessible.EditableText
+                        Accessible.name: win.tab === "emoji" ? Tr.t("Search emoji") : Tr.t("Search symbols")
+                        Accessible.description: Tr.t("Arrows choose, Enter pastes, Tab changes tab")
                         onTextChanged: { win.query = text; win.current = 0; win.toneFor = -1; grid.positionViewAtBeginning(); }
                         Text {
                             visible: !search.text
@@ -472,13 +493,13 @@ PanelWindow {
                     id: row
                     required property var modelData
                     width: grid.width
-                    height: modelData.header ? 30 : win.cell
+                    height: modelData.header ? Math.max(30, Theme.sp(12) + 16) : win.cell
                     Text {
                         visible: !!row.modelData.header
                         anchors { left: parent.left; leftMargin: 4; bottom: parent.bottom; bottomMargin: 6 }
                         text: row.modelData.header ?? ""
                         color: Theme.soft
-                        font { family: Theme.sans; pixelSize: 12; weight: Font.DemiBold }
+                        font { family: Theme.sans; pixelSize: Theme.sp(12); weight: Font.DemiBold }
                     }
                     Row {
                         visible: !row.modelData.header
@@ -494,6 +515,8 @@ PanelWindow {
                                 acceptedButtons: Qt.LeftButton | Qt.RightButton
                                 Accessible.role: Accessible.Button
                                 Accessible.name: modelData.e[1]
+                                Accessible.selected: on
+                                Accessible.onPressAction: win.pickEmoji(modelData.i)
                                 onEntered: if (win.toneFor < 0) win.current = modelData.i
                                 onClicked: mouse => {
                                     if (mouse.button === Qt.RightButton) win.showTones(modelData.i);
@@ -505,8 +528,8 @@ PanelWindow {
                                     anchors.margins: 2
                                     radius: Theme.barRadius
                                     color: cellBtn.on ? Theme.cardHover : "transparent"
-                                    border.width: cellBtn.on && search.activeFocus ? 1 : 0
-                                    border.color: Theme.alpha(Theme.accent, 0.6)
+                                    border.width: cellBtn.on && search.activeFocus ? Theme.focusWidth : 0
+                                    border.color: Theme.accent
                                 }
                                 Text {
                                     anchors.centerIn: parent
@@ -525,7 +548,7 @@ PanelWindow {
                     visible: win.emoji.length > 0 && win.view.flat.length === 0
                     text: Tr.t("No results")
                     color: Theme.soft
-                    font { family: Theme.sans; pixelSize: 14 }
+                    font { family: Theme.sans; pixelSize: Theme.sp(14) }
                 }
             }
 
@@ -554,13 +577,16 @@ PanelWindow {
                     onClicked: win.pickItem(index)
                     Accessible.role: Accessible.ListItem
                     Accessible.name: modelData.text ?? Tr.t("Picture")
+                    Accessible.description: modelData.pinned ? Tr.t("pinned") : ""
+                    Accessible.selected: on
+                    Accessible.onPressAction: win.pickItem(index)
 
                     Rectangle {
                         anchors.fill: parent
                         radius: Theme.radiusSmall
                         color: entry.on ? Theme.cardHover : Theme.card
-                        border.width: entry.on ? 1 : 0
-                        border.color: Theme.alpha(Theme.accent, 0.6)
+                        border.width: entry.on ? Theme.focusWidth : Theme.high ? Theme.rimWidth : 0
+                        border.color: entry.on ? Theme.accent : Theme.line
                         Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast) } }
                     }
                     Text {
@@ -573,7 +599,7 @@ PanelWindow {
                         maximumLineCount: 3
                         elide: Text.ElideRight
                         color: Theme.fg
-                        font { family: Theme.sans; pixelSize: 13 }
+                        font { family: Theme.sans; pixelSize: Theme.sp(13) }
                     }
                     Image {
                         id: thumb
@@ -609,6 +635,7 @@ PanelWindow {
                                 onClicked: modelData[2]()
                                 Accessible.role: Accessible.Button
                                 Accessible.name: modelData[1]
+                                Accessible.onPressAction: modelData[2]()
                                 Rectangle { anchors.fill: parent; radius: Theme.barRadius; color: tool.containsMouse ? Theme.cardHover : "transparent" }
                                 Glyph {
                                     anchors.centerIn: parent
@@ -632,7 +659,7 @@ PanelWindow {
                         horizontalAlignment: Text.AlignHCenter
                         text: Tr.t("Nothing here yet")
                         color: Theme.fg
-                        font { family: Theme.sans; pixelSize: 15; weight: Font.DemiBold }
+                        font { family: Theme.sans; pixelSize: Theme.sp(15); weight: Font.DemiBold }
                     }
                     Text {
                         width: parent.width
@@ -640,7 +667,7 @@ PanelWindow {
                         wrapMode: Text.Wrap
                         text: Tr.t("Copy text or a picture and it shows up here.")
                         color: Theme.soft
-                        font { family: Theme.sans; pixelSize: 13 }
+                        font { family: Theme.sans; pixelSize: Theme.sp(13) }
                     }
                 }
             }
@@ -656,8 +683,9 @@ PanelWindow {
             height: win.cell + 16
             radius: Theme.radiusSmall
             color: Theme.card
-            border.width: 1
+            border.width: Theme.rimWidth
             border.color: Theme.line
+            Accessible.role: Accessible.Grouping
             Accessible.name: Tr.t("Skin tone")
             Row {
                 id: toneRow
@@ -672,13 +700,16 @@ PanelWindow {
                         hoverEnabled: true
                         onEntered: win.toneCurrent = index
                         onClicked: win.pickEmoji(win.toneFor, index)
+                        Accessible.role: Accessible.Button
+                        Accessible.name: Tr.t("Skin tone %1 of 6", index + 1)
+                        Accessible.onPressAction: win.pickEmoji(win.toneFor, index)
                         Rectangle {
                             anchors.fill: parent
                             anchors.margins: 2
                             radius: Theme.barRadius
                             color: win.toneCurrent === toneBtn.index ? Theme.cardHover : "transparent"
-                            border.width: win.toneCurrent === toneBtn.index ? 1 : 0
-                            border.color: Theme.alpha(Theme.accent, 0.6)
+                            border.width: win.toneCurrent === toneBtn.index ? Theme.focusWidth : 0
+                            border.color: Theme.accent
                         }
                         Text {
                             anchors.centerIn: parent

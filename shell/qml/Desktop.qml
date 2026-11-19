@@ -3,6 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import Quickshell.Wayland
 import Quickshell.Services.Mpris
 
 // What the bar, launcher, panels and lock screen share, and the user's shell settings.
@@ -26,6 +27,65 @@ Singleton {
     // first one open.
     readonly property var player: Mpris.players.values.find(p => p.isPlaying) ?? Mpris.players.values[0] ?? null
 
+    // Esc in a panel: the bar that opened it from the keyboard takes the focus back (see
+    // Bar.returnTo), then the panel closes.
+    signal backOut()
+    function back(panel) {
+        backOut();
+        root[panel] = false;
+    }
+
+    // The keyboard for a surface that is already on screen (the bar after Windows+T, the open
+    // notification center, previews opened from the keyboard). cosmic-comp hands the keyboard
+    // to a layer surface only as it appears, never when one already showing asks for it, so a
+    // 1 px surface appears instead, takes the keyboard and passes every key to the item with the
+    // focus in `keysFor` and up its parents, as if they had the keyboard. null gives it back.
+    // ponytail: a workaround; drop it once cosmic-comp focuses a layer surface that turns exclusive.
+    property Item keysFor: null
+    property Item keysNext: null
+    function keysTo(item) {
+        // Hidden first, so showing it takes the keyboard even if something else had it since.
+        keysFor = null;
+        keysNext = item;
+        if (item) keysShow.restart();
+    }
+    Timer {
+        id: keysShow
+        interval: 0
+        onTriggered: {
+            const item = root.keysNext;
+            if (!item) return;
+            keyProxy.screen = item.QsWindow.window?.screen ?? root.screen;
+            if (item.Window.contentItem) item.Window.contentItem.focus = true;  // a window that lost the keyboard drops its focus
+            root.keysFor = item;
+        }
+    }
+    // After a menu or flyout that took the keyboard closes, cosmic-comp gives it to the window
+    // behind, not back to keysFor: show the proxy anew so it takes it again.
+    function retakeKeys() { if (keysFor) keysTo(keysFor); }
+    PanelWindow {
+        id: keyProxy
+        visible: root.keysFor !== null
+        implicitWidth: 1
+        implicitHeight: 1
+        anchors { top: true; left: true }
+        color: "transparent"
+        mask: Region {}
+        exclusionMode: ExclusionMode.Ignore
+        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.namespace: "kriss-keys"
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+        Item {
+            focus: true
+            Accessible.ignored: true
+            Keys.forwardTo: {
+                const out = [];
+                for (let i = root.keysFor?.Window.activeFocusItem ?? null; i; i = i.parent) out.push(i);
+                return out;
+            }
+        }
+    }
+
     function focusedScreen() {
         const out = Windows.list.find(w => w.active && !w.minimized)?.output;
         return Quickshell.screens.find(s => s.name === out) ?? screen ?? Quickshell.screens[0];
@@ -48,6 +108,7 @@ Singleton {
     property alias theme: config.theme
     property alias themeLight: config.themeLight
     property alias themeDark: config.themeDark
+    property alias contrast: config.contrast
 
     readonly property string configFile: (Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config") + "/kriss/shell.json"
     FileView {
@@ -89,6 +150,8 @@ Singleton {
             property string theme: "system"
             property string themeLight: "07:00"
             property string themeDark: "19:00"
+            // "high": the high-contrast colours (see Theme.qml), for low vision.
+            property string contrast: "normal"
         }
     }
 

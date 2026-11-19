@@ -215,6 +215,19 @@ PanelWindow {
     }
     function move(by) { if (count) current = Math.max(0, Math.min(count - 1, current + by)); }
 
+    // For a screen reader, which stays in the search field: the selected app or result as
+    // it changes, and how many results once typing pauses.
+    readonly property string currentLabel: query.trim() ? (results.find(r => r.sel === current)?.label ?? "")
+        : count ? (shown[current]?.name ?? "") : ""
+    onCurrentLabelChanged: if (Desktop.launcherOpen && currentLabel) search.Accessible.announce(currentLabel)
+    onCountChanged: if (query.trim()) counted.restart()
+    Timer {
+        id: counted
+        interval: 700
+        onTriggered: search.Accessible.announce(win.count === 0 ? Tr.t("No results")
+            : win.count === 1 ? Tr.t("1 result") : Tr.t("%1 results", win.count))
+    }
+
     Connections {
         target: Desktop
         function onLauncherOpenChanged() { if (Desktop.launcherOpen) win.reset(); }
@@ -231,12 +244,30 @@ PanelWindow {
     readonly property var recent: recentAll.slice(0, 4)
 
     MouseArea {
+        Accessible.ignored: true  // pointer only; the keyboard has its own way
         anchors.fill: parent
         onClicked: win.close()
     }
+    // Keys the focused control leaves alone: typing goes to the search, Esc closes (the power
+    // menu first), as in Windows Start.
+    Item {
+        id: keyCatch
+        anchors.fill: parent
+        Keys.onPressed: event => {
+            if (event.key === Qt.Key_Escape) {
+                if (win.powerMenu) { win.powerMenu = false; powerBtn.forceActiveFocus(); }
+                else Desktop.back("launcherOpen");
+            } else if (event.text && event.text.trim() && !(event.modifiers & (Qt.ControlModifier | Qt.AltModifier))) {
+                search.forceActiveFocus();
+                search.insert(search.cursorPosition, event.text);
+            } else return;
+            event.accepted = true;
+        }
 
     Rectangle {
         id: panel
+        Accessible.role: Accessible.Dialog
+        Accessible.name: Tr.t("Start")
         // Over Start: at the left, or centred with a centred taskbar.
         x: Desktop.taskbarAlignment === "centre" ? (parent.width - width) / 2 : Theme.panelGap
         anchors.bottom: parent.bottom
@@ -245,7 +276,7 @@ PanelWindow {
         height: body.implicitHeight + body.anchors.topMargin + body.anchors.bottomMargin + foot.height
         radius: Theme.radius + 4
         color: Theme.bar
-        border.width: 1
+        border.width: Theme.rimWidth
         border.color: Theme.rim
         clip: true
 
@@ -259,7 +290,7 @@ PanelWindow {
         // The panel grows and shrinks with the results instead of jumping (cmdk does the same).
         Behavior on height { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
 
-        MouseArea { anchors.fill: parent; onClicked: win.powerMenu = false }
+        MouseArea { anchors.fill: parent; onClicked: win.powerMenu = false; Accessible.ignored: true }
 
         ColumnLayout {
             id: body
@@ -289,7 +320,10 @@ PanelWindow {
                         Layout.fillWidth: true
                         color: Theme.fg
                         selectionColor: Theme.alpha(Theme.accent, 0.4)
-                        font { family: Theme.sans; pixelSize: 15; weight: Font.Medium }
+                        font { family: Theme.sans; pixelSize: Theme.sp(15); weight: Font.Medium }
+                        Accessible.role: Accessible.EditableText
+                        Accessible.name: Tr.t("Search for apps, settings and files")
+                        Accessible.description: Tr.t("Arrows choose, Enter opens, Tab moves to the other controls")
                         onTextChanged: win.query = text
                         Text {
                             visible: !search.text
@@ -297,7 +331,7 @@ PanelWindow {
                             color: Theme.soft
                             font: search.font
                         }
-                        Keys.onEscapePressed: if (text) text = ""; else win.close()
+                        Keys.onEscapePressed: if (text) text = ""; else Desktop.back("launcherOpen")
                         Keys.onReturnPressed: event => event.modifiers & Qt.ControlModifier ? win.runAlt() : win.run()
                         Keys.onEnterPressed: event => event.modifiers & Qt.ControlModifier ? win.runAlt() : win.run()
                         // In the grid, left and right step and up and down jump a row; the
@@ -306,8 +340,11 @@ PanelWindow {
                         Keys.onRightPressed: event => { if (win.query) event.accepted = false; else win.move(1); }
                         Keys.onUpPressed: win.move(win.query ? -1 : -grid.columns)
                         Keys.onDownPressed: win.move(win.query ? 1 : grid.columns)
-                        Keys.onTabPressed: win.move(1)
-                        Keys.onBacktabPressed: win.move(-1)
+                        // With results, Tab steps through them as in cmdk; otherwise it goes on to
+                        // All apps, Recommended and power, in reading order.
+                        Keys.onTabPressed: event => { if (win.query) win.move(1); else event.accepted = false; }
+                        Keys.onBacktabPressed: event => { if (win.query) win.move(-1); else event.accepted = false; }
+                        activeFocusOnTab: true
                         Keys.onPressed: event => {
                             if (event.key === Qt.Key_Menu || event.key === Qt.Key_F10 && event.modifiers & Qt.ShiftModifier) win.menuForCurrent();
                             else if (event.key === Qt.Key_Home && event.modifiers & Qt.ControlModifier) win.current = 0;
@@ -327,12 +364,12 @@ PanelWindow {
                     Layout.fillWidth: true
                     text: win.allApps ? Tr.t("All apps") : Tr.t("Pinned")
                     color: Theme.fg
-                    font { family: Theme.sans; pixelSize: 15; weight: Font.DemiBold }
+                    font { family: Theme.sans; pixelSize: Theme.sp(15); weight: Font.DemiBold }
                 }
                 Chip {
                     label: win.allApps ? Tr.t("Back") : Tr.t("All apps")
                     glyph: win.allApps ? "back" : "chevron"
-                    onClicked: win.allApps = !win.allApps
+                    onActivated: win.allApps = !win.allApps
                 }
             }
 
@@ -343,7 +380,8 @@ PanelWindow {
                 visible: !win.query && !Desktop.launcherSearch && win.shown.length > 0
                 Layout.preferredHeight: Math.min(win.allApps ? 4 : 3, Math.ceil(win.shown.length / columns)) * cellHeight
                 cellWidth: width / columns
-                cellHeight: 92
+                cellHeight: Math.max(92, 70 + Theme.sp(12) * 1.4)
+                highlightMoveDuration: Theme.ms(150)
                 clip: true
                 boundsBehavior: Flickable.StopAtBounds
                 model: win.shown
@@ -355,6 +393,9 @@ PanelWindow {
                     required property int index
                     width: grid.cellWidth
                     height: grid.cellHeight
+                    Accessible.role: Accessible.Button
+                    Accessible.name: modelData.name
+                    Accessible.onPressAction: win.launch(modelData)
                     hoverEnabled: true
                     onEntered: win.current = index
                     cursorShape: Qt.PointingHandCursor
@@ -391,7 +432,7 @@ PanelWindow {
                             elide: Text.ElideRight
                             text: cell.modelData.name
                             color: Theme.fg
-                            font { family: Theme.sans; pixelSize: 12; weight: Font.Medium }
+                            font { family: Theme.sans; pixelSize: Theme.sp(12); weight: Font.Medium }
                         }
                     }
                 }
@@ -432,7 +473,7 @@ PanelWindow {
                 verticalAlignment: Text.AlignVCenter
                 text: win.query ? Tr.t("No results for “%1”.", win.query.trim()) : Tr.t("Right-click an app to pin it.")
                 color: Theme.soft
-                font { family: Theme.sans; pixelSize: 14 }
+                font { family: Theme.sans; pixelSize: Theme.sp(14) }
             }
 
             // Recommended files.
@@ -444,7 +485,7 @@ PanelWindow {
                     Layout.fillWidth: true
                     text: Tr.t("Recommended")
                     color: Theme.fg
-                    font { family: Theme.sans; pixelSize: 15; weight: Font.DemiBold }
+                    font { family: Theme.sans; pixelSize: Theme.sp(15); weight: Font.DemiBold }
                 }
             }
 
@@ -462,10 +503,22 @@ PanelWindow {
                         required property var modelData
                         Layout.fillWidth: true
                         Layout.preferredWidth: 1
-                        implicitHeight: 52
+                        implicitHeight: Math.max(52, recText.implicitHeight + 16)
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: { Qt.openUrlExternally(modelData.href); win.close(); }
+                        onClicked: open()
+                        function open() { Qt.openUrlExternally(modelData.href); win.close(); }
+                        activeFocusOnTab: true
+                        Keys.onReturnPressed: open()
+                        Keys.onEnterPressed: open()
+                        Keys.onSpacePressed: open()
+                        Accessible.role: Accessible.Button
+                        // A folder's href ends in "/": its name is the part before.
+                        readonly property string fileName: decodeURIComponent(modelData.href.replace(/\/$/, "").split("/").pop())
+                        Accessible.name: fileName
+                        Accessible.description: Tr.t("Recommended file, %1", Tr.ago(modelData.when))
+                        Accessible.onPressAction: open()
+                        FocusRim { radius: Theme.radiusSmall + 2 }
 
                         Rectangle {
                             anchors.fill: parent
@@ -484,18 +537,19 @@ PanelWindow {
                                 Glyph { anchors.centerIn: parent; name: "file"; size: 18; color: Theme.accent }
                             }
                             Column {
+                                id: recText
                                 Layout.fillWidth: true
                                 Text {
                                     width: parent.width
                                     elide: Text.ElideMiddle
-                                    text: decodeURIComponent(rec.modelData.href.split("/").pop())
+                                    text: rec.fileName
                                     color: Theme.fg
-                                    font { family: Theme.sans; pixelSize: 13; weight: Font.DemiBold }
+                                    font { family: Theme.sans; pixelSize: Theme.sp(13); weight: Font.DemiBold }
                                 }
                                 Text {
                                     text: Tr.ago(rec.modelData.when)
                                     color: Theme.soft
-                                    font { family: Theme.sans; pixelSize: 11 }
+                                    font { family: Theme.sans; pixelSize: Theme.sp(11) }
                                 }
                             }
                         }
@@ -510,7 +564,7 @@ PanelWindow {
                     verticalAlignment: Text.AlignVCenter
                     text: Tr.t("Files you open will show up here.")
                     color: Theme.soft
-                    font { family: Theme.sans; pixelSize: 13 }
+                    font { family: Theme.sans; pixelSize: Theme.sp(13) }
                 }
             }
         }
@@ -528,6 +582,8 @@ PanelWindow {
                 anchors.leftMargin: 24
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 10
+                Accessible.role: Accessible.StaticText
+                Accessible.name: Tr.t("Signed in as %1", Quickshell.env("USER") ?? "")
                 Rectangle {
                     width: 34; height: 34; radius: 17
                     color: Theme.accent
@@ -535,14 +591,14 @@ PanelWindow {
                         anchors.centerIn: parent
                         text: (Quickshell.env("USER") ?? "?").charAt(0).toUpperCase()
                         color: Theme.accentInk
-                        font { family: Theme.sans; pixelSize: 15; weight: Font.Bold }
+                        font { family: Theme.sans; pixelSize: Theme.sp(15); weight: Font.Bold }
                     }
                 }
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: Quickshell.env("USER") ?? ""
                     color: Theme.fg
-                    font { family: Theme.sans; pixelSize: 14; weight: Font.DemiBold }
+                    font { family: Theme.sans; pixelSize: Theme.sp(14); weight: Font.DemiBold }
                 }
             }
 
@@ -554,7 +610,19 @@ PanelWindow {
                 width: 38; height: 38
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: win.powerMenu = !win.powerMenu
+                onClicked: toggle()
+                function toggle() {
+                    win.powerMenu = !win.powerMenu;
+                    if (win.powerMenu && activeFocus) powerItems.itemAt(0)?.forceActiveFocus();
+                }
+                activeFocusOnTab: true
+                Keys.onReturnPressed: toggle()
+                Keys.onEnterPressed: toggle()
+                Keys.onSpacePressed: toggle()
+                Accessible.role: Accessible.ButtonMenu
+                Accessible.name: Tr.t("Power")
+                Accessible.onPressAction: toggle()
+                FocusRim { radius: 21 }
                 scale: pressed ? Theme.pressScale : 1
                 Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                 Rectangle {
@@ -578,7 +646,7 @@ PanelWindow {
             height: menu.implicitHeight + 12
             radius: Theme.radiusSmall + 2
             color: Theme.card
-            border.width: 1
+            border.width: Theme.rimWidth
             border.color: Theme.line
 
             Column {
@@ -586,19 +654,29 @@ PanelWindow {
                 anchors.centerIn: parent
                 width: parent.width - 12
                 Repeater {
+                    id: powerItems
                     model: win.actions.slice(0, 5)
                     delegate: MouseArea {
                         id: item
                         required property var modelData
+                        required property int index
                         width: menu.width
-                        height: 38
+                        height: Math.max(38, Theme.sp(14) + 20)
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: modelData[2]()
+                        Keys.onReturnPressed: modelData[2]()
+                        Keys.onEnterPressed: modelData[2]()
+                        Keys.onUpPressed: powerItems.itemAt(Math.max(0, index - 1)).forceActiveFocus()
+                        Keys.onDownPressed: powerItems.itemAt(Math.min(powerItems.count - 1, index + 1)).forceActiveFocus()
+                        Accessible.role: Accessible.MenuItem
+                        Accessible.name: modelData[1]
+                        Accessible.onPressAction: modelData[2]()
+                        FocusRim { anchors.margins: 0; radius: 10; border.width: 1; opacity: 0.6 }
                         Rectangle {
                             anchors.fill: parent
                             radius: 10
-                            color: item.containsMouse ? Theme.win : "transparent"
+                            color: item.containsMouse || item.activeFocus ? Theme.win : "transparent"
                             Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                         }
                         Row {
@@ -610,13 +688,14 @@ PanelWindow {
                             Text {
                                 text: item.modelData[1]
                                 color: Theme.fg
-                                font { family: Theme.sans; pixelSize: 14; weight: Font.Medium }
+                                font { family: Theme.sans; pixelSize: Theme.sp(14); weight: Font.Medium }
                             }
                         }
                     }
                 }
             }
         }
+    }
     }
 
     Menu { id: appMenu }
@@ -631,7 +710,7 @@ PanelWindow {
             leftPadding: 12
             text: row.header
             color: Theme.soft
-            font { family: Theme.sans; pixelSize: 12; weight: Font.DemiBold }
+            font { family: Theme.sans; pixelSize: Theme.sp(12); weight: Font.DemiBold }
         }
     }
 
@@ -641,7 +720,12 @@ PanelWindow {
             id: res
             readonly property var row: parent.row
             readonly property bool selected: row.sel === win.current
-            height: 46
+            height: Math.max(46, resText.implicitHeight + 12)
+            Accessible.role: Accessible.ListItem
+            Accessible.name: row.label
+            Accessible.description: row.detail ?? ""
+            Accessible.selected: selected
+            Accessible.onPressAction: row.run()
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             // The pointer selects, as in cmdk, so there is only ever one highlight.
@@ -683,6 +767,7 @@ PanelWindow {
                     }
                 }
                 Column {
+                    id: resText
                     Layout.fillWidth: true
                     Text {
                         width: parent.width
@@ -690,7 +775,7 @@ PanelWindow {
                         text: res.row.label
                         color: Theme.fg
                         font.family: res.row.kind === "calc" ? Theme.mono : Theme.sans
-                        font.pixelSize: res.row.kind === "calc" ? 16 : 14
+                        font.pixelSize: Theme.sp(res.row.kind === "calc" ? 16 : 14)
                         font.weight: res.row.kind === "calc" ? Font.DemiBold : Font.Medium
                     }
                     // A file's folder, or the sum the answer is for.
@@ -701,29 +786,32 @@ PanelWindow {
                         text: res.row.detail ?? ""
                         color: Theme.soft
                         font.family: res.row.kind === "calc" ? Theme.mono : Theme.sans
-                        font.pixelSize: 11
+                        font.pixelSize: Theme.sp(11)
                     }
                 }
                 Text {
                     visible: !res.twoLines && !!res.row.detail && !res.selected
                     text: res.row.detail ?? ""
                     color: Theme.soft
-                    font { family: Theme.sans; pixelSize: 12 }
+                    font { family: Theme.sans; pixelSize: Theme.sp(12) }
                 }
                 // A file's second action: its folder (Ctrl+Enter).
                 MouseArea {
                     id: folderBtn
                     visible: res.selected && !!res.row.alt
                     implicitWidth: folderRow.implicitWidth + 16
-                    implicitHeight: 28
+                    implicitHeight: Math.max(28, folderRow.implicitHeight + 8)
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: res.row.alt()
+                    Accessible.role: Accessible.Button
+                    Accessible.name: Tr.t("Open folder")
+                    Accessible.onPressAction: res.row.alt()
                     Rectangle {
                         anchors.fill: parent
                         radius: 8
                         color: folderBtn.containsMouse ? Theme.cardHover : Theme.win
-                        border.width: 1
+                        border.width: Theme.rimWidth
                         border.color: Theme.line
                     }
                     Row {
@@ -734,7 +822,7 @@ PanelWindow {
                         Text {
                             text: Tr.t("Open folder")
                             color: Theme.fg
-                            font { family: Theme.sans; pixelSize: 12; weight: Font.Medium }
+                            font { family: Theme.sans; pixelSize: Theme.sp(12); weight: Font.Medium }
                         }
                     }
                 }
@@ -742,20 +830,22 @@ PanelWindow {
                     visible: res.selected && res.row.kind === "calc"
                     text: Tr.t("Copy")
                     color: Theme.soft
-                    font { family: Theme.sans; pixelSize: 12 }
+                    font { family: Theme.sans; pixelSize: Theme.sp(12) }
                 }
                 // Enter runs the selected row.
                 Rectangle {
                     visible: res.selected
-                    implicitWidth: 26; implicitHeight: 22; radius: 6
+                    implicitWidth: Math.max(26, enterKey.implicitWidth + 12); implicitHeight: Math.max(22, enterKey.implicitHeight + 4); radius: 6
+                    Accessible.ignored: true
                     color: Theme.win
-                    border.width: 1
+                    border.width: Theme.rimWidth
                     border.color: Theme.line
                     Text {
+                        id: enterKey
                         anchors.centerIn: parent
                         text: "↵"
                         color: Theme.soft
-                        font { family: Theme.sans; pixelSize: 12; weight: Font.DemiBold }
+                        font { family: Theme.sans; pixelSize: Theme.sp(12); weight: Font.DemiBold }
                     }
                 }
             }
@@ -767,17 +857,27 @@ PanelWindow {
         property string label
         property string glyph
         implicitWidth: chipRow.implicitWidth + 22
-        implicitHeight: 30
+        implicitHeight: Math.max(30, chipRow.implicitHeight + 10)
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
+        activeFocusOnTab: true
+        signal activated()
+        onClicked: activated()
+        Keys.onReturnPressed: activated()
+        Keys.onEnterPressed: activated()
+        Keys.onSpacePressed: activated()
+        Accessible.role: Accessible.Button
+        Accessible.name: label
+        Accessible.onPressAction: activated()
         scale: pressed ? Theme.pressScale : 1
         Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
         Rectangle {
             anchors.fill: parent
-            radius: 15
+            radius: height / 2
             color: chip.containsMouse ? Theme.cardHover : Theme.card
             Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
         }
+        FocusRim { radius: height / 2 }
         Row {
             id: chipRow
             anchors.centerIn: parent
@@ -785,7 +885,7 @@ PanelWindow {
             Text {
                 text: chip.label
                 color: Theme.fg
-                font { family: Theme.sans; pixelSize: 13; weight: Font.DemiBold }
+                font { family: Theme.sans; pixelSize: Theme.sp(13); weight: Font.DemiBold }
             }
             Glyph { anchors.verticalCenter: parent.verticalCenter; name: chip.glyph; size: 14 }
         }

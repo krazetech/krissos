@@ -201,7 +201,7 @@ Scope {
             onAssistingChanged: if (assisting) assist.forceActiveFocus()
 
             // A click beside the layouts or Snap Assist's zone leaves them, as on Windows.
-            MouseArea { anchors.fill: parent; enabled: pane.modal; onClicked: { snap.closePicker(); snap.closeAssist(); } }
+            MouseArea { anchors.fill: parent; enabled: pane.modal; Accessible.ignored: true; onClicked: { snap.closePicker(); snap.closeAssist(); } }
 
             // The layouts, under the window's top right corner (its maximize button).
             Rectangle {
@@ -341,7 +341,7 @@ Scope {
                 Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                 Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
 
-                MouseArea { anchors.fill: parent } // clicks between cards stay here
+                MouseArea { anchors.fill: parent; Accessible.ignored: true } // clicks between cards stay here
 
                 Keys.onPressed: event => {
                     const n = wins.length;

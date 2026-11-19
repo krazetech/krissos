@@ -7,7 +7,9 @@ import Quickshell.Widgets
 // blurred desktop, and that screen's desktops along the bottom. Click a window or press Enter
 // to switch to it; arrows move between windows; Esc or a click on the background leaves.
 // Rest the pointer on a desktop to see its windows, click it to switch, drag a window onto it
-// to move the window there, right-click it to rename or close it. Pictures are captured only
+// to move the window there, right-click it to rename or close it. From the keyboard, Tab
+// moves between the windows and the desktops; on a desktop Enter switches, F2 renames,
+// Delete closes and the Menu key opens its menu. Pictures are captured only
 // while Task View is open, by kriss-shell-toplevels.
 Scope {
     id: tv
@@ -75,6 +77,29 @@ Scope {
 
             property int current: 0
             property int renaming: -1
+            // The keyboard is on the desktops strip, at deskCurrent.
+            property bool inDesks: false
+            property int deskCurrent: 0
+            readonly property int deskCount: strip.length + (canAdd ? 1 : 0)
+            // A screen reader stays on the key catcher; it hears the window or desktop picked.
+            readonly property string spoken: inDesks
+                ? (deskCurrent >= strip.length ? Tr.t("New desktop") : deskName(deskCurrent) + (strip[deskCurrent]?.active ? ", " + Tr.t("current") : ""))
+                : (wins[current]?.title || wins[current]?.appId || "")
+            onSpokenChanged: if (tv.open && spoken) keys.Accessible.announce(spoken)
+            // Enter, or the Menu key (menu), on desktop i.
+            function deskAct(i, asMenu, from) {
+                const add = i >= strip.length, d = add ? desks[desks.length - 1] : strip[i];
+                if (add) { revealed = true; return; }
+                if (asMenu) {
+                    menu.show(from, [
+                        { text: Tr.t("Rename"), glyph: "edit", run: () => renaming = i },
+                        { text: Tr.t("Close desktop"), glyph: "close", off: strip.length < 2, run: () => Windows.closeDesktop(d.id) }
+                    ], from === keys);
+                    return;
+                }
+                if (d) Windows.switchTo(d.id);
+                Desktop.taskViewOpen = false;
+            }
             property var aspects: ({})
             readonly property int head: 36
             readonly property var boxes: tv.layout(wins.map(w => aspects[w.id] ?? 1.6), grid.width, grid.height, head, 24)
@@ -110,6 +135,7 @@ Scope {
                 while (names.length && !names[names.length - 1]) names.pop();
                 Desktop.desktopNames = names;
                 renaming = -1;
+                keys.forceActiveFocus();
             }
 
             Connections {
@@ -118,6 +144,7 @@ Scope {
                     pane.pointed = 0;
                     pane.revealed = false;
                     pane.renaming = -1;
+                    pane.inDesks = false;
                     pane.current = Math.max(0, pane.wins.findIndex(w => w.active && !w.minimized));
                     if (tv.open && Desktop.screen === pane.screen) keys.forceActiveFocus();
                 }
@@ -139,12 +166,13 @@ Scope {
             Rectangle {
                 id: backdrop
                 anchors.fill: parent
-                color: Theme.alpha(Theme.night, Theme.dark ? 0.55 : 0.35)
+                color: Theme.high ? Theme.night : Theme.alpha(Theme.night, Theme.dark ? 0.55 : 0.35)
                 opacity: tv.open ? 1 : 0
                 Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
             }
 
             MouseArea {
+                Accessible.ignored: true  // pointer only; the keyboard has its own way
                 anchors.fill: parent
                 onClicked: Desktop.taskViewOpen = false
             }
@@ -159,14 +187,43 @@ Scope {
                 Item {
                     id: keys
                     focus: true
+                    Accessible.role: Accessible.Dialog
+                    Accessible.name: Tr.t("Task View")
+                    Accessible.description: Tr.t("Arrows choose a window, Enter switches to it, Tab goes to the desktops")
                     Keys.onPressed: event => {
                         const n = pane.wins.length;
+                        if (event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab) {
+                            pane.inDesks = !pane.inDesks || n === 0;
+                            if (pane.inDesks) pane.deskCurrent = Math.max(0, pane.strip.findIndex(d => d.active));
+                            event.accepted = true;
+                            return;
+                        }
+                        if (pane.inDesks) {
+                            const m = pane.deskCount, i = pane.deskCurrent;
+                            const menuKey = event.key === Qt.Key_Menu || event.key === Qt.Key_F10 && event.modifiers & Qt.ShiftModifier;
+                            if (menuKey) pane.deskAct(i, true, keys);
+                            else switch (event.key) {
+                            case Qt.Key_Escape: Desktop.back("taskViewOpen"); break;
+                            case Qt.Key_Left: pane.deskCurrent = Math.max(0, i - 1); break;
+                            case Qt.Key_Right: pane.deskCurrent = Math.min(m - 1, i + 1); break;
+                            case Qt.Key_Home: pane.deskCurrent = 0; break;
+                            case Qt.Key_End: pane.deskCurrent = m - 1; break;
+                            case Qt.Key_Up: if (n) pane.inDesks = false; break;
+                            case Qt.Key_Return: case Qt.Key_Enter: case Qt.Key_Space: pane.deskAct(i, false); break;
+                            case Qt.Key_F2: if (i < pane.strip.length) pane.renaming = i; break;
+                            case Qt.Key_Delete: if (i < pane.strip.length && pane.strip.length > 1) Windows.closeDesktop(pane.strip[i].id); break;
+                            default: return;
+                            }
+                            deskRow.positionViewAtIndex(pane.deskCurrent, ListView.Contain);
+                            event.accepted = true;
+                            return;
+                        }
                         switch (event.key) {
-                        case Qt.Key_Escape: Desktop.taskViewOpen = false; break;
+                        case Qt.Key_Escape: Desktop.back("taskViewOpen"); break;
                         case Qt.Key_Return: case Qt.Key_Enter: case Qt.Key_Space: pane.pick(pane.wins[pane.current]); break;
-                        case Qt.Key_Right: case Qt.Key_Tab: pane.current = Math.min(n - 1, pane.current + 1); break;
-                        case Qt.Key_Left: case Qt.Key_Backtab: pane.current = Math.max(0, pane.current - 1); break;
-                        case Qt.Key_Down: pane.vertical(1); break;
+                        case Qt.Key_Right: pane.current = Math.min(n - 1, pane.current + 1); break;
+                        case Qt.Key_Left: pane.current = Math.max(0, pane.current - 1); break;
+                        case Qt.Key_Down: { const c = pane.current; pane.vertical(1); if (c === pane.current) pane.inDesks = true; break; }
                         case Qt.Key_Up: pane.vertical(-1); break;
                         case Qt.Key_Home: pane.current = 0; break;
                         case Qt.Key_End: pane.current = Math.max(0, n - 1); break;
@@ -183,7 +240,7 @@ Scope {
                     text: Tr.t("No windows open on this desktop")
                     color: Theme.nightFg
                     opacity: 0.7
-                    font { family: Theme.sans; pixelSize: 15; weight: Font.Medium }
+                    font { family: Theme.sans; pixelSize: Theme.sp(15); weight: Font.Medium }
                 }
 
                 Item {
@@ -203,7 +260,12 @@ Scope {
                             readonly property var w: pane.wins[index]
                             readonly property var box: pane.boxes[index] ?? { x: 0, y: 0, w: 0, h: 0 }
                             readonly property var entry: DesktopEntries.heuristicLookup(w?.appId ?? "")
-                            readonly property bool lit: pane.current === index
+                            readonly property bool lit: pane.current === index && !pane.inDesks
+                            Accessible.role: Accessible.ListItem
+                            Accessible.name: w?.title || entry?.name || w?.appId || ""
+                            Accessible.description: entry?.name ?? ""
+                            Accessible.selected: lit
+                            Accessible.onPressAction: pane.pick(w)
 
                             x: box.x; y: box.y; width: box.w; height: box.h
                             z: drag.drag.active ? 10 : 0
@@ -213,6 +275,7 @@ Scope {
                             Behavior on height { enabled: tv.open; NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
 
                             MouseArea {
+                                Accessible.ignored: true  // pointer only; the keyboard has its own way
                                 id: drag
                                 anchors.fill: parent
                                 hoverEnabled: true
@@ -237,8 +300,8 @@ Scope {
                                 height: parent.height
                                 radius: Theme.radiusSmall
                                 color: drag.pressed || drag.containsMouse ? Theme.cardHover : Theme.card
-                                border.width: 2
-                                border.color: card.lit ? Theme.accent : "transparent"
+                                border.width: Theme.focusWidth
+                                border.color: card.lit ? Theme.accent : Theme.high ? Theme.rim : "transparent"
                                 Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                                 Behavior on x { enabled: !drag.drag.active; NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
                                 Behavior on y { enabled: !drag.drag.active; NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
@@ -260,7 +323,7 @@ Scope {
                                     text: card.w?.title || card.entry?.name || card.w?.appId || ""
                                     elide: Text.ElideRight
                                     color: Theme.fg
-                                    font { family: Theme.sans; pixelSize: 13; weight: Font.Medium }
+                                    font { family: Theme.sans; pixelSize: Theme.sp(13); weight: Font.Medium }
                                 }
                                 MouseArea {
                                     id: close
@@ -346,18 +409,12 @@ Scope {
                             acceptedButtons: Qt.LeftButton | Qt.RightButton
                             cursorShape: Qt.PointingHandCursor
                             onEntered: if (!desk.add && desk.d) pane.pointed = desk.d.id
-                            onClicked: mouse => {
-                                if (desk.add) { pane.revealed = true; return; }
-                                if (mouse.button === Qt.RightButton) {
-                                    menu.show(tile, [
-                                        { text: Tr.t("Rename"), glyph: "edit", run: () => pane.renaming = desk.index },
-                                        { text: Tr.t("Close desktop"), glyph: "close", run: () => Windows.closeDesktop(desk.d.id) }
-                                    ], false);
-                                    return;
-                                }
-                                if (desk.d) Windows.switchTo(desk.d.id);
-                                Desktop.taskViewOpen = false;
-                            }
+                            onClicked: mouse => pane.deskAct(desk.index, mouse.button === Qt.RightButton, tile)
+                            Accessible.role: Accessible.ListItem
+                            Accessible.name: desk.add ? Tr.t("New desktop") : pane.deskName(desk.index)
+                            Accessible.description: desk.add ? "" : desk.deskWins.length === 1 ? Tr.t("1 window") : Tr.t("%1 windows", desk.deskWins.length)
+                            Accessible.selected: !desk.add && (desk.d?.active ?? false)
+                            Accessible.onPressAction: pane.deskAct(desk.index, false)
                         }
 
                         Rectangle {
@@ -367,6 +424,16 @@ Scope {
                             Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                         }
 
+                        // The keyboard's place on the strip (outside the tile, which clips).
+                        Rectangle {
+                            x: tile.x - 5; y: tile.y - 5
+                            width: tile.width + 10; height: tile.height + 10
+                            radius: tile.radius + 4
+                            color: "transparent"
+                            border.width: Theme.focusWidth
+                            border.color: Theme.accent
+                            visible: pane.inDesks && pane.deskCurrent === desk.index
+                        }
                         Rectangle {
                             id: tile
                             x: 8; y: 8
@@ -376,6 +443,7 @@ Scope {
                             color: desk.add ? Theme.card : Theme.night
                             border.width: 2
                             border.color: !desk.add && desk.d?.active ? Theme.accent : desk.containsDrag ? Theme.soft : Theme.rim
+
                             clip: true
 
                             Image {
@@ -429,15 +497,15 @@ Scope {
                             elide: Text.ElideRight
                             text: desk.add ? Tr.t("New desktop") : pane.deskName(desk.index)
                             color: Theme.nightFg
-                            font { family: Theme.sans; pixelSize: 13; weight: !desk.add && desk.d?.active ? Font.DemiBold : Font.Medium }
+                            font { family: Theme.sans; pixelSize: Theme.sp(13); weight: !desk.add && desk.d?.active ? Font.DemiBold : Font.Medium }
                         }
                         Rectangle {
                             anchors { top: tile.bottom; topMargin: 4; horizontalCenter: tile.horizontalCenter }
-                            width: tile.width; height: 26
+                            width: tile.width; height: Math.max(26, Theme.sp(13) + 12)
                             radius: 8
                             visible: pane.renaming === desk.index
                             color: Theme.win
-                            border.width: 1
+                            border.width: Theme.rimWidth
                             border.color: Theme.accent
                             TextInput {
                                 id: nameInput
@@ -448,8 +516,10 @@ Scope {
                                 color: Theme.fg
                                 selectionColor: Theme.accent
                                 selectedTextColor: Theme.accentInk
-                                font { family: Theme.sans; pixelSize: 13 }
+                                font { family: Theme.sans; pixelSize: Theme.sp(13) }
                                 clip: true
+                                Accessible.role: Accessible.EditableText
+                                Accessible.name: Tr.t("Desktop name")
                                 onVisibleChanged: if (visible) { text = pane.deskName(desk.index); selectAll(); forceActiveFocus(); }
                                 Keys.onReturnPressed: pane.rename(desk.index, text)
                                 Keys.onEnterPressed: pane.rename(desk.index, text)
