@@ -49,14 +49,20 @@ Scope {
         return w?.geo?.[w.output] ?? null;
     }
 
-    // Windows+Z: the layouts for the window in front, by the keyboard.
+    // Windows+Z: the layouts for the window in front, by the keyboard. When there is nothing
+    // to snap, or the compositor cannot place windows, it says so: the key never does nothing.
     function layoutsForActive() {
         const w = Windows.list.find(w => w.active && !w.minimized);
-        if (!Windows.snapReady || !w || !geoOf(w)) return;
+        if (!w || !geoOf(w)) { hint(Tr.t("Click a window first, then Windows+Z snaps it.")); return; }
+        if (!Windows.snapReady) { hint(Tr.t("Snap layouts need a KrissOS update. Windows+arrow keys still snap a window to a side.")); return; }
         closeAssist();
         hoverTimer.stop();
         pickKeys = true;
         pickFor = w;
+    }
+    // A short toast that leaves nothing in the notification center.
+    function hint(text) {
+        Quickshell.execDetached(["notify-send", "--transient", "--app-name", Tr.t("Snap layouts"), "--icon", "view-grid", Tr.t("Snap layouts"), text]);
     }
     function closePicker() {
         hoverTimer.stop();

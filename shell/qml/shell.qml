@@ -16,7 +16,9 @@ ShellRoot {
         const open = !Desktop[panel];
         Desktop.launcherOpen = Desktop.notificationsOpen = Desktop.quickOpen = Desktop.calendarOpen = Desktop.taskViewOpen = Desktop.widgetsOpen = false;
         if (open) Desktop.screen = Desktop.focusedScreen();
-        Desktop.launcherSearch = false;
+        // In the Mac layout the Start key opens search at the top, where Spotlight is; the dock's
+        // Apps button opens the full grid.
+        Desktop.launcherSearch = panel === "launcherOpen" && Desktop.mac;
         Desktop[panel] = open;
     }
 

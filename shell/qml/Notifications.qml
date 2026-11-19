@@ -70,7 +70,7 @@ PanelWindow {
     implicitWidth: Theme.dp(380)
     // A fixed size, so the cards can move without the window resizing under them every
     // frame; clicks outside the cards go through to the windows behind.
-    implicitHeight: (screen?.height ?? 1080) - Theme.barHeight - 2 * Theme.panelGap
+    implicitHeight: (screen?.height ?? 1080) - Desktop.topRoom - Desktop.bottomRoom - 2 * Theme.panelGap
     mask: Region { item: column }
     color: "transparent"
     // Blur behind the header, the month and each card on show, the cards cut to the list.

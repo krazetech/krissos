@@ -30,7 +30,10 @@ PanelWindow {
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
     anchors { bottom: true; left: true; right: true }
     // The dock floats a little above the screen's edge.
-    implicitHeight: Theme.barHeight + (mac ? Theme.dockGap : 0)
+    implicitHeight: mac ? Theme.dockHeight + Theme.dockGap : Theme.barHeight
+    // The size of a button and its icon: the taskbar's, or the dock's bigger ones.
+    readonly property int button: mac ? Theme.dockButton : Theme.barButton
+    readonly property int icon: mac ? Theme.dockIcon : Theme.barIcon
     // Maximized and snapped windows stop at the bar, unless it auto-hides.
     exclusiveZone: Desktop.taskbarAutoHide ? 0 : implicitHeight
     color: "transparent"
@@ -164,7 +167,7 @@ PanelWindow {
     Rectangle {
         id: body
         width: bar.mac ? tasks.width + 16 : parent.width
-        height: Theme.barHeight
+        height: bar.mac ? Theme.dockHeight : Theme.barHeight
         x: (parent.width - width) / 2
         y: bar.tucked ? parent.height : 0
         Behavior on y { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
@@ -204,8 +207,8 @@ PanelWindow {
                 visible: Desktop.taskbarWidgets
                 Accessible.role: Accessible.Button
                 Accessible.name: Tr.t("Widgets")
-                Layout.preferredWidth: Theme.barButton
-                Layout.preferredHeight: Theme.barButton
+                Layout.preferredWidth: bar.button
+                Layout.preferredHeight: bar.button
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: bar.toggle("widgetsOpen")
@@ -217,7 +220,7 @@ PanelWindow {
                     color: widgetsBtn.containsMouse || Desktop.widgetsOpen && Desktop.screen === bar.screen ? Theme.card : "transparent"
                     Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                 }
-                Glyph { anchors.centerIn: parent; name: "widgets" }
+                Glyph { anchors.centerIn: parent; name: "widgets"; size: bar.mac ? Math.round(bar.icon * 0.6) : 20 }
             }
 
             // Keris: opens the launcher, like the Start button.
@@ -231,7 +234,9 @@ PanelWindow {
                 onMenuAsked: byKeyboard => bar.startMenu(byKeyboard, start)
                 // The KrissOS emblem from kriss-theme; in the dock, a grid of apps (the emblem
                 // is the system menu in the top bar).
-                Glyph { visible: bar.mac; anchors.centerIn: parent; name: "apps"; size: 22 }
+                Layout.preferredWidth: bar.button
+                Layout.preferredHeight: bar.button
+                Glyph { visible: bar.mac; anchors.centerIn: parent; name: "apps"; size: Math.round(bar.icon * 0.6) }
                 Image {
                     visible: !bar.mac
                     anchors.centerIn: parent
@@ -689,8 +694,8 @@ PanelWindow {
         property bool dragging: false
         readonly property real step: width + appRow.spacing
 
-        width: modelData.win ? bar.labelWidth : Theme.barButton
-        height: Theme.barButton
+        width: modelData.win ? bar.labelWidth : bar.button
+        height: bar.button
         z: dragging ? 1 : 0
         hoverEnabled: true
         cursorShape: dragging ? Qt.ClosedHandCursor : Qt.PointingHandCursor
@@ -773,7 +778,7 @@ PanelWindow {
                 id: icon
                 x: btn.modelData.win ? 10 : (parent.width - width) / 2
                 anchors.verticalCenter: parent.verticalCenter
-                implicitSize: Theme.barIcon
+                implicitSize: bar.icon
                 source: Quickshell.iconPath(btn.modelData.entry?.icon ?? btn.modelData.appId, "application-x-executable")
             }
             // Uncombined: the window's title.
