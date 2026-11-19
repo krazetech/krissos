@@ -169,6 +169,10 @@ bar to move it. Without the file, the defaults in `qml/Desktop.qml` apply. **Tas
 | `contrast` | `"normal"` | `"high"`: pure black and white, a brighter accent, solid panels with no see-through, thicker rims (the `hc_` tokens) |
 | `layout` | `"windows"` | `"mac"`: the top bar and dock (below). Switches live |
 
+The widgets panel keeps its card order (`widgets`), hidden cards (`widgetsHidden`), world
+clocks (`worldClocks`, tz names), weather city (`weatherCity`) and AI model (`aiModel`) there
+too; `"taskbarWidgets": false` hides its taskbar button (Windows+W still opens it).
+
 ### Theme
 
 | Key | Values | Default |
@@ -211,6 +215,24 @@ disturb toggle (toasts stop, critical ones aside); and the month with today mark
 kept in `~/.local/state/kriss/notifications.json` (`$XDG_STATE_HOME/kriss/`), newest 100, so it
 survives a restart; notifications from before one come back without their buttons.
 
+## Widgets
+
+Windows+W, or the button at the far left of the taskbar, slides the panel in from the left.
+Each card reads its data only while the panel is open, and says so or stays out of the way
+when the source is missing:
+
+| Card | Source | Without it |
+|------|--------|------------|
+| Calendar | the month; events from Evolution Data Server's local calendars (`~/.local/share/evolution/calendar/*/calendar.ics`), one-off events for the next 7 days | the month only |
+| Clocks | the system clock; world clocks from tzdata (`/usr/share/zoneinfo/zone1970.tab`, offsets from `date`) | local time only |
+| System | `/proc/stat`, `/proc/meminfo`, hwmon (`k10temp`, `coretemp`, `zenpower`, `cpu_thermal`, `amdgpu`), `gpu_busy_percent`, `nvidia-smi` if installed, `df /`; once a second | a missing reading is left out; no GPU line without a GPU source |
+| Now playing | MPRIS | "Nothing is playing." |
+| Local AI | Ollama at `http://127.0.0.1:11434` (`/api/tags`, `/api/generate`); nothing else | "Ollama isn't running on this computer." |
+| Weather | Open-Meteo (no key), only while NetworkManager reports full connectivity; cached in `~/.cache/kriss-weather.json`, fetched at most every 30 minutes | the card is hidden offline |
+
+Drag a card by its title to move it; its ⋯ menu (or the Menu key) hides it, and **Add
+widgets** brings it back. Tab or the arrows move between cards, Enter goes into a card's text
+field, Alt+Up / Alt+Down move a card, Esc closes.
 
 ## Taskbar
 
@@ -310,6 +332,7 @@ their best match.
 | Windows+A | Quick settings |
 | Windows+N | Notification center |
 | Windows+Alt+D | Calendar |
+| Windows+W | Widgets |
 | Windows+D | Show the desktop; again to bring the windows back |
 | Windows+E | COSMIC Files |
 | Windows+L | Lock |

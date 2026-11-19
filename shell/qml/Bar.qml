@@ -6,7 +6,7 @@ import Quickshell.Widgets
 import Quickshell.WindowManager
 import Quickshell.Services.SystemTray
 
-// The taskbar: full width along the bottom of each screen, 48 px like Windows 11. Keris launcher,
+// The taskbar: full width along the bottom of each screen, 48 px like Windows 11. Widgets, Keris launcher,
 // the search box, this screen's workspaces and the pinned and running apps on the left (or centred);
 // tray icons, power profile, quick settings (network, volume, battery), notifications and the
 // clock on the right. Options come from shell.json (see Desktop.qml).
@@ -197,6 +197,28 @@ PanelWindow {
             x: bar.mac ? 8 : Desktop.taskbarAlignment === "centre" ? Math.max(4, Math.min((bar.width - width) / 2, right.x - width - 8)) : 4
             height: parent.height
             spacing: 8
+
+            // Widgets, at the far left as on Windows 11 (`taskbarWidgets` in shell.json hides it).
+            MouseArea {
+                id: widgetsBtn
+                visible: Desktop.taskbarWidgets
+                Accessible.role: Accessible.Button
+                Accessible.name: Tr.t("Widgets")
+                Layout.preferredWidth: Theme.barButton
+                Layout.preferredHeight: Theme.barButton
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: bar.toggle("widgetsOpen")
+                scale: pressed ? Theme.pressScale : 1
+                Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+                Rectangle {
+                    anchors.fill: parent
+                    radius: Theme.barRadius
+                    color: widgetsBtn.containsMouse || Desktop.widgetsOpen && Desktop.screen === bar.screen ? Theme.card : "transparent"
+                    Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+                }
+                Glyph { anchors.centerIn: parent; name: "widgets" }
+            }
 
             // Keris: opens the launcher, like the Start button.
             BarButton {
@@ -454,7 +476,7 @@ PanelWindow {
     function toggle(panel, search, from) {
         const open = !(Desktop[panel] && Desktop.screen === bar.screen && Desktop.launcherSearch === !!search);
         if (open && from?.activeFocus && kb) { kb = false; returnTo = from; }
-        Desktop.launcherOpen = Desktop.notificationsOpen = Desktop.quickOpen = Desktop.calendarOpen = Desktop.taskViewOpen = false;
+        Desktop.launcherOpen = Desktop.notificationsOpen = Desktop.quickOpen = Desktop.calendarOpen = Desktop.taskViewOpen = Desktop.widgetsOpen = false;
         Desktop.screen = bar.screen;
         Desktop.launcherSearch = !!search;
         Desktop[panel] = open;
