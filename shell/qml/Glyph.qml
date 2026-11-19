@@ -41,6 +41,7 @@ Item {
         taskbar: "M3 5h18v14H3zM3 15h18M7 17h.01M10 17h.01",
         image: "M3 5h18v14H3zM3 16l5-5 5 5 3-3 5 5M15 9h.01",
         text: "M5 7V5h14v2M12 5v14M9 19h6",
+        apps: "M4 4h4v4H4zM10 4h4v4h-4zM16 4h4v4h-4zM4 10h4v4H4zM10 10h4v4h-4zM16 10h4v4h-4zM4 16h4v4H4zM10 16h4v4h-4zM16 16h4v4h-4z",
         trash: "M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13",
         lock: "M6 11h12v10H6zM8 11V7a4 4 0 0 1 8 0v4",
         sleep: "M20 14a8 8 0 1 1-10-10 6 6 0 0 0 10 10z",

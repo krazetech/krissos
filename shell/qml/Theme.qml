@@ -87,6 +87,9 @@ Singleton {
     readonly property int barIcon: Math.round(24 * barScale)
     readonly property int barRadius: 10    // hover and active backgrounds in the bar
     readonly property int trayIcon: 18
+    // The Mac layout: the slim top bar, and the room between the dock and the screen's edge.
+    readonly property int topBarHeight: Math.round(32 * Math.max(1, (1 + textScale) / 2))
+    readonly property int dockGap: 8
     // Between the bar and the panels that open from it, and from the screen's edge.
     readonly property int panelGap: 12
     readonly property int gap: 16

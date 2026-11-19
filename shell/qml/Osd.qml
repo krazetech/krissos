@@ -75,7 +75,7 @@ Scope {
         WlrLayershell.namespace: "kriss-osd"
         exclusionMode: ExclusionMode.Ignore
         anchors.bottom: true
-        margins.bottom: Theme.barHeight + Theme.gap * 2
+        margins.bottom: Desktop.bottomRoom + Theme.gap * 2
         implicitWidth: Math.max(260, Theme.sp(14) * 4 + 200)
         implicitHeight: Math.max(56, Theme.sp(14) + 36)
         color: "transparent"

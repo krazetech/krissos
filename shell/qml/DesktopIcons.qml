@@ -17,7 +17,7 @@ Item {
     readonly property int cellW: 92
     readonly property int cellH: Math.max(100, 70 + Math.ceil(Theme.sp(12) * 2.6))
     readonly property int pad: 12
-    readonly property int rows: Math.max(1, Math.floor((height - Theme.barHeight - pad * 2) / cellH))
+    readonly property int rows: Math.max(1, Math.floor((height - Desktop.topRoom - Desktop.bottomRoom - pad * 2) / cellH))
 
     FolderListModel {
         id: folder
@@ -43,7 +43,7 @@ Item {
     onCurrentChanged: if (activeFocus && items[current]) Accessible.announce(items[current].name)
 
     function cellRect(i) {
-        return Qt.rect(pad + Math.floor(i / rows) * cellW, pad + (i % rows) * cellH, cellW, cellH);
+        return Qt.rect(pad + Math.floor(i / rows) * cellW, Desktop.topRoom + pad + (i % rows) * cellH, cellW, cellH);
     }
     function isSelected(path) { return selected.indexOf(path) >= 0; }
     function selectOnly(i) { selected = i >= 0 ? [items[i].path] : []; current = i; }

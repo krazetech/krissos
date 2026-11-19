@@ -229,6 +229,13 @@ ShellRoot {
         function open(page: string): void { Desktop.personalise(page); }
     }
 
+    // `kriss-shell layout windows|mac`: the taskbar, or the top bar and dock. Saved to shell.json.
+    IpcHandler {
+        target: "layout"
+        function set(name: string): string { return Desktop.setLayout(name); }
+        function get(): string { return Desktop.layout; }
+    }
+
     IpcHandler {
         target: "lock"
         function lock(): void { Desktop.locked = true; }

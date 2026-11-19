@@ -167,6 +167,7 @@ bar to move it. Without the file, the defaults in `qml/Desktop.qml` apply. **Tas
 | `taskbarCombine` | `"always"` | `"always"`: one button per app. `"never"`: one button per window, with its title. `"full"`: per window until the bar runs out of room |
 | `taskbarAllScreens` | `true` | A bar on every screen, each with the windows on that screen; `false`: one bar, on the first screen, with every window |
 | `contrast` | `"normal"` | `"high"`: pure black and white, a brighter accent, solid panels with no see-through, thicker rims (the `hc_` tokens) |
+| `layout` | `"windows"` | `"mac"`: the top bar and dock (below). Switches live |
 
 ### Theme
 
@@ -234,6 +235,24 @@ Apps that send Unity launcher entries over D-Bus (the way Ubuntu's dock reads th
 badge count, a progress bar and a red flash when they want attention. Menus work from the
 keyboard the way Radix menus do (arrows, Home, End, Enter, Esc, Right and Left for submenus,
 type a letter to jump). `Bar.previewFor` is the app button under the pointer, for hover previews.
+
+## Mac layout
+
+An optional second layout for people coming from a Mac, in the KrissOS look. The taskbar becomes
+two pieces: a slim **top bar** with the KrissOS emblem (the Windows+X menu), the name of the app
+in front (click for its jump list), and the tray, quick settings, notifications and the date and
+time at the right; and a floating **dock**, centred along the bottom, with the apps button and the
+pinned and running apps (a dot under each running one, accent for the app in front). Quick
+settings, the calendar, notifications and the tray flyout drop down from the top bar instead of
+rising from the taskbar. Window buttons move to the left for GTK apps and Qt apps with the Adwaita
+decorations (`org.gnome.desktop.wm.preferences button-layout` and `gtk-decoration-layout` in the
+GTK 3 and 4 `settings.ini`); COSMIC apps have no such setting yet and keep theirs on the right.
+Your own button layout is kept in `~/.local/state/kriss/window-buttons` while the Mac layout is
+on, and comes back when you switch back.
+
+The Windows layout stays the default. Switch with `kriss-shell layout mac` or `windows`, the
+first page of `kriss-welcome`, or right-click the taskbar or dock: **Switch to the top bar and
+dock** / **Switch to the taskbar**. `Desktop.setLayout(name)` is the one call for a settings page.
 
 ## Task View and desktops
 
