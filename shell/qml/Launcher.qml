@@ -55,7 +55,7 @@ PanelWindow {
         ["bell", Tr.t("Notifications"), () => { close(); Desktop.notificationsOpen = true; }, "notification centre;pemberitahuan"],
         [Desktop.dnd ? "bell" : "bellOff", Desktop.dnd ? Tr.t("Turn off do not disturb") : Tr.t("Turn on do not disturb"),
             () => { Desktop.dnd = !Desktop.dnd; close(); }, "do not disturb;dnd;quiet;focus;jangan ganggu;senyap"],
-        ["camera", Tr.t("Take a screenshot"), () => { close(); screenshot(); },
+        ["camera", Tr.t("Take a screenshot"), () => { close(); Desktop.screenshot(); },
             "screenshot;screen capture;print screen;snip;snipping tool;tangkapan skrin;cetak skrin"],
         // kriss actions that work offline: a summary of this PC, and whether it can run
         // Windows apps in WinBoat (read-only; WinBoat is x86_64 only).
@@ -73,15 +73,6 @@ PanelWindow {
             : providers.has["cosmic-term"] ? ["cosmic-term", "-e"] : ["konsole", "-e"];
         // The shell stays open after the command, so its output can be read.
         Quickshell.execDetached(term.concat(["sh", "-c", cmd + '; exec "${SHELL:-sh}"']));
-    }
-    // COSMIC's screenshot tool or KDE's when installed, else the whole screen into
-    // Pictures/Screenshots with grim. It waits for Start to fade first.
-    function screenshot() {
-        Quickshell.execDetached(["sh", "-c", `sleep 0.4
-            for t in cosmic-screenshot spectacle; do command -v $t >/dev/null && exec $t; done
-            d="$(xdg-user-dir PICTURES 2>/dev/null || echo "$HOME/Pictures")/Screenshots"
-            mkdir -p "$d" && f="$d/$(date +%F_%H-%M-%S).png" && grim "$f" && notify-send -i "$f" "$1" "$f"`,
-            "sh", Tr.t("Screenshot saved")]);
     }
     function copy(text) { Quickshell.execDetached(["wl-copy", "--", text]); }
     // A path as a file: URL, and its folder.
