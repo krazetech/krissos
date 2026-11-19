@@ -44,6 +44,7 @@ PanelWindow {
         subOf = -1;
         current = byKeyboard ? next(entries, -1, 1) : -1;
         typed = "";
+        Desktop.opened(byKeyboard);
         visible = true;
         card.opacity = 0;
         appear.restart();
@@ -154,7 +155,7 @@ PanelWindow {
         current: menu.current
         x: Math.max(8, Math.min(menu.width - width - 8, menu.at.x + menu.at.width / 2 - width / 2))
         y: menu.at.y - height - 8 >= 8 ? menu.at.y - height - 8 : Math.min(menu.height - height - 8, menu.at.y + menu.at.height + 8)
-        onHover: i => { menu.current = i; if (menu.subOf !== i && menu.entries[i]?.sub) menu.openSub(i, false); else if (!menu.entries[i]?.sub) menu.subOf = -1; }
+        onHover: i => { menu.current = i; Desktop.pointed(); if (menu.subOf !== i && menu.entries[i]?.sub) menu.openSub(i, false); else if (!menu.entries[i]?.sub) menu.subOf = -1; }
         onUnhover: i => { if (menu.current === i && menu.subOf !== i) menu.current = -1; }
         onPicked: i => menu.pick(menu.entries, i)
         NumberAnimation { id: appear; target: card; property: "opacity"; from: 0; to: 1; duration: Theme.ms(Theme.fast); easing.type: Theme.ease }
@@ -170,7 +171,7 @@ PanelWindow {
         readonly property real rowY: card.y + (card.rowAt(menu.subOf)?.y ?? 0)  // the row's top, less the card's padding
         x: card.x + card.width + width - 4 <= menu.width - 8 ? card.x + card.width - 4 : card.x - width + 4
         y: Math.max(8, Math.min(card.y + card.height - height, rowY))
-        onHover: i => { menu.subCurrent = i; menu.current = menu.subOf; }
+        onHover: i => { menu.subCurrent = i; menu.current = menu.subOf; Desktop.pointed(); }
         onPicked: i => menu.pick(menu.subEntries, i)
     }
     }

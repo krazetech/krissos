@@ -20,6 +20,24 @@ ShellRoot {
         Desktop[panel] = open;
     }
 
+    // Night light: a warm tint over each screen that clicks pass through.
+    // ponytail: an overlay, since cosmic-comp has no gamma or colour-temperature control yet;
+    // it tints screenshots too. Move to the compositor's night light when it has one.
+    Variants {
+        model: Desktop.nightLight ? Quickshell.screens : []
+        PanelWindow {
+            required property var modelData
+            screen: modelData
+            WlrLayershell.layer: WlrLayer.Overlay
+            WlrLayershell.namespace: "kriss-night-light"
+            WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+            exclusionMode: ExclusionMode.Ignore
+            anchors { top: true; bottom: true; left: true; right: true }
+            mask: Region {}
+            color: Qt.rgba(1, 0.55, 0.1, 0.13)
+        }
+    }
+
     Variants {
         model: Quickshell.screens
 

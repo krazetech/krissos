@@ -22,6 +22,24 @@ Singleton {
         personalisePage = ["colours", "background", "taskbar", "pins", "text"].indexOf(page) >= 0 ? page : "colours";
     }
     property bool widgetsOpen: false
+
+    // The focus rim (FocusRim.qml) shows only once a key has moved the focus, as on Windows
+    // and macOS. Opening a panel puts the focus in it without a rim, and the pointer taking
+    // over a highlight hides it again. Focus that moves after a panel has settled was moved
+    // by a key (Tab, the arrows): the shell moves it from code only as a panel opens, or
+    // when the pointer is over a row, which calls pointed().
+    property bool keyNav: false
+    property real settling: 0
+    function opened(byKeyboard) { keyNav = !!byKeyboard; settling = Date.now() + 250; }
+    function pointed() { keyNav = false; settling = Date.now() + 50; }
+    function focusMoved() { if (Date.now() > settling) keyNav = true; }
+    onLauncherOpenChanged: if (launcherOpen) opened()
+    onNotificationsOpenChanged: if (notificationsOpen) opened()
+    onQuickOpenChanged: if (quickOpen) opened()
+    onCalendarOpenChanged: if (calendarOpen) opened()
+    onTaskViewOpenChanged: if (taskViewOpen) opened()
+    onWidgetsOpenChanged: if (widgetsOpen) opened()
+    onPersonalisePageChanged: if (personalisePage) opened()
     property bool locked: false
     // Start opened from the bar's search box: the search field and Recommended, no Pinned.
     property bool launcherSearch: false
@@ -34,6 +52,15 @@ Singleton {
     // first one open.
     readonly property var player: Mpris.players.values.find(p => p.isPlaying) ?? Mpris.players.values[0] ?? null
 
+    // COSMIC's screenshot tool or KDE's when installed, else the whole screen into
+    // Pictures/Screenshots with grim. It waits for Start or quick settings to fade first.
+    function screenshot() {
+        Quickshell.execDetached(["sh", "-c", `sleep 0.4
+            for t in cosmic-screenshot spectacle; do command -v $t >/dev/null && exec $t; done
+            d="$(xdg-user-dir PICTURES 2>/dev/null || echo "$HOME/Pictures")/Screenshots"
+            mkdir -p "$d" && f="$d/$(date +%F_%H-%M-%S).png" && grim "$f" && notify-send -i "$f" "$1" "$f"`,
+            "sh", Tr.t("Screenshot saved")]);
+    }
     // Esc in a panel: the bar that opened it from the keyboard takes the focus back (see
     // Bar.returnTo), then the panel closes.
     signal backOut()
@@ -119,6 +146,7 @@ Singleton {
     property alias wallpaper: config.wallpaper
     property alias contrast: config.contrast
     property alias transparency: config.transparency
+    property alias nightLight: config.nightLight
     property alias layout: config.layout
     // The Mac layout: a slim top bar and a centred dock in place of the taskbar (see Bar.qml).
     readonly property bool mac: layout === "mac"
@@ -210,6 +238,8 @@ Singleton {
             property string contrast: "normal"
             // false: solid shell surfaces, no see-through (Windows' "Transparency effects").
             property bool transparency: true
+            // A warm tint over every screen, kinder to the eyes at night (quick settings).
+            property bool nightLight: false
             // "windows": the taskbar along the bottom. "mac": a top bar (the app's menu, the
             // tray, quick settings and the clock) and a centred dock. Switches live.
             property string layout: "windows"

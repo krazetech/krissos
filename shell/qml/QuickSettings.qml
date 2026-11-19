@@ -185,17 +185,9 @@ PanelWindow {
                 }
             }
 
-            // The handle.
-            Rectangle {
-                anchors.horizontalCenter: parent.horizontalCenter
-                y: Desktop.mac ? parent.height - height - 9 : 9
-                width: 40; height: 5; radius: height / 2
-                color: Theme.alpha(Theme.fg, 0.25)
-            }
-
             ColumnLayout {
                 id: body
-                anchors { left: parent.left; right: parent.right; top: parent.top; margins: Theme.s5; topMargin: 28 }
+                anchors { left: parent.left; right: parent.right; top: parent.top; margins: Theme.s5 }
                 spacing: Theme.s3
 
                 MediaCard {
@@ -235,10 +227,10 @@ PanelWindow {
                         on: Desktop.dnd
                         onToggled: Desktop.dnd = !Desktop.dnd
                     }
+                    // The label names the thing; the fill says whether it is on.
                     Tile {
-                        glyph: Theme.dark ? "sleep" : "sun"
-                        label: Theme.dark ? Tr.t("Dark mode") : Tr.t("Light mode")
-                        name: Tr.t("Dark mode")
+                        glyph: "sleep"
+                        label: Tr.t("Dark mode")
                         on: Theme.dark
                         onToggled: Theme.setDark(!Theme.dark)
                     }
@@ -260,6 +252,31 @@ PanelWindow {
                             path: "/usr/share/dbus-1/system-services/net.hadess.PowerProfiles.service"
                             printErrors: false
                         }
+                    }
+                    Tile {
+                        glyph: "nightLight"
+                        label: Tr.t("Night light")
+                        on: Desktop.nightLight
+                        onToggled: Desktop.nightLight = !Desktop.nightLight
+                    }
+                    Tile {
+                        glyph: "access"
+                        label: Tr.t("Accessibility")
+                        on: Theme.high || Theme.reduceMotion || Theme.textScale > 1
+                        opens: true
+                        onToggled: win.page = win.page === "a11y" ? "" : "a11y"
+                    }
+                    Tile {
+                        glyph: "text"
+                        label: Tr.t("Text size")
+                        opens: true
+                        onToggled: { win.close(); Desktop.personalise("text"); }
+                    }
+                    Tile {
+                        glyph: "camera"
+                        label: Tr.t("Screenshot")
+                        opens: true
+                        onToggled: { win.close(); Desktop.screenshot(); }
                     }
                 }
 
@@ -354,6 +371,27 @@ PanelWindow {
                     }
                 }
 
+                // Accessibility, as on Windows: the switches that matter most, right here.
+                ListBox {
+                    visible: win.page === "a11y"
+                    title: Tr.t("Accessibility")
+                    model: [
+                        { glyph: "access", text: Tr.t("High contrast"), on: Theme.high, run: () => Desktop.contrast = Theme.high ? "normal" : "high" },
+                        { glyph: "play", text: Tr.t("Reduce motion"), on: Theme.reduceMotion,
+                          run: () => Quickshell.execDetached(["gsettings", "set", "org.gnome.desktop.interface", "enable-animations", String(Theme.reduceMotion)]) },
+                        { glyph: "text", text: Tr.t("Text size"), detail: Math.round(Theme.textScale * 100) + "%", on: false,
+                          run: () => { win.close(); Desktop.personalise("text"); } }
+                    ]
+                    delegate: Row_ {
+                        required property var modelData
+                        glyph: modelData.glyph
+                        text: modelData.text
+                        detail: modelData.detail ?? (modelData.on ? Tr.t("On") : Tr.t("Off"))
+                        current: modelData.on
+                        onClicked: modelData.run()
+                    }
+                }
+
                 // Speakers and headphones.
                 ListBox {
                     visible: win.page === "output"
@@ -430,6 +468,7 @@ PanelWindow {
         property string listTitle
         property string name: label    // what a screen reader calls it, when the label is a state
         property bool cycles: false     // steps through modes rather than turning on and off
+        property bool opens: false      // opens something (a page, a tool) rather than switching
         signal toggled()
         // Read out when it changes from the keyboard (a pointer user sees it).
         onOnChanged: if (main.activeFocus) main.Accessible.announce(cycles ? label : on ? Tr.t("%1 on", name) : Tr.t("%1 off", name))
@@ -464,8 +503,8 @@ PanelWindow {
             Accessible.role: Accessible.Button
             Accessible.name: tile.name
             Accessible.description: tile.label !== tile.name && !tile.cycles ? tile.label : ""
-            Accessible.checkable: !tile.cycles
-            Accessible.checked: !tile.cycles && tile.on
+            Accessible.checkable: !tile.cycles && !tile.opens
+            Accessible.checked: !tile.cycles && !tile.opens && tile.on
             Accessible.onPressAction: tile.toggled()
             Accessible.onToggleAction: tile.toggled()
             FocusRim { anchors.rightMargin: tile.list ? -32 : -2; radius: Theme.rCard + 2 }

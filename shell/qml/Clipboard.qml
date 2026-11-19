@@ -46,6 +46,7 @@ PanelWindow {
             placed = false;
             fallback.restart();
         }
+        Desktop.opened();
         setTab(which);
         if (!open && !ready) settle.restart();
         open = true;
@@ -528,8 +529,6 @@ PanelWindow {
                                     anchors.margins: Theme.s0
                                     radius: Theme.rControl
                                     color: cellBtn.on ? Theme.cardHover : "transparent"
-                                    border.width: cellBtn.on && search.activeFocus ? Theme.focusWidth : 0
-                                    border.color: Theme.accentText
                                 }
                                 Text {
                                     anchors.centerIn: parent

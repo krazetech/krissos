@@ -19,6 +19,7 @@ PanelWindow {
         screen = s;
         at = x;
         current = byKeyboard && items.length ? 0 : -1;
+        Desktop.opened(byKeyboard);
         visible = true;
         card.opacity = 0;
         appear.restart();
