@@ -115,7 +115,7 @@ Singleton {
             n.tracked = true;
             root.now = Date.now();
             // Follow the focused window's screen, unless a panel is open on another one.
-            if (!Desktop.launcherOpen && !Desktop.notificationsOpen && !Desktop.quickOpen && !Desktop.calendarOpen && !Desktop.widgetsOpen)
+            if (!Desktop.launcherOpen && !Desktop.notificationsOpen && !Desktop.quickOpen && !Desktop.calendarOpen && !Desktop.widgetsOpen && !Desktop.taskViewOpen)
                 Desktop.screen = Desktop.focusedScreen();
             if (Windows.fullscreenOn(Desktop.screen)) root.held[n.id] = true;
             root.came(n);
