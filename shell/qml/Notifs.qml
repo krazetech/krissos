@@ -101,7 +101,8 @@ Singleton {
     property bool ready: false
     // Written a moment after a change, so a shell quitting (its live list emptying) leaves the file be.
     onAllChanged: if (ready) save.restart()
-    Timer { id: save; interval: 1000; onTriggered: store.setText(JSON.stringify(root.all.slice(-100).map(root.record))) }
+    // A transient notification (a hint, a key that answers) is not kept.
+    Timer { id: save; interval: 1000; onTriggered: store.setText(JSON.stringify(root.all.filter(n => !n.transient).slice(-100).map(root.record))) }
 
     // Over a reload the live notifications stay and are in the file too: drop the copies,
     // keeping their time.
@@ -141,6 +142,10 @@ Singleton {
         interval: 1000
         repeat: true
         running: root.all.length > 0 && !root.paused
-        onTriggered: root.now = Date.now()
+        onTriggered: {
+            root.now = Date.now();
+            // A transient one leaves with its toast.
+            for (const n of root.live) if (n.transient && root.now - (root.arrived[n.id] ?? 0) > root.popupMs) n.dismiss();
+        }
     }
 }

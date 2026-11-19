@@ -259,10 +259,11 @@ PanelWindow {
         id: panel
         Accessible.role: Accessible.Dialog
         Accessible.name: Tr.t("Start")
-        // Over Start: at the left, or centred with a centred taskbar.
+        // Over Start: at the left, or centred with a centred taskbar. Search in the Mac layout
+        // sits high in the middle of the screen, where Spotlight is, and grows downwards.
+        readonly property bool spotlight: Desktop.mac && Desktop.launcherSearch
         x: Desktop.taskbarAlignment === "centre" || Desktop.mac ? (parent.width - width) / 2 : Theme.panelGap
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: Theme.panelGap + Desktop.barRoom
+        y: spotlight ? Math.round(parent.height * 0.18) : parent.height - height - Theme.panelGap - Desktop.barRoom
         width: Theme.dp(600)
         height: body.implicitHeight + body.anchors.topMargin + body.anchors.bottomMargin + foot.height
         radius: Theme.rPanel
@@ -274,7 +275,7 @@ PanelWindow {
         // Fades in and rises a few pixels; going away it does the same backwards.
         opacity: Desktop.launcherOpen ? 1 : 0
         transform: Translate {
-            y: Desktop.launcherOpen || Theme.reduceMotion ? 0 : 12
+            y: Desktop.launcherOpen || Theme.reduceMotion ? 0 : panel.spotlight ? -12 : 12
             Behavior on y { NumberAnimation { duration: Theme.ms(Desktop.launcherOpen ? Theme.normal : Theme.fastExit); easing.type: Desktop.launcherOpen ? Theme.ease : Theme.easeExit } }
         }
         Behavior on opacity { NumberAnimation { duration: Theme.ms(Desktop.launcherOpen ? Theme.fast : Theme.fastExit); easing.type: Desktop.launcherOpen ? Theme.ease : Theme.easeExit } }

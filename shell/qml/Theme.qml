@@ -102,6 +102,11 @@ Singleton {
     // The Mac layout: the slim top bar, and the room between the dock and the screen's edge.
     readonly property int topBarHeight: Math.round(32 * Math.max(1, (1 + textScale) / 2))
     readonly property int dockGap: 8
+    // The dock is bigger than the taskbar, as a dock is: 60 tall, 52 px buttons, 40 px icons,
+    // with the same Small, Medium and Large and the same growth with the text.
+    readonly property int dockHeight: Math.round(60 * barScale * Math.max(1, (1 + textScale) / 2))
+    readonly property int dockButton: Math.round(52 * barScale * Math.max(1, (1 + textScale) / 2))
+    readonly property int dockIcon: Math.round(40 * barScale)
     // Between the bar and the panels that open from it, and from the screen's edge.
     readonly property int panelGap: 12
     readonly property int gap: 16

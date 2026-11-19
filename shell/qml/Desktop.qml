@@ -155,7 +155,7 @@ Singleton {
     readonly property bool mac: layout === "mac"
     // What the bars take at the top and bottom of a screen: the taskbar, or the top bar and dock.
     readonly property int topRoom: mac ? Theme.topBarHeight : 0
-    readonly property int bottomRoom: Theme.barHeight + (mac ? Theme.dockGap : 0)
+    readonly property int bottomRoom: mac ? Theme.dockHeight + Theme.dockGap : Theme.barHeight
     // `kriss-shell layout windows|mac`, kriss-welcome and the Personalise page.
     function setLayout(name) {
         if (name !== "windows" && name !== "mac") return "error: expected windows or mac";

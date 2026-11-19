@@ -322,7 +322,7 @@ FloatingWindow {
                     onPicked: v => Desktop.taskbarAlignment = v
                 }
                 Choice {
-                    text: Tr.t("Taskbar size")
+                    text: Desktop.mac ? Tr.t("Dock size") : Tr.t("Taskbar size")
                     value: Desktop.taskbarSize
                     options: [["small", Tr.t("Small")], ["medium", Tr.t("Medium")], ["large", Tr.t("Large")]]
                     onPicked: v => Desktop.taskbarSize = v
