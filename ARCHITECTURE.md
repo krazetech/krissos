@@ -220,7 +220,7 @@ available as the installer's alternative.
   Apple logo, fonts or icons. Users pick one in `kriss-welcome` and can switch in settings.
   Familiar, never a clone: neither layout copies Windows or macOS visuals. Plan:
   `docs/shell-roadmap.md`.
-- **Type:** Figtree + JetBrains Mono (OFL) proposed.
+- **Type:** Inter + JetBrains Mono (OFL, both in Arch's extra repo; Inter is the closest free match to Apple's SF Pro, which may not ship off Apple hardware), rendered like macOS: grey smoothing, light hinting, stem darkening.
 - **Apps:** COSMIC Files, Terminal and Settings get KrissOS dark and light COSMIC themes, built
   from the tokens by libcosmic's own ThemeBuilder (`shell/cosmic-theme/`), and a matching
   COSMIC Terminal scheme. Icons are Papirus-Dark and the cursor is Vimix white, both from
@@ -317,7 +317,7 @@ kriss-vm revert         # restore every file `kriss-vm` changed from its backups
 
 ## 11. Open decisions
 
-1. Font: confirm Figtree.
+1. Font: Inter (decided 2026-11-19).
 2. License for the tooling: GPL-3.0-or-later (assumed) or MIT.
 3. ~~Results of the cosmic-comp layer-shell test.~~ Passed; see §5.
 
