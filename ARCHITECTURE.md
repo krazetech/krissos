@@ -47,7 +47,7 @@ ship.
 |---|---|
 | Base | Arch Linux, x86_64 only at 1.0. Apple Silicon is a separate image, in preview (§13) |
 | Update model | Rolling. Upstream Arch packages come straight from Arch mirrors |
-| Our packages | A single `[kriss]` repo, ideally fewer than 25 packages |
+| Our packages | A `[kriss]` repo, ideally fewer than 25 packages, fed only from a `[kriss-testing]` repo (§4) |
 | Rollback | btrfs + snapper, with snapshots bootable from the Limine menu |
 | Installer | Calamares on an archiso live image |
 | Secure Boot | Supported at 1.0 via `sbctl`. A pacman hook re-signs the kernel and bootloader on every update |
@@ -153,16 +153,24 @@ krissos/
     code from pull requests on your own machine.
   - Your desktop stays the local box for test builds and VM testing.
 - **Pipelines:**
-  - `pkgs.yml`: rebuilds any package whose PKGBUILD changed, signs it, and publishes it to the
-    repo.
+  - `pkgs.yml`: rebuilds any package whose PKGBUILD changed, signs it, and publishes it to
+    `[kriss-testing]`. `kernel.yml`, `kernel-asahi.yml` and `cosmic-comp.yml` publish there too.
+  - `promote.yml`: run by hand. Moves packages from `[kriss-testing]` to `[kriss]`, the repo
+    installs update from: the same files, signatures checked, never rebuilt. A dry run first by
+    default. Writers to one repo share a concurrency group (`testing-ARCH` or `repo-ARCH`).
   - `kernel.yml`: runs on a schedule, checks for new CachyOS kernel patch releases, opens a
     version-bump PR, and builds both kernels.
   - `iso.yml`: builds the live ISO on every tag (`110`, `115`, …), nightly, and on PRs that
     touch `iso/`, then boots it in QEMU until the KrissOS Shell and the installer start, and
     installs it unattended and boots the result, each under both OVMF (UEFI) and SeaBIOS
     (legacy BIOS). Tags attach the ISO to a release.
+    Tags build from `[kriss]`; nightly and PR ISOs from `[kriss-testing]`, so their tests are the
+    check before promoting.
 - **Repo hosting:** the pacman database and packages are uploaded as assets to a GitHub
-  Release, and pacman fetches them over plain HTTPS. No server to run.
+  Release, and pacman fetches them over plain HTTPS. No server to run. `[kriss]` is on
+  `repo-ARCH`, `[kriss-testing]` on `testing-ARCH`.
+- **Channels:** installs use `[kriss]` only. `kriss channel testing` adds `[kriss-testing]`
+  above it; `kriss channel stable` removes it and downgrades back to `[kriss]` after a snapshot.
 - **Signing:** one GPG key, stored only in a GitHub Actions secret. Its public half ships in
   `kriss-keyring`.
 

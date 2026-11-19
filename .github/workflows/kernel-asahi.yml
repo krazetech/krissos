@@ -50,7 +50,7 @@ jobs:
       contents: write
     # Shared with pkgs.yml's build-aarch64 job: one writer to the repo db at a time.
     concurrency:
-      group: repo-aarch64
+      group: testing-aarch64
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
@@ -63,11 +63,11 @@ jobs:
       - name: Make the Arch Linux ARM container
         run: tools/ci/alarm.sh
 
-      - name: Sign and publish
+      - name: Sign and publish to testing
         env:
           KRISS_GPG_KEY: ${{ secrets.KRISS_GPG_KEY }}
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          docker run --rm -v "$PWD:/src" -w /src -e KRISS_GPG_KEY -e GH_TOKEN -e GH_REPO -e RELEASE_TAG=repo-aarch64 \
+          docker run --rm -v "$PWD:/src" -w /src -e KRISS_GPG_KEY -e GH_TOKEN -e GH_REPO -e CHANNEL=testing -e ARCH=aarch64 \
             alarm sh -c 'pacman -S --noconfirm --needed github-cli && tools/ci/publish.sh out'

@@ -37,7 +37,7 @@ jobs:
         id: build
         run: |
           df -h /
-          docker run --rm --privileged -v "$PWD:/src" -v "$RUNNER_TEMP:/work" alarm \
+          docker run --rm --privileged -e KRISS_CHANNEL=testing -v "$PWD:/src" -v "$RUNNER_TEMP:/work" alarm \
             /src/aarch64/build.sh /src/out /work ${{ matrix.flavour }}
           sudo chown -R "$USER" out
           df -h /

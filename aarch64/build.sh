@@ -37,6 +37,17 @@ grep -q '^\[asahi-alarm\]' /etc/pacman.conf || add_repos /etc/pacman.conf
 # Until the first publish there is no repo-aarch64 release; build from this checkout alone.
 curl -fsIL -o /dev/null https://github.com/krazetech/krissos/releases/download/repo-aarch64/kriss.db \
   || sed -i '/^\[kriss\]/,$d' /etc/pacman.conf
+# KRISS_CHANNEL=testing (CI on main and PRs) puts [kriss-testing] ahead of [kriss] for the
+# build only, as iso/build.sh does; the image itself keeps [kriss] alone.
+testing_url=https://github.com/krazetech/krissos/releases/download/testing-aarch64
+if [ "${KRISS_CHANNEL:-stable}" = testing ] && ! grep -q '^\[kriss-testing\]' /etc/pacman.conf \
+  && curl -fsIL -o /dev/null "$testing_url/kriss-testing.db"; then
+  if grep -q '^\[kriss\]' /etc/pacman.conf; then
+    sed -i "/^\[kriss\]/i [kriss-testing]\nServer = $testing_url\n" /etc/pacman.conf
+  else
+    printf '\n[kriss-testing]\nServer = %s\n' "$testing_url" >>/etc/pacman.conf
+  fi
+fi
 pacman -Syu --noconfirm --needed asahi-alarm-keyring arch-install-scripts dosfstools mtools e2fsprogs gptfdisk
 
 # --- [kriss] from this checkout ----------------------------------------------------------

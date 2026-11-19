@@ -15,13 +15,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container: archlinux:base-devel
-    # Runs that publish share one group with kernel.yml's publish job, so only one of them
-    # edits the repo db at a time.
+    # Runs that publish share one group with kernel.yml's and cosmic-comp.yml's publish
+    # jobs, so only one of them edits the [kriss-testing] db at a time.
+    # promote.yml has the repo-* groups for [kriss].
     # ponytail: GitHub keeps one pending run per group and cancels older pending ones.
     # A cancelled publish is fixed by re-running that job; move to a retry loop on the db
     # upload if that ever gets common.
     concurrency:
-      group: ${{ github.ref == 'refs/heads/main' && 'repo-x86_64' || format('pkgs-{0}', github.ref) }}
+      group: ${{ github.ref == 'refs/heads/main' && 'testing-x86_64' || format('pkgs-{0}', github.ref) }}
       cancel-in-progress: false
     steps:
       # multilib lets the metapackage check below resolve Steam and the lib32 packages.
@@ -33,10 +34,15 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Lint tools
-        run: shellcheck tools/kriss tools/kriss-migrate tools/kriss-update-notify tools/ci/*.sh aarch64/*.sh installer/kriss-install installer/lib/* pkgs/kriss-settings/root/usr/bin/kriss-limine-update pkgs/kriss-settings/root/usr/share/libalpm/scripts/kriss-plymouth pkgs/kriss-settings/root/usr/lib/initcpio/post/kriss-limine iso/install-test.sh
+        run: shellcheck tools/kriss tools/kriss-migrate tools/kriss-update-notify tools/ci/*.sh tools/ci/fake-gh aarch64/*.sh installer/kriss-install installer/lib/* pkgs/kriss-settings/root/usr/bin/kriss-limine-update pkgs/kriss-settings/root/usr/share/libalpm/scripts/kriss-plymouth pkgs/kriss-settings/root/usr/lib/initcpio/post/kriss-limine iso/install-test.sh
 
-      - name: Test the publish script
-        run: tools/ci/publish-test.sh
+      - name: Test the publish and promote scripts
+        run: |
+          tools/ci/publish-test.sh
+          tools/ci/promote-test.sh
+
+      - name: Test kriss channel
+        run: tools/ci/channel-test.sh
 
       - name: Test the Plymouth theme fix
         run: tools/ci/plymouth-test.sh
@@ -63,12 +69,14 @@ jobs:
       - name: Build packages
         run: tools/ci/build-pkgs.sh out $(ls -d pkgs/*/ | grep -v -e '^pkgs/linux-kriss' -e '^pkgs/cosmic-comp-kriss' -e '^pkgs/cosmic-settings-kriss')
 
-      - name: Sign and publish
+      # To [kriss-testing]. Users get it once promote.yml moves it to [kriss].
+      - name: Sign and publish to testing
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         env:
           KRISS_GPG_KEY: ${{ secrets.KRISS_GPG_KEY }}
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          CHANNEL: testing
         run: tools/ci/publish.sh out
 
   # The architecture-neutral packages again, on Arch Linux ARM, for the Apple Silicon image
@@ -78,7 +86,7 @@ jobs:
   build-aarch64:
     runs-on: ubuntu-24.04-arm
     concurrency:
-      group: ${{ github.ref == 'refs/heads/main' && 'repo-aarch64' || format('pkgs-aarch64-{0}', github.ref) }}
+      group: ${{ github.ref == 'refs/heads/main' && 'testing-aarch64' || format('pkgs-aarch64-{0}', github.ref) }}
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
@@ -91,12 +99,12 @@ jobs:
           docker run --rm -v "$PWD:/src" -w /src alarm tools/ci/build-pkgs.sh out \
             pkgs/kriss-keyring pkgs/kriss-settings pkgs/kriss-theme pkgs/kriss-tools pkgs/kriss-shell pkgs/kriss-welcome
 
-      - name: Sign and publish
+      - name: Sign and publish to testing
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         env:
           KRISS_GPG_KEY: ${{ secrets.KRISS_GPG_KEY }}
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          docker run --rm -v "$PWD:/src" -w /src -e KRISS_GPG_KEY -e GH_TOKEN -e GH_REPO -e RELEASE_TAG=repo-aarch64 \
+          docker run --rm -v "$PWD:/src" -w /src -e KRISS_GPG_KEY -e GH_TOKEN -e GH_REPO -e CHANNEL=testing -e ARCH=aarch64 \
             alarm sh -c 'pacman -S --noconfirm --needed github-cli && tools/ci/publish.sh out'

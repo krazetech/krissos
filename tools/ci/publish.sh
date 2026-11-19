@@ -1,15 +1,25 @@
 #!/bin/bash
-# Merge freshly built packages into the published [kriss] repo (a GitHub release).
+# Merge packages into a published pacman repo (a GitHub release).
 # usage: publish.sh <dir with *.pkg.tar.zst>
-# env: KRISS_GPG_KEY (armored secret key), GH_TOKEN, RELEASE_TAG (repo-x86_64, the default, or repo-aarch64)
+# env: KRISS_GPG_KEY (armored secret key), GH_TOKEN,
+#      CHANNEL  testing (the default): [kriss-testing] on the testing-ARCH release.
+#               Every merge to main lands here.
+#               stable: [kriss] on the repo-ARCH release. Only promote.sh publishes here.
+#      ARCH     x86_64 (the default) or aarch64
 #
-# Callers must share one workflow concurrency group: two overlapping runs would each
-# download the same db and the second upload would drop the first run's packages.
+# Callers must share one workflow concurrency group per repo (testing-ARCH or repo-ARCH):
+# two overlapping runs would each download the same db and the second upload would drop
+# the first run's packages.
 set -euo pipefail
 
-tag=${RELEASE_TAG:-repo-x86_64}
-db=kriss.db.tar.zst
-files=kriss.files.tar.zst
+arch=${ARCH:-x86_64}
+case ${CHANNEL:-testing} in
+  testing) tag=testing-$arch name=kriss-testing ;;
+  stable) tag=repo-$arch name=kriss ;;
+  *) echo "publish.sh: CHANNEL must be testing or stable, not '$CHANNEL'" >&2; exit 2 ;;
+esac
+db=$name.db.tar.zst
+files=$name.files.tar.zst
 
 if [ -z "${KRISS_GPG_KEY:-}" ]; then
   echo "::warning::KRISS_GPG_KEY is not set; packages were built but not published."
@@ -19,8 +29,8 @@ printf '%s\n' "$KRISS_GPG_KEY" | gpg --batch --import
 
 cd "$1"
 gh release view "$tag" >/dev/null 2>&1 \
-  || gh release create "$tag" --title "KrissOS package repo (${tag#repo-})" \
-       --notes 'Signed [kriss] pacman repository. Updated by CI.' --latest=false
+  || gh release create "$tag" --title "KrissOS package repo [$name] ($arch)" \
+       --notes "Signed [$name] pacman repository. Updated by CI." --latest=false
 
 # Start from the published db. On the very first publish there is none.
 verify=()
@@ -33,8 +43,8 @@ for pkg in *.pkg.tar.zst; do
 done
 repo-add "${verify[@]}" --sign "$db" ./*.pkg.tar.zst
 
-# Release assets cannot be symlinks; pacman fetches kriss.db and kriss.files.
-for f in kriss.db kriss.files; do
+# Release assets cannot be symlinks; pacman fetches NAME.db and NAME.files.
+for f in "$name.db" "$name.files"; do
   cp --remove-destination "$f.tar.zst" "$f"
   cp --remove-destination "$f.tar.zst.sig" "$f.sig"
 done
@@ -42,7 +52,7 @@ done
 # Packages first, then the db, then delete what the db no longer references, so a
 # client syncing mid-publish never sees a db entry without its package.
 gh release upload "$tag" --clobber ./*.pkg.tar.zst ./*.pkg.tar.zst.sig
-gh release upload "$tag" --clobber kriss.{db,files}{,.sig,.tar.zst,.tar.zst.sig}
+gh release upload "$tag" --clobber "$name".{db,files}{,.sig,.tar.zst,.tar.zst.sig}
 
 keep=$(bsdtar -xOf "$db" '*/desc' | grep -A1 '^%FILENAME%$' | grep '\.pkg\.tar\.')
 gh release view "$tag" --json assets --jq '.assets[].name' | grep '\.pkg\.tar\.' \
