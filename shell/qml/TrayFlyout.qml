@@ -38,6 +38,7 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     anchors { top: true; bottom: true; left: true; right: true }
     color: "transparent"
+    BackgroundEffect.blurRegion: Region { item: card; radius: card.radius }
 
     MouseArea {
         Accessible.ignored: true  // pointer only; the keyboard has its own way
@@ -54,7 +55,7 @@ PanelWindow {
         // Above the ^ on the taskbar, below it in the Mac top bar.
         y: Desktop.mac ? Theme.topBarHeight + 8 : fly.height - Theme.barHeight - height - 8
         radius: Theme.radiusSmall
-        color: Theme.card
+        color: Theme.bar
         border.width: Theme.rimWidth
         border.color: Theme.line
         Accessible.role: Accessible.Grouping

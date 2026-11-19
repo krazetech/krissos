@@ -117,6 +117,7 @@ Singleton {
     property alias themeDark: config.themeDark
     property alias wallpaper: config.wallpaper
     property alias contrast: config.contrast
+    property alias transparency: config.transparency
     property alias layout: config.layout
     // The Mac layout: a slim top bar and a centred dock in place of the taskbar (see Bar.qml).
     readonly property bool mac: layout === "mac"
@@ -200,6 +201,8 @@ Singleton {
             property string wallpaper: "dynamic"
             // "high": the high-contrast colours (see Theme.qml), for low vision.
             property string contrast: "normal"
+            // false: solid shell surfaces, no see-through (Windows' "Transparency effects").
+            property bool transparency: true
             // "windows": the taskbar along the bottom. "mac": a top bar (the app's menu, the
             // tray, quick settings and the clock) and a centred dock. Switches live.
             property string layout: "windows"

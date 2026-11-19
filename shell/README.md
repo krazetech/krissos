@@ -167,6 +167,7 @@ bar to move it. Without the file, the defaults in `qml/Desktop.qml` apply. **Tas
 | `taskbarCombine` | `"always"` | `"always"`: one button per app. `"never"`: one button per window, with its title. `"full"`: per window until the bar runs out of room |
 | `taskbarAllScreens` | `true` | A bar on every screen, each with the windows on that screen; `false`: one bar, on the first screen, with every window |
 | `contrast` | `"normal"` | `"high"`: pure black and white, a brighter accent, solid panels with no see-through, thicker rims (the `hc_` tokens) |
+| `transparency` | `true` | `false`: solid shell surfaces, no blur or see-through (Personalise, Colours, Transparency effects) |
 | `layout` | `"windows"` | `"mac"`: the top bar and dock (below). Switches live |
 
 ### Theme
@@ -397,6 +398,8 @@ tone are kept in `~/.local/state/kriss/emoji.json`.
   has no setting of its own yet), live: every font size goes through `Theme.sp()`, and the
   bar, menus and quick settings grow half as fast as the text.
 - **High contrast.** `"contrast": "high"` in `shell.json` (above).
+- **Reduced transparency.** `"transparency": false` in `shell.json` (above): every surface
+  goes solid. High contrast does too.
 - **Reduced motion.** Every animation length goes through `Theme.ms()`; `shell/a11y-check`
   fails on one that doesn't.
 

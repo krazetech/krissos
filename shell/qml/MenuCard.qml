@@ -16,7 +16,7 @@ Rectangle {
     width: Math.round(264 * Math.max(1, (1 + Theme.textScale) / 2))
     height: col.implicitHeight + 12
     radius: Theme.radiusSmall + 2
-    color: Theme.card
+    color: Theme.bar
     border.width: Theme.rimWidth
     border.color: Theme.line
     // Swallows clicks on the card's padding, so they do not reach the layer that closes the menu.
@@ -82,7 +82,7 @@ Rectangle {
             Rectangle {
                 anchors.fill: parent
                 radius: 10
-                color: row.pressed ? Theme.cardHover : row.index === box.current ? Theme.win : "transparent"
+                color: row.pressed ? Theme.cardHover : row.index === box.current ? Theme.card : "transparent"
                 Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
             }
             IconImage {

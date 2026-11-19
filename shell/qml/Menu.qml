@@ -87,6 +87,10 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     anchors { top: true; bottom: true; left: true; right: true }
     color: "transparent"
+    BackgroundEffect.blurRegion: Region {
+        Region { item: card; radius: card.radius }
+        Region { item: side.visible ? side : null; radius: side.radius }
+    }
 
     Timer { id: typeReset; interval: 1000; onTriggered: menu.typed = "" }
 
