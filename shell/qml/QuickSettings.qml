@@ -319,7 +319,7 @@ PanelWindow {
                         Rectangle {
                             visible: win.askPsk === net.modelData
                             width: parent.width
-                            height: 42
+                            height: Theme.dp(42)
                             radius: height / 2
                             color: Theme.card
                             border.width: 2

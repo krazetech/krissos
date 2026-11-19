@@ -11,8 +11,8 @@ Rectangle {
     property bool primary: false
     signal clicked
 
-    implicitWidth: label ? row.implicitWidth + 28 : 36
-    implicitHeight: 36
+    implicitWidth: label ? row.implicitWidth + 28 : Theme.dp(36)
+    implicitHeight: Theme.dp(36)
     radius: height / 2
     color: primary ? Theme.accent
         : Theme.alpha(Theme.nightFg, area.pressed ? 0.22 : area.containsMouse || activeFocus ? 0.16 : 0.0)
@@ -58,7 +58,7 @@ Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             text: btn.label
             color: Theme.alpha(Theme.nightFg, 0.9)
-            font { family: Theme.sans; pixelSize: 14; weight: Font.Medium }
+            font { family: Theme.sans; pixelSize: Theme.sp(14); weight: Font.Medium }
         }
     }
 }

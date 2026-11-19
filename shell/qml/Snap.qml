@@ -311,7 +311,7 @@ Scope {
                 property int cur: 0
                 // Cards in a grid that keeps windows' 16:10 shape, as large as the zone allows.
                 readonly property int pad: 16
-                readonly property int head: 30
+                readonly property int head: Math.max(30, Theme.sp(12) + 18)
                 readonly property int cols: {
                     const n = Math.max(1, wins.length), w = r.width - pad * 2, h = r.height - pad * 2;
                     let best = 1, size = 0;
@@ -399,7 +399,7 @@ Scope {
                                 text: card.w?.title || card.entry?.name || card.w?.appId || ""
                                 elide: Text.ElideRight
                                 color: Theme.fg
-                                font { family: Theme.sans; pixelSize: 12; weight: Font.Medium }
+                                font { family: Theme.sans; pixelSize: Theme.sp(12); weight: Font.Medium }
                             }
                             // The live picture, or the app's icon until there is one.
                             Rectangle {

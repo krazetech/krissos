@@ -67,7 +67,7 @@ PanelWindow {
     // Over the taskbar's tray; in the Mac layout, under the top bar.
     anchors { bottom: !Desktop.mac; top: Desktop.mac; right: true }
     margins { right: Theme.panelGap; bottom: Theme.barHeight + Theme.panelGap; top: Theme.topBarHeight + Theme.panelGap }
-    implicitWidth: 380
+    implicitWidth: Theme.dp(380)
     // A fixed size, so the cards can move without the window resizing under them every
     // frame; clicks outside the cards go through to the windows behind.
     implicitHeight: (screen?.height ?? 1080) - Theme.barHeight - 2 * Theme.panelGap

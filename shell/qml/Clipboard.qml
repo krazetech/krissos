@@ -35,7 +35,7 @@ PanelWindow {
 
     readonly property var tabs: ["emoji", "symbols", "clipboard"]
     readonly property int cols: 8
-    readonly property int cell: 40
+    readonly property int cell: Theme.dp(40)
 
     function show(which) {
         if (open && tab === which) { close(); return; }
@@ -306,7 +306,7 @@ PanelWindow {
     Rectangle {
         id: panel
         width: win.cols * win.cell + 32
-        height: 460
+        height: Theme.dp(460)
         radius: Theme.rPanel
         color: Theme.bar
         border.width: Theme.rimWidth
@@ -713,7 +713,7 @@ PanelWindow {
                         Text {
                             anchors.centerIn: parent
                             text: win.toneFor >= 0 ? win.toned(win.view.flat[win.toneFor]?.[0] ?? "", toneBtn.index) : ""
-                            font { family: "Noto Color Emoji"; pixelSize: 24 }
+                            font { family: "Noto Color Emoji"; pixelSize: Theme.sp(24) }
                         }
                     }
                 }
