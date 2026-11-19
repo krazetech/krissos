@@ -1,4 +1,4 @@
-Origin: https://github.com/CachyOS/linux tag cachyos-7.3.4-1, commit 5a0cc00bc09af5cba01639d19649283b786e9342 (Merge branch '7.3/vesa-dsc-bpp' into 7.3/base-dev)
+Origin: https://github.com/CachyOS/linux tag cachyos-7.3.5-2, commit 7250c7346ccdb6494106dbe31febabe255b6e430 (Merge branch '7.3/vesa-dsc-bpp' into 7.3/base-dev-dev)
 Squashed diff of the upstream commits below; their headers are unmodified.
 
 commit 0a5931ca6469d08b9f98f240db7040531348855a

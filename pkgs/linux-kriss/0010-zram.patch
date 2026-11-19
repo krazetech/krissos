@@ -1,4 +1,4 @@
-Origin: https://github.com/CachyOS/linux tag cachyos-7.3.4-1, commit 779ca9af71579431ca932a13a7c2ed5934b289ad (Merge branch '7.3/zram' into 7.3/base-dev)
+Origin: https://github.com/CachyOS/linux tag cachyos-7.3.5-2, commit f6a0828f06cb5dfee3affc3e3fba124da1e1cd4d (Merge branch '7.3/zram' into 7.3/base-dev-dev)
 Squashed diff of the upstream commits below; their headers are unmodified.
 
 commit e823a1bcdce33759006835c0d114c281ddce57f2
