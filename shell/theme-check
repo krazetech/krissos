@@ -3,7 +3,7 @@
 // and its shades pass contrast in dark and light. node shell/theme-check
 const fs = require("fs"), path = require("path"), assert = require("assert");
 const src = fs.readFileSync(path.join(__dirname, "qml/theme.js"), "utf8").replace(".pragma library", "");
-const T = new Function(src + "; return { parseColor, isMode, minutes, lightAt, contrast, shades };")();
+const T = new Function(src + "; return { parseColor, isMode, minutes, lightAt, contrast, shades, surfaces, mix, trackAlpha };")();
 const tokens = JSON.parse(fs.readFileSync(path.join(__dirname, "../theme/tokens.json"), "utf8"));
 
 // Schedule, in minutes after midnight.
@@ -30,30 +30,40 @@ for (const bad of ["24B1E6", "#24B1E", "#GGGGGG", "red", "", null, 5, "#24B1E6;r
 for (const m of ["dark", "light", "system", "auto"]) assert(T.isMode(m));
 for (const m of ["Dark", "night", "", undefined]) assert(!T.isMode(m));
 
-// Contrast: the accent as a fill or ring stands out 3:1 from the window, text on the
-// accent and its hover and pressed shades reads 4.5:1, in dark and light. The curated
-// list is read from Theme.qml so the two cannot drift.
+// Contrast, in dark and light: text on the accent fill and its hover and pressed shades
+// reads 4.5:1; accent text (labels, links, icons, rims) reads 4.5:1 on every surface of the
+// mode; the fill stays the picked colour unless it is nearly the page. The curated list is
+// read from Theme.qml so the two cannot drift.
 const qml = fs.readFileSync(path.join(__dirname, "qml/Theme.qml"), "utf8");
 const list = [...qml.matchAll(/name: Tr\.t\("([^"]+)"\), color: "([^"]+)"/g)]
     .map(m => [m[1], m[2] === "{{accent}}" ? tokens.accent : m[2]]);
 assert(list.length >= 8, "curated accents not found in Theme.qml");
-const bgs = { dark: [tokens.bg, tokens.surface], light: [tokens.light_bg, tokens.light_surface] };
+const check = (c, name, keys) => {
+    for (const dark of [true, false]) {
+        const bgs = T.surfaces(dark, tokens), s = T.shades(T.parseColor(c), dark, bgs);
+        for (const k of keys)
+            assert(T.contrast(s[k], s.ink) >= 4.5, `${name} ${k} ink: ${T.contrast(s[k], s.ink).toFixed(2)}`);
+        for (const bg of bgs) {
+            assert(T.contrast(s.text, bg) >= 4.5, `${name} text on ${bg}: ${T.contrast(s.text, bg).toFixed(2)}`);
+            assert(T.contrast(s.accent, bg) >= 1.5, `${name} fill on ${bg}: ${T.contrast(s.accent, bg).toFixed(2)}`);
+        }
+    }
+};
 for (const [name, c] of list) {
-    for (const dark of [true, false]) {
-        const s = T.shades(T.parseColor(c), dark, tokens.surface, tokens.light_bg);
-        for (const bg of bgs[dark ? "dark" : "light"])
-            assert(T.contrast(s.accent, bg) >= 3, `${name} on ${bg}: ${T.contrast(s.accent, bg).toFixed(2)}`);
-        for (const k of ["accent", "hover", "pressed"])
-            assert(T.contrast(s[k], s.ink) >= 4.5, `${name} ${k} text: ${T.contrast(s[k], s.ink).toFixed(2)}`);
-    }
+    check(c, name, ["accent", "hover", "pressed"]);
+    // Light mode keeps the picked colour for fills (the audit's muddy amber, item 4).
+    assert.strictEqual(T.shades(T.parseColor(c), false, T.surfaces(false, tokens)).accent, T.parseColor(c), name);
 }
-// Any colour still gets readable text on it, even ones off the list.
-for (const c of ["#000000", "#ffffff", "#ff0000", "#777777", "#0000ff"])
-    for (const dark of [true, false]) {
-        const s = T.shades(c, dark, tokens.surface, tokens.light_bg);
-        assert(T.contrast(s.accent, s.ink) >= 4.5, c);
-        assert(T.contrast(s.accent, dark ? tokens.surface : tokens.light_bg) >= 3, c);
+// Any colour still gets readable text on it and readable accent text, even ones off the list.
+for (const c of ["#000000", "#ffffff", "#ff0000", "#777777", "#0000ff", "#eef2f5"]) check(c, c, ["accent"]);
+
+// Slider and meter tracks show 3:1 on every surface (Theme.track).
+for (const dark of [true, false])
+    for (const bg of T.surfaces(dark, tokens)) {
+        const c = T.contrast(T.mix(bg, dark ? tokens.fg : tokens.light_fg, T.trackAlpha), bg);
+        assert(c >= 3, `track on ${bg}: ${c.toFixed(2)}`);
     }
+
 // The radius scale: every shape takes Theme.rPanel, rCard, rControl or rSmall, or a size
 // over 2 for a pill or a dot. A number written in a radius is a new radius off the scale.
 const qmlDir = path.join(__dirname, "qml");

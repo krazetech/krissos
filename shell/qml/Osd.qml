@@ -114,12 +114,12 @@ Scope {
                 anchors.verticalCenter: parent.verticalCenter
                 height: 6
                 radius: height / 2
-                color: Theme.line
+                color: Theme.track
                 Rectangle {
                     width: track.width * root.level
                     height: parent.height
                     radius: parent.radius
-                    color: Theme.accent
+                    color: Theme.accentText
                     Behavior on width { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                 }
             }

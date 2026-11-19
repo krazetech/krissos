@@ -305,7 +305,7 @@ PanelWindow {
                             radius: height / 2
                             color: Theme.card
                             border.width: 2
-                            border.color: Theme.accent
+                            border.color: Theme.accentText
                             TextInput {
                                 id: psk
                                 Accessible.role: Accessible.EditableText
@@ -579,10 +579,10 @@ PanelWindow {
             Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
                 width: parent.width; height: 6; radius: height / 2
-                color: Theme.card
+                color: Theme.track
                 border.width: Theme.high ? 1 : 0
                 border.color: Theme.line
-                Rectangle { width: parent.width * Math.min(1, sl.value); height: parent.height; radius: height / 2; color: Theme.accent }
+                Rectangle { width: parent.width * Math.min(1, sl.value); height: parent.height; radius: height / 2; color: Theme.accentText }
             }
             Rectangle {
                 x: track.width * Math.min(1, sl.value) - width / 2
@@ -590,7 +590,7 @@ PanelWindow {
                 width: 18; height: 18; radius: width / 2
                 color: Theme.fg
                 border.width: 4
-                border.color: Theme.accent
+                border.color: Theme.accentText
             }
         }
         // Right-aligned in a fixed width, so the slider doesn't shift as the digits change.
@@ -716,7 +716,7 @@ PanelWindow {
             anchors.leftMargin: Theme.s2
             anchors.rightMargin: Theme.s2
             spacing: Theme.s2
-            Glyph { name: row.glyph; size: 17; color: row.current ? Theme.accent : Theme.fg }
+            Glyph { name: row.glyph; size: 17; color: row.current ? Theme.accentText : Theme.fg }
             Text {
                 Layout.fillWidth: true
                 elide: Text.ElideRight
@@ -729,7 +729,7 @@ PanelWindow {
                 color: Theme.soft
                 font { family: Theme.sans; pixelSize: Theme.sp(11) }
             }
-            Glyph { visible: row.current; name: "check"; size: 15; color: Theme.accent }
+            Glyph { visible: row.current; name: "check"; size: 15; color: Theme.accentText }
         }
     }
 }

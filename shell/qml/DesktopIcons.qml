@@ -110,7 +110,7 @@ Item {
             radius: Theme.rSmall
             color: Theme.alpha(Theme.accent, 0.15)
             border.width: 1
-            border.color: Theme.alpha(Theme.accent, 0.7)
+            border.color: Theme.alpha(Theme.accentText, 0.7)
         }
     }
 
@@ -162,7 +162,7 @@ Item {
                 // The keyboard's icon gets the focus rim; a selected one a fainter line.
                 readonly property bool kb: root.current === icon.index && root.activeFocus
                 border.width: kb ? Theme.focusWidth : icon.sel ? Theme.rimWidth : 0
-                border.color: kb ? Theme.accent : Theme.alpha(Theme.accent, 0.7)
+                border.color: kb ? Theme.accentText : Theme.alpha(Theme.accentText, 0.7)
                 Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
             }
             IconImage {

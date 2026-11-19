@@ -201,7 +201,7 @@ the four modes. The shell also keeps apps in step. Outside `shell.json` it write
 | Where | Key | When |
 |---|---|---|
 | dconf | `org.gnome.desktop.interface color-scheme` (`prefer-dark` / `default`), which GTK, Qt and Flatpak apps (through the portal) follow | light or dark changes and `theme` is not `system` |
-| `~/.config/cosmic/com.system76.CosmicTheme.Mode/v1/` | `is_dark` | light or dark changes and differs from the file |
+| `~/.config/cosmic/com.system76.CosmicTheme.Mode/v1/` | `is_dark`, `auto_switch` | light or dark changes and differs from the file (one write once both settle; `auto_switch` is set false so COSMIC's sunrise switch does not fight the shell's "auto") |
 | `~/.config/cosmic/com.system76.CosmicTheme.Dark.Builder/v2/`, `…Light.Builder/v2/` | `accent`; `window_hint` only while it equals the old accent | the accent changes |
 | `~/.config/cosmic/com.system76.CosmicTheme.Dark/v2/`, `…Light/v2/` | the theme keys libcosmic's ThemeBuilder derives from the accent and whose value changed (`accent`, `accent_button`, `accent_text`, the buttons, `background`, `primary`, `secondary`, `success`, `warning`, `destructive`, `window_hint`, …); keys that come out the same are not rewritten | the accent changes |
 

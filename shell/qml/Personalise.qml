@@ -123,7 +123,7 @@ FloatingWindow {
                             width: 3
                             height: 16
                             radius: width / 2
-                            color: Theme.accent
+                            color: Theme.accentText
                         }
                         Row {
                             anchors.verticalCenter: parent.verticalCenter
@@ -658,7 +658,7 @@ FloatingWindow {
             radius: Theme.rControl
             color: Theme.win
             border.width: input.activeFocus ? Theme.focusWidth : Theme.rimWidth
-            border.color: input.activeFocus ? Theme.accent : Theme.line
+            border.color: input.activeFocus ? Theme.accentText : Theme.line
             TextInput {
                 id: input
                 anchors.fill: parent
@@ -714,7 +714,7 @@ FloatingWindow {
             radius: Theme.rControl
             color: th.containsMouse ? Theme.cardHover : Theme.win
             border.width: th.on ? 3 : Theme.rimWidth
-            border.color: th.on ? Theme.accent : Theme.line
+            border.color: th.on ? Theme.accentText : Theme.line
             clip: true
             scale: th.pressed ? Theme.pressScale : 1
             Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }

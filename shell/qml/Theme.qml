@@ -32,11 +32,16 @@ Singleton {
     property real textScale: 1
     function sp(px) { return Math.round(px * textScale); }
 
-    // The accent the user picked (any colour; Sky Cyan by default), adjusted per mode so
-    // it stands out 3:1 from light windows too, and its shades. Black or white text on it.
+    // The accent the user picked (any colour; Sky Cyan by default) and its shades, from
+    // theme.js. `accent` fills tiles, chips and switches in the picked colour, with
+    // `accentInk` (black or white) on it. `accentText` is for the accent on a card or the
+    // page: text, links, icons and thin rims, deepened or lightened to 4.5:1 for this mode.
     readonly property string chosenAccent: T.parseColor(Desktop.accent) ?? T.parseColor("{{accent}}")
-    readonly property var shade: T.shades(chosenAccent, dark, "{{surface}}", "{{light_bg}}")
+    readonly property var shade: T.shades(chosenAccent, dark, T.surfaces(dark, {
+        bg: "{{bg}}", surface: "{{surface}}", fg: "{{fg}}",
+        light_bg: "{{light_bg}}", light_surface: "{{light_surface}}", light_fg: "{{light_fg}}" }))
     readonly property color accent: high ? "{{hc_accent}}" : shade.accent
+    readonly property color accentText: high ? "{{hc_accent}}" : shade.text
     readonly property color accentInk: high ? "{{bg}}" : shade.ink
     readonly property color accentHover: high ? "{{hc_accent}}" : shade.hover
     readonly property color accentPressed: high ? "{{hc_accent}}" : shade.pressed
@@ -62,6 +67,8 @@ Singleton {
     // on raised cards (3.8:1 against the 4.5:1 that body text needs).
     readonly property color soft: high ? "{{hc_fg}}" : Qt.tint(card, alpha(fg, 0.66))
     readonly property color line: high ? "{{hc_fg}}" : alpha(fg, dark ? 0.10 : 0.12)
+    // A slider's or meter's empty track: unlike a hairline, it must show 3:1.
+    readonly property color track: high ? "{{hc_fg}}" : alpha(fg, T.trackAlpha)
     // Acrylic: the tint every shell surface puts over the compositor's blur (the bar, Start,
     // panels, toasts, the OSD, menus). Nearly opaque, so it stays readable where the
     // compositor does not blur. Solid with high contrast or "transparency": false in shell.json.
@@ -149,12 +156,20 @@ Singleton {
     // Switches GTK and Qt apps (through the GNOME setting, which the Flatpak portal reads
     // too) and COSMIC apps and the compositor (through COSMIC's own theme mode) with the
     // shell. In "system" the GNOME setting leads, so only COSMIC's mode is written.
-    function syncMode() {
-        Quickshell.execDetached(["sh", "-c",
+    // One write, once mode and dark have both settled: a change to mode fires both handlers,
+    // and two writers racing could leave COSMIC on the old value. The file is replaced in one
+    // step, as cosmic-config does, and COSMIC's own sunrise switch is turned off, since the
+    // shell's "auto" decides.
+    function syncMode() { syncLater.restart(); }
+    Timer {
+        id: syncLater
+        interval: 50
+        onTriggered: Quickshell.execDetached(["sh", "-c",
             '[ "$3" = system ] || gsettings set org.gnome.desktop.interface color-scheme "$1"; ' +
-            'd="${XDG_CONFIG_HOME:-$HOME/.config}/cosmic/com.system76.CosmicTheme.Mode/v1"; ' +
-            '[ "$(cat "$d/is_dark" 2>/dev/null)" = "$2" ] || { mkdir -p "$d" && printf %s "$2" > "$d/is_dark"; }',
-            "sh", dark ? "prefer-dark" : "default", dark ? "true" : "false", mode]);
+            'd="${XDG_CONFIG_HOME:-$HOME/.config}/cosmic/com.system76.CosmicTheme.Mode/v1"; mkdir -p "$d" || exit; ' +
+            '[ "$(cat "$d/auto_switch" 2>/dev/null)" = false ] || { printf false > "$d/.auto_switch.new" && mv -f "$d/.auto_switch.new" "$d/auto_switch"; }; ' +
+            '[ "$(cat "$d/is_dark" 2>/dev/null)" = "$2" ] || { printf %s "$2" > "$d/.is_dark.new" && mv -f "$d/.is_dark.new" "$d/is_dark"; }',
+            "sh", root.dark ? "prefer-dark" : "default", root.dark ? "true" : "false", root.mode])
     }
     onDarkChanged: syncMode()
     onModeChanged: syncMode()

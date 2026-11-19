@@ -96,10 +96,48 @@ MouseArea {
         radius: Theme.rControl
         color: tray.containsMouse || tray.kbFocused || tray.activeFocus ? Theme.card : "transparent"
         border.width: tray.kbFocused || tray.activeFocus ? Theme.focusWidth : 0
-        border.color: Theme.accent
+        border.color: Theme.accentText
         Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
     }
-    IconImage { anchors.fill: parent; source: tray.modelData.icon }
+    IconImage { anchors.fill: parent; source: tray.modelData.icon; visible: !tray.recolour }
+    // Most apps hand the tray a one-colour icon made for a dark panel (white; Steam, and the
+    // Papirus-Dark panel set). On a light bar it vanishes, so a one-colour icon close to the
+    // bar's own tone is drawn in the bar's ink instead, as COSMIC's tray and Windows do.
+    // The canvas draws the icon, reads it (nearly every visible pixel grey means one colour)
+    // and, when it needs it, fills its shape with the ink.
+    // ponytail: a Canvas, not MultiEffect, which crashed Qt 6.12 inside the tray's Repeater.
+    property real tone: -1  // mean lightness of a grey icon, 0 to 1, or -1 for a coloured one
+    readonly property bool recolour: tone >= 0 && (Theme.dark ? tone < 0.3 : tone > 0.7)
+    Canvas {
+        id: probe
+        anchors.fill: parent
+        opacity: tray.recolour ? 1 : 0  // drawn either way, so it paints and can be read
+        readonly property string src: tray.modelData.icon
+        readonly property color ink: Theme.fg
+        onSrcChanged: { tray.tone = -1; if (src) loadImage(src); }
+        onInkChanged: requestPaint()
+        Component.onCompleted: if (src) loadImage(src)
+        onImageLoaded: requestPaint()
+        onPaint: {
+            const ctx = getContext("2d"), w = width, h = height;
+            ctx.globalCompositeOperation = "source-over";
+            ctx.clearRect(0, 0, w, h);
+            if (!isImageLoaded(src) || w < 1 || h < 1) return;
+            ctx.drawImage(src, 0, 0, w, h);
+            const d = ctx.getImageData(0, 0, w, h).data;
+            let n = 0, grey = 0, sum = 0;
+            for (let i = 0; i < d.length; i += 4) {
+                if (d[i + 3] < 64) continue;
+                n++;
+                if (Math.max(d[i], d[i + 1], d[i + 2]) - Math.min(d[i], d[i + 1], d[i + 2]) < 24) grey++;
+                sum += (0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]) / 255;
+            }
+            tray.tone = n > 8 && grey / n > 0.9 ? sum / n : -1;
+            ctx.globalCompositeOperation = "source-in";
+            ctx.fillStyle = ink;
+            ctx.fillRect(0, 0, w, h);
+        }
+    }
 
     // The app's tooltip above the icon, after a short rest, as on Windows.
     property bool tipUp: false

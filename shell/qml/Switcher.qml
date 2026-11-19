@@ -107,7 +107,7 @@ PanelWindow {
                 radius: Theme.rCard
                 color: Theme.card
                 border.width: Theme.focusWidth
-                border.color: Theme.accent
+                border.color: Theme.accentText
             }
 
             delegate: MouseArea {

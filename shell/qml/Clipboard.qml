@@ -376,13 +376,13 @@ PanelWindow {
                             color: tabBtn.on || tabBtn.containsMouse ? Theme.cardHover : "transparent"
                             Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast) } }
                         }
-                        Glyph { anchors.centerIn: parent; name: tabBtn.modelData[1]; size: 20; color: tabBtn.on ? Theme.accent : Theme.fg }
+                        Glyph { anchors.centerIn: parent; name: tabBtn.modelData[1]; size: 20; color: tabBtn.on ? Theme.accentText : Theme.fg }
                         Rectangle {
                             anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: Theme.s0 }
                             width: tabBtn.on ? 16 : 0
                             height: 3
                             radius: height / 2
-                            color: Theme.accent
+                            color: Theme.accentText
                             Behavior on width { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                         }
                     }
@@ -429,7 +429,7 @@ PanelWindow {
                 radius: height / 2
                 color: Theme.card
                 border.width: search.activeFocus ? Theme.focusWidth : Theme.rimWidth
-                border.color: search.activeFocus ? Theme.accent : Theme.line
+                border.color: search.activeFocus ? Theme.accentText : Theme.line
                 RowLayout {
                     anchors.fill: parent
                     anchors.leftMargin: Theme.s3
@@ -529,7 +529,7 @@ PanelWindow {
                                     radius: Theme.rControl
                                     color: cellBtn.on ? Theme.cardHover : "transparent"
                                     border.width: cellBtn.on && search.activeFocus ? Theme.focusWidth : 0
-                                    border.color: Theme.accent
+                                    border.color: Theme.accentText
                                 }
                                 Text {
                                     anchors.centerIn: parent
@@ -586,7 +586,7 @@ PanelWindow {
                         radius: Theme.rCard
                         color: entry.on ? Theme.cardHover : Theme.card
                         border.width: entry.on ? Theme.focusWidth : Theme.high ? Theme.rimWidth : 0
-                        border.color: entry.on ? Theme.accent : Theme.line
+                        border.color: entry.on ? Theme.accentText : Theme.line
                         Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast) } }
                     }
                     Text {
@@ -641,7 +641,7 @@ PanelWindow {
                                     anchors.centerIn: parent
                                     name: tool.index === 0 ? "pin" : "trash"
                                     size: 16
-                                    color: tool.index === 0 && entry.modelData.pinned ? Theme.accent : Theme.fg
+                                    color: tool.index === 0 && entry.modelData.pinned ? Theme.accentText : Theme.fg
                                 }
                             }
                         }
@@ -709,7 +709,7 @@ PanelWindow {
                             radius: Theme.rControl
                             color: win.toneCurrent === toneBtn.index ? Theme.cardHover : "transparent"
                             border.width: win.toneCurrent === toneBtn.index ? Theme.focusWidth : 0
-                            border.color: Theme.accent
+                            border.color: Theme.accentText
                         }
                         Text {
                             anchors.centerIn: parent

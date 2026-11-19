@@ -301,7 +301,7 @@ Scope {
                                 radius: Theme.rCard
                                 color: drag.pressed || drag.containsMouse ? Theme.cardHover : Theme.card
                                 border.width: Theme.focusWidth
-                                border.color: card.lit ? Theme.accent : Theme.high ? Theme.rim : "transparent"
+                                border.color: card.lit ? Theme.accentText : Theme.high ? Theme.rim : "transparent"
                                 Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                                 Behavior on x { enabled: !drag.drag.active; NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
                                 Behavior on y { enabled: !drag.drag.active; NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
@@ -431,7 +431,7 @@ Scope {
                             radius: tile.radius + 4
                             color: "transparent"
                             border.width: Theme.focusWidth
-                            border.color: Theme.accent
+                            border.color: Theme.accentText
                             visible: pane.inDesks && pane.deskCurrent === desk.index
                         }
                         Rectangle {
@@ -442,7 +442,7 @@ Scope {
                             radius: Theme.rControl
                             color: desk.add ? Theme.card : Theme.night
                             border.width: 2
-                            border.color: !desk.add && desk.d?.active ? Theme.accent : desk.containsDrag ? Theme.soft : Theme.rim
+                            border.color: !desk.add && desk.d?.active ? Theme.accentText : desk.containsDrag ? Theme.soft : Theme.rim
 
                             clip: true
 
@@ -506,7 +506,7 @@ Scope {
                             visible: pane.renaming === desk.index
                             color: Theme.win
                             border.width: Theme.rimWidth
-                            border.color: Theme.accent
+                            border.color: Theme.accentText
                             TextInput {
                                 id: nameInput
                                 anchors.fill: parent

@@ -59,23 +59,41 @@ function contrast(a, b) {
 }
 
 // The accent darkened or lightened (towards `ink`) in small steps until it stands
-// out from `bg` by `ratio`: a fill or ring on a light window needs a deeper colour.
-function ensureContrast(c, bg, ratio, ink) {
+// out by `ratio` from every colour in `bgs`.
+function ensureContrast(c, bgs, ratio, ink) {
     for (let t = 0; t <= 1; t += 0.02) {
         const out = mix(c, ink, t);
-        if (contrast(out, bg) >= ratio) return out;
+        if (bgs.every(bg => contrast(out, bg) >= ratio)) return out;
     }
     return ink;
 }
 
-// What every surface needs from the accent: the colour itself for this mode (lightened on
-// dark windows, deepened on light ones, only as far as 3:1 needs), the text
-// on it (black or white, whichever reads better), and hover and pressed shades. Hover
-// moves away from the text colour so it never reads worse; pressed goes the other way,
-// only a little.
-function shades(accent, dark, darkBg, lightBg) {
-    const base = dark ? ensureContrast(accent, darkBg, 3, "#ffffff") : ensureContrast(accent, lightBg, 3, "#000000");
+// How much of the text colour a slider's empty track takes: 3:1 against every surface,
+// as WCAG asks of a control's parts (Theme.track).
+const trackAlpha = 0.46;
+
+// The surfaces accent text sits on in one mode, from the theme tokens: the page, the
+// window, a card and a card under the pointer (Theme.qml's card and cardHover).
+function surfaces(dark, t) {
+    if (dark) {
+        const card = mix(t.surface, t.fg, 0.06);
+        return [t.bg, t.surface, card, mix(card, t.fg, 0.12)];
+    }
+    return [t.light_bg, t.light_surface, mix(t.light_surface, t.light_fg, 0.12)];
+}
+
+// What every surface needs from the accent, in two roles. The fill (tiles, chips, switches,
+// today's date) is the colour the user picked, in both modes: its ink is what has to read,
+// so it is not deepened into a muddy shade. Only a colour nearly the same as the page is
+// moved, to 1.5:1, so an "on" tile still shows. The text (labels, links, icons and thin
+// rims on a card or the page) is deepened on light surfaces and lightened on dark ones until
+// it reads 4.5:1 against each of `bgs`, the surfaces of this mode. Ink on the fill is black or
+// white, whichever reads better; hover moves away from the ink, pressed a little towards it.
+function shades(accent, dark, bgs) {
+    const toward = dark ? "#ffffff" : "#000000";
+    const base = ensureContrast(accent, bgs, 1.5, toward);
     const ink = contrast(base, "#000000") >= contrast(base, "#ffffff") ? "#000000" : "#ffffff";
     const away = ink === "#000000" ? "#ffffff" : "#000000";
-    return { accent: base, ink: ink, hover: mix(base, away, 0.12), pressed: mix(base, ink, 0.1) };
+    return { accent: base, ink: ink, hover: mix(base, away, 0.12), pressed: mix(base, ink, 0.1),
+             text: ensureContrast(accent, bgs, 4.5, toward) };
 }

@@ -10,6 +10,6 @@ Rectangle {
     radius: Theme.rControl + 4
     color: "transparent"
     border.width: Theme.focusWidth
-    border.color: Theme.accent
+    border.color: Theme.accentText
     visible: target.activeFocus
 }
