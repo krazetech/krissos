@@ -192,6 +192,14 @@ FloatingWindow {
                 }
             }
             Card {
+                Toggle {
+                    text: Tr.t("Transparency effects")
+                    detail: Tr.t("The taskbar, Start, menus and notifications show a blur of what is behind them.")
+                    checked: Desktop.transparency
+                    onToggled: Desktop.transparency = !Desktop.transparency
+                }
+            }
+            Card {
                 Label { text: Tr.t("Accent colour") }
                 Note { text: Theme.high ? Tr.t("High contrast uses its own colours. Your choice comes back when you turn it off.") : Tr.t("Buttons, switches and highlights use it.") }
                 Flow {

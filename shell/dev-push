@@ -25,6 +25,8 @@ fi
 # ponytail: extracts over the old copy so the file watches survive; a file deleted from the
 # checkout lingers there until the dev dir is wiped.
 # --no-xattrs/COPYFILE_DISABLE: macOS tar otherwise adds xattr headers GNU tar warns about.
+# Run through sh: ssh hands the command to the login shell, which may be fish.
+remote='d=$HOME/.local/share/kriss-shell-dev; mkdir -p "$d" && tar -C "$d" -xf - && echo "$d"'
 COPYFILE_DISABLE=1 tar --no-xattrs -C "$tmp" -cf - qml cosmic |
-    ssh "$host" 'd=$HOME/.local/share/kriss-shell-dev; mkdir -p "$d" && tar -C "$d" -xf - && echo "$d"' |
+    ssh "$host" "sh -c '$remote'" |
     sed "s|^|kriss: pushed to $host:|"

@@ -80,6 +80,7 @@ Scope {
         implicitHeight: Math.max(56, Theme.sp(14) + 36)
         color: "transparent"
         mask: Region {}
+        BackgroundEffect.blurRegion: Region { item: pill.opacity > 0 ? pill : null; radius: pill.radius }
 
         Rectangle {
             id: pill

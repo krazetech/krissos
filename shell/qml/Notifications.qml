@@ -67,6 +67,16 @@ PanelWindow {
     implicitHeight: (screen?.height ?? 1080) - Theme.barHeight - 2 * Theme.panelGap
     mask: Region { item: column }
     color: "transparent"
+    // Blur behind the header, the month and each card on show, the cards cut to the list.
+    property var cardBlurs: []
+    BackgroundEffect.blurRegion: Region {
+        Region { item: header.visible ? header : null; radius: header.radius }
+        Region { item: cal.visible ? cal : null; radius: cal.radius }
+        Region { regions: win.cardBlurs.concat([listClip]) }
+    }
+    // ponytail: a Region follows only its own item's moves, so y (unused next to item) is
+    // bound to the scroll to rebuild the blur as the open list scrolls.
+    Region { id: listClip; item: scroller; y: scroller.contentY; intersection: Intersection.Intersect }
     // The keyboard while the center is open: Tab walks the header, the cards (top to bottom)
     // and the month; on a card Enter takes its action, Delete dismisses it and the Menu key
     // or Shift+F10 lists all it can do. Esc closes.
@@ -161,7 +171,7 @@ PanelWindow {
             width: parent.width
             height: Math.max(48, Theme.sp(14) + 30)
             radius: Theme.radius
-            color: Theme.win
+            color: Theme.bar
             border.width: Theme.rimWidth
             border.color: Theme.rim
             RowLayout {
@@ -243,6 +253,7 @@ PanelWindow {
 
         // Open, a list taller than the room left scrolls, kept at the newest end.
         Flickable {
+            id: scroller
             width: parent.width
             height: Math.min(stack.height, win.height - (win.open ? header.height + cal.height + 2 * win.gap : 0))
             contentHeight: stack.height
@@ -278,7 +289,13 @@ PanelWindow {
 
                         // Slides up into place when it arrives.
                         property bool arrived: false
-                        Component.onCompleted: { win.setHeight(n.id, naturalHeight); arrived = true; }
+                        Component.onCompleted: {
+                            win.setHeight(n.id, naturalHeight);
+                            arrived = true;
+                            win.cardBlurs = win.cardBlurs.concat([blur]);
+                        }
+                        Component.onDestruction: win.cardBlurs = win.cardBlurs.filter(r => r !== blur)
+                        Region { id: blur; item: card.opacity > 0 ? card : null; radius: Theme.radius }
 
                         width: stack.width
                         height: front ? naturalHeight : win.heightAt(0)
@@ -357,8 +374,7 @@ PanelWindow {
                             Rectangle {
                                 anchors.fill: parent
                                 radius: Theme.radius
-                                // Solid: notifications have no blur behind them, and app content showed through.
-                                color: Theme.win
+                                color: Theme.bar
                                 border.width: card.n.urgency === NotificationUrgency.Critical ? 2 : Theme.rimWidth
                                 border.color: card.n.urgency === NotificationUrgency.Critical ? Theme.red : Theme.rim
                             }
@@ -509,7 +525,7 @@ PanelWindow {
             width: parent.width
             height: month.implicitHeight + 36
             radius: Theme.radius
-            color: Theme.win
+            color: Theme.bar
             border.width: Theme.rimWidth
             border.color: Theme.rim
             MouseArea {

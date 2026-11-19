@@ -22,6 +22,7 @@ PanelWindow {
     exclusiveZone: 0
     anchors { top: true; bottom: true; left: true; right: true }
     color: "transparent"
+    BackgroundEffect.blurRegion: Region { item: card.opacity > 0 ? card : null; radius: card.radius }
 
     onOpenChanged: if (open) { body.reset(); body.focusFirst(); }
 
@@ -40,7 +41,7 @@ PanelWindow {
         width: 336
         height: body.implicitHeight + 36
         radius: Theme.radius
-        color: Theme.win
+        color: Theme.bar
         border.width: Theme.rimWidth
         border.color: Theme.rim
         Accessible.role: Accessible.Dialog

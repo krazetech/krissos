@@ -62,8 +62,11 @@ Singleton {
     // on raised cards (3.8:1 against the 4.5:1 that body text needs).
     readonly property color soft: high ? "{{hc_fg}}" : Qt.tint(card, alpha(fg, 0.66))
     readonly property color line: high ? "{{hc_fg}}" : alpha(fg, dark ? 0.10 : 0.12)
-    // Nearly opaque, so panels stay readable where the compositor does not blur behind them.
-    readonly property color bar: high ? "{{hc_bg}}" : alpha(dark ? "{{surface}}" : "{{light_bg}}", dark ? 0.9 : 0.96)
+    // Acrylic: the tint every shell surface puts over the compositor's blur (the bar, Start,
+    // panels, toasts, the OSD, menus). Nearly opaque, so it stays readable where the
+    // compositor does not blur. Solid with high contrast or "transparency": false in shell.json.
+    readonly property bool solid: high || !Desktop.transparency
+    readonly property color bar: solid ? win : alpha(dark ? "{{surface}}" : "{{light_bg}}", dark ? 0.9 : 0.96)
     readonly property color rim: high ? "{{hc_fg}}" : dark ? alpha("{{fg}}", 0.08) : alpha("{{light_surface}}", 0.6)
 
     // The lock screen and wallpaper are always dark.
