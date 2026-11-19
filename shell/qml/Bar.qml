@@ -598,7 +598,7 @@ PanelWindow {
         const files = Desktop.recentFor(e, 8);
         if (files.length) out.push({ header: Tr.t("Recent") });
         for (const f of files)
-            out.push({ text: f.name, icon: f.mime === "inode/directory" ? "folder" : f.mime.replace("/", "-"), run: () => bar.openWith(e, f.href) });
+            out.push({ text: f.name, detail: f.detail, icon: Desktop.mimeIcon(f), run: () => bar.openWith(e, f.href) });
         const tasks = e?.actions ?? [];
         if (tasks.length) out.push({ header: Tr.t("Tasks") });
         for (const t of tasks) out.push({ text: t.name, icon: t.icon || e.icon, run: () => t.execute() });
