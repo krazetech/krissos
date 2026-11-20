@@ -1,0 +1,27 @@
+# The input methods every KrissOS user starts with, in the order Windows+Space steps
+# through them: English, Chinese (Pinyin), Tamil (phonetic, Anjal-style: type "vanakkam")
+# and Jawi (phonetic: each Jawi letter on the Latin key that sounds like it, since keyboards
+# in Malaysia have Latin keycaps). A user's ~/.config/fcitx5/profile replaces this file.
+[Groups/0]
+Name=Default
+Default Layout=us
+DefaultIM=keyboard-us
+
+[Groups/0/Items/0]
+Name=keyboard-us
+Layout=
+
+[Groups/0/Items/1]
+Name=pinyin
+Layout=
+
+[Groups/0/Items/2]
+Name=m17n_ta_phonetic
+Layout=
+
+[Groups/0/Items/3]
+Name=keyboard-my-phonetic
+Layout=
+
+[GroupOrder]
+0=Default

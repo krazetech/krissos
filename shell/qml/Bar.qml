@@ -365,7 +365,8 @@ PanelWindow {
                 Repeater {
                     model: SystemTray.items
                     delegate: TrayIcon {
-                        visible: !Desktop.isTrayHidden(modelData.id)
+                        // fcitx5's icon: the input method shows as InputPill instead.
+                        visible: !Desktop.isTrayHidden(modelData.id) && modelData.id !== "Fcitx"
                         appMenu: menu
                         onDraggingChanged: more.dragging = dragging
                         onDropped: (x, y) => {
@@ -376,6 +377,7 @@ PanelWindow {
                 }
             }
 
+            InputPill {}
             PowerPill {}
 
             // Network, volume and battery open quick settings, like on Windows.

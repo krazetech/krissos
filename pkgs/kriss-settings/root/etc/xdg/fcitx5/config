@@ -1,0 +1,5 @@
+# One input method for every window, as on Windows (fcitx5 keeps one per app otherwise).
+# Windows+Space is a KrissOS Shell shortcut (kriss-shell input next), so it works with no
+# text box focused too.
+[Behavior]
+ShareInputState=All

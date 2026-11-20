@@ -18,6 +18,9 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 - Reset this PC: `kriss reset --keep-files` removes the apps you added and resets your
   settings but keeps your files; `kriss reset --everything` also deletes your files and saved
   Wi-Fi, so the PC starts like new. Both take a snapshot first and work offline.
+- Type in Chinese (Pinyin), Tamil and Jawi out of the box. Windows+Space switches between
+  them and English, and the taskbar shows which one is on: EN, 拼, த or ج. Click it to
+  switch too.
 - The Store: find, install, update and remove apps without a terminal, from Flathub and
   the KrissOS packs (gaming, Windows apps). It is pinned to the taskbar, and searching in
   Start offers "Get … from the Store" for apps you don't have yet. A snapshot is taken
