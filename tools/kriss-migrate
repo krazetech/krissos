@@ -5,6 +5,7 @@
 #   kriss migrate --dry-run   print every step and simulate the package changes
 #   kriss migrate             do it (root). Safe to run again after a failure.
 # Needs: Limine on a UEFI PC, / on btrfs subvolume @, snapper with a root config.
+# Secure Boot: as after the installer (kriss-secureboot); sbctl keys already set up stay.
 # Before changing anything it takes a snapper pre-snapshot and a writable copy of the
 # system (@before-kriss-migrate) with a boot menu entry of its own, so the old system
 # still starts if something goes wrong.
@@ -19,7 +20,7 @@ readonly REPO_URL=https://github.com/krazetech/krissos/releases/download/repo-x8
 readonly FALLBACK=@before-kriss-migrate
 readonly LIMINE_ENTRY=/etc/kriss/limine.d/90-before-migrate.conf
 readonly KRISS_PKGS=(kriss-keyring kriss-settings kriss-theme kriss-tools kriss-welcome
-  kriss-shell greetd cosmic-files cosmic-terminal cosmic-settings xdg-desktop-portal-cosmic)
+  kriss-shell shim-signed mokutil sbctl greetd cosmic-files cosmic-terminal cosmic-settings xdg-desktop-portal-cosmic)
 DRY=0 TOP='' SIM='' ASSUME=()
 
 die() { printf 'kriss migrate: %s\n' "$*" >&2; exit 2; }
@@ -152,8 +153,6 @@ preflight() {
   [[ $(findmnt -no FSTYPE "$esp") == vfat ]] || die "no EFI system partition at /efi or /boot."
   (($(df --output=avail -k / | tail -1) > 20 * 1024 * 1024)) || die "needs 20 GiB free on / for the package swap."
   (($(df --output=avail -k "$esp" | tail -1) > 300 * 1024)) || die "needs 300 MiB free on $esp."
-  # ponytail: no Secure Boot. The old-system entry would need hashing like kriss-limine-update's.
-  [[ ! -d /var/lib/sbctl/keys ]] || die "Secure Boot (sbctl) is set up; kriss migrate does not handle it yet."
 }
 
 # --- the steps -----------------------------------------------------------------------
@@ -333,6 +332,28 @@ EOF
   fi
 }
 
+# As the installer does: Microsoft-signed shim starts Limine (grubx64.efi, written and
+# signed by kriss-limine-update), so Secure Boot works with the PC's stock keys, and this
+# PC gets a key of its own (kriss-secureboot). With Secure Boot on, MokManager asks once at
+# the next start to enroll it. Own sbctl keys (Setup Mode) stay as they are, without shim:
+# their firmware may not trust Microsoft's CA, and kriss-limine-update signs Limine with them.
+secure_boot() {
+  local esp f
+  esp=$(esp_dir)
+  # (A rerun finds shim and its own key from the first run, and goes on.)
+  if [[ ! -f $esp/EFI/limine/mmx64.efi ]] && [[ -d /var/lib/sbctl/keys || -d /usr/share/secureboot/keys ]]; then
+    note "keeping your own Secure Boot keys (sbctl); Limine is signed with them."
+    return
+  fi
+  for f in "$esp/EFI/limine" "$esp/EFI/BOOT"; do
+    # EFI/BOOT only when it is ours (boot_config gave it a limine.conf).
+    [[ $f == */limine || -f $f/limine.conf ]] || continue
+    run install -Dm644 /usr/share/shim-signed/shimx64.efi "$f/BOOTX64.EFI"
+    run install -Dm644 /usr/share/shim-signed/mmx64.efi "$f/mmx64.efi"
+  done
+  run kriss-secureboot
+}
+
 packages() {
   step "Move every package to Arch's build, add the KrissOS packages"
   local kernel pkgs
@@ -419,6 +440,7 @@ EOF
   # packages, which leaves Plymouth on bgrt and Arch's logo), then a new initramfs.
   # kriss-settings 0.4.2 and later run this from a pacman hook too.
   if [[ -x /usr/share/libalpm/scripts/kriss-plymouth ]]; then run /usr/share/libalpm/scripts/kriss-plymouth; fi
+  secure_boot
   run kriss-limine-update
   # The old menu sat at the ESP's root (its tools are gone now); only KrissOS's should be found.
   if [[ -f $esp/limine.conf ]]; then run mv "$esp/limine.conf" "$esp/limine.conf.before-kriss-migrate"; fi

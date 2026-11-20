@@ -67,6 +67,10 @@ exfatprogs
 gptfdisk
 efibootmgr
 limine
+shim-signed
+mokutil
+sbctl
+binutils
 snapper
 snap-pac
 zram-generator

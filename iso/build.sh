@@ -33,7 +33,7 @@ rm -rf "$src" "$local_repo"
 mkdir -p "$src" "$local_repo"
 cp -a "$here/../pkgs" "$here/../theme" "$here/../tools" "$here/../shell" "$here/../installer" "$here/../store" "$src/"
 chown -R builder "$src" "$local_repo"
-for p in kriss-keyring kriss-settings kriss-theme kriss-tools kriss-shell kriss-installer; do
+for p in kriss-keyring kriss-settings kriss-theme kriss-tools kriss-shell kriss-installer shim-signed; do
   su builder -c "cd '$src/pkgs/$p' && PKGDEST='$local_repo' makepkg --noconfirm --nodeps"
 done
 # The Store's tests need PySide6 and Kirigami; the packages workflow runs them.
@@ -79,4 +79,41 @@ python "$here/../theme/generate.py" "$here/../theme/templates/usr/share/pixmaps"
   echo '</svg>'
 } | rsvg-convert -o "$profile/syslinux/splash.png"
 
-mkarchiso -v -r -w "$work/mkarchiso" -o "$out" "$profile"
+w=$work/mkarchiso
+rm -rf "$w"
+mkarchiso -v -w "$w" -o "$out" "$profile"
+
+# Secure Boot with the PC's stock keys: firmware -> Fedora's shim (signed by Microsoft) ->
+# systemd-boot (as grubx64.efi, the name shim starts) -> the kernel. Both are signed with a
+# key made for this build only. Its private half is deleted when this script ends, so
+# nothing else can ever be signed with it. With Secure Boot on, shim cannot check
+# systemd-boot until that key is trusted, so it opens MokManager: "Enroll key from disk",
+# then KRISSOS.cer at the top of the USB (docs/secure-boot.md). The ISO's GPG signature
+# vouches for the certificate. Then mkarchiso runs again: with its step markers in place,
+# it only writes the ISO image again (efiboot.img keeps 8 MiB free for this).
+pacman -S --noconfirm --needed sbsigntools mtools openssl
+sb=$(mktemp -d)
+trap 'rm -rf "$sb"' EXIT
+openssl req -new -x509 -newkey rsa:2048 -nodes -sha256 -days 3650 \
+  -subj "/CN=KrissOS live USB $(date --date="@${SOURCE_DATE_EPOCH:-$(date +%s)}" +%Y.%m.%d)" \
+  -keyout "$sb/sb.key" -out "$sb/sb.crt" 2>/dev/null
+openssl x509 -in "$sb/sb.crt" -outform der -out "$sb/KRISSOS.cer"
+sign() { sbsign --key "$sb/sb.key" --cert "$sb/sb.crt" --output "$2" "$1" >/dev/null; }
+iso=$w/iso img=$w/efiboot.img shim=$w/x86_64/airootfs/usr/share/shim-signed
+sign "$iso/EFI/BOOT/BOOTX64.EFI" "$sb/grubx64.efi"
+cp "$shim/shimx64.efi" "$iso/EFI/BOOT/BOOTX64.EFI"
+cp "$shim/mmx64.efi" "$sb/grubx64.efi" "$iso/EFI/BOOT/"
+cp "$sb/KRISSOS.cer" "$iso/"
+mcopy -o -i "$img" "$iso/EFI/BOOT/BOOTX64.EFI" "$iso/EFI/BOOT/mmx64.efi" "$iso/EFI/BOOT/grubx64.efi" ::/EFI/BOOT/
+mcopy -o -i "$img" "$sb/KRISSOS.cer" ::/
+for k in "$iso/kriss/boot/x86_64/vmlinuz-"* "$iso/boot/memtest86+/memtest86x64.efi"; do
+  [ -f "$k" ] || continue
+  sign "$k" "$k"
+  case $k in
+  */vmlinuz-*) mcopy -o -i "$img" "$k" ::/kriss/boot/x86_64/ ;;
+  *) mcopy -o -i "$img" "$k" ::/boot/memtest86+/ ;;
+  esac
+done
+rm -f "$out"/*.iso "$w/iso._build_iso_image" "$w/build._build_buildmode_iso"
+mkarchiso -v -w "$w" -o "$out" "$profile"
+rm -rf "$w"

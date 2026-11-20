@@ -4,7 +4,7 @@ on:
   push:
     tags: ['[0-9]*', 'MR*']   # release codenames: 110, 115, MR3
   pull_request:
-    paths: ['iso/**', 'installer/**', 'pkgs/calamares/**', 'pkgs/kriss-installer/**', 'pkgs/kriss-settings/**', 'pkgs/kriss-theme/**', 'pkgs/kriss-tools/**', 'pkgs/kriss-store/**', 'store/**', 'theme/**', 'tools/kriss', '.github/workflows/iso.yml']
+    paths: ['iso/**', 'installer/**', 'pkgs/calamares/**', 'pkgs/kriss-installer/**', 'pkgs/kriss-settings/**', 'pkgs/kriss-theme/**', 'pkgs/kriss-tools/**', 'pkgs/kriss-store/**', 'pkgs/shim-signed/**', 'tools/kriss-migrate', 'store/**', 'theme/**', 'tools/kriss', '.github/workflows/iso.yml']
   schedule:
     - cron: '30 3 * * *'      # nightly
   workflow_dispatch:
@@ -124,6 +124,15 @@ jobs:
           rm -f install-test/disk.qcow2
           FIRMWARE=bios iso/install-test.sh out/*.iso install-test-bios
 
+      # Secure Boot on with Microsoft's keys (OVMF): shim refuses the ISO until its key is
+      # trusted, then boots it; an install enrolls its own key through MokManager and boots.
+      - name: Secure Boot test
+        if: always() && steps.build.outcome == 'success'
+        run: |
+          rm -f install-test*/disk.qcow2
+          sudo apt-get install -y -q --no-install-recommends python3-venv openssl
+          iso/secureboot-test.sh out/*.iso secureboot-test
+
       - name: Upload install test
         if: always()
         uses: actions/upload-artifact@v4
@@ -132,6 +141,8 @@ jobs:
           path: |
             install-test*/*.log
             install-test*/*.png
+            secureboot-test/*.log
+            secureboot-test/*.png
           if-no-files-found: ignore
 
       # Also when a test fails, so the ISO can be tried by hand.

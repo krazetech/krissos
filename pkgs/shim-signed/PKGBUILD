@@ -1,0 +1,20 @@
+# Maintainer: Kraze Tech
+# Fedora's shim, signed by Microsoft's UEFI CA, so KrissOS boots with Secure Boot on and
+# the PC's stock keys: shim -> Limine (grubx64.efi, signed with the PC's own key that the
+# user enrolled once in MokManager). Same binaries as the AUR's shim-signed. Bump with
+# Fedora's koji build: https://koji.fedoraproject.org/koji/packageinfo?packageID=14502
+pkgname=shim-signed
+pkgver=16.1+fedora+7
+pkgrel=1
+pkgdesc='Microsoft-signed UEFI shim and MokManager (prebuilt x64 binaries from Fedora)'
+arch=('any')
+url='https://github.com/rhboot/shim'
+license=('BSD-2-Clause')
+options=('!strip' '!debug')
+_v=${pkgver//+fedora+/-}
+source=("https://kojipkgs.fedoraproject.org/packages/shim/${pkgver//+fedora+/\/}/x86_64/shim-x64-$_v.x86_64.rpm")
+sha512sums=('642f7bd66f9d420fed5d5686d968a2065af445b4e7ba3d27a0a4f5852aefadd1835c485968e7bdc7cea5f377095bd3efcc8636837e3059a19cfab1c777e218f0')
+
+package() {
+  install -Dm644 -t "$pkgdir/usr/share/shim-signed/" "$srcdir/usr/lib/efi/shim/$_v/EFI/fedora/"{shim,mm}x64.efi
+}

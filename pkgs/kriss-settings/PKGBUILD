@@ -1,6 +1,6 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-settings
-pkgver=0.4.8
+pkgver=0.5.0
 pkgrel=1
 pkgdesc='KrissOS default configs (Plasma, SDDM, GTK, Flatpak, terminals, prompt, fastfetch), os-release, Limine menu and pacman hooks'
 arch=('any')
@@ -9,10 +9,12 @@ license=('GPL-3.0-or-later')
 # plymouth is the boot splash: kriss-plymouth.hook makes kriss its theme and the
 # installer puts its hook in the initramfs. snap-pac provides the snapper pre/post
 # snapshot hooks; it skips them when snapper has no config.
-depends=('diffutils' 'gsettings-desktop-schemas' 'snap-pac' 'fastfetch' 'plymouth')
+depends=('diffutils' 'gsettings-desktop-schemas' 'snap-pac' 'fastfetch' 'plymouth' 'binutils')
 makedepends=('python')
 optdepends=('limine: the boot menu with bootable snapshots (kriss-limine-update)'
-            'sbctl: re-sign the kernel and bootloader for Secure Boot')
+            'sbctl: re-sign the kernel and bootloader for Secure Boot'
+            'shim-signed: start Limine with Secure Boot on and the stock keys (kriss-secureboot)'
+            "mokutil: enroll this PC's key in shim's MOK list (kriss-secureboot)")
 
 # ponytail: the qt6ct config only takes effect with QT_QPA_PLATFORMTHEME=qt6ct. That is
 # left to the KrissOS Shell session; setting it globally would break Plasma's Qt theming.
