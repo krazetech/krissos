@@ -10,4 +10,13 @@
     <pcolor>{{light_bg}}</pcolor>
     <scolor>{{bg}}</scolor>
   </wallpaper>
+  <wallpaper deleted="false">
+    <name>Sungai Petani</name>
+    <filename>/usr/share/backgrounds/kriss/sungai-petani-day.jpg</filename>
+    <filename-dark>/usr/share/backgrounds/kriss/sungai-petani-night.jpg</filename-dark>
+    <options>zoom</options>
+    <shade_type>solid</shade_type>
+    <pcolor>#7C93B4</pcolor>
+    <scolor>#1C2433</scolor>
+  </wallpaper>
 </wallpapers>

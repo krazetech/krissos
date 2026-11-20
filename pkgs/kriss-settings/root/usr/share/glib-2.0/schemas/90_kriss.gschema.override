@@ -16,5 +16,5 @@ font-hinting='slight'
 button-layout='appmenu:minimize,maximize,close'
 
 [org.gnome.desktop.background]
-picture-uri='file:///usr/share/backgrounds/kriss/kriss-light.svg'
-picture-uri-dark='file:///usr/share/backgrounds/kriss/kriss-dark.svg'
+picture-uri='file:///usr/share/backgrounds/kriss/sungai-petani-day.jpg'
+picture-uri-dark='file:///usr/share/backgrounds/kriss/sungai-petani-night.jpg'

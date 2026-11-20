@@ -109,13 +109,13 @@ over the desktop.
 
 ## Time-of-day wallpaper
 
-`theme/generate.py` renders `theme/wallpaper.svg` four more times, as
-`/usr/share/backgrounds/kriss/kriss-dawn.svg`, `-day`, `-dusk` and `-night`: the same scene under
-a sky and sun mixed from the tokens. `qml/DynamicWallpaper.qml` blends between neighbours by the
-clock (night until 4:30, dawn by 6:00, day 8:00 to 16:30, dusk by 18:30, night by 20:30), one
-small step a minute, and draws nothing in between. The lock and login screens always use it;
-the desktop does while `"wallpaper": "dynamic"` (the default) is in `shell.json`, and shows the
-plain light or dark wallpaper with any other value. To try a build of the wallpapers that is not
+kriss-theme ships the Sungai Petani clock tower as a photo pair,
+`/usr/share/backgrounds/kriss/sungai-petani-day.jpg` and `-night.jpg` (the same photo with a
+darker sky). `qml/DynamicWallpaper.qml` blends them by the clock (night until 6:00, day by 7:30,
+day until 17:30, night by 19:30), one small step a minute, and draws nothing in between. The
+lock and login screens always use it; the desktop does while `"wallpaper": "dynamic"` (the
+default, shown as Sungai Petani in Personalise) is in `shell.json`, and shows the plain KrissOS
+light or dark wallpaper with any other value. To try a build of the wallpapers that is not
 installed, point `KRISS_WALLPAPERS` at its `usr/share/backgrounds/kriss`.
 
 ## Login screen

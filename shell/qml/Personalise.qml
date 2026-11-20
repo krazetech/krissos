@@ -69,7 +69,7 @@ FloatingWindow {
                 -o -iname '*.png' -o -iname '*.webp' -o -iname '*.svg' \\) -printf '%T@ %p\\n' 2>/dev/null |
                 sort -rn | cut -d' ' -f2- | head -40`]
         stdout: StdioCollector {
-            onStreamFinished: win.pictures = text.split("\n").filter(p => p && !p.startsWith(Theme.wallpapers + "/kriss-") && !p.endsWith(".mask.png"))
+            onStreamFinished: win.pictures = text.split("\n").filter(p => p && !p.startsWith(Theme.wallpapers + "/kriss-") && !p.startsWith(Theme.wallpapers + "/sungai-petani-") && !p.endsWith(".mask.png"))
         }
     }
 
@@ -268,12 +268,12 @@ FloatingWindow {
             Component.onCompleted: win.findPictures()
             Card {
                 Label { text: Tr.t("Background") }
-                Note { text: Tr.t("Dynamic moves from dawn to night with the clock. KrissOS follows light and dark.") }
+                Note { text: Tr.t("Sungai Petani turns from day to night with the clock. KrissOS follows light and dark.") }
                 Flow {
                     width: parent.width
                     spacing: Theme.s2
                     Repeater {
-                        model: [["dynamic", Tr.t("Dynamic"), Theme.wallpapers + "/kriss-day.svg"],
+                        model: [["dynamic", "Sungai Petani", Theme.wallpapers + "/sungai-petani-day.jpg"],
                                 ["static", Tr.t("KrissOS"), Theme.wallpapers + "/kriss-" + (Theme.dark ? "dark" : "light") + ".svg"]]
                             .concat((bgPage.wall.startsWith("/") && win.pictures.indexOf(bgPage.wall) < 0 ? [bgPage.wall] : []).concat(win.pictures)
                                 .map(p => [p, p.slice(p.lastIndexOf("/") + 1), p]))
@@ -495,8 +495,9 @@ FloatingWindow {
                     spacing: Theme.s2
                     Repeater {
                         model: [["desktop", Tr.t("Same as background"), Desktop.wallpaper.startsWith("/") ? Desktop.wallpaper
-                                    : Theme.wallpapers + "/kriss-" + (Desktop.wallpaper === "dynamic" ? "day" : Theme.dark ? "dark" : "light") + ".svg"],
-                                ["dynamic", Tr.t("Dynamic"), Theme.wallpapers + "/kriss-day.svg"],
+                                    : Desktop.wallpaper === "dynamic" ? Theme.wallpapers + "/sungai-petani-day.jpg"
+                                    : Theme.wallpapers + "/kriss-" + (Theme.dark ? "dark" : "light") + ".svg"],
+                                ["dynamic", "Sungai Petani", Theme.wallpapers + "/sungai-petani-day.jpg"],
                                 ["static", Tr.t("KrissOS"), Theme.wallpapers + "/kriss-" + (Theme.dark ? "dark" : "light") + ".svg"]]
                             .concat((lockPics.wall.startsWith("/") && win.pictures.indexOf(lockPics.wall) < 0 ? [lockPics.wall] : []).concat(win.pictures)
                                 .map(p => [p, p.slice(p.lastIndexOf("/") + 1), p]))
@@ -865,7 +866,7 @@ FloatingWindow {
                 sourceSize: Qt.size(300, 168)
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
-                // Before kriss-theme ships the day light, Dynamic shows the dark one (as DynamicWallpaper does).
+                // Before kriss-theme ships the photos, Dynamic shows the dark one (as DynamicWallpaper does).
                 onStatusChanged: if (status === Image.Error && th.value === "dynamic") source = Desktop.fileUrl(Theme.wallpapers + "/kriss-dark.svg")
             }
             Glyph { anchors.centerIn: parent; visible: th.glyph !== ""; name: th.glyph; size: 24 }

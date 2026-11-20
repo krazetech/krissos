@@ -1,0 +1,8 @@
+{
+  "KPlugin": {
+    "Authors": [{ "Name": "Kraze Tech" }],
+    "Id": "SungaiPetani",
+    "License": "GPL-3.0-or-later",
+    "Name": "Sungai Petani"
+  }
+}
