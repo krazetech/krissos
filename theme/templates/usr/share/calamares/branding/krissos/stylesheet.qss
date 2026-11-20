@@ -1,79 +1,113 @@
-/* KrissOS look for the Calamares window. Rendered from theme/tokens.json.
-   The KrissOS colour scheme in /etc/xdg/kdeglobals already colours the window when
-   Calamares runs with the KDE platform theme; this sheet makes it look the same when
-   it does not (pkexec drops the session environment) and adds the accent buttons.
-   #AARRGGBB colours are fg at low alpha, for borders and raised buttons. */
+/* KrissOS look for the Calamares pages (the step list and buttons are QML). Rendered from
+   theme/tokens.json once per light and dark (theme/generate.py); kriss-install picks one.
+   The ui_ colours are the shell's surfaces (shell/qml/Theme.qml): the window, a raised card
+   (rCard 14, rControl 10), a card under the pointer, hairlines and softened text.
+   Calamares often runs with no platform theme (sudo), so Qt's default light palette is all
+   it has: every surface a page fills from the palette is named here, or it shows white. */
 
-QWidget { font-family: "{{font_sans}}"; }
+QWidget { font-family: "{{font_sans}}"; font-size: 14px; }
 
 #mainApp, #viewManager, #viewManagerStack, QDialog, QMessageBox {
-    background-color: {{surface}};
+    background-color: {{ui_win}};
     color: {{fg}};
 }
+QMessageBox { border: 1px solid {{ui_line}}; }
 
-QLabel { color: {{fg}}; }
+QLabel { color: {{fg}}; background: transparent; }
 QLabel:disabled { color: {{muted}}; }
+QToolTip { background-color: {{ui_card}}; color: {{fg}}; border: 1px solid {{ui_line}}; border-radius: 6px; padding: 4px 8px; }
 
-QLineEdit, QComboBox, QSpinBox, QListView, QTreeView, QTableView, QTextBrowser, QPlainTextEdit {
-    background-color: {{bg}};
+/* Fields and lists: raised cards. */
+QLineEdit, QComboBox, QSpinBox, QListView, QTreeView, QTableView, QTextBrowser, QPlainTextEdit, QTextEdit {
+    background-color: {{ui_card}};
     color: {{fg}};
-    border: 1px solid #29{{fg.hex}};
-    border-radius: 6px;
-    padding: 4px 6px;
+    border: 1px solid {{ui_line}};
+    border-radius: 10px;
+    padding: 6px 10px;
     selection-background-color: {{accent}};
     selection-color: {{bg}};
 }
-QLineEdit:focus, QComboBox:focus, QListView:focus, QTreeView:focus { border-color: {{accent}}; }
-QComboBox QAbstractItemView { background-color: {{bg}}; color: {{fg}}; }
+QLineEdit, QComboBox, QSpinBox { min-height: 24px; }
+QLineEdit:hover, QComboBox:hover { border-color: {{ui_soft}}; }
+QLineEdit:focus, QComboBox:focus, QListView:focus, QTreeView:focus, QTableView:focus { border: 2px solid {{accent}}; padding: 5px 9px; }
+QComboBox QAbstractItemView { background-color: {{ui_card}}; color: {{fg}}; border: 1px solid {{ui_line}}; border-radius: 10px; padding: 4px; outline: 0; }
+QListView::item, QTreeView::item { padding: 4px 6px; border-radius: 6px; }
+QListView::item:hover, QTreeView::item:hover { background-color: {{ui_hover}}; }
+QListView::item:selected, QTreeView::item:selected { background-color: {{accent}}; color: {{bg}}; }
+QHeaderView::section { background-color: {{ui_card}}; color: {{ui_soft}}; border: none; border-bottom: 1px solid {{ui_line}}; padding: 6px 8px; }
+QTableView { gridline-color: {{ui_line}}; }
+QTableCornerButton::section { background-color: {{ui_card}}; border: none; }
 
+/* The partition bars and their legend paint from the palette's white Base. */
+QAbstractItemView { background-color: {{ui_card}}; color: {{fg}}; border: none; border-radius: 10px; }
+
+/* Buttons: round pills, as in the shell. */
 QPushButton, QToolButton {
-    background-color: #1A{{fg.hex}};
+    background-color: {{ui_card}};
     color: {{fg}};
-    border: none;
-    border-radius: 6px;
-    padding: 7px 16px;
+    border: 1px solid {{ui_line}};
+    border-radius: 17px;
+    padding: 7px 18px;
+    min-height: 20px;
 }
-QPushButton:hover, QToolButton:hover { background-color: #29{{fg.hex}}; }
+QPushButton:hover, QToolButton:hover { background-color: {{ui_hover}}; }
+QPushButton:pressed, QToolButton:pressed { background-color: {{ui_line}}; }
 QPushButton:disabled, QToolButton:disabled { color: {{muted}}; }
+QPushButton:default { background-color: {{accent}}; color: {{bg}}; border: none; font-weight: 600; }
+QPushButton:default:hover { background-color: {{color14}}; }
+QToolButton { padding: 6px; border-radius: 10px; }
 
-/* Next / Install is the one accent button. */
-#view-button-next {
-    background-color: {{accent}};
-    color: {{bg}};
-    font-weight: 600;
-}
-#view-button-next:hover { background-color: {{color14}}; }
-#view-button-next:disabled { background-color: #1A{{fg.hex}}; color: {{muted}}; }
-
-QCheckBox, QRadioButton { color: {{fg}}; spacing: 8px; }
+QCheckBox, QRadioButton { color: {{fg}}; spacing: 10px; background: transparent; }
 QCheckBox::indicator, QRadioButton::indicator {
-    width: 14px; height: 14px;
-    background-color: {{bg}};
-    border: 1px solid {{muted}};
+    width: 18px; height: 18px;
+    background-color: {{ui_card}};
+    border: 1.5px solid {{ui_soft}};
 }
-QCheckBox::indicator { border-radius: 4px; }
-QRadioButton::indicator { border-radius: 8px; }
+QCheckBox::indicator { border-radius: 6px; }
+QRadioButton::indicator { border-radius: 10px; }
+QCheckBox::indicator:hover, QRadioButton::indicator:hover { border-color: {{accent}}; }
 QCheckBox::indicator:checked, QRadioButton::indicator:checked {
     background-color: {{accent}};
     border-color: {{accent}};
 }
 
 QProgressBar {
-    background-color: {{bg}};
+    background-color: {{ui_line}};
     color: {{fg}};
     border: none;
     border-radius: 4px;
-    text-align: center;
+    max-height: 8px;
+    color: transparent;
 }
 QProgressBar::chunk { background-color: {{accent}}; border-radius: 4px; }
 
+QScrollBar:vertical { background: transparent; width: 10px; margin: 2px; }
+QScrollBar:horizontal { background: transparent; height: 10px; margin: 2px; }
+QScrollBar::handle { background: {{ui_line}}; border-radius: 3px; min-height: 24px; min-width: 24px; }
+QScrollBar::handle:hover { background: {{ui_soft}}; }
+QScrollBar::add-line, QScrollBar::sub-line { width: 0; height: 0; }
+QScrollBar::add-page, QScrollBar::sub-page { background: none; }
+
+QSplitter::handle { background-color: {{ui_line}}; }
+QFrame[frameShape="4"], QFrame[frameShape="5"] { color: {{ui_line}}; background-color: {{ui_line}}; max-height: 1px; border: none; }
+
+/* Scroll areas and the pages inside them take the window, not the palette's white. */
+QScrollArea, QScrollArea > QWidget > QWidget, #scrollAreaWidgetContents, QStackedWidget, QTabWidget::pane, QTabWidget > QWidget { background-color: transparent; border: none; }
+QAbstractScrollArea::corner { background: transparent; }
+
 /* The install step: slideshow and log share a tab widget with no visible tabs. */
-QTabWidget::pane { border: none; }
+QTabBar::tab { background: transparent; color: {{ui_soft}}; padding: 6px 12px; border: none; }
 
-QScrollArea, #scrollAreaWidgetContents { background-color: transparent; }
+/* Summary: each step is a card. */
+#summaryTitle { font-size: 20px; font-weight: 600; }
+#summaryItemTitle { font-size: 16px; font-weight: 600; color: {{fg}}; padding-top: 10px; }
+#summaryItemBody { background-color: {{ui_card}}; color: {{fg}}; border: 1px solid {{ui_line}}; border-radius: 14px; padding: 12px 16px; }
+#summaryStep QWidget { background-color: transparent; }
+#summaryStep QLabel#summaryItemBody { background-color: {{ui_card}}; }
 
-/* The step list sits straight on the sidebar, no frame. */
-#sidebarMenuApp { background-color: transparent; border: none; }
-
-/* Keep the welcome logo small and calm; it scales to fill whatever is left. */
+/* Welcome: keep the logo small and calm; it scales to fill whatever is left. */
 #welcomeLogo { margin: 90px; }
+
+/* The legend under them draws its text in black whatever the palette, so it sits on a
+   light chip in both modes. Last, so it wins over #summaryStep QWidget. */
+PartitionLabelsView, #summaryStep PartitionLabelsView { background-color: {{light_bg}}; border-radius: 10px; }

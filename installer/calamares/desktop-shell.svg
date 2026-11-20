@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
+  <!-- The desktop picker's picture of the KrissOS Shell: a floating taskbar, Start in the
+       accent, window buttons on the right. Rendered from theme/tokens.json. -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="{{bg}}"/>
+      <stop offset="1" stop-color="{{accent}}" stop-opacity="0.45"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="500" rx="22" fill="{{bg}}"/>
+  <rect width="800" height="500" rx="22" fill="url(#sky)"/>
+  <rect x="150" y="70" width="500" height="300" rx="14" fill="{{surface}}" stroke="{{fg}}" stroke-opacity="0.12"/>
+  <circle cx="626" cy="92" r="7" fill="{{color1}}"/>
+  <circle cx="604" cy="92" r="7" fill="{{fg}}" fill-opacity="0.3"/>
+  <circle cx="582" cy="92" r="7" fill="{{fg}}" fill-opacity="0.3"/>
+  <rect x="176" y="130" width="220" height="14" rx="7" fill="{{fg}}" fill-opacity="0.5"/>
+  <rect x="176" y="160" width="420" height="10" rx="5" fill="{{fg}}" fill-opacity="0.2"/>
+  <rect x="176" y="180" width="380" height="10" rx="5" fill="{{fg}}" fill-opacity="0.2"/>
+  <rect x="200" y="420" width="400" height="56" rx="18" fill="{{surface}}" fill-opacity="0.92" stroke="{{fg}}" stroke-opacity="0.1"/>
+  <rect x="226" y="432" width="32" height="32" rx="10" fill="{{accent}}"/>
+  <rect x="270" y="432" width="32" height="32" rx="10" fill="{{fg}}" fill-opacity="0.3"/>
+  <rect x="314" y="432" width="32" height="32" rx="10" fill="{{fg}}" fill-opacity="0.3"/>
+  <rect x="358" y="432" width="32" height="32" rx="10" fill="{{fg}}" fill-opacity="0.3"/>
+  <rect x="490" y="443" width="86" height="10" rx="5" fill="{{fg}}" fill-opacity="0.4"/>
+</svg>

@@ -40,5 +40,13 @@ case ${WAYLAND_DISPLAY:-} in
 '' | /*) ;;
 *) WAYLAND_DISPLAY=$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY; export WAYLAND_DISPLAY ;;
 esac
+# Light or dark, as the shell is (it follows the GNOME colour scheme). Calamares loads one
+# stylesheet, so a light session gets kriss-theme's light copy of the branding, found first
+# through XDG_DATA_DIRS (-X).
+light=/usr/share/kriss-theme/calamares-light
+case $(gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null) in
+*dark*) ;;
+*) [ -d "$light" ] && XDG_DATA_DIRS=$light:${XDG_DATA_DIRS:-/usr/local/share:/usr/share} && export XDG_DATA_DIRS ;;
+esac
 # The log goes to the journal too (tag calamares); the ISO boot test reads it there.
-exec systemd-cat -t calamares sudo -E calamares -d
+exec systemd-cat -t calamares sudo -E calamares -d -X

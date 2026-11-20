@@ -77,13 +77,25 @@ def times(t):
     }
 
 
+def ui(t, dark):
+    """The shell's surfaces (shell/qml/Theme.qml) as plain colours, for apps that cannot run
+    its JavaScript: the window, a raised card, a card under the pointer, secondary text and
+    the accent as text (deepened on light so it keeps 4.5:1 on white)."""
+    win = t["surface"] if dark else t["bg"]
+    card = mix(t["surface"], t["fg"], 0.06) if dark else t["surface"]
+    return {"ui_win": win, "ui_card": card, "ui_hover": mix(card, t["fg"], 0.12),
+            "ui_line": mix(card, t["fg"], 0.14), "ui_soft": mix(card, t["fg"], 0.66),
+            "ui_accent_text": t["accent"] if dark else mix(t["accent"], t["fg"], 0.35),
+            "ui_scheme": "dark" if dark else "light"}
+
+
 def render(text, values):
     return re.sub(r"\{\{([\w.]+)\}\}", lambda m: values[m.group(1)], text)
 
 
 def main(src, dst):
     tokens = json.loads(TOKENS.read_text())
-    values = variants(tokens)
+    values = variants({**tokens, **ui(tokens, True)})
     src, dst = pathlib.Path(src), pathlib.Path(dst)
     for f in sorted(src.rglob("*")):
         if f.is_file():
@@ -103,6 +115,16 @@ def main(src, dst):
         out = render(WALLPAPER.read_text(), {**variants(t), **sky, "keris": keris})
         (wp / f"kriss-{mode}.svg").write_text(out)
     plymouth(dst / "usr/share/plymouth/themes/kriss", values, keris)
+    # The installer's branding again in light colours. kriss-install puts this tree first in
+    # XDG_DATA_DIRS (calamares -X) when the live session is light: Calamares loads one
+    # stylesheet.qss and cannot switch it.
+    lt = light(tokens)
+    branding = "usr/share/calamares/branding/krissos"
+    for f in sorted((src / branding).rglob("*")):
+        if f.is_file():
+            out = dst / "usr/share/kriss-theme/calamares-light/calamares/branding/krissos" / f.relative_to(src / branding)
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(render(f.read_text(), variants({**lt, **ui(lt, False)})))
 
 
 PLYMOUTH_SIZES = (256, 512)  # the script picks the smallest one at least as big as the logo
@@ -146,6 +168,8 @@ def test():
     assert "font.hex" not in v
     assert light({"bg": "#000000", "light_bg": "#FFFFFF"})["bg"] == "#FFFFFF"
     assert mix("#000000", "#FF8000", 0.5) == "#804000"
+    t = json.loads(TOKENS.read_text())
+    assert ui(t, True)["ui_win"] == t["surface"] and ui(light(t), False)["ui_card"] == t["light_surface"]
     assert set(times(json.loads(TOKENS.read_text()))) == {"dawn", "day", "dusk", "night"}
     print("ok")
 
