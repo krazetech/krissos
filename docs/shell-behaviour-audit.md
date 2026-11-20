@@ -62,7 +62,7 @@ stop dropping the keyboard when the shell gets it wrong.
   already accepts. This fixes the same keyboard loss for Start, quick settings, the calendar,
   Windows+V, Task View, tray menus and previews too. Kept in KrissOS, not sent upstream.
 
-**AT-3. Holding Alt for more than 0.6 s after opening switches on its own.** Size XS, verify.
+**AT-3. Holding Alt for more than 0.6 s after opening switches on its own.** Size XS. Fixed in #99.
 - Repro: press Alt+Tab, keep Alt held and look at the list. After 600 ms it switches without
   Alt being released. Pressing Tab again (still holding Alt) does not help.
 - Cause: `Switcher.qml:41` starts the `settle` timer once at open. Only key events that reach
@@ -70,11 +70,14 @@ stop dropping the keyboard when the shell gets it wrong.
   bindings (`WindowSwitcher`), including their releases, so the switcher never sees them.
   Each Tab arrives as `kriss-shell switcher next` instead, and `step()` does not restart the
   timer.
-- Fix: restart `settle` in `step()`, so each Tab proves Alt is still held. Still to measure
-  on the PC: whether Qt 6.12 sends any key event when the surface gets the keyboard with Alt
-  already down. If it does, `settle` can stop at that point and holding Alt keeps the list
-  open for any length of time, as on Windows. The ceiling meanwhile: holding Alt for more
-  than 600 ms after the *last* Tab still switches.
+- Fix (#99): `settle` only runs until the switcher has the keyboard, and stops when it gets
+  it. Measured on the PC, the keyboard arrives about 50 ms after Tab, and the Alt release
+  reaches the switcher from then on, so holding Alt keeps the list open for any length of
+  time, as on Windows. If the keyboard is taken away while the list is open, `settle` starts
+  again.
+- Left: letting go of Alt in the ~50 ms before the keyboard arrives leaves the list open
+  until the next key or click. Qt only learns modifiers from key events, so the shell can't
+  read them at that point. Reading the key state when the keyboard arrives would close it.
 
 **AT-4. The switcher follows the shared `Desktop.screen`, so other code can move it while it is open.** Size XS.
 - Repro: a notification arrives while Alt+Tab is up. `Notifs.qml:118-119` sets
@@ -85,14 +88,19 @@ stop dropping the keyboard when the shell gets it wrong.
 - Fix: the switcher sets its own `screen` when it opens, as `Clipboard.qml:45` does. Opening
   it also closes Task View, as on Windows.
 
-**AT-5. Wine and Proton games in fullscreen block Alt+Tab altogether.** Size M, verify.
+**AT-5. Wine and Proton games in fullscreen block Alt+Tab altogether.** Size M. Fixed in #100.
 - Repro: a Proton game that grabs the keyboard (XWayland keyboard grab). Alt+Tab goes to the
   game and the switcher never opens.
 - Cause: cosmic-comp treats an active XWayland grab like a shortcuts inhibitor
   (`src/input/mod.rs:2156-2160`), so no binding fires.
-- Fix: in a later compositor patch, let the WindowSwitcher bindings (and Super, Ctrl+Alt+Del
-  and lock) through an XWayland grab, the way Windows always keeps Alt+Tab. This is M because
-  it decides which keys a game can never hold. Not in the first PR.
+- Fix (#100): `pkgs/cosmic-comp-kriss/0005-alt-tab-through-x11-grab.patch` lets the
+  WindowSwitcher bindings (Alt+Tab and Alt+Shift+Tab) through an XWayland keyboard grab, the
+  way Windows always keeps Alt+Tab. Every other binding, Super included, still goes to the
+  game. A Wayland shortcuts inhibitor (a VM, remote desktop) still holds every key. Checked on
+  the PC with an X11 client that grabs the keyboard: before, Alt+Tab went to the client;
+  after, the switcher opens and switches.
+- Left: Super, Ctrl+Alt+Del and lock still go to a game that grabs the keyboard. Add them to
+  0005 if that shows up in use.
 
 ### Panels and screens (group `kz/behaviour-panel-screen`)
 
@@ -155,4 +163,5 @@ Not audited here: widgets (#72) and the Mac layout (#75), which are still in fli
 | `kz/behaviour-alt-tab` | AT-1, AT-2, AT-3, AT-4 | `kriss-shell-toplevels`, `Switcher.qml`, cosmic-comp-kriss 0004 + pkgrel |
 | `kz/behaviour-panel-screen` | PS-1, PS-2 | `Notifs.qml`, `Desktop.qml` |
 | `kz/behaviour-lock` | LK-1 | `shell.qml` |
-| later | AT-5 | cosmic-comp-kriss 0005 |
+| `kz/behaviour-alt-hold` (#99) | AT-3 | `Switcher.qml` |
+| `kz/behaviour-game-alt-tab` (#100) | AT-5 | cosmic-comp-kriss 0005 + pkgrel |
