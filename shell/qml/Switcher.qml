@@ -26,7 +26,7 @@ PanelWindow {
             open = true;
         }
         // cosmic-comp keeps Alt+Tab for itself, so each Tab comes here, never as a key: Alt is still held.
-        settle.restart();
+        if (!panel.activeFocus) settle.restart();
         current = (current + by + wins.length) % wins.length;
     }
     // A screen reader stays on the panel; it hears each window as the selection moves.
@@ -38,9 +38,12 @@ PanelWindow {
         if (switchTo && wins[current]) Windows.activate(wins[current].id);
     }
 
-    // A quick Alt+Tab can be over before this surface gets the keyboard, and then no Alt
-    // release ever reaches it. With no key at all by now, the keys are already up: switch.
-    // ponytail: a fixed wait; someone holding Alt still has let go of Tab by then, which counts.
+    // Once this surface has the keyboard (about 50 ms after Tab), letting go of Alt reaches it,
+    // however long Alt is held. Until then a quick Alt+Tab can be over unseen: with no keyboard
+    // by now, the keys are already up, so switch.
+    // ponytail: Alt let go in the ~50 ms before the keyboard arrives leaves it open until the
+    // next key or click (Qt only learns modifiers from key events, so a pointer move can't tell);
+    // reading the key state at keyboard enter would close that gap.
     Timer { id: settle; interval: 600; onTriggered: win.finish(true) }
 
     visible: open
@@ -65,6 +68,8 @@ PanelWindow {
         border.color: Theme.rim
         clip: true
         focus: true
+        // The keyboard taken away while open (another surface grabbed it): no Alt release will come.
+        onActiveFocusChanged: if (activeFocus) settle.stop(); else if (win.open) settle.restart()
         Accessible.role: Accessible.Dialog
         Accessible.name: Tr.t("Switch windows")
 
