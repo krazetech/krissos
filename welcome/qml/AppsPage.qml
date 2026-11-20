@@ -1,13 +1,12 @@
 import QtQuick
-import QtQuick.Controls as QQC2
 import QtQuick.Layouts
-import org.kde.kirigami as Kirigami
 
-Kirigami.ScrollablePage {
+Page {
     id: page
     // flatpak id -> "installing" | "installed" | "failed"
     property var installs: ({})
     property var pending: null
+    readonly property alias dialog: confirm  // for smoke_qml.py and screenshots
 
     function setInstall(id, state) {
         const m = Object.assign({}, installs)
@@ -31,55 +30,60 @@ Kirigami.ScrollablePage {
         function onInstallDone(id, ok) { page.setInstall(id, ok ? "installed" : "failed") }
     }
 
-    Kirigami.PromptDialog {
+    Confirm {
         id: confirm
         title: page.pending ? qsTr("Install %1?").arg(page.pending.name) : ""
         subtitle: page.pending ? qsTr("KrissOS will install it from Flathub. You may be asked for your password.\n\nRuns: flatpak install flathub %1").arg(page.pending.flatpak) : ""
-        standardButtons: Kirigami.Dialog.Ok | Kirigami.Dialog.Cancel
         onAccepted: { page.setInstall(page.pending.flatpak, "installing"); backend.install(page.pending.flatpak) }
     }
 
-    header: Kirigami.InlineMessage {
-        visible: true
-        position: Kirigami.InlineMessage.Position.Header
-        type: backend.hw.winboat_ok ? Kirigami.MessageType.Positive : Kirigami.MessageType.Information
+    Note {
+        Layout.fillWidth: true
+        kind: backend.hw.winboat_ok ? "good" : "info"
         text: backend.hw.winboat_ok
             ? qsTr("Pick the Windows apps you use. This PC can also run the real Windows versions in WinBoat, a Windows virtual machine.")
             : qsTr("Pick the Windows apps you use. WinBoat (a Windows virtual machine) is not offered on this PC: %1.")
                 .arg(backend.hw.reasons.map(page.reasonLabel).join("; "))
     }
 
-    ListView {
+    Repeater {
         model: backend.apps
         delegate: ColumnLayout {
             id: row
             required property var modelData
             required property int index
             readonly property var ans: pick.checked ? backend.answer(modelData) : null
-            width: ListView.view.width
-            spacing: 0
+            Layout.fillWidth: true
+            spacing: 6
 
-            Kirigami.ListSectionHeader {
+            Txt {
                 Layout.fillWidth: true
+                Layout.topMargin: index === 0 ? 0 : 10
                 visible: index === 0 || backend.apps[index - 1].category !== modelData.category
                 text: page.categoryLabel(modelData.category)
+                soft: true
+                bold: true
+                size: 13
             }
-            QQC2.CheckDelegate {
-                id: pick
+            Card {
                 Layout.fillWidth: true
-                text: modelData.name
-            }
-            Kirigami.AbstractCard {
-                visible: pick.checked
-                Layout.fillWidth: true
-                Layout.leftMargin: Kirigami.Units.gridUnit * 2
-                Layout.rightMargin: Kirigami.Units.largeSpacing
-                Layout.bottomMargin: Kirigami.Units.largeSpacing
-                contentItem: ColumnLayout {
-                    QQC2.Label {
+                padding: 12
+                spacing: 10
+                color: pick.hovered && !pick.checked ? backend.theme.cardHover : backend.theme.card
+                Check {
+                    id: pick
+                    Layout.fillWidth: true
+                    text: modelData.name
+                    font.weight: Font.Medium
+                }
+                ColumnLayout {
+                    visible: pick.checked
+                    Layout.fillWidth: true
+                    Layout.leftMargin: 30
+                    spacing: 8
+                    Txt {
                         Layout.fillWidth: true
-                        wrapMode: Text.WordWrap
-                        font.bold: true
+                        bold: true
                         text: !row.ans ? "" : {
                             native: qsTr("%1 is available for KrissOS.").arg(row.modelData.name),
                             winboat: qsTr("Run the real Windows version in WinBoat."),
@@ -89,15 +93,15 @@ Kirigami.ScrollablePage {
                             none: qsTr("There is no good way to run this on Linux yet.")
                         }[row.ans.kind]
                     }
-                    QQC2.Button {
+                    Pill {
                         visible: row.ans && row.ans.kind === "winboat"
                         text: qsTr("Get WinBoat")
-                        icon.name: "computer"
+                        glyph: "display"
                         highlighted: true
                         // ponytail: links out until WinBoat is packaged in [kriss]; then `kriss install winboat`.
                         onClicked: Qt.openUrlExternally("https://www.winboat.app")
                     }
-                    QQC2.Label {
+                    Txt {
                         visible: row.ans && row.ans.kind === "winboat" && row.ans.alts.length > 0
                         text: qsTr("Or use a Linux app:")
                     }
@@ -106,16 +110,17 @@ Kirigami.ScrollablePage {
                         delegate: RowLayout {
                             required property var modelData
                             readonly property string installState: modelData.flatpak ? (page.installs[modelData.flatpak] || "") : ""
-                            QQC2.Label {
+                            Layout.fillWidth: true
+                            Txt {
                                 Layout.fillWidth: true
                                 text: modelData.name + (modelData.unofficial ? " " + qsTr("(unofficial)") : "")
                             }
-                            QQC2.Button {
+                            Pill {
                                 text: !modelData.flatpak ? qsTr("Website")
                                     : installState === "installing" ? qsTr("Installing…")
                                     : installState === "installed" ? qsTr("Installed")
                                     : installState === "failed" ? qsTr("Failed, try again") : qsTr("Install")
-                                icon.name: modelData.flatpak ? "download" : "internet-services"
+                                glyph: !modelData.flatpak ? "globe" : installState === "installed" ? "check" : "update"
                                 enabled: installState !== "installing" && installState !== "installed"
                                 onClicked: {
                                     if (!modelData.flatpak) return Qt.openUrlExternally(modelData.url)
@@ -125,46 +130,44 @@ Kirigami.ScrollablePage {
                             }
                         }
                     }
-                    QQC2.Button {
+                    Pill {
                         visible: row.ans && row.ans.kind === "wine"
                         text: qsTr("Install Bottles")
-                        icon.name: "download"
+                        glyph: "update"
                         onClicked: { page.pending = { name: "Bottles", flatpak: "com.usebottles.bottles" }; confirm.open() }
                     }
-                    QQC2.Label {
+                    Txt {
                         Layout.fillWidth: true
-                        wrapMode: Text.WordWrap
                         visible: row.ans && row.ans.kind !== "wine" && row.ans.wine !== "no"
+                        soft: true
                         text: row.ans && row.ans.wine === "yes"
                             ? qsTr("The Windows version also runs with Wine (through Bottles).")
                             : qsTr("The Windows version may run with Wine, with problems.")
                     }
-                    QQC2.Label {
+                    Txt {
                         Layout.fillWidth: true
-                        wrapMode: Text.WordWrap
                         visible: row.ans && row.ans.winboat_blocked
+                        soft: true
                         text: qsTr("The full Windows version needs WinBoat, which this PC cannot run well.")
                     }
-                    QQC2.Button {
+                    Pill {
                         visible: row.ans && row.ans.web !== ""
                         flat: row.ans && row.ans.kind !== "web"
                         text: qsTr("Open the web version")
-                        icon.name: "internet-services"
+                        glyph: "globe"
                         onClicked: Qt.openUrlExternally(row.ans.web)
                     }
-                    QQC2.Label {
+                    Txt {
                         Layout.fillWidth: true
-                        wrapMode: Text.WordWrap
                         visible: !!row.modelData.uncertain
-                        color: Kirigami.Theme.neutralTextColor
+                        color: backend.theme.amber
                         text: qsTr("Not fully tested; results may vary.")
                     }
-                    QQC2.Label {
+                    Txt {
                         Layout.fillWidth: true
-                        wrapMode: Text.WordWrap
                         visible: !!row.modelData.note
-                        opacity: 0.7
-                        font: Kirigami.Theme.smallFont
+                        soft: true
+                        size: 12
                         text: row.modelData.note || ""
                     }
                 }

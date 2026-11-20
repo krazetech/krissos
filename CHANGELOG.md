@@ -63,6 +63,8 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 
 ### Changed
 
+- KrissOS Welcome looks like the rest of KrissOS: the shell's cards, round buttons and side
+  panel, your accent colour, and light or dark as your desktop is set.
 - The installer looks like the rest of KrissOS: a step list with ticks, round buttons,
   readable cards on the summary page, pictures of each desktop to pick from and new
   install slides. It follows your light or dark setting.

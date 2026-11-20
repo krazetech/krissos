@@ -1,12 +1,12 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-welcome
-pkgver=0.2.2
+pkgver=0.3.0
 pkgrel=1
 pkgdesc='KrissOS first-boot app: game checker, apps, copy from Windows, drivers and extras'
 arch=('any')
 url='https://github.com/krazetech/krissos'
 license=('GPL-3.0-or-later' 'MIT')
-depends=('flatpak' 'kirigami' 'pyside6' 'python' 'polkit' 'qqc2-desktop-style' 'udisks2' 'util-linux' 'xdg-user-dirs')
+depends=('flatpak' 'pyside6' 'python' 'polkit' 'udisks2' 'util-linux' 'xdg-user-dirs')
 makedepends=('qt6-tools')
 
 # Sources live in this monorepo, so package straight from welcome/.
@@ -28,6 +28,8 @@ package() {
   local share="$pkgdir/usr/share/kriss-welcome"
   install -Dm644 -t "$share" "$_src"/kriss_welcome.py "$_src"/logic.py
   install -Dm644 -t "$share/qml" "$_src"/qml/*.qml
+  # The shell's colours and fonts, read at start (see logic.palette).
+  install -Dm644 "$startdir/../../theme/tokens.json" "$share/tokens.json"
   install -Dm644 -t "$share/data" "$_src"/data/{apps.json,games.json,SOURCES.md}
   install -Dm644 -t "$share/i18n" "$srcdir"/i18n/*.qm
   install -Dm644 "$_src/kriss-welcome.desktop" "$pkgdir/usr/share/applications/org.krissos.Welcome.desktop"

@@ -1,9 +1,7 @@
 import QtQuick
-import QtQuick.Controls as QQC2
 import QtQuick.Layouts
-import org.kde.kirigami as Kirigami
 
-Kirigami.ScrollablePage {
+Page {
     id: page
     property var partitions: backend.windowsPartitions()
     property string busy: ""        // device being opened
@@ -39,96 +37,111 @@ Kirigami.ScrollablePage {
         }
     }
 
-    header: Kirigami.InlineMessage {
-        visible: true
-        position: Kirigami.InlineMessage.Position.Header
+    Note {
+        Layout.fillWidth: true
+        kind: "info"
         text: qsTr("KrissOS opens Windows read-only, so nothing on Windows changes. Files you already have here are kept, never replaced.")
     }
 
-    ColumnLayout {
-        spacing: Kirigami.Units.largeSpacing
-
-        // 1. Pick the Windows partition
-        Kirigami.PlaceholderMessage {
-            visible: page.stage === "pick" && page.partitions.length === 0
+    // 1. Pick the Windows partition
+    Empty {
+        visible: page.stage === "pick" && page.partitions.length === 0
+        Layout.fillWidth: true
+        Layout.topMargin: 32
+        Layout.leftMargin: 48
+        Layout.rightMargin: 48
+        glyph: "drive"
+        text: qsTr("No Windows found on this PC")
+        explanation: qsTr("Copy from Windows works when Windows is installed next to KrissOS. You can still copy files from a USB drive in the file manager.")
+    }
+    Repeater {
+        model: page.stage === "pick" ? page.partitions : []
+        delegate: Card {
+            required property var modelData
             Layout.fillWidth: true
-            icon.name: "drive-harddisk"
-            text: qsTr("No Windows found on this PC")
-            explanation: qsTr("Copy from Windows works when Windows is installed next to KrissOS. You can still copy files from a USB drive in the file manager.")
-        }
-        Repeater {
-            model: page.stage === "pick" ? page.partitions : []
-            delegate: Kirigami.AbstractCard {
-                required property var modelData
+            RowLayout {
                 Layout.fillWidth: true
-                contentItem: RowLayout {
-                    Kirigami.Icon {
-                        source: modelData.bitlocker ? "object-locked" : "drive-harddisk"
-                        Layout.preferredWidth: Kirigami.Units.iconSizes.medium
-                        Layout.preferredHeight: Kirigami.Units.iconSizes.medium
-                    }
-                    ColumnLayout {
+                spacing: 14
+                Glyph {
+                    Layout.alignment: Qt.AlignTop
+                    name: modelData.bitlocker ? "lock" : "drive"
+                    size: 28
+                    color: modelData.bitlocker ? backend.theme.amber : backend.theme.accentText
+                }
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 4
+                    Txt {
                         Layout.fillWidth: true
-                        QQC2.Label {
-                            Layout.fillWidth: true
-                            font.bold: true
-                            text: (modelData.label || qsTr("Windows")) + " · " + page.sizeLabel(modelData.size)
-                        }
-                        QQC2.Label {
-                            Layout.fillWidth: true
-                            wrapMode: Text.WordWrap
-                            text: modelData.bitlocker
-                                ? qsTr("This drive is locked with BitLocker, so KrissOS cannot read it. To copy from it, start Windows and turn off BitLocker (Settings, Privacy and security, Device encryption), or copy your files to a USB drive from Windows.")
-                                : modelData.path
-                        }
+                        bold: true
+                        text: (modelData.label || qsTr("Windows")) + " · " + page.sizeLabel(modelData.size)
                     }
-                    QQC2.Button {
-                        visible: !modelData.bitlocker
-                        text: page.busy === modelData.path ? qsTr("Opening…") : qsTr("Open")
-                        icon.name: "document-open-folder"
-                        highlighted: true
-                        enabled: page.busy === ""
-                        onClicked: { page.busy = modelData.path; backend.mountWindows(modelData.path, modelData.mountpoint) }
+                    Txt {
+                        Layout.fillWidth: true
+                        soft: true
+                        text: modelData.bitlocker
+                            ? qsTr("This drive is locked with BitLocker, so KrissOS cannot read it. To copy from it, start Windows and turn off BitLocker (Settings, Privacy and security, Device encryption), or copy your files to a USB drive from Windows.")
+                            : modelData.path
                     }
+                }
+                Pill {
+                    visible: !modelData.bitlocker
+                    text: page.busy === modelData.path ? qsTr("Opening…") : qsTr("Open")
+                    glyph: "folder"
+                    highlighted: true
+                    enabled: page.busy === ""
+                    onClicked: { page.busy = modelData.path; backend.mountWindows(modelData.path, modelData.mountpoint) }
                 }
             }
         }
-        Kirigami.InlineMessage {
-            Layout.fillWidth: true
-            visible: page.error !== ""
-            type: Kirigami.MessageType.Error
-            text: qsTr("Windows could not be opened. If Windows uses Fast Startup, start Windows, hold Shift while you choose Shut down, then try again.") + "\n" + page.error
-        }
+    }
+    Note {
+        Layout.fillWidth: true
+        visible: page.error !== ""
+        kind: "bad"
+        text: qsTr("Windows could not be opened. If Windows uses Fast Startup, start Windows, hold Shift while you choose Shut down, then try again.") + "\n" + page.error
+    }
 
-        // 2. Choose what to copy
-        Kirigami.FormLayout {
-            visible: page.stage === "choose"
+    // 2. Choose what to copy
+    Card {
+        visible: page.stage === "choose"
+        Layout.fillWidth: true
+        padding: 20
+        spacing: 0
+        GridLayout {
             Layout.fillWidth: true
-            QQC2.ComboBox {
+            columns: 2
+            columnSpacing: 24
+            rowSpacing: 14
+            Txt { soft: true; text: qsTr("Windows user:") }
+            Select {
                 id: user
-                Kirigami.FormData.label: qsTr("Windows user:")
+                Layout.preferredWidth: 240
                 model: page.users
             }
+            Txt { Layout.alignment: Qt.AlignTop; soft: true; text: qsTr("Copy:") }
             ColumnLayout {
-                Kirigami.FormData.label: qsTr("Copy:")
+                spacing: 4
                 Repeater {
                     id: folders
                     model: ["Desktop", "Documents", "Pictures", "Music", "Videos"]
-                    delegate: QQC2.CheckBox {
+                    delegate: Check {
                         required property string modelData
                         text: page.folderLabel(modelData)
                         checked: true
                     }
                 }
             }
-            QQC2.CheckBox {
+            Item { width: 1; height: 1 }
+            Check {
                 id: bookmarks
                 text: qsTr("Edge and Chrome bookmarks")
                 checked: true
             }
-            QQC2.Button {
+            Item { width: 1; height: 1 }
+            Pill {
                 text: qsTr("Copy to KrissOS")
-                icon.name: "edit-copy"
+                glyph: "update"
                 highlighted: true
                 enabled: page.users.length > 0
                 onClicked: {
@@ -141,51 +154,53 @@ Kirigami.ScrollablePage {
                 }
             }
         }
-        QQC2.Label {
-            visible: page.stage === "choose" && page.users.length === 0
-            Layout.fillWidth: true
-            wrapMode: Text.WordWrap
-            text: qsTr("This drive has no Windows user folders.")
-        }
+    }
+    Txt {
+        visible: page.stage === "choose" && page.users.length === 0
+        Layout.fillWidth: true
+        text: qsTr("This drive has no Windows user folders.")
+    }
 
-        // 3. Progress
-        ColumnLayout {
-            visible: page.stage === "copying"
-            Layout.fillWidth: true
-            QQC2.Label {
-                text: page.total > 0 ? qsTr("Copying… %1 of %2").arg(page.sizeLabel(page.done)).arg(page.sizeLabel(page.total))
-                                     : qsTr("Finding your files…")
-            }
-            QQC2.ProgressBar {
-                Layout.fillWidth: true
-                indeterminate: page.total === 0
-                value: page.total > 0 ? page.done / page.total : 0
-            }
-            QQC2.Label {
-                Layout.fillWidth: true
-                elide: Text.ElideMiddle
-                opacity: 0.7
-                text: page.file
-            }
+    // 3. Progress
+    Card {
+        visible: page.stage === "copying"
+        Layout.fillWidth: true
+        padding: 20
+        Txt {
+            text: page.total > 0 ? qsTr("Copying… %1 of %2").arg(page.sizeLabel(page.done)).arg(page.sizeLabel(page.total))
+                                 : qsTr("Finding your files…")
         }
+        Meter {
+            Layout.fillWidth: true
+            indeterminate: page.total === 0
+            value: page.total > 0 ? page.done / page.total : 0
+        }
+        Txt {
+            Layout.fillWidth: true
+            elide: Text.ElideMiddle
+            wrapMode: Text.NoWrap
+            soft: true
+            font.family: backend.theme.mono
+            size: 12
+            text: page.file
+        }
+    }
 
-        // 4. Done
-        Kirigami.InlineMessage {
-            Layout.fillWidth: true
-            visible: page.stage === "done"
-            type: !page.result || page.result.failed === 0 ? Kirigami.MessageType.Positive : Kirigami.MessageType.Warning
-            text: !page.result ? ""
-                : page.result.failed === -1 ? qsTr("There is not enough free space here to copy these folders. Free up space or choose fewer folders.")
-                : page.result.failed < 0 ? qsTr("Copying stopped because of an error. Files copied so far are kept.")
-                : qsTr("Copied %1 files.").arg(page.result.copied)
-                  + (page.result.failed > 0 ? " " + qsTr("%1 files could not be read and were skipped (OneDrive files that are only online cannot be copied).").arg(page.result.failed) : "")
-        }
-        QQC2.Label {
-            Layout.fillWidth: true
-            wrapMode: Text.WordWrap
-            visible: page.stage === "done" && page.result && page.result.bookmarks.length > 0
-            text: !page.result ? "" : qsTr("Your bookmarks are saved in %1. To add them to Firefox, open Bookmarks, Manage bookmarks, Import and Backup, Import Bookmarks from HTML.")
-                .arg(page.result.bookmarks.join(", "))
-        }
+    // 4. Done
+    Note {
+        Layout.fillWidth: true
+        visible: page.stage === "done"
+        kind: !page.result || page.result.failed === 0 ? "good" : "warn"
+        text: !page.result ? ""
+            : page.result.failed === -1 ? qsTr("There is not enough free space here to copy these folders. Free up space or choose fewer folders.")
+            : page.result.failed < 0 ? qsTr("Copying stopped because of an error. Files copied so far are kept.")
+            : qsTr("Copied %1 files.").arg(page.result.copied)
+              + (page.result.failed > 0 ? " " + qsTr("%1 files could not be read and were skipped (OneDrive files that are only online cannot be copied).").arg(page.result.failed) : "")
+    }
+    Txt {
+        Layout.fillWidth: true
+        visible: page.stage === "done" && page.result && page.result.bookmarks.length > 0
+        text: !page.result ? "" : qsTr("Your bookmarks are saved in %1. To add them to Firefox, open Bookmarks, Manage bookmarks, Import and Backup, Import Bookmarks from HTML.")
+            .arg(page.result.bookmarks.join(", "))
     }
 }

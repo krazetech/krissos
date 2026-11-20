@@ -300,3 +300,49 @@ def write_layout(path, layout):
     config["layout"] = layout
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(config, indent=4) + "\n")
+
+
+# The look: the KrissOS Shell's colours (shell/qml/Theme.qml), made from theme/tokens.json.
+def _rgb(c):
+    return tuple(int(c[i:i + 2], 16) for i in (1, 3, 5))
+
+
+def mix(a, b, t):
+    """Colour a moved t of the way to colour b, as #RRGGBB (theme/generate.py's mix)."""
+    return "#" + "".join(f"{round(x + (y - x) * t):02X}" for x, y in zip(_rgb(a), _rgb(b)))
+
+
+def palette(tokens, dark, accent=None):
+    """The shell's surfaces as plain colours: the window, a raised card, the card under the
+    pointer, hairlines, softened text, and the accent with the ink on it and as text
+    (deepened on light so it keeps 4.5:1 on white). accent is the user's pick from shell.json."""
+    t = tokens if dark else {**tokens, **{k[6:]: v for k, v in tokens.items() if k.startswith("light_")}}
+    accent = accent if isinstance(accent, str) and len(accent) == 7 and accent.startswith("#") else t["accent"]
+    try:
+        r, g, b = _rgb(accent)
+    except ValueError:
+        accent = t["accent"]
+        r, g, b = _rgb(accent)
+    card = mix(t["surface"], t["fg"], 0.06) if dark else t["surface"]
+    return {
+        "dark": dark,
+        "win": t["surface"] if dark else t["bg"],
+        "card": card,
+        "cardHover": mix(card, t["fg"], 0.12),
+        "fg": t["fg"],
+        "soft": mix(card, t["fg"], 0.66),
+        "line": mix(card, t["fg"], 0.14),
+        "accent": accent,
+        "accentHover": mix(accent, "#FFFFFF", 0.15) if dark else mix(accent, "#000000", 0.1),
+        "accentInk": "#000000" if 0.299 * r + 0.587 * g + 0.114 * b > 140 else "#FFFFFF",
+        "accentText": accent if dark else mix(accent, t["fg"], 0.35),
+        "red": t["color1"], "green": t["color2"], "amber": t["color3"],
+        "sans": t["font_sans"], "mono": t["font_mono"],
+    }
+
+
+def read_accent(path):
+    try:
+        return json.loads(pathlib.Path(path).read_text()).get("accent")
+    except (OSError, ValueError, AttributeError):
+        return None

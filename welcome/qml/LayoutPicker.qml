@@ -1,26 +1,26 @@
 import QtQuick
-import QtQuick.Controls as QQC2
+import QtQuick.Controls.Basic as B
 import QtQuick.Layouts
-import org.kde.kirigami as Kirigami
 
 // The desktop layout: the taskbar (the default) or the top bar and dock. Each choice shows a
 // small picture of the desktop it gives, and picking one switches the running desktop at once.
 ColumnLayout {
-    spacing: Kirigami.Units.largeSpacing
+    spacing: 12
 
-    Kirigami.Heading {
-        level: 2
+    Txt {
         text: qsTr("Desktop layout")
+        size: 18
+        bold: true
     }
-    QQC2.Label {
+    Txt {
         Layout.fillWidth: true
-        wrapMode: Text.WordWrap
+        soft: true
         text: qsTr("Pick the one your hands know. It changes straight away, and you can switch back any time: right-click the taskbar or the dock.")
     }
 
     Flow {
         Layout.fillWidth: true
-        spacing: Kirigami.Units.largeSpacing * 2
+        spacing: 12 * 2
         Choice {
             layout: "windows"
             title: qsTr("Taskbar")
@@ -33,15 +33,15 @@ ColumnLayout {
         }
     }
 
-    component Choice: QQC2.AbstractButton {
+    component Choice: B.AbstractButton {
         id: choice
         required property string layout
         required property string title
         required property string detail
         readonly property bool mac: layout === "mac"
 
-        width: Kirigami.Units.gridUnit * 16
-        height: column.implicitHeight + Kirigami.Units.largeSpacing * 2
+        width: 18 * 16
+        height: column.implicitHeight + 12 * 2
         checkable: true
         checked: backend.layout === layout
         // Stays checked until the other is picked, like a radio button.
@@ -53,31 +53,34 @@ ColumnLayout {
         Accessible.name: title
         Accessible.description: detail
 
+        hoverEnabled: true
+        scale: down ? 0.98 : 1
+        Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
         background: Rectangle {
-            radius: Kirigami.Units.cornerRadius * 2
-            color: choice.checked ? Qt.alpha(Kirigami.Theme.highlightColor, 0.12)
-                 : choice.hovered ? Qt.alpha(Kirigami.Theme.textColor, 0.05) : "transparent"
+            radius: 14
+            color: choice.hovered && !choice.checked ? backend.theme.cardHover : backend.theme.card
             border.width: choice.checked || choice.visualFocus ? 2 : 1
-            border.color: choice.checked || choice.visualFocus ? Kirigami.Theme.highlightColor
-                        : Qt.alpha(Kirigami.Theme.textColor, 0.15)
+            border.color: choice.checked || choice.visualFocus ? backend.theme.accentText : backend.theme.line
+            Behavior on color { ColorAnimation { duration: 140 } }
+            Behavior on border.color { ColorAnimation { duration: 140 } }
         }
 
         contentItem: Item {}
         ColumnLayout {
             id: column
-            x: Kirigami.Units.largeSpacing
-            y: Kirigami.Units.largeSpacing
-            width: choice.width - Kirigami.Units.largeSpacing * 2
-            spacing: Kirigami.Units.smallSpacing
+            x: 12
+            y: 12
+            width: choice.width - 12 * 2
+            spacing: 6
 
             // The picture: a desktop with one window on it.
             Rectangle {
                 id: screen
                 Layout.fillWidth: true
                 Layout.preferredHeight: width * 10 / 16
-                radius: Kirigami.Units.cornerRadius
+                radius: 10
                 clip: true
-                color: Qt.alpha(Kirigami.Theme.highlightColor, 0.18)
+                color: Qt.tint(backend.theme.win, Qt.alpha(backend.theme.accent, 0.22))
                 readonly property real u: width / 64  // one step of the picture's grid
 
                 // The window, with its three buttons on the right or the left.
@@ -87,7 +90,7 @@ ColumnLayout {
                     width: screen.u * 40
                     height: screen.u * 22
                     radius: screen.u
-                    color: Kirigami.Theme.backgroundColor
+                    color: backend.theme.win
                     Row {
                         x: choice.mac ? screen.u * 1.5 : parent.width - width - screen.u * 1.5
                         y: screen.u * 1.5
@@ -100,7 +103,7 @@ ColumnLayout {
                                 height: width
                                 radius: width / 2
                                 // The close button stands out, at the corner.
-                                color: index === 0 ? Kirigami.Theme.highlightColor : Qt.alpha(Kirigami.Theme.textColor, 0.35)
+                                color: index === 0 ? backend.theme.accent : Qt.alpha(backend.theme.fg, 0.35)
                             }
                         }
                     }
@@ -112,7 +115,7 @@ ColumnLayout {
                     anchors.bottom: parent.bottom
                     width: parent.width
                     height: screen.u * 4.5
-                    color: Kirigami.Theme.backgroundColor
+                    color: backend.theme.win
                     Row {
                         anchors.centerIn: parent
                         spacing: screen.u
@@ -122,7 +125,7 @@ ColumnLayout {
                                 width: screen.u * 2.6
                                 height: width
                                 radius: screen.u * 0.6
-                                color: index === 0 ? Kirigami.Theme.highlightColor : Qt.alpha(Kirigami.Theme.textColor, 0.35)
+                                color: index === 0 ? backend.theme.accent : Qt.alpha(backend.theme.fg, 0.35)
                             }
                         }
                     }
@@ -134,7 +137,7 @@ ColumnLayout {
                         width: screen.u * 7
                         height: screen.u * 1.2
                         radius: height / 2
-                        color: Qt.alpha(Kirigami.Theme.textColor, 0.35)
+                        color: Qt.alpha(backend.theme.fg, 0.35)
                     }
                 }
 
@@ -143,14 +146,14 @@ ColumnLayout {
                     visible: choice.mac
                     width: parent.width
                     height: screen.u * 3
-                    color: Kirigami.Theme.backgroundColor
+                    color: backend.theme.win
                     Rectangle {
                         x: screen.u * 1.5
                         anchors.verticalCenter: parent.verticalCenter
                         width: screen.u * 1.8
                         height: width
                         radius: width / 2
-                        color: Kirigami.Theme.highlightColor
+                        color: backend.theme.accent
                     }
                     Rectangle {
                         x: screen.u * 4.5
@@ -158,7 +161,7 @@ ColumnLayout {
                         width: screen.u * 6
                         height: screen.u * 1.2
                         radius: height / 2
-                        color: Qt.alpha(Kirigami.Theme.textColor, 0.5)
+                        color: Qt.alpha(backend.theme.fg, 0.5)
                     }
                     Rectangle {
                         anchors.right: parent.right
@@ -167,7 +170,7 @@ ColumnLayout {
                         width: screen.u * 9
                         height: screen.u * 1.2
                         radius: height / 2
-                        color: Qt.alpha(Kirigami.Theme.textColor, 0.35)
+                        color: Qt.alpha(backend.theme.fg, 0.35)
                     }
                 }
 
@@ -180,7 +183,7 @@ ColumnLayout {
                     width: dock.width + screen.u * 2
                     height: screen.u * 4.5
                     radius: screen.u * 1.2
-                    color: Kirigami.Theme.backgroundColor
+                    color: backend.theme.win
                     Row {
                         id: dock
                         anchors.centerIn: parent
@@ -191,7 +194,7 @@ ColumnLayout {
                                 width: screen.u * 2.6
                                 height: width
                                 radius: screen.u * 0.6
-                                color: index === 0 ? Kirigami.Theme.highlightColor : Qt.alpha(Kirigami.Theme.textColor, 0.35)
+                                color: index === 0 ? backend.theme.accent : Qt.alpha(backend.theme.fg, 0.35)
                             }
                         }
                     }
@@ -199,29 +202,28 @@ ColumnLayout {
             }
 
             RowLayout {
-                Layout.topMargin: Kirigami.Units.smallSpacing
-                QQC2.RadioButton {
-                    // The card is the control; this only shows the state.
-                    checked: choice.checked
-                    focusPolicy: Qt.NoFocus
-                    Accessible.ignored: true
-                    onClicked: {
-                        checked = Qt.binding(() => choice.checked)
-                        choice.clicked()
-                    }
+                Layout.topMargin: 6
+                spacing: 10
+                // The card is the control; this only shows the state, as a radio dot.
+                Rectangle {
+                    width: 20; height: 20; radius: 10
+                    color: backend.theme.card
+                    border.width: choice.checked ? 6 : 1.5
+                    border.color: choice.checked ? backend.theme.accent : backend.theme.soft
+                    Behavior on border.width { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
                 }
-                QQC2.Label {
+                Txt {
                     Layout.fillWidth: true
                     text: choice.title
-                    font.bold: true
+                    bold: true
                     elide: Text.ElideRight
+                    wrapMode: Text.NoWrap
                 }
             }
-            QQC2.Label {
+            Txt {
                 Layout.fillWidth: true
                 text: choice.detail
-                wrapMode: Text.WordWrap
-                opacity: 0.8
+                soft: true
             }
         }
     }
