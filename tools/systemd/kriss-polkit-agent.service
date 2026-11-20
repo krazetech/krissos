@@ -1,0 +1,13 @@
+# The password prompt for pkexec, udisks and the like: the KrissOS Shell has no polkit agent of
+# its own. A service rather than an XDG autostart entry, so it comes back when it exits, such as
+# when the compositor restarts under it; an autostart entry is never restarted.
+[Unit]
+Description=KrissOS password prompt
+PartOf=kriss-shell-session.target
+After=kriss-shell-session.target
+StartLimitIntervalSec=0
+
+[Service]
+ExecStart=/usr/lib/polkit-kde-authentication-agent-1
+Restart=always
+RestartSec=2

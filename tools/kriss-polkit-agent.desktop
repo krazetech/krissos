@@ -1,6 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=KrissOS password prompt
-Exec=/usr/lib/polkit-kde-authentication-agent-1
-OnlyShowIn=KrissOS;
-NoDisplay=true

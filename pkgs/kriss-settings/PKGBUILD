@@ -1,6 +1,6 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-settings
-pkgver=0.4.6
+pkgver=0.4.8
 pkgrel=1
 pkgdesc='KrissOS default configs (Plasma, SDDM, GTK, Flatpak, terminals, prompt, fastfetch), os-release, Limine menu and pacman hooks'
 arch=('any')
