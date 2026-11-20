@@ -3,7 +3,8 @@
 `kriss hwcheck`, Flatpak installs go through `flatpak` and the Windows partition is mounted
 read-only through `udisksctl` (both ask polkit themselves), and package installs go through
 `pkexec` with the fixed commands in logic.EXTRAS.
-Colours come from the KDE colour scheme; the Sky Cyan accent is set system-wide there."""
+The look is the KrissOS Shell's: its tokens (theme/tokens.json), light or dark from the GNOME
+colour scheme as the shell follows it, and the accent the user picked in shell.json."""
 import json
 import os
 import pathlib
@@ -16,12 +17,15 @@ from PySide6.QtCore import QLocale, QObject, QProcess, QTranslator, Property, Si
 from PySide6.QtGui import QGuiApplication, QIcon
 from PySide6.QtNetwork import QNetworkInformation
 from PySide6.QtQml import QQmlApplicationEngine
+from PySide6.QtQuickControls2 import QQuickStyle
 
 import logic
 
 HERE = pathlib.Path(__file__).resolve().parent
 LOGO = "/usr/share/pixmaps/krissos.svg"  # from kriss-theme
 AUTOSTART = pathlib.Path.home() / ".config/autostart/kriss-welcome.desktop"
+# Installed next to the app by the package; in the source tree it is the repo's own.
+TOKENS = next(p for p in (HERE / "tokens.json", HERE.parent / "theme/tokens.json") if p.exists())
 
 
 def disable_autostart():
@@ -45,6 +49,7 @@ class Backend(QObject):
     languageChanged = Signal()
     layoutChanged = Signal()
     onlineChanged = Signal()
+    themeChanged = Signal()
     windowsMounted = Signal(str, str)  # mount point, or "" and the error
     copyProgress = Signal(float, float, str)  # bytes done, bytes total, file name
     copyDone = Signal(int, int, "QStringList")  # files copied, files failed, bookmark files written
@@ -62,11 +67,40 @@ class Backend(QObject):
         self._procs = {}
         self._layout = logic.read_layout(logic.shell_config())
         self._mounted = ""  # the Windows partition this app mounted, unmounted after copying
+        # Light or dark, as the shell is: GNOME's color-scheme, watched for changes.
+        self._tokens = json.loads(TOKENS.read_text())
+        self._dark = True
+        self._watch = QProcess(self)
+        self._watch.readyReadStandardOutput.connect(
+            lambda: self._set_dark(bytes(self._watch.readAllStandardOutput()).decode()))
+        self._watch.start("gsettings", ["monitor", "org.gnome.desktop.interface", "color-scheme"])
+        try:
+            self._set_dark(subprocess.run(["gsettings", "get", "org.gnome.desktop.interface", "color-scheme"],
+                                          capture_output=True, text=True, timeout=5).stdout)
+        except (OSError, subprocess.SubprocessError):
+            pass
         # NetworkManager's view of the internet, so the extras page can say "needs internet"
         # instead of failing. Qt picks the backend; with none, assume online.
         self._net = QNetworkInformation.instance() if QNetworkInformation.loadDefaultBackend() else None
         if self._net:
             self._net.reachabilityChanged.connect(lambda _r: self.onlineChanged.emit())
+
+    def _set_dark(self, line):
+        # The shell's rule: dark unless the scheme says light or default.
+        dark = "light" not in line and "default" not in line
+        if line.strip() and dark != self._dark:
+            self._dark = dark
+            self.themeChanged.emit()
+
+    @Property("QVariantMap", notify=themeChanged)
+    def theme(self):
+        return logic.palette(self._tokens, self._dark, logic.read_accent(logic.shell_config()))
+
+    @Slot(bool)
+    def setDark(self, dark):
+        """For screenshots and tests: light or dark without touching the system setting."""
+        self._dark = dark
+        self.themeChanged.emit()
 
     @Property("QVariantMap", constant=True)
     def hw(self):
@@ -262,6 +296,8 @@ class Backend(QObject):
 def main():
     if "--autostart" in sys.argv:
         disable_autostart()
+    # Plain controls, so the pages draw them in the shell's look and no desktop style.
+    QQuickStyle.setStyle("Basic")
     app = QGuiApplication(sys.argv)
     app.setApplicationName("kriss-welcome")
     app.setDesktopFileName("org.krissos.Welcome")
