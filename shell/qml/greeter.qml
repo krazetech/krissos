@@ -24,6 +24,18 @@ ShellRoot {
     readonly property string userName: users.length ? users[user][1] : ""
     // ponytail: only AccountsService's copy; the greeter user cannot read ~/.face in a private home.
     readonly property var faces: users.length ? ["/var/lib/AccountsService/icons/" + users[user][0]] : []
+    // The lock clock the way this user set it, from the copy their session leaves in
+    // /var/lib/kriss/lock-clock (Desktop.setLockClock); the defaults before they have one.
+    readonly property var lockClock: {
+        const d = { position: "top", stack: "stacked", size: "l", weight: "bold", font: "inter-display",
+                    style: "glass", date: true, widgets: true, depth: true };
+        try { return Object.assign(d, JSON.parse(clockCopy.text() || "{}")); } catch (e) { return d; }
+    }
+    FileView {
+        id: clockCopy
+        path: root.users.length ? "/var/lib/kriss/lock-clock/" + root.users[root.user][0] + ".json" : ""
+        printErrors: false
+    }
     property var sessions: []   // [[name, command, desktop names]], the KrissOS Shell first
     property int session: 0
 

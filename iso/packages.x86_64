@@ -18,6 +18,9 @@ sof-firmware
 kriss-keyring
 kriss-settings
 kriss-theme
+# The lock clock's depth effect on your own pictures, like a phone's: kriss-wallpaper-mask
+# runs kriss-theme's model with it. x86 only, so kriss-theme keeps it optional for aarch64.
+python-onnxruntime-cpu
 kriss-tools
 kriss-welcome
 
