@@ -101,7 +101,8 @@ Scope {
     Timer { id: engage; interval: 200; onTriggered: root.engaged = true }
 
     // Lock when the laptop is about to sleep, and when logind asks this session to
-    // (`loginctl lock-session`). gdbus prints one line per login1 signal, such as
+    // (`loginctl lock-session`), and unlock when it asks to (`loginctl unlock-session`).
+    // gdbus prints one line per login1 signal, such as
     //   /org/freedesktop/login1: org.freedesktop.login1.Manager.PrepareForSleep (true,)
     //   /org/freedesktop/login1/session/_33: org.freedesktop.login1.Session.Lock ()
     // login1 escapes a session id's leading digit (and any other character that isn't
@@ -118,6 +119,9 @@ Scope {
                 if (line.includes(".Manager.PrepareForSleep (true")
                     || line.startsWith(root.sessionPath + ": org.freedesktop.login1.Session.Lock ("))
                     Desktop.locked = true;
+                // `loginctl unlock-session`: logind only lets the session's owner or root send it.
+                else if (Desktop.locked && line.startsWith(root.sessionPath + ": org.freedesktop.login1.Session.Unlock ("))
+                    root.unlock();
             }
         }
         // ponytail: restart with a fixed delay, as kriss-shell-toplevels does.

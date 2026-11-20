@@ -57,6 +57,8 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 
 ### Fixed
 
+- `loginctl unlock-session` unlocks the lock screen again, so remote and admin tools can
+  unlock it.
 - Updates no longer stop at "invalid or corrupted package" when the signing keys are out
   of date: `kriss update` refreshes the keys first and tries once more if a download fails.
 - The password prompt for installing and changing things comes back on its own if it
