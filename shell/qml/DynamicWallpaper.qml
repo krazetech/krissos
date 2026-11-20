@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Effects
 import Quickshell
 
 // The time-of-day wallpaper: the Sungai Petani clock tower by day and by night (the photo
@@ -71,37 +72,50 @@ Item {
     Light { id: b; z: root.flip ? 0 : 1; opacity: root.flip ? 1 : root.fraction }
 
     // The tower's two clocks tell the time shown. The photos have their own hands painted
-    // out (theme/photos/erase-hands.py); these are drawn over them, once a minute.
+    // out (theme/photos/erase-hands.py); these are drawn back in the photo's own style:
+    // thick tapered hands on a big hub, in the dial ring's ink, softened by the photo's blur.
     // [hub x, hub y, disc rx, disc ry] in the 3840x2160 photo. The left face is seen at an
     // angle, so its circle squashes to an ellipse; ponytail: no skew, it reads fine at this size.
     readonly property var dials: [[1049, 1456, 23, 49], [1427, 1436, 41, 48]]
+    // Where PreserveAspectCrop puts the photo: scale and offset.
+    readonly property real scale_: Math.max(width / 3840, height / 2160)
+    // Only the patch around both dials is drawn and blurred: photo x 1000..1500, y 1380..1530.
     Canvas {
         id: hands
-        anchors.fill: parent
         z: 2
         visible: !root.missing
+        x: (root.width - 3840 * root.scale_) / 2 + 1000 * root.scale_
+        y: (root.height - 2160 * root.scale_) / 2 + 1380 * root.scale_
+        width: 500 * root.scale_
+        height: 150 * root.scale_
+        layer.enabled: true
+        layer.effect: MultiEffect {
+            blurEnabled: true
+            blur: 1
+            blurMax: Math.max(3, Math.round(6 * root.scale_))  // the photo's softness
+        }
         onPaint: {
-            const ctx = getContext("2d");
+            const ctx = getContext("2d"), s = root.scale_;
             ctx.resetTransform();
             ctx.clearRect(0, 0, width, height);
-            // Where PreserveAspectCrop puts the photo.
-            const s = Math.max(width / 3840, height / 2160), ox = (width - 3840 * s) / 2, oy = (height - 2160 * s) / 2;
             const h = root.at.getHours() % 12 + root.at.getMinutes() / 60, m = root.at.getMinutes();
-            ctx.fillStyle = ctx.strokeStyle = "#101a24";
-            ctx.lineCap = "round";
+            ctx.fillStyle = "#0b1520";
             for (const [cx, cy, rx, ry] of root.dials) {
                 // Unit circle = the dial's centre disc.
-                ctx.setTransform(rx * s, 0, 0, ry * s, ox + cx * s, oy + cy * s);
-                for (const [turn, length, width] of [[h / 12, 0.55, 0.14], [m / 60, 0.88, 0.09]]) {
-                    const t = turn * 2 * Math.PI;
-                    ctx.lineWidth = width;
+                ctx.setTransform(rx * s, 0, 0, ry * s, (cx - 1000) * s, (cy - 1380) * s);
+                // [turn, length, width at the hub, width at the tip]
+                for (const [turn, len, w0, w1] of [[h / 12, 0.55, 0.34, 0.2], [m / 60, 0.8, 0.26, 0.12]]) {
+                    const t = turn * 2 * Math.PI, ux = Math.sin(t), uy = -Math.cos(t), px = -uy, py = ux;
                     ctx.beginPath();
-                    ctx.moveTo(0, 0);
-                    ctx.lineTo(Math.sin(t) * length, -Math.cos(t) * length);
-                    ctx.stroke();
+                    ctx.moveTo(px * w0 / 2, py * w0 / 2);
+                    ctx.lineTo(ux * len + px * w1 / 2, uy * len + py * w1 / 2);
+                    ctx.lineTo(ux * len - px * w1 / 2, uy * len - py * w1 / 2);
+                    ctx.lineTo(-px * w0 / 2, -py * w0 / 2);
+                    ctx.closePath();
+                    ctx.fill();
                 }
                 ctx.beginPath();
-                ctx.ellipse(-0.12, -0.12, 0.24, 0.24);
+                ctx.ellipse(-0.21, -0.21, 0.42, 0.42);
                 ctx.fill();
             }
         }
