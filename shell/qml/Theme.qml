@@ -159,7 +159,9 @@ Singleton {
         else if (key === "mode" && T.isMode(value)) Desktop.theme = value;
         else if (key === "cursor" && /^[A-Za-z0-9_.+-]*$/.test(value)) Desktop.cursorTheme = value;
         else if (key === "cursorSize" && +value >= 16 && +value <= 128) Desktop.cursorSize = Math.round(+value);
-        else return "error: expected accent #RRGGBB, mode dark|light|system|auto, cursor NAME (empty for Breeze) or cursorSize 16-128";
+        else if (key === "sounds" && (value === "on" || value === "off")) Desktop.sounds = value === "on";
+        else if (key === "soundTheme" && /^[A-Za-z0-9_.+-]+$/.test(value)) Desktop.soundTheme = value;
+        else return "error: expected accent #RRGGBB, mode dark|light|system|auto, cursor NAME (empty for Breeze), cursorSize 16-128, sounds on|off or soundTheme NAME";
         return "ok";
     }
 

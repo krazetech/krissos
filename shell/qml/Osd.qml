@@ -27,6 +27,8 @@ Scope {
         hide.restart();
     }
     Timer { id: hide; interval: 1500; onTriggered: root.shown = false }
+    // The volume tick, as Windows plays it: once a key press or drag settles.
+    Timer { id: tick; interval: 120; onTriggered: Desktop.sound("audio-volume-change") }
 
     readonly property var sink: Pipewire.defaultAudioSink
     readonly property var source: Pipewire.defaultAudioSource
@@ -43,7 +45,7 @@ Scope {
     }
     Connections {
         target: root.sink?.audio ?? null
-        function onVolumeChanged() { root.showSink(); }
+        function onVolumeChanged() { root.showSink(); if (root.settled) tick.restart(); }
         function onMutedChanged() { root.showSink(); }
     }
     Connections {

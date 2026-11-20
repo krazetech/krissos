@@ -134,6 +134,11 @@ Singleton {
             if (!Desktop.launcherOpen && !Desktop.notificationsOpen && !Desktop.quickOpen && !Desktop.calendarOpen && !Desktop.widgetsOpen && !Desktop.taskViewOpen)
                 Desktop.screen = Desktop.primary;
             if (Windows.fullscreenOn(Desktop.screen)) root.held[n.id] = true;
+            // A sound with the toast: never in do not disturb or over a full-screen game
+            // (a critical one always), and not when the app asks for none.
+            const critical = n.urgency === NotificationUrgency.Critical;
+            if ((critical || !Desktop.dnd && !root.held[n.id]) && !n.hints?.["suppress-sound"])
+                Desktop.sound(n.hints?.["sound-name"] || (critical ? "dialog-warning" : "message-new-instant"));
             root.came(n);
         }
     }
