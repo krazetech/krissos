@@ -61,8 +61,10 @@ def _text(el, tag, lang):
 
 
 def _description(el, lang):
-    """Plain paragraphs and bullets, in lang if translated."""
-    d = el.find("description")
+    """Plain paragraphs and bullets, in lang if translated. Flathub gives each language its own
+    <description xml:lang>; older files mark the paragraphs inside one <description>."""
+    ds = el.findall("description")
+    d = next((d for d in ds if d.get(XML_LANG) == lang), None) or next((d for d in ds if d.get(XML_LANG) is None), None)
     if d is None:
         return ""
     out = []

@@ -26,6 +26,16 @@ XML = b"""<?xml version="1.0" encoding="UTF-8"?>
     <screenshots><screenshot type="default"><image type="thumbnail" width="224">https://e.org/t.png</image><image type="source">https://e.org/s.png</image></screenshot></screenshots>
     <bundle type="flatpak">app/org.libreoffice.LibreOffice/x86_64/stable</bundle>
   </component>
+  <component type="desktop-application">
+    <id>com.github.tchx84.Flatseal</id>
+    <name>Flatseal</name>
+    <summary>Manage Flatpak permissions</summary>
+    <description xml:lang="ar"><p>Arabic text</p></description>
+    <description><p>Flatseal is a tool.</p></description>
+    <description xml:lang="ms"><p>Flatseal ialah alat.</p></description>
+    <categories><category>Utility</category></categories>
+    <bundle type="flatpak">app/com.github.tchx84.Flatseal/x86_64/stable</bundle>
+  </component>
   <component type="desktop">
     <id>com.spotify.Client.desktop</id>
     <name>Spotify</name>
@@ -64,8 +74,10 @@ with tempfile.TemporaryDirectory() as t:
     ids = [a["id"] for a in apps]
     # The packs first, then the desktop apps by name; runtimes left out.
     assert ids[:len(logic.PACKS)] == [p["id"] for p in logic.PACKS], ids
-    assert ids[len(logic.PACKS):] == ["org.libreoffice.LibreOffice", "com.spotify.Client", "org.example.Office"], ids
-    lo = apps[len(logic.PACKS)]
+    assert ids[len(logic.PACKS):] == ["com.github.tchx84.Flatseal", "org.libreoffice.LibreOffice", "com.spotify.Client", "org.example.Office"], ids
+    lo = next(a for a in apps if a["id"] == "org.libreoffice.LibreOffice")
+    # One <description> per language (Flathub's layout): the untranslated one, not the first.
+    assert next(a for a in apps if a["id"] == "com.github.tchx84.Flatseal")["desc"] == "Flatseal is a tool."
     assert lo["icon"] == "file://" + str(d / "icons/128x128/org.libreoffice.LibreOffice.png"), lo["icon"]
     assert lo["shot"] == "https://e.org/s.png", lo["shot"]
     assert lo["desc"] == "Write documents.\n• Writer", lo["desc"]
@@ -77,6 +89,7 @@ with tempfile.TemporaryDirectory() as t:
     ms = {a["id"]: a for a in logic.load_catalogue(t, "ms")}
     lo_ms = ms["org.libreoffice.LibreOffice"]
     assert lo_ms["summary"] == "Suite pejabat" and lo_ms["desc"] == "Tulis dokumen.\n• Penulis", lo_ms
+    assert ms["com.github.tchx84.Flatseal"]["desc"] == "Flatseal ialah alat."
     assert ms["com.spotify.Client"]["summary"] == "Online music streaming service"
 
     # Search: a word in the name, then inside it, then keywords and summaries; packs too.
@@ -97,7 +110,7 @@ with tempfile.TemporaryDirectory() as t:
     assert {"id": "com.spotify.Client", "name": "Spotify", "summary": "Online music streaming service",
             "icon": "", "keywords": ""} in rows, rows
     assert next(r for r in rows if r["id"] == "org.libreoffice.LibreOffice")["summary"] == "Suite pejabat"
-    assert len(rows) == 3, rows  # no packs
+    assert len(rows) == 4, rows  # no packs
 
 # No AppStream yet (first boot, offline): just the packs.
 with tempfile.TemporaryDirectory() as t:
