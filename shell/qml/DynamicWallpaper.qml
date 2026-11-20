@@ -79,20 +79,20 @@ Item {
     readonly property var dials: [[1049, 1456, 23, 49], [1427, 1436, 41, 48]]
     // Where PreserveAspectCrop puts the photo: scale and offset.
     readonly property real scale_: Math.max(width / 3840, height / 2160)
-    // Only the patch around both dials is drawn and blurred: photo x 1000..1500, y 1380..1530.
+    // Only the patch around both dials is drawn and blurred: photo x 1000..1500, y 1360..1560.
     Canvas {
         id: hands
         z: 2
         visible: !root.missing
         x: (root.width - 3840 * root.scale_) / 2 + 1000 * root.scale_
-        y: (root.height - 2160 * root.scale_) / 2 + 1380 * root.scale_
+        y: (root.height - 2160 * root.scale_) / 2 + 1360 * root.scale_
         width: 500 * root.scale_
-        height: 150 * root.scale_
+        height: 200 * root.scale_
         layer.enabled: true
         layer.effect: MultiEffect {
             blurEnabled: true
             blur: 1
-            blurMax: Math.max(3, Math.round(6 * root.scale_))  // the photo's softness
+            blurMax: Math.max(2, Math.round(4 * root.scale_))  // the photo's softness
         }
         onPaint: {
             const ctx = getContext("2d"), s = root.scale_;
@@ -102,9 +102,9 @@ Item {
             ctx.fillStyle = "#0b1520";
             for (const [cx, cy, rx, ry] of root.dials) {
                 // Unit circle = the dial's centre disc.
-                ctx.setTransform(rx * s, 0, 0, ry * s, (cx - 1000) * s, (cy - 1380) * s);
+                ctx.setTransform(rx * s, 0, 0, ry * s, (cx - 1000) * s, (cy - 1360) * s);
                 // [turn, length, width at the hub, width at the tip]
-                for (const [turn, len, w0, w1] of [[h / 12, 0.55, 0.34, 0.2], [m / 60, 0.8, 0.26, 0.12]]) {
+                for (const [turn, len, w0, w1] of [[h / 12, 0.66, 0.26, 0.14], [m / 60, 1.25, 0.17, 0.07]]) {
                     const t = turn * 2 * Math.PI, ux = Math.sin(t), uy = -Math.cos(t), px = -uy, py = ux;
                     ctx.beginPath();
                     ctx.moveTo(px * w0 / 2, py * w0 / 2);
@@ -115,7 +115,7 @@ Item {
                     ctx.fill();
                 }
                 ctx.beginPath();
-                ctx.ellipse(-0.21, -0.21, 0.42, 0.42);
+                ctx.ellipse(-0.15, -0.15, 0.3, 0.3);
                 ctx.fill();
             }
         }
