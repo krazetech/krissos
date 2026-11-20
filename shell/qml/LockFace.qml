@@ -360,9 +360,12 @@ FocusScope {
         }
     }
 
-    // The user, low down, and the password field under them.
+    // The user, low down, and the password field under them: on the main display only, as on
+    // Windows; the others show the picture and the clock.
+    property bool main: true
     Column {
         id: who
+        visible: face.main
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
         anchors.bottomMargin: Math.max(96, Math.round(parent.height * 0.1))
