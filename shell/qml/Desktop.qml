@@ -19,7 +19,7 @@ Singleton {
     // "text"); empty while it is closed.
     property string personalisePage: ""
     function personalise(page) {
-        personalisePage = ["colours", "background", "taskbar", "pins", "text"].indexOf(page) >= 0 ? page : "colours";
+        personalisePage = ["colours", "background", "taskbar", "pins", "lock", "text"].indexOf(page) >= 0 ? page : "colours";
     }
     property bool widgetsOpen: false
     // The height of quick settings or the calendar while one is open in the toasts' corner,
@@ -260,7 +260,66 @@ Singleton {
             property list<string> worldClocks: []
             property string weatherCity: ""
             property string aiModel: ""
+            // The lock screen's clock (Personalise > Lock screen): position top, centre, left or
+            // bottom; stack stacked or line; size s, m, l or xl; weight regular, semibold, bold
+            // or heavy; font inter-display, rounded, condensed or serif; style glass, solid or
+            // outline; the date, the row under it (media, battery, network) and the depth effect;
+            // the picture: "desktop" (the background's), "dynamic", "static" or a path.
+            property JsonObject lockClock: JsonObject {
+                property string wallpaper: "desktop"
+                property string position: "top"
+                property string stack: "stacked"
+                property string size: "l"
+                property string weight: "bold"
+                property string font: "inter-display"
+                property string style: "glass"
+                property bool date: true
+                property bool widgets: true
+                property bool depth: true
+            }
         }
+    }
+    readonly property var lockClock: config.lockClock
+    // A copy the login screen can read before anyone signs in (greeter.qml), in the folder
+    // kriss-settings makes for it; the login screen shows the clock the way its user set it.
+    function setLockClock(key, value) {
+        config.lockClock[key] = value;
+        const o = config.lockClock, copy = {};
+        for (const k of ["position", "stack", "size", "weight", "font", "style", "date", "widgets", "depth"]) copy[k] = o[k];
+        Quickshell.execDetached(["sh", "-c", 'd=/var/lib/kriss/lock-clock; [ -w "$d" ] && printf %s "$1" > "$d/.$2.json" && mv -f "$d/.$2.json" "$d/$2.json"',
+            "sh", JSON.stringify(copy), Quickshell.env("USER") ?? "user"]);
+    }
+
+    // The lock screen's picture: a path, or "" for the time-of-day scene. The background's
+    // unless Personalise > Lock screen picks another.
+    readonly property string lockPicture: {
+        const w = !config.lockClock.wallpaper || config.lockClock.wallpaper === "desktop" ? wallpaper : config.lockClock.wallpaper;
+        return w.startsWith("/") ? w : w === "dynamic" ? "" : Theme.wallpapers + "/kriss-" + (Theme.dark ? "dark" : "light") + ".svg";
+    }
+    // KrissOS's own pictures, wherever they were picked from, and kriss-theme's mask for each:
+    // the time-of-day scene ("") is the Sungai Petani photo pair, the plain ones the keris.
+    function stockMask(path) {
+        if (path === "" || /\/backgrounds\/kriss\/sungai-petani-[a-z]+\.jpg$/.test(path))
+            return Theme.wallpapers + "/sungai-petani.mask.png";
+        return /\/backgrounds\/kriss\/kriss-[a-z]+\.svg$/.test(path) ? Theme.wallpapers + "/kriss-scene.mask.png" : "";
+    }
+
+    // The subject of the lock picture, as a mask, for the lock clock's depth effect: kriss-theme's
+    // own for its scene, else one kriss-wallpaper-mask makes (once, in the background, never on
+    // the way to locking) for the user's picture. Empty until there is one.
+    property string pictureMask: ""
+    readonly property string wallpaperMask: stockMask(lockPicture) || pictureMask
+    onLockPictureChanged: findMask()
+    Component.onCompleted: findMask()
+    function findMask() {
+        pictureMask = "";
+        if (stockMask(lockPicture) !== "") return;
+        maskMaker.command = ["sh", "-c", 'command -v kriss-wallpaper-mask >/dev/null && exec nice kriss-wallpaper-mask --cached "$1"', "sh", lockPicture];
+        maskMaker.running = true;
+    }
+    Process {
+        id: maskMaker
+        stdout: StdioCollector { onStreamFinished: root.pictureMask = text.trim() }
     }
 
     // A path as a file: URL, safe for spaces and #.

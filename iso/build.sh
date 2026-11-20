@@ -26,7 +26,7 @@ cp -a "$here/." "$profile"
 # Build the small [kriss] packages from this checkout and put them ahead of the
 # published repo, so an ISO from a branch carries that branch's theme and tools.
 # nodejs runs kriss-shell's check(); qt6-tools builds kriss-store's translations.
-pacman -S --noconfirm --needed base-devel python librsvg python-pywayland wayland wayland-protocols rust nodejs qt6-tools
+pacman -S --noconfirm --needed base-devel python librsvg python-pywayland wayland wayland-protocols rust qt6-shadertools nodejs qt6-tools
 id builder >/dev/null 2>&1 || useradd -m builder
 src="$work/src" local_repo="$work/kriss-local"
 rm -rf "$src" "$local_repo"
