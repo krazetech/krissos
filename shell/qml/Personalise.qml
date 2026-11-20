@@ -31,6 +31,7 @@ FloatingWindow {
         ["background", "image", Tr.t("Background")],
         ["taskbar", "taskbar", Tr.t("Taskbar")],
         ["pins", "pin", Tr.t("Pinned apps")],
+        ["lock", "lock", Tr.t("Lock screen")],
         ["text", "text", Tr.t("Text and contrast")]
     ]
     readonly property int pageIndex: Math.max(0, pages.findIndex(p => p[0] === page))
@@ -55,6 +56,22 @@ FloatingWindow {
 
     // Rebuilt lists (pins) lose the focus; the row whose key is here takes it back.
     property string again: ""
+
+    // Pictures in the shared backgrounds and in Pictures (not screenshots), newest first, for Background and
+    // Lock screen; looked for again each time either page opens.
+    property var pictures: []
+    function findPictures() { finder.running = true; }
+    Process {
+        id: finder
+        command: ["sh", "-c", `
+            p=$(xdg-user-dir PICTURES 2>/dev/null || echo "$HOME/Pictures")
+            find /usr/share/backgrounds "$p" -maxdepth 3 -type f -not -path '*/Screenshots/*' \\( -iname '*.jpg' -o -iname '*.jpeg' \\
+                -o -iname '*.png' -o -iname '*.webp' -o -iname '*.svg' \\) -printf '%T@ %p\\n' 2>/dev/null |
+                sort -rn | cut -d' ' -f2- | head -40`]
+        stdout: StdioCollector {
+            onStreamFinished: win.pictures = text.split("\n").filter(p => p && !p.startsWith(Theme.wallpapers + "/kriss-") && !p.endsWith(".mask.png"))
+        }
+    }
 
     Item {
         anchors.fill: parent
@@ -160,7 +177,7 @@ FloatingWindow {
                 Loader {
                     width: parent.width
                     active: win.visible
-                    sourceComponent: ({ colours: colours, background: background, taskbar: taskbar, pins: pins, text: textPage })[win.pages[win.pageIndex][0]]
+                    sourceComponent: ({ colours: colours, background: background, taskbar: taskbar, pins: pins, lock: lockPage, text: textPage })[win.pages[win.pageIndex][0]]
                 }
             }
         }
@@ -248,19 +265,7 @@ FloatingWindow {
             id: bgPage
             spacing: Theme.s3
             readonly property string wall: Desktop.wallpaper
-            // Pictures in the shared backgrounds and in Pictures, newest first.
-            property var found: []
-            Process {
-                running: true
-                command: ["sh", "-c", `
-                    p=$(xdg-user-dir PICTURES 2>/dev/null || echo "$HOME/Pictures")
-                    find /usr/share/backgrounds "$p" -maxdepth 3 -type f \\( -iname '*.jpg' -o -iname '*.jpeg' \\
-                        -o -iname '*.png' -o -iname '*.webp' -o -iname '*.svg' \\) -printf '%T@ %p\\n' 2>/dev/null |
-                        sort -rn | cut -d' ' -f2- | head -40`]
-                stdout: StdioCollector {
-                    onStreamFinished: bgPage.found = text.split("\n").filter(p => p && !p.startsWith(Theme.wallpapers + "/kriss-"))
-                }
-            }
+            Component.onCompleted: win.findPictures()
             Card {
                 Label { text: Tr.t("Background") }
                 Note { text: Tr.t("Dynamic moves from dawn to night with the clock. KrissOS follows light and dark.") }
@@ -270,7 +275,7 @@ FloatingWindow {
                     Repeater {
                         model: [["dynamic", Tr.t("Dynamic"), Theme.wallpapers + "/kriss-day.svg"],
                                 ["static", Tr.t("KrissOS"), Theme.wallpapers + "/kriss-" + (Theme.dark ? "dark" : "light") + ".svg"]]
-                            .concat((bgPage.wall.startsWith("/") && bgPage.found.indexOf(bgPage.wall) < 0 ? [bgPage.wall] : []).concat(bgPage.found)
+                            .concat((bgPage.wall.startsWith("/") && win.pictures.indexOf(bgPage.wall) < 0 ? [bgPage.wall] : []).concat(win.pictures)
                                 .map(p => [p, p.slice(p.lastIndexOf("/") + 1), p]))
                         Thumb {
                             required property var modelData
@@ -435,6 +440,144 @@ FloatingWindow {
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+
+    // The lock screen's clock, with a live preview: the lock screen itself, small.
+    QtObject {
+        id: previewHost
+        property string password: ""
+        property string message: ""
+        property bool checking: false
+        readonly property string hint: Tr.t("Press any key to unlock")
+        readonly property string verb: Tr.t("Unlock")
+        readonly property string userName: Desktop.personName
+        readonly property var faces: Desktop.faces
+        function submit() {}
+    }
+    Component {
+        id: lockPage
+        Column {
+            spacing: Theme.s3
+            Card {
+                Item {
+                    id: preview
+                    width: parent.width
+                    height: Math.round(width * face.height / face.width)
+                    Accessible.role: Accessible.Graphic
+                    Accessible.name: Tr.t("Preview of the lock screen")
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: Theme.rControl
+                        color: Theme.night
+                        clip: true
+                        Item {
+                            width: Desktop.screen?.width ?? 1920
+                            height: Desktop.screen?.height ?? 1080
+                            scale: preview.width / width
+                            transformOrigin: Item.TopLeft
+                            enabled: false  // a picture: no keys, no clicks
+                            LockFace { id: face; host: previewHost }
+                        }
+                    }
+                }
+                Note { visible: text !== ""; text: face.depthNote }
+            }
+            Card {
+                id: lockPics
+                readonly property string wall: Desktop.lockClock.wallpaper || "desktop"
+                Component.onCompleted: win.findPictures()
+                Label { text: Tr.t("Picture") }
+                Flow {
+                    width: parent.width
+                    spacing: Theme.s2
+                    Repeater {
+                        model: [["desktop", Tr.t("Same as background"), Desktop.wallpaper.startsWith("/") ? Desktop.wallpaper
+                                    : Theme.wallpapers + "/kriss-" + (Desktop.wallpaper === "dynamic" ? "day" : Theme.dark ? "dark" : "light") + ".svg"],
+                                ["dynamic", Tr.t("Dynamic"), Theme.wallpapers + "/kriss-day.svg"],
+                                ["static", Tr.t("KrissOS"), Theme.wallpapers + "/kriss-" + (Theme.dark ? "dark" : "light") + ".svg"]]
+                            .concat((lockPics.wall.startsWith("/") && win.pictures.indexOf(lockPics.wall) < 0 ? [lockPics.wall] : []).concat(win.pictures)
+                                .map(p => [p, p.slice(p.lastIndexOf("/") + 1), p]))
+                        Thumb {
+                            required property var modelData
+                            value: modelData[0]
+                            text: modelData[1]
+                            path: modelData[2]
+                            group: Tr.t("Lock screen picture")
+                            on: lockPics.wall === value
+                            onPicked: Desktop.setLockClock("wallpaper", value)
+                        }
+                    }
+                    Thumb {
+                        text: Tr.t("Browse")
+                        glyph: "folder"
+                        onPicked: lockPicker.open()
+                    }
+                }
+                FileDialog {
+                    id: lockPicker
+                    title: Tr.t("Choose a picture")
+                    nameFilters: [Tr.t("Pictures") + " (*.jpg *.jpeg *.png *.webp *.svg)"]
+                    onAccepted: Desktop.setLockClock("wallpaper", decodeURIComponent(String(selectedFile).replace(/^file:\/\//, "")))
+                }
+            }
+            Card {
+                Choice {
+                    text: Tr.t("Position")
+                    value: Desktop.lockClock.position
+                    options: [["top", Tr.t("Top")], ["centre", Tr.t("Centre")], ["left", Tr.t("Left")], ["bottom", Tr.t("Bottom")]]
+                    onPicked: v => Desktop.setLockClock("position", v)
+                }
+                Choice {
+                    text: Tr.t("Layout")
+                    value: Desktop.lockClock.stack
+                    options: [["stacked", Tr.t("Hours over minutes")], ["line", Tr.t("One line")]]
+                    onPicked: v => Desktop.setLockClock("stack", v)
+                }
+                Choice {
+                    text: Tr.t("Size")
+                    value: Desktop.lockClock.size
+                    options: [["s", Tr.t("Small")], ["m", Tr.t("Medium")], ["l", Tr.t("Large")], ["xl", Tr.t("Extra large")]]
+                    onPicked: v => Desktop.setLockClock("size", v)
+                }
+                Choice {
+                    text: Tr.t("Weight")
+                    value: Desktop.lockClock.weight
+                    options: [["regular", Tr.t("Regular")], ["semibold", Tr.t("Semibold")], ["bold", Tr.t("Bold")], ["heavy", Tr.t("Heavy")]]
+                    onPicked: v => Desktop.setLockClock("weight", v)
+                }
+                Choice {
+                    text: Tr.t("Font")
+                    value: Desktop.lockClock.font
+                    options: [["inter-display", "Inter Display"], ["rounded", Tr.t("Rounded")], ["condensed", Tr.t("Condensed")], ["serif", Tr.t("Serif")]]
+                    onPicked: v => Desktop.setLockClock("font", v)
+                }
+                Choice {
+                    text: Tr.t("Style")
+                    detail: Theme.solid ? Tr.t("Glass needs transparency effects and normal contrast, so the clock is solid now.") : ""
+                    value: Desktop.lockClock.style
+                    options: [["glass", Tr.t("Glass")], ["solid", Tr.t("Solid")], ["outline", Tr.t("Outline")]]
+                    onPicked: v => Desktop.setLockClock("style", v)
+                }
+            }
+            Card {
+                Toggle {
+                    text: Tr.t("Date")
+                    checked: Desktop.lockClock.date
+                    onToggled: Desktop.setLockClock("date", !checked)
+                }
+                Toggle {
+                    text: Tr.t("Media, battery and network")
+                    checked: Desktop.lockClock.widgets
+                    onToggled: Desktop.setLockClock("widgets", !checked)
+                }
+                Toggle {
+                    text: Tr.t("Depth effect")
+                    detail: Tr.t("The picture's subject stands in front of the time. Worked out on this PC; nothing is sent anywhere.")
+                    checked: Desktop.lockClock.depth
+                    onToggled: Desktop.setLockClock("depth", !checked)
                 }
             }
         }
@@ -684,6 +827,7 @@ FloatingWindow {
         property string path
         property string glyph
         property bool on
+        property string group: Tr.t("Background")  // what the choice is for, for screen readers
         signal picked()
         width: Theme.dp(150)
         height: Theme.dp(84) + Theme.sp(12) + 10
@@ -697,7 +841,7 @@ FloatingWindow {
         onActiveFocusChanged: if (activeFocus) win.reveal(th)
         Accessible.role: glyph ? Accessible.Button : Accessible.RadioButton
         Accessible.name: text
-        Accessible.description: glyph ? "" : Tr.t("Background")
+        Accessible.description: glyph ? "" : group
         Accessible.checkable: !glyph
         Accessible.checked: on
         Accessible.onPressAction: picked()

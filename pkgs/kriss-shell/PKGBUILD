@@ -8,7 +8,7 @@ url='https://github.com/krazetech/krissos'
 license=('GPL-3.0-or-later' 'MIT')
 depends=('cosmic-comp' 'cosmic-settings-daemon' 'xorg-xwayland' 'quickshell' 'python-pywayland' 'glib2' 'dbus'
          'grim' 'slurp' 'wl-clipboard' 'noto-fonts-emoji' 'xdg-user-dirs' 'brightnessctl')
-makedepends=('python' 'python-pywayland' 'wayland' 'wayland-protocols' 'cargo')
+makedepends=('python' 'python-pywayland' 'wayland' 'wayland-protocols' 'cargo' 'qt6-shadertools')
 checkdepends=('nodejs')
 optdepends=('greetd: the KrissOS login screen'
             'networkmanager: network status and Wi-Fi in quick settings'
@@ -28,6 +28,11 @@ _theme="$startdir/../../theme"
 
 build() {
   python "$_theme/generate.py" "$_shell/qml" "$srcdir/qml"
+  # The lock clock's glass shader, compiled for every graphics API Qt may use.
+  local frag
+  for frag in "$srcdir/qml/shaders/"*.frag; do
+    /usr/lib/qt6/bin/qsb --qt6 -o "$frag.qsb" "$frag"
+  done
   # COSMIC defaults, laid out as ~/.config/cosmic. The theme builder keys come from the
   # tokens; kriss-cosmic-theme turns them into the full COSMIC dark and light themes.
   python "$_theme/generate.py" "$_shell/cosmic" "$srcdir/config/cosmic"
