@@ -15,6 +15,8 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 
 ### Added
 
+- A new terminal opens with the KrissOS emblem and a summary of your PC, instead of a bare
+  prompt or fish's welcome text.
 - Updates go through a testing channel first, so a bad package is caught before it reaches
   you. To try updates early, run `kriss channel testing`; `kriss channel stable` takes you
   back (#79).
