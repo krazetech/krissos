@@ -278,8 +278,24 @@ class Toplevels:
                 pass
             self.emit()
 
+        # The screens the window is on now, the last one entered reported. A window that
+        # straddled both and then went fullscreen on one is then not left on the other.
+        # ponytail: while it still straddles, the last screen entered, not the one with most of it.
+        outs = []
+
         def on_output(_h, output):
-            win["output"] = self.outputs.get(output, "")
+            name = self.outputs.get(output, "")
+            if name not in outs:
+                outs.append(name)
+            win["output"] = outs[-1]
+            self.emit()
+
+        def on_output_leave(_h, output):
+            name = self.outputs.get(output, "")
+            if name in outs:
+                outs.remove(name)
+            win["output"] = outs[-1] if outs else ""
+            win["geo"] = {k: v for k, v in win["geo"].items() if k != name}
             self.emit()
 
         def on_workspace(_h, space):
@@ -303,6 +319,7 @@ class Toplevels:
         handle.dispatcher["closed"] = on_closed
         cosmic.dispatcher["state"] = on_state
         cosmic.dispatcher["output_enter"] = on_output
+        cosmic.dispatcher["output_leave"] = on_output_leave
         cosmic.dispatcher["geometry"] = on_geometry
         cosmic.dispatcher["ext_workspace_enter"] = on_workspace
         cosmic.dispatcher["ext_workspace_leave"] = on_workspace_leave

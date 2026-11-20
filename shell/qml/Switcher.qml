@@ -19,11 +19,14 @@ PanelWindow {
             wins = Windows.byRecent.slice();
             if (wins.length === 0) return;
             current = 0;
-            Desktop.launcherOpen = Desktop.notificationsOpen = Desktop.quickOpen = Desktop.calendarOpen = Desktop.widgetsOpen = false;
-            Desktop.screen = Desktop.focusedScreen();
+            Desktop.launcherOpen = Desktop.notificationsOpen = Desktop.quickOpen = Desktop.calendarOpen = Desktop.taskViewOpen = Desktop.widgetsOpen = false;
+            // Its own screen, set once: a notification or a bar click moving Desktop.screen
+            // must not move the switcher while it is up.
+            screen = Desktop.focusedScreen();
             open = true;
-            settle.restart();
         }
+        // cosmic-comp keeps Alt+Tab for itself, so each Tab comes here, never as a key: Alt is still held.
+        settle.restart();
         current = (current + by + wins.length) % wins.length;
     }
     // A screen reader stays on the panel; it hears each window as the selection moves.
@@ -41,7 +44,6 @@ PanelWindow {
     Timer { id: settle; interval: 600; onTriggered: win.finish(true) }
 
     visible: open
-    screen: Desktop.screen
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "kriss-switcher"
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
