@@ -55,6 +55,8 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 
 ### Fixed
 
+- `loginctl unlock-session` unlocks the lock screen again, so remote and admin tools can
+  unlock it.
 - Booting no longer loads nouveau's GSP firmware into the initramfs (#32).
 - kriss-vm boot entries and kriss-welcome pages (#33).
 - A stray duplicate file that stopped the shell from starting (#70).
