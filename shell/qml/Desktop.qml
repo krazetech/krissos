@@ -291,20 +291,24 @@ Singleton {
         const w = !config.lockClock.wallpaper || config.lockClock.wallpaper === "desktop" ? wallpaper : config.lockClock.wallpaper;
         return w.startsWith("/") ? w : w === "dynamic" ? "" : Theme.wallpapers + "/kriss-" + (Theme.dark ? "dark" : "light") + ".svg";
     }
-    // KrissOS's own pictures, wherever they were picked from: one scene, so one mask.
-    function stockPicture(path) { return /\/backgrounds\/kriss\/kriss-[a-z]+\.svg$/.test(path); }
+    // KrissOS's own pictures, wherever they were picked from, and kriss-theme's mask for each:
+    // the time-of-day scene ("") is the Sungai Petani photo pair, the plain ones the keris.
+    function stockMask(path) {
+        if (path === "" || /\/backgrounds\/kriss\/sungai-petani-[a-z]+\.jpg$/.test(path))
+            return Theme.wallpapers + "/sungai-petani.mask.png";
+        return /\/backgrounds\/kriss\/kriss-[a-z]+\.svg$/.test(path) ? Theme.wallpapers + "/kriss-scene.mask.png" : "";
+    }
 
     // The subject of the lock picture, as a mask, for the lock clock's depth effect: kriss-theme's
     // own for its scene, else one kriss-wallpaper-mask makes (once, in the background, never on
     // the way to locking) for the user's picture. Empty until there is one.
-    readonly property string sceneMask: Theme.wallpapers + "/kriss-scene.mask.png"
     property string pictureMask: ""
-    readonly property string wallpaperMask: lockPicture === "" || stockPicture(lockPicture) ? sceneMask : pictureMask
+    readonly property string wallpaperMask: stockMask(lockPicture) || pictureMask
     onLockPictureChanged: findMask()
     Component.onCompleted: findMask()
     function findMask() {
         pictureMask = "";
-        if (lockPicture === "" || stockPicture(lockPicture)) return;
+        if (stockMask(lockPicture) !== "") return;
         maskMaker.command = ["sh", "-c", 'command -v kriss-wallpaper-mask >/dev/null && exec nice kriss-wallpaper-mask --cached "$1"', "sh", lockPicture];
         maskMaker.running = true;
     }
