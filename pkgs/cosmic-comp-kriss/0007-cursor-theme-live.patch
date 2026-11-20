@@ -1,0 +1,135 @@
+Subject: [PATCH] Follow the cursor theme and size live
+
+cosmic-comp read XCURSOR_THEME and XCURSOR_SIZE once, at login. The
+KrissOS Shell switches the cursor with light and dark (a dark cursor on
+light, a light one on dark), so the theme and size now also come from
+`theme` and `size` in org.krissos.Cursor, which win over the variables
+and are watched: each seat's cursor and XWayland's reload when they
+change. XWayland's Xcursor.theme resource was set to the icon theme; it
+is the cursor theme now.
+---
+diff --git a/src/backend/render/cursor.rs b/src/backend/render/cursor.rs
+index 02da068..9f7b765 100644
+--- a/src/backend/render/cursor.rs
++++ b/src/backend/render/cursor.rs
+@@ -45,7 +45,7 @@ use smithay::{
+ use std::{
+     collections::{HashMap, VecDeque},
+     io::Read,
+-    sync::Mutex,
++    sync::{Mutex, RwLock},
+     time::{Duration, Instant},
+ };
+ use tracing::warn;
+@@ -568,6 +568,17 @@ impl CursorStateInner {
+         self.cursor_size
+     }
+ 
++    /// KrissOS: load the theme and size again (see [`CURSOR_OVERRIDE`]), dropping every
++    /// cursor drawn from the old ones.
++    pub fn reload_theme(&mut self) {
++        let (theme, size) = load_cursor_theme();
++        self.cursor_theme = theme;
++        self.cursor_size = size;
++        self.cursors.clear();
++        self.image_cache.clear();
++        self.current_image = None;
++    }
++
+     /// Drop the rasterizations only a magnified cursor needed, once nothing has
+     /// magnified it for [`MAGNIFIED_FRAME_GRACE`].
+     pub fn drop_magnified_frames(&mut self, now: Instant, zoomed: bool) {
+@@ -694,13 +705,20 @@ impl CursorStateInner {
+     }
+ }
+ 
++/// KrissOS: the cursor theme and size from org.krissos.Cursor (`theme`, `size`), which the
++/// shell switches with light and dark. They win over XCURSOR_THEME and XCURSOR_SIZE, which
++/// only take effect at login.
++pub static CURSOR_OVERRIDE: RwLock<(Option<String>, Option<u32>)> = RwLock::new((None, None));
++
+ pub fn load_cursor_env() -> (String, u32) {
+-    let name = std::env::var("XCURSOR_THEME")
+-        .ok()
++    let (theme, size) = CURSOR_OVERRIDE.read().unwrap().clone();
++    let name = theme
++        .filter(|theme| !theme.is_empty())
++        .or_else(|| std::env::var("XCURSOR_THEME").ok())
+         .unwrap_or_else(|| "default".into());
+-    let size = std::env::var("XCURSOR_SIZE")
+-        .ok()
+-        .and_then(|s| s.parse().ok())
++    let size = size
++        .filter(|size| *size > 0)
++        .or_else(|| std::env::var("XCURSOR_SIZE").ok().and_then(|s| s.parse().ok()))
+         .unwrap_or(24);
+     (name, size)
+ }
+diff --git a/src/config/mod.rs b/src/config/mod.rs
+index be509e7..577ac01 100644
+--- a/src/config/mod.rs
++++ b/src/config/mod.rs
+@@ -335,6 +335,49 @@ impl Config {
+             ),
+         };
+ 
++        // KrissOS: the cursor theme and size, live (org.krissos.Cursor: theme, size). The
++        // shell switches the theme with light and dark.
++        if let Ok(cursor_config) = cosmic_config::Config::new("org.krissos.Cursor", 1) {
++            fn apply_cursor(config: &cosmic_config::Config) -> bool {
++                let new = (
++                    config.get::<String>("theme").ok(),
++                    config.get::<u32>("size").ok(),
++                );
++                let mut current = crate::backend::render::cursor::CURSOR_OVERRIDE
++                    .write()
++                    .unwrap();
++                let changed = *current != new;
++                *current = new;
++                changed
++            }
++            apply_cursor(&cursor_config);
++            match cosmic_config::calloop::ConfigWatchSource::new(&cursor_config) {
++                Ok(source) => {
++                    if let Err(err) =
++                        loop_handle.insert_source(source, |(config, _keys), (), state| {
++                            if apply_cursor(&config) {
++                                for seat in state.common.shell.read().seats.iter() {
++                                    if let Some(cursor) = seat
++                                        .user_data()
++                                        .get::<crate::backend::render::cursor::CursorState>()
++                                    {
++                                        cursor.lock().unwrap().reload_theme();
++                                    }
++                                }
++                                state.common.update_xwayland_settings();
++                            }
++                        })
++                    {
++                        warn!(?err, "Failed to watch org.krissos.Cursor config");
++                    }
++                }
++                Err(err) => warn!(
++                    ?err,
++                    "failed to create config watch source for org.krissos.Cursor"
++                ),
++            }
++        }
++
+         let _ = loop_handle.insert_idle(|state| {
+             let filter_conf = state.common.config.dynamic_conf.screen_filter();
+             state
+diff --git a/src/xwayland.rs b/src/xwayland.rs
+index 477ddec..f69278a 100644
+--- a/src/xwayland.rs
++++ b/src/xwayland.rs
+@@ -711,7 +711,8 @@ impl Common {
+             if xwayland
+                 .xrdb_thread
+                 .send((
+-                    cosmic::icon_theme::default(),
++                    // KrissOS: the cursor theme here, not the icon theme.
++                    load_cursor_env().0,
+                     (new_scale * cursor_size as f64).round() as u32,
+                 ))
+                 .is_err()
