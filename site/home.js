@@ -32,11 +32,3 @@ addEventListener('scroll', () => { if (!queued) { queued = true; requestAnimatio
 addEventListener('resize', frame);
 frame();
 
-// Numbers roll into place once, when the tiles come into view.
-const tiles = document.querySelector('.tiles');
-if (tiles && 'IntersectionObserver' in window) {
-  tiles.classList.add('wait');
-  new IntersectionObserver(([e], o) => {
-    if (e.isIntersecting) { tiles.classList.replace('wait', 'go'); o.disconnect(); }
-  }, { threshold: .5 }).observe(tiles);
-}

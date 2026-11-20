@@ -67,28 +67,35 @@ code, pre { font-family: var(--mono); font-size: .9em; }
 .skip { position: absolute; left: -999px; }
 .skip:focus { left: 16px; top: 12px; z-index: 10; background: var(--surface); padding: 8px 14px; }
 
-/* Nav: a floating pill, in the spirit of the Sungai Petani home page */
+/* Nav: the KrissOS taskbar. Docked at the bottom like the shell's own bar: the logo is the
+   Start button, pages sit like pinned apps with a Sky Cyan indicator, Ko-fi and the
+   language switch sit in the tray. */
+body { padding-bottom: 76px; }
 .nav {
-  position: sticky; top: 12px; z-index: 5;
-  width: min(820px, 100% - 24px); margin: 12px auto 0;
-  background: var(--nav);
-  backdrop-filter: saturate(160%) blur(18px);
-  -webkit-backdrop-filter: saturate(160%) blur(18px);
-  border: 1px solid var(--edge); border-radius: 999px;
+  position: fixed; z-index: 20; left: 10px; right: 10px; bottom: 10px;
+  background: rgba(16, 19, 22, .82); color-scheme: dark; --fg: #E6EDF2; --soft: #A3AEB8; --hover: rgba(230, 237, 242, .08);
+  backdrop-filter: saturate(160%) blur(22px);
+  -webkit-backdrop-filter: saturate(160%) blur(22px);
+  border: 1px solid rgba(230, 237, 242, .12); border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .45);
 }
-.nav .wrap { display: flex; align-items: center; gap: 24px; height: 52px; width: auto; padding: 0 8px 0 18px; }
+.nav .wrap { display: flex; align-items: center; gap: 8px; height: 54px; width: auto; padding: 0 7px; }
 .brand { display: flex; align-items: center; gap: 10px; color: var(--fg); font-weight: 700; letter-spacing: -.01em; }
 .brand:hover { text-decoration: none; }
-.brand svg { width: 22px; height: 22px; }
-.nav nav { margin-left: auto; }
-.nav ul { display: flex; align-items: center; gap: 22px; margin: 0; padding: 0; list-style: none; font-size: .9rem; }
-.nav ul a { color: var(--soft); white-space: nowrap; }
-.nav ul a:hover, .nav ul a[aria-current] { color: var(--fg); text-decoration: none; }
-.nav ul a.lang { display: inline-block; color: #000; background: var(--accent); font-weight: 700; padding: 7px 14px; border-radius: 999px; }
-.nav ul a.lang:hover { color: #000; background: #4AC1EC; }
+.nav .brand { height: 40px; padding: 0 12px 0 7px; border-radius: 10px; transition: background .15s; }
+.nav .brand:hover { background: var(--hover); }
+.nav .brand img { width: 26px; height: 26px; }
+.nav nav { flex: 1; }
+.nav ul { display: flex; align-items: center; gap: 2px; margin: 0; padding: 0; list-style: none; font-size: .9rem; }
+.nav ul a { position: relative; display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; color: var(--soft); white-space: nowrap; transition: background .15s, color .15s; }
+.nav ul a:hover, .nav ul a[aria-current] { color: var(--fg); background: var(--hover); text-decoration: none; }
+.nav ul a[aria-current]::after { content: ""; position: absolute; left: 50%; bottom: 3px; width: 16px; height: 3px; margin-left: -8px; border-radius: 3px; background: var(--accent); }
+.nav li.kofi { margin-left: auto; }
+.nav ul a.lang { color: var(--fg); font: 600 .78rem/1 var(--mono); letter-spacing: .06em; box-shadow: inset 0 0 0 1px rgba(230, 237, 242, .16); }
 @media (max-width: 560px) {
-  .nav .wrap { gap: 12px; }
-  .nav ul { gap: 14px; font-size: .84rem; }
+  .nav .wrap { gap: 2px; }
+  .nav ul a { padding: 0 9px; font-size: .84rem; }
+  .nav li.kofi span { display: none; }
   .brand span { display: none; }
   .nav li.gh { display: none; } /* GitHub stays in the footer */
   .nav li:has(> a[href="install.html"]) { display: none; } /* so is the Arch repo page */
@@ -219,26 +226,21 @@ h2 kbd { font-size: .5em; vertical-align: middle; }
 .phases ul { padding-left: 1.1em; }
 .phases ul li { display: list-item; padding: 2px 0; border: 0; }
 
-/* Footer: always night. The clock tower rises in the corner and a live clock
-   keeps Sungai Petani time (clock.js), like the lock screen. */
-footer {
-  position: relative; overflow: hidden; padding: 72px 0 56px; font-size: .95rem; color: var(--soft);
-  background: var(--bg); border-top: 1px solid var(--line);
-}
-footer::before {
-  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
-  background: linear-gradient(to bottom, #000 0%, transparent 45%), url(sp/tower-dim-cut.webp) no-repeat;
-  background-size: auto, 1500px auto; background-position: 0 0, right -790px top 120px; /* tower sits 30% into the photo, so this puts it ~260px from the right edge */
-  opacity: .9;
-}
-footer .wrap { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 24px 48px; justify-content: space-between; }
-footer p { max-width: 46ch; margin: 0; }
-footer nav { display: flex; flex-wrap: wrap; gap: 12px 24px; }
+/* Footer: brand and Ko-fi on the left, two link columns, a base row with the sponsor */
+footer { padding: 80px 0 120px; font-size: .95rem; color: var(--soft); background: var(--bg); border-top: 1px solid var(--line); }
+footer .wrap { display: grid; grid-template-columns: 1.4fr 1fr; gap: 48px; }
+footer p { margin: 0; }
 footer a { color: var(--fg); }
-footer .here { order: 4; flex-basis: 100%; max-width: none; margin-top: clamp(48px, 10vw, 120px); color: var(--fg); }
-footer .here span { display: block; font: 500 clamp(4.5rem, 15vw, 12rem)/.9 var(--mono); letter-spacing: -.06em; font-variant-numeric: tabular-nums; }
-footer .here small { display: block; margin-top: 16px; font: 500 .78rem/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--link); }
-@media (max-width: 640px) { footer::before { background-size: auto, 1000px auto; background-position: 0 0, right -640px top 260px; opacity: .6; } }
+.foot-brand p { max-width: 34ch; margin: 14px 0 24px; }
+.foot-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.foot-cols div { display: flex; flex-direction: column; gap: 10px; }
+.foot-cols p { font: 500 .75rem/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.foot-base { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 20px 40px; justify-content: space-between; align-items: center; padding-top: 28px; border-top: 1px solid var(--line); font-size: .88rem; color: var(--muted); }
+.foot-base a { color: var(--soft); }
+.btn.kofi { background: var(--fg); color: #000; }
+.btn.kofi:hover { background: #fff; }
+.btn.kofi svg, .nav .kofi svg { width: 16px; height: 16px; color: #FF5E5B; }
+@media (max-width: 760px) { footer .wrap { grid-template-columns: 1fr; } }
 
 /* Motion, in the spirit of LunariaOS: headlines lift out of a soft blur, screenshots zoom in,
    the dark scene opens from a rounded card to full width, cards arrive one after another.
@@ -279,12 +281,11 @@ footer .here small { display: block; margin-top: 16px; font: 500 .78rem/1 var(--
 /* The dark scene: a soft Sky Cyan glow from the top, so it reads as its own space in dark mode too. */
 .scene { background: radial-gradient(ellipse 80% 55% at 50% 0%, rgba(36, 177, 230, .18), transparent 70%), var(--bg); }
 /* ponytail: sponsor logo sits grey with the footer text, full colour on hover */
-footer .sponsor { order: 3; flex-basis: 100%; display: flex; align-items: center; gap: 16px; color: var(--muted); font-size: .9rem; text-decoration: none; }
-footer .sponsor img { height: 36px; width: auto; filter: grayscale(1); opacity: .55; transition: opacity .2s var(--ease), filter .2s var(--ease); }
+footer .sponsor { display: flex; align-items: center; gap: 16px; color: var(--muted); text-decoration: none; }
+footer .sponsor img { height: 32px; width: auto; filter: grayscale(1); opacity: .55; transition: opacity .2s var(--ease), filter .2s var(--ease); }
 footer .sponsor:hover img, footer .sponsor:focus-visible img { filter: none; opacity: 1; }
 
 /* ---------- Home: KrissOS Sungai Petani ---------- */
-.night .nav { margin-bottom: -64px; }
 .label { font: 500 .78rem/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--link); margin-bottom: 20px; }
 .eyebrow { font: 500 .8rem/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--fg); margin-bottom: 18px; }
 .row-head { max-width: 780px; margin-bottom: 48px; }
@@ -341,7 +342,7 @@ footer .sponsor:hover img, footer .sponsor:focus-visible img { filter: none; opa
 
 /* Sticky story: the wallpaper's clock, day to night */
 .sun { height: 300vh; padding: 0; }
-.sun-stage { position: sticky; top: 76px; height: calc(100svh - 96px); display: grid; grid-template-columns: 1fr 1.25fr; }
+.sun-stage { position: sticky; top: 16px; height: calc(100svh - 108px); display: grid; grid-template-columns: 1fr 1.25fr; }
 .sun-text { background: var(--accent); color: #000; padding: clamp(24px, 4vw, 48px); display: flex; flex-direction: column; --c: rgba(0,0,0,.5); }
 .sun-text .plus::before, .sun-text::before { --c: rgba(0, 0, 0, .55); }
 .sun-text .label { color: #000; opacity: .7; }
@@ -384,26 +385,19 @@ footer .sponsor:hover img, footer .sponsor:focus-visible img { filter: none; opa
 @media (max-width: 900px) { .cells.three { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 640px) { .cells.two, .cells.three { grid-template-columns: 1fr; } }
 
-/* Numbers: four tiles, digits roll into place */
-.stats { padding: 0; }
-.tiles { display: grid; grid-template-columns: repeat(4, 1fr); }
-.tile { min-height: 300px; padding: clamp(20px, 3vw, 36px); display: flex; flex-direction: column; justify-content: space-between; gap: 24px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-.tile p { margin: 0; max-width: 26ch; font-size: .95rem; }
-.tile.cyan { background: var(--accent); color: #000; }
-.tile.grey { background: #8E98A1; color: #000; }
-.tile.white { background: #F2F6F9; color: #000; }
-.num { font: 800 clamp(5rem, 11vw, 9rem)/1 var(--sans) !important; letter-spacing: -.05em; height: 1em; overflow: clip; } /* clip, not hidden: hidden makes a scroll container and stalls the view timeline */
-.roll { display: inline-block; }
-.roll::before { content: "0\A 1\A 2\A 3\A 4\A 5\A 6\A 7\A 8\A 9"; white-space: pre; display: block; transform: translateY(calc(var(--n) * -1em)); }
-@media (prefers-reduced-motion: no-preference) {
-  .tiles.wait .roll::before { transform: none; }   /* home.js adds .wait, then swaps it for .go in view */
-  .tiles.go .roll::before { animation: roll 1.6s var(--ease) both; }
-  .tiles.go .tile:nth-child(2) .roll::before { animation-delay: .12s; }
-  .tiles.go .tile:nth-child(3) .roll::before { animation-delay: .24s; }
-  .tiles.go .tile:nth-child(4) .roll::before { animation-delay: .36s; }
-}
-@keyframes roll { from { transform: translateY(0); } }
-@media (max-width: 900px) { .tiles { grid-template-columns: 1fr 1fr; } .tile { min-height: 220px; } }
+/* Numbers, laid out like the shell's quick settings: a sheet with a handle and four tiles,
+   the first one switched on in Sky Cyan */
+.stats { padding: clamp(40px, 8vw, 96px) 0; }
+.qs { width: min(980px, 100% - 32px); margin-inline: auto; padding: 14px 20px 22px; border-radius: 28px; background: #0E1114; border: 1px solid var(--edge); box-shadow: 0 30px 80px rgba(0,0,0,.5); }
+.qs::before { content: ""; display: block; width: 44px; height: 5px; border-radius: 5px; background: rgba(230, 237, 242, .25); margin: 0 auto 18px; }
+.qs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.qt { border-radius: 18px; background: #1A1E22; padding: 18px; display: flex; flex-direction: column; gap: 10px; min-height: 190px; }
+.qt svg { width: 22px; height: 22px; color: var(--soft); }
+.qt b { font: 700 clamp(3rem, 6vw, 4.5rem)/1 var(--sans); letter-spacing: -.04em; margin-top: auto; }
+.qt span { font-size: .9rem; color: var(--soft); line-height: 1.4; }
+.qt.on { background: var(--accent); color: #000; }
+.qt.on svg, .qt.on span { color: #000; }
+@media (max-width: 760px) { .qs-grid { grid-template-columns: 1fr 1fr; } .qt { min-height: 160px; } }
 
 /* Promises: numbered rows */
 .promises { counter-reset: p; }

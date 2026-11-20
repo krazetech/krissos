@@ -37,6 +37,7 @@
         <li><a href="install.html">Repo Arch</a></li>
         <li><a href="roadmap.html">Hala tuju</a></li>
         <li class="gh"><a href="https://github.com/krazetech/krissos">GitHub</a></li>
+        <li class="kofi"><a href="https://ko-fi.com/razmanzaidi"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.5 1.1 5.3 3 1.8-1.9 3.2-3 5.3-3 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21Z"/></svg><span>Sokong</span></a></li>
         <li><a class="lang" href="../download.html" hreflang="en" lang="en">EN</a></li>
       </ul>
     </nav>
@@ -147,18 +148,20 @@ fetch('https://api.github.com/repos/krazetech/krissos/releases?per_page=20')
 
 <footer>
   <div class="wrap">
-    <p>KrissOS oleh Kraze Tech, dibuat di Malaysia dengan banyak kopi. Perisian bebas di bawah <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>.<br>Tiada kaitan dengan Arch Linux.</p>
-    <a class="sponsor" href="https://ruck-fi.com"><span>Dengan bangga ditaja oleh</span><img src="../ruckfi-white.png" alt="RUCK-Fi" width="360" height="81"></a>
-    <nav aria-label="Footer">
-      <a href="shell.html">Shell</a>
-      <a href="download.html">Muat turun</a>
-      <a href="install.html">Repo Arch</a>
-      <a href="roadmap.html">Hala tuju</a>
-      <a href="https://github.com/krazetech/krissos">GitHub</a>
+    <div class="foot-brand">
+      <a class="brand" href="./"><img src="../logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
+      <p>Sedia untuk semua. Dibuat di Malaysia dengan banyak kopi.</p>
+      <a class="btn kofi" href="https://ko-fi.com/razmanzaidi"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.5 1.1 5.3 3 1.8-1.9 3.2-3 5.3-3 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21Z"/></svg>Sokong KrissOS di Ko-fi</a>
+    </div>
+    <nav class="foot-cols" aria-label="Footer">
+      <div><p>KrissOS</p><a href="shell.html">Shell</a><a href="download.html">Muat turun</a><a href="roadmap.html">Hala tuju</a></div>
+      <div><p>Projek</p><a href="install.html">Repo Arch</a><a href="https://github.com/krazetech/krissos">GitHub</a><a href="https://github.com/krazetech/krissos/blob/main/LICENSE">Lesen</a></div>
     </nav>
-    <p class="here" aria-label="Waktu di Sungai Petani"><span data-myt>--:--</span><small>Sungai Petani, Kedah &middot; GMT+8</small></p>
+    <div class="foot-base">
+      <p>Perisian bebas di bawah <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>. Tiada kaitan dengan Arch Linux.</p>
+      <a class="sponsor" href="https://ruck-fi.com"><span>Dengan bangga ditaja oleh</span><img src="../ruckfi-white.png" alt="RUCK-Fi" width="360" height="81"></a>
+    </div>
   </div>
 </footer>
-<script src="../clock.js" defer></script>
 </body>
 </html>
