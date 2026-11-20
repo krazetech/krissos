@@ -206,6 +206,8 @@ def main():
         app.installTranslator(tr)
     engine = QQmlApplicationEngine()
     backend = Backend(engine)
+    # Closing the window mid-install must not kill kriss halfway through: wait for it.
+    app.aboutToQuit.connect(lambda: [p.waitForFinished(-1) for p in list(backend._procs.values())])
     engine.rootContext().setContextProperty("backend", backend)
     start = sys.argv[sys.argv.index("--app") + 1] if "--app" in sys.argv[:-1] else ""
     engine.rootContext().setContextProperty("startApp", start)

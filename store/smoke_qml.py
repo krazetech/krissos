@@ -53,6 +53,7 @@ spin()
 assert backend.ready
 # Spotify installed, LibreOffice installing: Open, a spinner, and Uninstall on its page.
 backend._installed = ["com.spotify.Client"]
+backend._by_id["org.libreoffice.LibreOffice"]["shot"] = ""  # no network in the test
 backend._busy = {"org.libreoffice.LibreOffice": "install"}
 backend.stateChanged.emit()
 for key in ("home", "productivity", "games", "media", "installed", "updates"):
@@ -66,6 +67,12 @@ QMetaObject.invokeMethod(root, "openApp", Q_ARG("QVariant", "org.libreoffice.Lib
 spin()
 if shots:
     root.grabWindow().save(f"{shots}/app.png")
+# Let the AppStream refresh and the update check finish before tearing down.
+for _ in range(600):
+    spin()
+    if not backend._procs and not backend.checking:
+        break
+    time.sleep(0.05)
 del root
 engine.deleteLater()
 spin()
