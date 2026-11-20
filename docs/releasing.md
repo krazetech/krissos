@@ -52,7 +52,7 @@ that milestone; nothing else does. Milestone description:
 
 ### Shell: everything in
 
-- [ ] Every shell feature on the shell roadmap is merged, including the open pull requests
+- [x] Every shell feature on the shell roadmap is merged, including the open pull requests
       (taskbar buttons and previews, Start search, Task View, snap layouts, widgets, desktop icons,
       fullscreen focus, clipboard history, notification
       center, system tray, lock and login, accent and dark mode, accessibility, Personalise).
@@ -61,7 +61,7 @@ that milestone; nothing else does. Milestone description:
 
 ### Installs and boots everywhere it should
 
-- [ ] **Legacy BIOS:** the live ISO boots and installs on BIOS (CSM) PCs as well as UEFI
+- [x] **Legacy BIOS:** the live ISO boots and installs on BIOS (CSM) PCs as well as UEFI
       (pull request #74).
 - [ ] **Encrypted installs:** the installer offers full-disk encryption (LUKS), and an encrypted
       install boots, unlocks and rolls back from a snapshot.
@@ -79,16 +79,16 @@ that milestone; nothing else does. Milestone description:
 
 ### Safe to ship
 
-- [ ] **Signed or not at all:** tagged releases fail without a good signature (the signing
+- [x] **Signed or not at all:** tagged releases fail without a good signature (the signing
       change, `docs/signing-key.md`), and the key's rotation plan is written down.
 - [x] **Testing channel:** updates reach a testing repo before everyone, so a bad package is
       caught before it lands on `110` installs (`[kriss-testing]` and `promote.yml`, #79).
-- [ ] **Security policy:** `SECURITY.md` says how to report a vulnerability, and bugs are
+- [x] **Security policy:** `SECURITY.md` says how to report a vulnerability, and bugs are
       tracked in GitHub Issues.
-- [ ] **Installer defaults:** no one-character passwords.
+- [x] **Installer defaults:** no one-character passwords.
 - [ ] **Licence:** the tooling licence (ARCHITECTURE.md §11.2) is decided and `LICENSE`
       matches it.
-- [ ] No open issue or pull request left on the `110` milestone.
+- [x] No open issue or pull request left on the `110` milestone.
 
 ## Cutting a release
 
