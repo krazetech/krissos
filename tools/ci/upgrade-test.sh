@@ -20,17 +20,17 @@ qemu=(qemu-system-x86_64 -enable-kvm -cpu host -smp 4 -m 4096 -device virtio-vga
 
 gh release download "$tag" -R krazetech/krissos -p '*.iso' -D "$out" --clobber
 iso=$(ls "$out"/*.iso)
-# The ISO's own [kriss] packages (/opt/kriss-local) only, as on release day: mixed with
-# today's online [kriss], an old ISO pulls new packages whose dependencies it does not have.
-# So the ISO's pacstrap drops the online [kriss] from the pacman.conf it installs with; the
-# installed system still gets it (configure copies the live /etc/pacman.conf).
-cat >"$out/local-only" <<'LOCAL'
-sed -i 's|^pacman --config "$conf" -Sy$|sed -i "/^\\[kriss\\]/,/^\$/d" "$conf"\n&|' /usr/lib/kriss-installer/pacstrap
+# Today's stable [kriss] instead of the ISO's own copy (/opt/kriss-local): the ISO's copy
+# lacks kriss-welcome, which came from the online [kriss] of the day, and that repo state is
+# gone. Mixed, old local packages meet new online ones whose dependencies they cannot meet.
+# So this is the release's installer, config and keyring with today's stable packages.
+cat >"$out/online-only" <<'ONLINE'
+sed -i 's|^pacman --config "$conf" -Sy$|sed -i "/^\\[kriss-local\\]/,/^\$/d" "$conf"\n&|' /usr/lib/kriss-installer/pacstrap
 grep -B2 -A1 'config "$conf" -Sy' /usr/lib/kriss-installer/pacstrap
-grep -q '^sed -i "/^\\\[kriss' /usr/lib/kriss-installer/pacstrap
-LOCAL
+grep -q '^sed -i "/^\\\[kriss-local' /usr/lib/kriss-installer/pacstrap
+ONLINE
 git -C "$repo" show "$tag:iso/test/autoinstall" |
-  awk -v f="$out/local-only" '/^\/usr\/lib\/kriss-installer\/pacstrap / { while ((getline l < f) > 0) print l } 1' \
+  awk -v f="$out/online-only" '/^\/usr\/lib\/kriss-installer\/pacstrap / { while ((getline l < f) > 0) print l } 1' \
   >"$out/autoinstall"
 grep -q "^sed -i 's|^pacman --config" "$out/autoinstall" || { echo "$tag: no pacstrap step in its autoinstall" >&2; exit 1; }
 # What main's ISO installs, less what only the live system has, to see what an update misses.
