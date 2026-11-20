@@ -11,11 +11,12 @@ import Quickshell.Services.UPower
 ShellRoot {
     id: root
 
-    // Open one panel on the focused window's screen, closing the others.
+    // Open one panel from its key, closing the others: on the main display, where the full
+    // taskbar is, as on Windows; Task View on the focused window's screen.
     function toggle(panel) {
         const open = !Desktop[panel];
         Desktop.launcherOpen = Desktop.notificationsOpen = Desktop.quickOpen = Desktop.calendarOpen = Desktop.taskViewOpen = Desktop.widgetsOpen = false;
-        if (open) Desktop.screen = Desktop.focusedScreen();
+        if (open) Desktop.screen = panel === "taskViewOpen" ? Desktop.focusedScreen() : Desktop.primary;
         // In the Mac layout the Start key opens search at the top, where Spotlight is; the dock's
         // Apps button opens the full grid.
         Desktop.launcherSearch = panel === "launcherOpen" && Desktop.mac;
@@ -82,21 +83,20 @@ ShellRoot {
                         const e = DesktopEntries.byId(id);
                         return e ? [{ text: text, icon: e.icon, run: () => e.execute() }] : [];
                     };
-                    const s = "com.system76.CosmicSettings";
                     deskMenu.show(spot, [].concat(
-                        open(s + ".Displays", Tr.t("Display settings")),
-                        [{ text: Tr.t("Personalise"), glyph: "image", run: () => Desktop.personalise("background") }],
+                        [{ text: Tr.t("Display settings"), glyph: "display", run: () => SettingsPages.open("display") }],
+                        [{ text: Tr.t("Personalise"), glyph: "image", run: () => SettingsPages.open("background") }],
                         [{ sep: true }],
                         open("com.system76.CosmicTerm", Tr.t("Open in Terminal")),
-                        open(s, Tr.t("Settings"))), false);
+                        [{ text: Tr.t("Settings"), glyph: "settings", run: () => SettingsPages.open("") }]), false);
                 }
                 Item { id: spot; width: 1; height: 1 }
             }
 
-            // The icons, on the first screen as on Windows; the others get the selection box alone.
+            // The icons, on the main display as on Windows; the others get the selection box alone.
             DesktopIcons {
                 anchors.fill: parent
-                showIcons: modelData === Quickshell.screens[0]
+                showIcons: modelData === Desktop.primary
             }
         }
     }
@@ -105,7 +105,7 @@ ShellRoot {
 
     Variants {
         id: bars
-        model: Desktop.taskbarAllScreens ? Quickshell.screens : Quickshell.screens.slice(0, 1)
+        model: Desktop.taskbarAllScreens ? Quickshell.screens : [Desktop.primary]
         Bar {}
     }
 
@@ -126,7 +126,8 @@ ShellRoot {
     Snap { id: snapLayouts }
     Clipboard { id: clipboard }
     Osd {}
-    Personalise {}
+    Settings {}
+    DisplaySwitch { id: project }
 
     // KRISS_SHELL_FPS=1: for a second after a panel opens or closes, counts the frames and
     // logs the rate and the slowest frame (read it with `qs log`), to check motion on real hardware.
@@ -229,9 +230,9 @@ ShellRoot {
             for (const o of bars.instances) if (o !== b) o.kb = false;
             b.focusStep();
         }
-        // Windows+B: the tray.
+        // Windows+B: the tray, on the main display's bar.
         function tray(): void {
-            const b = root.bar();
+            const b = bars.instances.find(o => o.screen === Desktop.primary) ?? root.bar();
             for (const o of bars.instances) if (o !== b) o.kb = false;
             b.focusTray();
         }
@@ -260,10 +261,21 @@ ShellRoot {
         function set(key: string, value: string): string { return Theme.set(key, value); }
     }
 
-    // `kriss-shell personalise [colours|background|taskbar|pins|text]`: the Personalise window.
+    // `kriss-shell settings [PAGE]`: the Settings window at a page (SettingsPages.qml has
+    // their ids: display, sound, colours, taskbar...). `kriss-shell personalise [PAGE]` opens
+    // Personalise, at colours unless another of its pages is named.
+    IpcHandler {
+        target: "settings"
+        function open(page: string): void { SettingsPages.open(page); }
+    }
+    // `kriss-shell project`: Windows+P.
+    IpcHandler {
+        target: "project"
+        function toggle(): void { project.toggle(); }
+    }
     IpcHandler {
         target: "personalise"
-        function open(page: string): void { Desktop.personalise(page); }
+        function open(page: string): void { SettingsPages.open(SettingsPages.find(page)?.group === "personalise" ? page : "colours"); }
     }
 
     // `kriss-shell layout windows|mac`: the taskbar, or the top bar and dock. Saved to shell.json.

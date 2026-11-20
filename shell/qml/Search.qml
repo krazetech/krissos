@@ -224,21 +224,15 @@ Scope {
         workspaces: ["Ruang kerja", "ruang kerja;desktop maya;workspaces;virtual desktops;task view"]
     })
 
-    // The shell's own Personalise pages (Personalise.qml), with the words people look for them by.
-    // Their words count in full, so "wallpaper" finds the page above a file of that name.
-    readonly property var ownPages: [
-        ["colours", Tr.t("Personalise"), "preferences-desktop-theme", "accent;accent colour;color;colours;dark mode;light mode;theme;personalise;personalize;warna;warna aksen;mod gelap;tema;peribadikan"],
-        ["background", Tr.t("Background"), "preferences-desktop-wallpaper", "wallpaper;background;desktop background;picture;kertas dinding;latar belakang;gambar"],
-        ["taskbar", Tr.t("Taskbar"), "preferences-desktop", "taskbar;taskbar alignment;auto-hide;tray;system tray;combine;bar tugas;dulang"],
-        ["pins", Tr.t("Pinned apps"), "preferences-desktop", "pins;pinned;start;pin to taskbar;unpin;sematkan;disematkan"],
-        ["text", Tr.t("Text and contrast"), "preferences-desktop-font", "text size;font size;bigger text;high contrast;saiz teks;teks besar;kontras tinggi"]
-    ]
+    // The COSMIC pages KrissOS Settings has a page or a link for (SettingsPages.qml); search
+    // finds those through it, in the user's language, and goes to the shell's own where there is one.
+    readonly property var covered: ["displays", "personalise"].concat(SettingsPages.pages.map(p => (p.cosmic ?? "").replace(/-/g, "")))
 
     function settingRows(q, malay) {
-        return ownPages.map(p => ({
-            kind: "setting", label: p[1], icon: p[2], open: () => Desktop.personalise(p[0]), detail: "",
-            score: Math.max(Fuzzy.score(p[1], q), ...p[3].split(";").map(x => Fuzzy.score(x, q)).filter(x => x >= 500))
-        })).concat(settings.map(e => {
+        return SettingsPages.search(q).map(r => ({
+            kind: "setting", label: r.name, icon: r.id === "display" ? "preferences-desktop-display" : "preferences-system",
+            open: () => SettingsPages.open(r.id, r.key), detail: r.path, score: r.score
+        })).concat(settings.filter(e => covered.indexOf(e.id.split(".").pop().toLowerCase()) < 0).map(e => {
             const w = pageWords[e.id.split(".").pop().toLowerCase()];
             return {
                 kind: "setting", label: malay && (e.nameMs || w) ? e.nameMs || w[0] : e.name, icon: e.icon, exec: e.exec,

@@ -15,12 +15,6 @@ Singleton {
     property bool quickOpen: false
     property bool calendarOpen: false
     property bool taskViewOpen: false
-    // The Personalise window's open page ("colours", "background", "taskbar", "pins" or
-    // "text"); empty while it is closed.
-    property string personalisePage: ""
-    function personalise(page) {
-        personalisePage = ["colours", "background", "taskbar", "pins", "lock", "text"].indexOf(page) >= 0 ? page : "colours";
-    }
     property bool widgetsOpen: false
     // The height of quick settings or the calendar while one is open in the toasts' corner,
     // so toasts arrive above it instead of on top of it (set by those panels).
@@ -42,18 +36,22 @@ Singleton {
     onCalendarOpenChanged: if (calendarOpen) opened()
     onTaskViewOpenChanged: if (taskViewOpen) opened()
     onWidgetsOpenChanged: if (widgetsOpen) opened()
-    onPersonalisePageChanged: if (personalisePage) opened()
     property bool locked: false
     // Start opened from the bar's search box: the search field and Recommended, no Pinned.
     property bool launcherSearch: false
 
+    // The main display (Settings > Display; see Displays.qml): the full taskbar, Start and the
+    // notifications from the keyboard, the desktop icons and the sign-in field are there. The
+    // first screen until cosmic-randr has answered, or when it names none.
+    readonly property var primary: Quickshell.screens.find(s => s.name === Displays.primary) ?? Quickshell.screens[0]
+
     // The screen the launcher, notifications and quick settings open on. A click on a
-    // bar sets it to that bar's screen; a key press uses the screen of the focused window.
-    property var screen: Quickshell.screens[0]
+    // bar sets it to that bar's screen; their keys open them on the main display.
+    property var screen: primary
     // An unplugged screen is not one to open on.
     Connections {
         target: Quickshell
-        function onScreensChanged() { if (Quickshell.screens.indexOf(root.screen) < 0) root.screen = Quickshell.screens[0]; }
+        function onScreensChanged() { if (Quickshell.screens.indexOf(root.screen) < 0) root.screen = root.primary; }
     }
 
     // The media player the keys and quick settings control: one that is playing, else the
@@ -130,7 +128,7 @@ Singleton {
 
     function focusedScreen() {
         const out = Windows.list.find(w => w.active && !w.minimized)?.output;
-        return Quickshell.screens.find(s => s.name === out) ?? screen ?? Quickshell.screens[0];
+        return Quickshell.screens.find(s => s.name === out) ?? screen ?? primary;
     }
 
     // ~/.config/kriss/shell.json. Missing keys keep the defaults below.
@@ -163,7 +161,7 @@ Singleton {
     // What the bars take at the top and bottom of a screen: the taskbar, or the top bar and dock.
     readonly property int topRoom: mac ? Theme.topBarHeight : 0
     readonly property int bottomRoom: mac ? Theme.dockHeight + Theme.dockGap : Theme.barHeight
-    // `kriss-shell layout windows|mac`, kriss-welcome and the Personalise page.
+    // `kriss-shell layout windows|mac`, kriss-welcome and Settings > Personalise > Taskbar.
     function setLayout(name) {
         if (name !== "windows" && name !== "mac") return "error: expected windows or mac";
         layout = name;
@@ -225,7 +223,7 @@ Singleton {
             // Pinned apps, as desktop file ids, in taskbar order. Missing apps are skipped.
             property list<string> pinned: [
                 "firefox", "com.system76.CosmicFiles", "org.krissos.Store", "com.system76.CosmicTerm", "code", "steam",
-                "winboat", "thunderbird", "com.github.th_ch.youtube_music", "com.system76.CosmicSettings"
+                "winboat", "thunderbird", "com.github.th_ch.youtube_music", "org.krissos.Settings"
             ]
             // Do not disturb: no toasts, notifications still collect behind the bell.
             property bool dnd: false
@@ -278,7 +276,7 @@ Singleton {
             property list<string> worldClocks: []
             property string weatherCity: ""
             property string aiModel: ""
-            // The lock screen's clock (Personalise > Lock screen): position top, centre, left or
+            // The lock screen's clock (Settings > Personalise > Lock screen): position top, centre, left or
             // bottom; stack stacked or line; size s, m, l or xl; weight regular, semibold, bold
             // or heavy; font inter-display, rounded, condensed or serif; style glass, solid or
             // outline; the date, the row under it (media, battery, network) and the depth effect;
@@ -300,9 +298,17 @@ Singleton {
     readonly property var lockClock: config.lockClock
     // A copy the login screen can read before anyone signs in (greeter.qml), in the folder
     // kriss-settings makes for it; the login screen shows the clock the way its user set it.
+    // The main display goes in it too, for where the login screen shows its field.
     function setLockClock(key, value) {
         config.lockClock[key] = value;
-        const o = config.lockClock, copy = {};
+        writeLockCopy();
+    }
+    Connections {
+        target: Displays
+        function onPrimaryChanged() { if (Displays.primary) root.writeLockCopy(); }
+    }
+    function writeLockCopy() {
+        const o = config.lockClock, copy = { primary: Displays.primary };
         for (const k of ["position", "stack", "size", "weight", "font", "style", "date", "widgets", "depth"]) copy[k] = o[k];
         Quickshell.execDetached(["sh", "-c", 'd=/var/lib/kriss/lock-clock; [ -w "$d" ] && printf %s "$1" > "$d/.$2.json" && mv -f "$d/.$2.json" "$d/$2.json"',
             "sh", JSON.stringify(copy), Quickshell.env("USER") ?? "user"]);

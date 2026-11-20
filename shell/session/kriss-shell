@@ -19,7 +19,10 @@
 #   kriss-shell desktops add|close
 #                          a new desktop, or close the current one (Windows+Ctrl+D, Windows+Ctrl+F4)
 #   kriss-shell personalise [colours|background|taskbar|pins|text]
-#                          the Personalise window, at that page
+#                          Settings, at that Personalise page
+#   kriss-shell settings [PAGE]
+#                          Settings, at a page (display, sound, wifi, datetime...)
+#   kriss-shell project    Windows+P: PC screen only, Duplicate, Extend, Second screen only
 #   kriss-shell snap       the snap layouts for the window in front (Windows+Z)
 #   kriss-shell layout windows|mac
 #                          the taskbar, or the Mac layout (top bar and dock); saved, live
@@ -67,6 +70,12 @@ emoji)
     ;;
 personalise)
     qs -p "$qml" ipc call personalise open "${2:-colours}"
+    ;;
+settings)
+    qs -p "$qml" ipc call settings open "${2:-}"
+    ;;
+project)
+    qs -p "$qml" ipc call project toggle
     ;;
 snap)
     qs -p "$qml" ipc call snap layouts
