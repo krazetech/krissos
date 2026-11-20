@@ -67,12 +67,12 @@ code, pre { font-family: var(--mono); font-size: .9em; }
 .skip { position: absolute; left: -999px; }
 .skip:focus { left: 16px; top: 12px; z-index: 10; background: var(--surface); padding: 8px 14px; }
 
-/* Nav: the KrissOS taskbar. Docked at the bottom like the shell's own bar: the logo is the
+/* Nav: the KrissOS taskbar, docked at the top: the logo is the
    Start button, pages sit like pinned apps with a Sky Cyan indicator, Ko-fi and the
    language switch sit in the tray. */
-body { padding-bottom: 76px; }
+body { padding-top: 76px; }
 .nav {
-  position: fixed; z-index: 20; left: 10px; right: 10px; bottom: 10px;
+  position: fixed; z-index: 20; left: 10px; right: 10px; top: 10px;
   background: rgba(16, 19, 22, .82); color-scheme: dark; --fg: #E6EDF2; --soft: #A3AEB8; --hover: rgba(230, 237, 242, .08);
   backdrop-filter: saturate(160%) blur(22px);
   -webkit-backdrop-filter: saturate(160%) blur(22px);
@@ -242,20 +242,13 @@ footer a { color: var(--fg); }
 .btn.kofi svg, .nav .kofi svg { width: 16px; height: 16px; color: #FF5E5B; }
 @media (max-width: 760px) { footer .wrap { grid-template-columns: 1fr; } }
 
-/* Motion, in the spirit of LunariaOS: headlines lift out of a soft blur, screenshots zoom in,
-   the dark scene opens from a rounded card to full width, cards arrive one after another.
-   CSS only and scroll-driven. Skipped for reduced motion; browsers without scroll timelines
-   get the plain page. */
+/* Load-in motion for page heroes, plus a few scroll-linked touches. The scroll reveal for
+   everything else is at the end of this file (reveal.js). Skipped for reduced motion. */
 @media (prefers-reduced-motion: no-preference) {
   .rise { animation: rise .9s var(--ease) both; }
   .rise.d1 { animation-delay: .08s; } .rise.d2 { animation-delay: .16s; }
   .hero-shot.rise { animation: zoom 1.3s var(--ease) .3s both; }
   @supports (animation-timeline: view()) {
-    .reveal { animation: lift linear both; animation-timeline: view(); animation-range: entry 0% entry 45%; }
-    .shot.reveal { animation-name: zoom; animation-range: entry 0% cover 35%; }
-    .card.reveal { animation-name: rise; }
-    .grid > .reveal:nth-child(3n+2) { animation-range: entry 8% entry 53%; }
-    .grid > .reveal:nth-child(3n+3) { animation-range: entry 16% entry 61%; }
     .scene { animation: open linear both; animation-timeline: view(); animation-range: entry 0% entry 70%; }
     .hero-shot img { animation: settle linear both; animation-timeline: scroll(root); animation-range: 0 70vh; }
   }
@@ -309,7 +302,7 @@ footer .sponsor:hover img, footer .sponsor:focus-visible img { filter: none; opa
 .dots { background: radial-gradient(rgba(230, 237, 242, .18) 1px, transparent 1.6px) 0 0 / 28px 28px; }
 
 /* Hero: the wallpaper, the title, then the tower cut out on top so it stands in front of the words */
-.sp-hero { position: relative; min-height: 100svh; padding: 0; display: grid; align-items: end; overflow: hidden; isolation: isolate; }
+.sp-hero { position: relative; min-height: 100svh; margin-top: -76px; padding: 0; display: grid; align-items: end; overflow: hidden; isolation: isolate; }
 .sp-hero > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 30% 35%; }
 .sp-cut { z-index: 2; pointer-events: none; }
 .sp-hero::after { content: ""; position: absolute; inset: 0; z-index: 3; pointer-events: none; background: linear-gradient(to bottom, rgba(0,0,0,.35), transparent 25%, transparent 50%, #000 97%); }
@@ -342,7 +335,7 @@ footer .sponsor:hover img, footer .sponsor:focus-visible img { filter: none; opa
 
 /* Sticky story: the wallpaper's clock, day to night */
 .sun { height: 300vh; padding: 0; }
-.sun-stage { position: sticky; top: 16px; height: calc(100svh - 108px); display: grid; grid-template-columns: 1fr 1.25fr; }
+.sun-stage { position: sticky; top: 82px; height: calc(100svh - 108px); display: grid; grid-template-columns: 1fr 1.25fr; }
 .sun-text { background: var(--accent); color: #000; padding: clamp(24px, 4vw, 48px); display: flex; flex-direction: column; --c: rgba(0,0,0,.5); }
 .sun-text .plus::before, .sun-text::before { --c: rgba(0, 0, 0, .55); }
 .sun-text .label { color: #000; opacity: .7; }
@@ -421,3 +414,15 @@ footer .sponsor:hover img, footer .sponsor:focus-visible img { filter: none; opa
   }
 }
 @keyframes sink { to { transform: translateY(18vh); } }
+
+/* Scroll reveal (reveal.js), the LunariaOS way: fade and lift in on entry, reset off screen,
+   replay on the way back. Pictures and the stats sheet also grow in slightly. */
+@media (prefers-reduced-motion: no-preference) {
+  .js .reveal { opacity: 0; transform: translateY(28px); }
+  .js .reveal:is(figure, .qs) { transform: translateY(40px) scale(.94); }
+  .js .reveal.in {
+    opacity: 1; transform: none;
+    transition: opacity .9s ease, transform 1.1s cubic-bezier(.22, 1, .36, 1), background .3s;
+    transition-delay: var(--delay, 0s), var(--delay, 0s), 0s;
+  }
+}
