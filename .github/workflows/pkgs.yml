@@ -3,9 +3,9 @@ name: packages
 on:
   push:
     branches: [main]
-    paths: ['pkgs/**', '!pkgs/linux-kriss/**', '!pkgs/linux-kriss-asahi/**', '!pkgs/cosmic-comp-kriss/**', '!pkgs/cosmic-settings-kriss/**', 'tools/**', 'shell/**', 'theme/**', 'installer/**', '.github/workflows/pkgs.yml']
+    paths: ['pkgs/**', '!pkgs/linux-kriss/**', '!pkgs/linux-kriss-asahi/**', '!pkgs/cosmic-comp-kriss/**', '!pkgs/cosmic-settings-kriss/**', 'tools/**', 'shell/**', 'store/**', 'theme/**', 'installer/**', '.github/workflows/pkgs.yml']
   pull_request:
-    paths: ['pkgs/**', '!pkgs/linux-kriss/**', '!pkgs/linux-kriss-asahi/**', '!pkgs/cosmic-comp-kriss/**', '!pkgs/cosmic-settings-kriss/**', 'tools/**', 'shell/**', 'theme/**', 'installer/**', '.github/workflows/pkgs.yml']
+    paths: ['pkgs/**', '!pkgs/linux-kriss/**', '!pkgs/linux-kriss-asahi/**', '!pkgs/cosmic-comp-kriss/**', '!pkgs/cosmic-settings-kriss/**', 'tools/**', 'shell/**', 'store/**', 'theme/**', 'installer/**', '.github/workflows/pkgs.yml']
   workflow_dispatch:
 
 permissions:
@@ -97,7 +97,7 @@ jobs:
       - name: Build packages
         run: |
           docker run --rm -v "$PWD:/src" -w /src alarm tools/ci/build-pkgs.sh out \
-            pkgs/kriss-keyring pkgs/kriss-settings pkgs/kriss-theme pkgs/kriss-tools pkgs/kriss-shell pkgs/kriss-welcome
+            pkgs/kriss-keyring pkgs/kriss-settings pkgs/kriss-theme pkgs/kriss-tools pkgs/kriss-shell pkgs/kriss-welcome pkgs/kriss-store
 
       - name: Sign and publish to testing
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'

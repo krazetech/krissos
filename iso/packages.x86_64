@@ -20,6 +20,7 @@ kriss-settings
 kriss-theme
 kriss-tools
 kriss-welcome
+kriss-store
 
 # Installer: Calamares with the KrissOS sequence. os-prober finds Windows, ntfs-3g
 # resizes it. The installer copies this live system to the disk (no internet), so

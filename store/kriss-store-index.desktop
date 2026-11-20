@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=KrissOS Store index
+Comment=Lists the Store's apps for Start's search
+Exec=kriss-store --write-index
+NoDisplay=true
+X-KDE-autostart-phase=2

@@ -154,6 +154,18 @@ Scope {
     // DesktopEntries leaves them out). The COSMIC Panel and Dock pages are left out: the
     // KrissOS taskbar replaces both; so are COSMIC's and KDE's Wallpaper, as the shell draws its own. Each is {id, name, nameMs, words, icon, exec}.
     property var settings: []
+
+    // The Store's Flathub apps, for "Get X from the Store". kriss-store writes the list at login.
+    property var storeApps: []
+    FileView {
+        path: root.cache + "/store.json"
+        watchChanges: true
+        printErrors: false
+        onFileChanged: reload()
+        onLoaded: {
+            try { root.storeApps = JSON.parse(text()); } catch (e) { root.storeApps = []; }
+        }
+    }
     Process {
         id: pages
         command: ["sh", "-c", `

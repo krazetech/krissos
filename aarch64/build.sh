@@ -55,7 +55,7 @@ pacman -Syu --noconfirm --needed asahi-alarm-keyring arch-install-scripts dosfst
 local_repo=$work/kriss-local
 rm -rf "$local_repo"
 (cd "$repo" && "$repo/tools/ci/build-pkgs.sh" "$local_repo" \
-  pkgs/kriss-keyring pkgs/kriss-settings pkgs/kriss-theme pkgs/kriss-tools pkgs/kriss-shell pkgs/kriss-welcome)
+  pkgs/kriss-keyring pkgs/kriss-settings pkgs/kriss-theme pkgs/kriss-tools pkgs/kriss-shell pkgs/kriss-welcome pkgs/kriss-store)
 repo-add "$local_repo/kriss-local.db.tar.zst" "$local_repo"/*.pkg.tar.zst
 # pacstrap -K fills the image's keyring from the keyrings installed here.
 pacman -U --noconfirm "$local_repo"/kriss-keyring-*.pkg.tar.zst
@@ -66,7 +66,7 @@ pacman --config "$conf" -Sy
 # --- the system ----------------------------------------------------------------------------
 pkgs=(base mkinitcpio sudo nano man-db networkmanager bluez bluez-utils flatpak
       pipewire pipewire-alsa pipewire-pulse wireplumber firefox noto-fonts noto-fonts-emoji
-      kriss-keyring kriss-settings kriss-theme kriss-tools kriss-welcome
+      kriss-keyring kriss-settings kriss-theme kriss-tools kriss-welcome kriss-store
       kriss-shell greetd cosmic-files cosmic-terminal cosmic-settings
       xdg-desktop-portal-cosmic power-profiles-daemon upower libnotify)
 case $flavour in

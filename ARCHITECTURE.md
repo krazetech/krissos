@@ -63,6 +63,7 @@ distro team's workload, and it is out of scope.
 | `linux-kriss-generic` | The same kernel for baseline x86-64: the live ISO's kernel, kept on CPUs without v3 |
 | `linux-kriss-asahi` | The Asahi kernel for Apple Silicon Macs (aarch64 only, §13) |
 | `kriss-tools` | `kriss` (with `kriss tune` and `kriss install`), `kriss-ctl`, `kriss-vm` |
+| `kriss-store` | The Store: find, install, update and remove apps (Flathub and the `kriss-meta-*` packs) |
 | `kriss-shell` | The KrissOS Shell (panel, dock, launcher, notifications, lock screen) |
 | `kriss-theme` | Wallpapers, icons, cursors, GTK/Qt/terminal colors, Plymouth, Limine, SDDM/greeter |
 | `kriss-settings` | Default configs in `/etc/skel` and `/usr/share/kriss`, plus pacman/snapper/sbctl hooks |
@@ -371,7 +372,7 @@ office users, and creators and AI tinkerers. Every default is checked against on
 | Desktop | The KrissOS Shell (§5) with Windows habits in the KrissOS look: bottom taskbar, Start-style launcher, close button top-right, the Win key opens the menu. Not a Windows 11 clone. KDE Plasma is the installer's alternative |
 | Install | Dual-boot alongside Windows by default. The installer resizes Windows safely, detects BitLocker and stops with clear steps if it's on, and keeps Windows in the boot menu |
 | NVIDIA | The installer detects the GPU and installs the right driver (open modules on Turing and newer), so games work on first boot |
-| Apps | Discover with Flathub on by default, pacman underneath. In a terminal, `kriss install` reaches the repos, Flathub and the AUR in one command (below) |
+| Apps | The Store (`kriss-store`, pinned to the taskbar): Flathub apps and the KrissOS packs, with categories, search, Install, Uninstall and Update all. Every change runs `pkexec kriss install/remove/update`, which takes a snapper snapshot first, so it rolls back from the boot menu. Start's search offers "Get X from the Store" for apps not installed yet. Plasma keeps Discover. In a terminal, `kriss install` reaches the repos, Flathub and the AUR in one command (below) |
 | Updates | A desktop notification with an Update button (`kriss-update-notify.timer`). One click runs `kriss update`, which takes a btrfs snapshot through snapper first, so a bad update rolls back from the boot menu |
 | Windows apps | WinBoat up front, adapted to the hardware (see `kriss-welcome`). The Windows licence follows WinBoat's own approach; KrissOS adds no licence step |
 | Anti-cheat | Said upfront: gamers check their games before switching, on the website and in `kriss-welcome` |
