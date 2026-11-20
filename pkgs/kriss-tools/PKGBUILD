@@ -1,6 +1,6 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-tools
-pkgver=0.8.0
+pkgver=0.9.0
 pkgrel=1
 pkgdesc='KrissOS system tools'
 arch=('any')
@@ -40,4 +40,9 @@ package() {
   install -Dm644 -t "$units" "$t"/systemd/kriss-polkit-agent.service
   install -d "$units/kriss-shell-session.target.wants"
   ln -s ../kriss-polkit-agent.service "$units/kriss-shell-session.target.wants/kriss-polkit-agent.service"
+  # kriss reset finishes at the next boot, before the login screen.
+  local sys="$pkgdir/usr/lib/systemd/system"
+  install -Dm644 -t "$sys" "$t"/systemd/kriss-reset.service
+  install -d "$sys/multi-user.target.wants"
+  ln -s ../kriss-reset.service "$sys/multi-user.target.wants/kriss-reset.service"
 }

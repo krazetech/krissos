@@ -2,7 +2,7 @@
 # kriss: KrissOS system tool.
 set -euo pipefail
 
-readonly KRISS_VERSION="0.4.0"
+readonly KRISS_VERSION="0.5.0"
 readonly OS_RELEASE="${KRISS_OS_RELEASE:-/etc/os-release}"
 # Overridable so tests can point hwcheck and winapps at fixture trees.
 readonly PROC="${KRISS_PROC:-/proc}" SYS="${KRISS_SYS:-/sys}" DEV="${KRISS_DEV:-/dev}" ETC="${KRISS_ETC:-/etc}"
@@ -351,6 +351,150 @@ cmd_rollback() {
   printf 'kriss: the old system is kept as %s. Once you are happy, free its space with:\n' "$old"
   printf '  sudo mount -o subvolid=5 %s /mnt && sudo btrfs subvolume delete /mnt/%s && sudo umount /mnt\n' \
     "$(findmnt -nvo SOURCE /.snapshots)" "$old"
+}
+
+# kriss reset: Reset this PC, from the command line or the Settings app's Recovery page.
+#   --keep-files   remove apps added since install and reset every account's settings;
+#                  documents, pictures and other files in /home stay.
+#   --everything   the same, but also delete everything in every home folder and forget
+#                  saved Wi-Fi: the next boot is like the first one. Accounts and their
+#                  passwords stay, so someone can still log in (there is no first-boot setup).
+# It takes a snapshot first, so the system side can be undone from the boot menu, then
+# finishes at the next boot before anyone logs in (kriss-reset.service runs --finish): moving
+# or deleting files under a running session would let it write half its settings back.
+# Works offline: nothing is downloaded. Exit codes: 0 done or scheduled, 1 not confirmed,
+# 2 error.
+readonly RESET_PENDING=${KRISS_RESET_PENDING:-/var/lib/kriss/reset-pending}
+# What `pacman -Qqe` said at the end of the installer (installer/lib/configure).
+readonly INSTALL_LIST=${KRISS_INSTALL_LIST:-/var/lib/kriss/install-packages}
+readonly HOMES=${KRISS_HOMES:-/home}
+# Kept in --keep-files: keys are not settings, and losing them locks people out of things.
+readonly RESET_KEEP=(.ssh .gnupg)
+
+reset_accounts() { # "NAME HOME" for each person's account (UID 1000-59999 with a home in /home)
+  awk -F: -v h="$HOMES/" '$3 >= 1000 && $3 < 60000 && index($6, h) == 1 { print $1, $6 }' "$ETC/passwd"
+}
+
+# Apps installed since the installer finished, one per line. Without the installer's list
+# (installs older than kriss reset) nothing is removed: guessing could take out the desktop.
+# ponytail: [kriss] packages, kernels, drivers and firmware stay even when added later, as
+# updates rename packages (cosmic-settings -> cosmic-settings-kriss) and kriss nvidia adds
+# drivers; a reset should not leave the PC without a desktop or a display.
+reset_added_apps() {
+  [[ -r $INSTALL_LIST ]] || return 0
+  local keep
+  keep=$(pacman -Slq kriss kriss-testing 2>/dev/null | sort -u)
+  comm -23 <(pacman -Qqe | sort) <(sort -u "$INSTALL_LIST") | comm -23 - <(printf '%s\n' "$keep") |
+    grep -Ev '^(linux|nvidia|lib32-nvidia)|-firmware$|-ucode$|-keyring$' || true
+}
+
+reset_plan() { # reset_plan MODE: the plain-words list of what will happen
+  local mode=$1 apps n
+  apps=$(reset_added_apps)
+  n=$(grep -c . <<<"$apps" || true)
+  if [[ $mode == everything ]]; then
+    echo "Reset this PC: remove everything"
+  else
+    echo "Reset this PC: keep my files"
+  fi
+  if has_snapper; then
+    echo "  - Takes a snapshot first. To undo the system part, start 'before kriss reset' from the boot menu (KrissOS > Snapshots) and run kriss rollback."
+  else
+    echo "  - No snapshot: snapper is not set up here, so this cannot be undone."
+  fi
+  if [[ ! -r $INSTALL_LIST ]]; then
+    echo "  - Keeps installed apps: this PC has no record of what the installer put on it."
+  elif ((n == 0)); then
+    echo "  - No apps were added since KrissOS was installed."
+  else
+    echo "  - Removes $n app(s) added since KrissOS was installed: $(paste -sd' ' - <<<"$apps")"
+  fi
+  if command -v flatpak >/dev/null; then echo "  - Removes Flatpak apps."; fi
+  local name home
+  while read -r name home; do
+    if [[ $mode == everything ]]; then
+      echo "  - DELETES everything in $home ($name): documents, pictures, music, videos, downloads, desktop and settings. This cannot be undone."
+    else
+      echo "  - Resets $name's settings. Files in $home stay; the old settings go to $home/old-settings-DATE."
+    fi
+  done < <(reset_accounts)
+  if [[ $mode == everything ]]; then echo "  - Forgets saved Wi-Fi networks."; fi
+  echo "  - Accounts and passwords stay. Finishes at the next restart, before anyone logs in."
+}
+
+reset_finish() { # at boot, as root: do what kriss reset scheduled
+  [[ -f $RESET_PENDING ]] || return 0
+  in_snapshot && { echo "kriss: a snapshot is running; the reset waits for the normal system."; return 0; }
+  local mode stamp apps name home f
+  read -r mode stamp <"$RESET_PENDING"
+  # Gone first, so a reset that fails half way does not run again at every boot.
+  rm -f "$RESET_PENDING"
+  echo "kriss: resetting this PC ($mode)"
+  apps=$(reset_added_apps)
+  if [[ -n $apps ]]; then
+    # shellcheck disable=SC2086 # one package per word
+    pacman -Rns --noconfirm $apps || echo "kriss: some apps could not be removed" >&2
+  fi
+  if command -v flatpak >/dev/null; then
+    flatpak uninstall --system --all --noninteractive || echo "kriss: some Flatpak apps could not be removed" >&2
+  fi
+  shopt -s nullglob dotglob
+  while read -r name home; do
+    [[ -d $home ]] || continue
+    if [[ $mode == everything ]]; then
+      find "$home" -mindepth 1 -delete
+      cp -a "$ETC/skel/." "$home/"
+      chown -R "$name:" "$home"
+      echo "kriss: emptied $home"
+    else
+      local old=$home/old-settings-$stamp
+      install -d -m 700 -o "$name" -g "$(id -gn "$name")" "$old"
+      for f in "$home"/.*; do
+        [[ " ${RESET_KEEP[*]} " == *" ${f##*/} "* ]] || mv -- "$f" "$old/"
+      done
+      cp -a "$ETC/skel/." "$home/"
+      chown -R "$name:" "$home" 2>/dev/null || true
+      chown -R "$name:" "$old"
+      echo "kriss: $name's old settings are in $old"
+    fi
+  done < <(reset_accounts)
+  shopt -u nullglob dotglob
+  if [[ $mode == everything ]]; then rm -f "$ETC"/NetworkManager/system-connections/*; fi
+  echo "kriss: reset done"
+}
+
+cmd_reset() {
+  local mode='' yes=0 dry=0 a
+  for a in "$@"; do
+    case $a in
+      --keep-files) mode='keep-files' ;;
+      --everything) mode=everything ;;
+      --yes | -y) yes=1 ;;
+      --dry-run) dry=1 ;;
+      --finish) ((EUID == 0)) || die "reset --finish needs root."; reset_finish; return ;;
+      --cancel)
+        [[ -f $RESET_PENDING ]] || { echo "kriss: no reset is waiting."; return 0; }
+        ((EUID == 0)) || exec sudo "$0" reset --cancel
+        rm -f "$RESET_PENDING"; echo "kriss: the reset will not happen."; return ;;
+      *) die "unknown option '$a'. Run 'kriss help'." ;;
+    esac
+  done
+  [[ -n $mode ]] || die "say what to reset: kriss reset --keep-files, or kriss reset --everything"
+  if ((dry)); then reset_plan "$mode"; return 0; fi
+  in_snapshot && die "a snapshot is running. Restart into the normal system first."
+  ((EUID == 0)) || exec sudo "$0" reset "$@"
+  reset_plan "$mode"
+  if ((!yes)); then
+    local word
+    read -rp "Type RESET to go on, or press Enter to stop: " word || return 1
+    [[ ${word,,} == reset ]] || { echo "kriss: nothing was changed."; return 1; }
+  fi
+  snapshot 'before kriss reset' || die "could not take the snapshot, so nothing was changed."
+  # After the snapshot, so starting that snapshot from the boot menu does not reset again.
+  mkdir -p "${RESET_PENDING%/*}"
+  echo "$mode $(date +%Y%m%d-%H%M%S)" >"$RESET_PENDING"
+  echo "kriss: the reset finishes at the next restart. To stop it before then: kriss reset --cancel"
+  ((yes)) || ! ask "Restart now? [Y/n]" y || systemctl reboot
 }
 
 # kriss winapps check|setup: Windows apps in WinBoat (ARCHITECTURE §7, tier 1).
@@ -852,6 +996,11 @@ Commands:
   version    Show the kriss and KrissOS versions
   hwcheck    Print hardware facts (RAM, CPU, GPU, VM support) as JSON
   rollback   Keep the snapshot booted from the boot menu as your system
+  reset --keep-files   Reset this PC: remove added apps and reset settings, keep your files
+  reset --everything   Reset this PC: also delete every file in /home and saved Wi-Fi
+             Both show the plan and ask you to type RESET, take a snapshot, then finish at
+             the next restart. --dry-run only shows the plan, --yes skips the question,
+             --cancel stops a waiting reset. Exit: 0 done or waiting, 1 not confirmed, 2 error.
   channel    Show which update channel this PC is on (stable or testing)
   channel testing   Get updates from [kriss-testing] before they reach everyone
   channel stable    Go back to [kriss] (downgrades what came from testing, after a snapshot)
@@ -877,6 +1026,7 @@ main() {
     winapps) cmd_winapps "${@:2}" ;;
     nvidia) cmd_nvidia "${@:2}" ;;
     rollback) cmd_rollback "${@:2}" ;;
+    reset) cmd_reset "${@:2}" ;;
     channel) cmd_channel "${@:2}" ;;
     migrate) exec kriss-migrate "${@:2}" ;;
     help | --help | -h) cmd_help ;;
