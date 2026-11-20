@@ -8,6 +8,8 @@ Row {
     property string text
     property font font
     property color color: Theme.fg
+    property int style: Text.Normal     // Text.Outline for hollow or edged digits
+    property color styleColor: "transparent"
 
     // Read out as the text, not the digit columns.
     Accessible.role: Accessible.StaticText
@@ -34,7 +36,7 @@ Row {
             Accessible.ignored: true
 
             // Drawn for anything but a digit; its width sizes every slot.
-            Text { id: plain; visible: !slot.digit; text: slot.ch; font: root.font; color: root.color }
+            Text { id: plain; visible: !slot.digit; text: slot.ch; font: root.font; color: root.color; style: root.style; styleColor: root.styleColor }
 
             // 0 to 9 in a column, slid so the current digit shows, each centred in the slot.
             Column {
@@ -43,7 +45,7 @@ Row {
                 Behavior on y { NumberAnimation { duration: Theme.ms(Theme.slow); easing.type: Easing.BezierSpline; easing.bezierCurve: Theme.settleCurve } }
                 Repeater {
                     model: 10
-                    Text { required property int index; height: root.step; width: slot.width; horizontalAlignment: Text.AlignHCenter; text: index; font: root.font; color: root.color }
+                    Text { required property int index; height: root.step; width: slot.width; horizontalAlignment: Text.AlignHCenter; text: index; font: root.font; color: root.color; style: root.style; styleColor: root.styleColor }
                 }
             }
         }

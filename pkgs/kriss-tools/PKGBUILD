@@ -1,6 +1,6 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-tools
-pkgver=0.7.1
+pkgver=0.7.2
 pkgrel=1
 pkgdesc='KrissOS system tools'
 arch=('any')
@@ -29,11 +29,14 @@ package() {
   install -Dm644 "$t/kriss-tune.desktop" "$pkgdir/etc/xdg/autostart/kriss-tune.desktop"
   # Says so at login when a boot-menu snapshot is running (kriss rollback --notice).
   install -Dm644 "$t/kriss-snapshot-notice.desktop" "$pkgdir/etc/xdg/autostart/kriss-snapshot-notice.desktop"
-  # The KrissOS Shell has no polkit agent of its own; without one pkexec and udisks cannot ask.
-  install -Dm644 "$t/kriss-polkit-agent.desktop" "$pkgdir/etc/xdg/autostart/kriss-polkit-agent.desktop"
   install -Dm755 "$t/kriss-update-notify" "$pkgdir/usr/bin/kriss-update-notify"
   install -Dm644 -t "$units" "$t"/systemd/kriss-update-notify.{service,timer}
   # On for every user, like `systemctl --global enable`; `systemctl --user mask` turns it off.
   install -d "$units/timers.target.wants"
   ln -s ../kriss-update-notify.timer "$units/timers.target.wants/kriss-update-notify.timer"
+  # The KrissOS Shell has no polkit agent of its own; without one pkexec and udisks cannot ask.
+  # Started with the shell's session only, so other desktops on the same PC keep their own.
+  install -Dm644 -t "$units" "$t"/systemd/kriss-polkit-agent.service
+  install -d "$units/kriss-shell-session.target.wants"
+  ln -s ../kriss-polkit-agent.service "$units/kriss-shell-session.target.wants/kriss-polkit-agent.service"
 }
