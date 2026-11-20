@@ -210,6 +210,40 @@ Arahan: flatpak install flathub %1</translation>
         <source>Not fully tested; results may vary.</source>
         <translation>Belum diuji sepenuhnya; hasil mungkin berbeza.</translation>
     </message>
+    <message>
+        <location filename="../qml/AppsPage.qml" line="35"/>
+        <source>Install Microsoft Office?</source>
+        <translation>Pasang Microsoft Office?</translation>
+    </message>
+    <message>
+        <location filename="../qml/AppsPage.qml" line="36"/>
+        <source>Word, Excel and PowerPoint are downloaded from Microsoft (about 3 GB) and installed in WinBoat&apos;s Windows. It needs the internet, WinBoat set up first, and your own Microsoft 365 account or product key: sign in or enter the key when Word first opens. KrissOS includes no Office files.
+
+Runs: kriss winapps office</source>
+        <translation>Word, Excel dan PowerPoint dimuat turun daripada Microsoft (kira-kira 3 GB) dan dipasang dalam Windows WinBoat. Ia memerlukan internet, WinBoat yang telah disediakan dan akaun Microsoft 365 atau kunci produk anda sendiri: log masuk atau masukkan kunci apabila Word dibuka kali pertama. KrissOS tidak menyertakan sebarang fail Office.
+
+Menjalankan: kriss winapps office</translation>
+    </message>
+    <message>
+        <location filename="../qml/AppsPage.qml" line="115"/>
+        <source>Installing Office…</source>
+        <translation>Memasang Office…</translation>
+    </message>
+    <message>
+        <location filename="../qml/AppsPage.qml" line="116"/>
+        <source>Office is installed</source>
+        <translation>Office telah dipasang</translation>
+    </message>
+    <message>
+        <location filename="../qml/AppsPage.qml" line="117"/>
+        <source>Office did not install. Set up WinBoat first, then try again</source>
+        <translation>Office tidak dipasang. Sediakan WinBoat dahulu, kemudian cuba lagi</translation>
+    </message>
+    <message>
+        <location filename="../qml/AppsPage.qml" line="118"/>
+        <source>Install Microsoft Office</source>
+        <translation>Pasang Microsoft Office</translation>
+    </message>
 </context>
 <context>
     <name>CopyPage</name>

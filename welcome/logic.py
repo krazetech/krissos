@@ -196,6 +196,9 @@ EXTRAS = {
     "claude-code": {"user": "curl -fsSL https://claude.ai/install.sh | bash", "binary": "claude"},
     # Pre-Turing NVIDIA GPUs (hwcheck's nvidia_legacy). kriss nvidia setup also adds the kernel
     # headers, the initramfs and command line changes and, on hybrid laptops, prime-run.
+    # Microsoft Office in WinBoat, downloaded from Microsoft as the user; offered on the Apps
+    # page's Office row, not on the Extras page. Installed means its Start entry exists.
+    "office": {"user": "kriss winapps office --yes", "file": ".local/share/applications/kriss-office-word.desktop"},
     "nvidia-legacy": {"root": ["kriss", "nvidia", "setup"], "packages": ["nvidia-580xx-dkms", "nvidia-580xx-utils"]},
 }
 
@@ -227,6 +230,8 @@ def extra_command(extra_id, gpus):
 
 def extra_installed(extra_id, gpus):
     e = EXTRAS[extra_id]
+    if "file" in e:
+        return (pathlib.Path.home() / e["file"]).exists()
     if "binary" in e:
         return bool(shutil.which(e["binary"]) or (pathlib.Path.home() / ".local/bin" / e["binary"]).exists())
     try:  # pacman -T prints what is missing and exits 127; 0 means all installed

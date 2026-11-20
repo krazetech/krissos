@@ -91,16 +91,19 @@ with tempfile.TemporaryDirectory() as t:
     assert lo_ms["summary"] == "Suite pejabat" and lo_ms["desc"] == "Tulis dokumen.\n• Penulis", lo_ms
     assert ms["com.github.tchx84.Flatseal"]["desc"] == "Flatseal ialah alat."
     assert ms["com.spotify.Client"]["summary"] == "Online music streaming service"
+    assert ms["microsoft-office"]["summary"].startswith("Word, Excel dan PowerPoint sebenar"), ms["microsoft-office"]
+    assert "summary_ms" not in ms["microsoft-office"] and "desc_ms" not in apps[0], apps[0]
+    assert next(a for a in apps if a["id"] == "microsoft-office")["desc"].startswith("Downloads Microsoft's")
 
     # Search: a word in the name, then inside it, then keywords and summaries; packs too.
-    assert [a["id"] for a in logic.search(apps, "office")][:2] == ["org.example.Office", "org.libreoffice.LibreOffice"]
-    assert [a["id"] for a in logic.search(apps, "excel")] == ["org.libreoffice.LibreOffice"]
+    assert [a["id"] for a in logic.search(apps, "office")][:3] == ["microsoft-office", "org.example.Office", "org.libreoffice.LibreOffice"]
+    assert [a["id"] for a in logic.search(apps, "excel")] == ["microsoft-office", "org.libreoffice.LibreOffice"]
     assert [a["id"] for a in logic.search(apps, "music")] == ["com.spotify.Client"]
     assert logic.search(apps, "steam")[0]["id"] == "kriss-meta-gaming"
     assert logic.search(apps, "  ") == []
     assert [a["id"] for a in logic.in_category(apps, "games")] == ["kriss-meta-gaming"]
     # Featured: the packs, then the Flathub picks that exist.
-    assert [a["id"] for a in logic.featured(apps)] == ["kriss-meta-gaming", "kriss-meta-winapps",
+    assert [a["id"] for a in logic.featured(apps)] == ["kriss-meta-gaming", "kriss-meta-winapps", "microsoft-office",
                                                        "com.spotify.Client", "org.libreoffice.LibreOffice"]
 
     # Start's index, written by `kriss-store --write-index` without Qt.

@@ -31,6 +31,14 @@ Page {
     }
 
     Confirm {
+        id: officeConfirm
+        title: qsTr("Install Microsoft Office?")
+        subtitle: qsTr("Word, Excel and PowerPoint are downloaded from Microsoft (about 3 GB) and installed in WinBoat's Windows. It needs the internet, WinBoat set up first, and your own Microsoft 365 account or product key: sign in or enter the key when Word first opens. KrissOS includes no Office files.\n\nRuns: kriss winapps office")
+        onAccepted: { page.setInstall("office", "installing"); backend.installExtra("office") }
+    }
+    Component.onCompleted: if (backend.extraInstalled("office")) setInstall("office", "installed")
+
+    Confirm {
         id: confirm
         title: page.pending ? qsTr("Install %1?").arg(page.pending.name) : ""
         subtitle: page.pending ? qsTr("KrissOS will install it from Flathub. You may be asked for your password.\n\nRuns: flatpak install flathub %1").arg(page.pending.flatpak) : ""
@@ -100,6 +108,17 @@ Page {
                         highlighted: true
                         // ponytail: links out until WinBoat is packaged in [kriss]; then `kriss install winboat`.
                         onClicked: Qt.openUrlExternally("https://www.winboat.app")
+                    }
+                    Pill {
+                        readonly property string officeState: page.installs.office || ""
+                        visible: row.ans && row.ans.kind === "winboat" && row.modelData.id === "office"
+                        text: officeState === "installing" ? qsTr("Installing Office…")
+                            : officeState === "installed" ? qsTr("Office is installed")
+                            : officeState === "failed" ? qsTr("Office did not install. Set up WinBoat first, then try again")
+                            : qsTr("Install Microsoft Office")
+                        glyph: officeState === "installed" ? "check" : "update"
+                        enabled: officeState !== "installing" && officeState !== "installed"
+                        onClicked: officeConfirm.open()
                     }
                     Txt {
                         visible: row.ans && row.ans.kind === "winboat" && row.ans.alts.length > 0
