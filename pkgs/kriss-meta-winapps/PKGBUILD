@@ -15,5 +15,5 @@ depends=('podman' 'podman-compose' 'freerdp>=3' 'xdg-utils' 'desktop-file-utils'
 
 package() {
   # Added here, not above: CI resolves the list above against Arch's repos only.
-  depends+=('winboat' 'kriss-tools>=0.9.0')
+  depends+=('winboat' 'kriss-tools>=0.10.0')
 }
