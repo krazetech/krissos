@@ -1,0 +1,57 @@
+# Maintainer: Kraze Tech
+# fcitx5 with one patch, so the on-screen keyboard (fcitx5-osk) can type capitals and
+# Shift/Ctrl shortcuts without a root helper. When fcitx5 forwards a modifier key it now
+# also tells the app which modifiers are held (zwp_virtual_keyboard_v1.modifiers).
+# 0001-send-modifiers.patch is upstream fcitx/fcitx5#1292 (three commits by fortime),
+# rebased on 5.1.23; only const qualifiers changed.
+# ponytail: drop this package, and go back to Arch's fcitx5, once #1292 is merged.
+# Follows Arch's fcitx5 PKGBUILD (Felix Yan, csslayer). It replaces fcitx5, like
+# cosmic-comp-kriss: bump pkgver with Arch and check the patch still applies.
+pkgname=fcitx5-kriss
+pkgver=5.1.23
+_dictver=20121020
+pkgrel=1
+pkgdesc='Input method framework, with modifier keys for on-screen keyboards'
+arch=('x86_64' 'aarch64')
+url='https://github.com/fcitx/fcitx5'
+license=('LGPL-2.1-or-later' 'Unicode-DFS-2016')
+depends=('cairo' 'enchant' 'iso-codes' 'libgl' 'libxkbcommon-x11' 'pango' 'systemd' 'wayland'
+         'xcb-imdkit' 'xcb-util-wm' 'libxkbfile' 'gdk-pixbuf2' 'librsvg' 'yoga')
+makedepends=('git' 'extra-cmake-modules' 'ninja' 'nlohmann-json' 'plasma-wayland-protocols' 'wayland-protocols')
+provides=("fcitx5=$pkgver")
+conflicts=('fcitx5' 'fcitx')
+replaces=('fcitx5')
+groups=('fcitx5-im')
+source=("git+https://github.com/fcitx/fcitx5.git#tag=$pkgver"
+        "https://download.fcitx-im.org/data/en_dict-$_dictver.tar.gz"
+        0001-send-modifiers.patch)
+noextract=("en_dict-$_dictver.tar.gz")
+b2sums=('f6c6259cf02b8c40aaa835a9fdb7d7d4aec2a8181be652020f0ca694b89e90d31ee764524ceba893ce4882b5c97edb690eeaa52f902a3bc5899528d480f7e0b6'
+        '2df897b1c9fb3a2ce186ee590e5f3ccbc7930f047218bf0fefa317f74b3287fc0be9c393d3310fe07208379118ec4c46608a1c703ef37b3aee65b2d790cb7f0d'
+        'e659cfed1954122e212898bc5aef2f1ffc11397ddff37c2f6b91a306e2d4c3ca8403762163523248d6fd116fc653e81211ff01be8f176e22a311613924cb6899')
+
+prepare() {
+  mv en_dict-$_dictver.tar.gz fcitx5/src/modules/spell/en_dict-$_dictver.tar.gz
+  grep "SPELL_EN_DICT_VER $_dictver" fcitx5/src/modules/spell/CMakeLists.txt
+  cd fcitx5
+  git apply "$srcdir/0001-send-modifiers.patch"
+}
+
+build() {
+  cd fcitx5
+  cmake -GNinja -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=/usr/lib \
+        -DCMAKE_INSTALL_SYSCONFDIR=/etc -DCMAKE_INSTALL_LIBEXECDIR=/usr/lib \
+        -DUSE_SYSTEM_YOGA=ON .
+  ninja
+}
+
+check() {
+  cd fcitx5
+  ninja test
+}
+
+package() {
+  cd fcitx5
+  DESTDIR="$pkgdir" ninja install
+  install -Dm644 LICENSES/Unicode-DFS-2016.txt -t "$pkgdir"/usr/share/licenses/$pkgname/
+}

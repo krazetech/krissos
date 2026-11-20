@@ -378,6 +378,15 @@ PanelWindow {
             }
 
             InputPill {}
+            // The on-screen keyboard, on touch-screen PCs (see Ime.qml).
+            BarButton {
+                visible: Ime.oskReady
+                Layout.preferredWidth: 32
+                name: Tr.t("On-screen keyboard")
+                tip: Tr.t("On-screen keyboard")
+                onActivated: Ime.toggleOsk()
+                Glyph { anchors.centerIn: parent; name: "keyboard"; size: 18 }
+            }
             PowerPill {}
 
             // Network, volume and battery open quick settings, like on Windows.
