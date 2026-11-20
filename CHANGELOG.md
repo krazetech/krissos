@@ -47,6 +47,9 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
   keyboard button in the taskbar brings it up; after that it comes up by itself whenever
   you tap into a text box, until you type on a real keyboard. Chinese, Tamil and Jawi work
   on it too.
+- Settings has its own Sound (output, microphone and a volume mixer for each app),
+  Notifications (do not disturb, and turning off pop-ups per app), Power and battery, and
+  About (rename your PC, see its parts, copy them for a bug report) pages.
 - The Store: find, install, update and remove apps without a terminal, from Flathub and
   the KrissOS packs (gaming, Windows apps). It is pinned to the taskbar, and searching in
   Start offers "Get … from the Store" for apps you don't have yet. A snapshot is taken
