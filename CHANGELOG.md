@@ -22,6 +22,9 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
   the KrissOS packs (gaming, Windows apps). It is pinned to the taskbar, and searching in
   Start offers "Get … from the Store" for apps you don't have yet. A snapshot is taken
   before every install, removal and update, so you can undo one from the boot menu.
+- Window title bars get new round minimise, maximise and close buttons: they light up in your
+  accent colour, close turns red, and they are as easy to hit as on Windows 11. They follow
+  the side and order set for GTK apps, so the Mac layout puts them on the left.
 - A new terminal opens with the KrissOS emblem and a summary of your PC, instead of a bare
   prompt or fish's welcome text.
 - Updates go through a testing channel first, so a bad package is caught before it reaches

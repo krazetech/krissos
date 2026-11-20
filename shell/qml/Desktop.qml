@@ -190,6 +190,18 @@ Singleton {
         for f in "\${XDG_CONFIG_HOME:-$HOME/.config}"/gtk-3.0/settings.ini "\${XDG_CONFIG_HOME:-$HOME/.config}"/gtk-4.0/settings.ini; do
             [ -f "$f" ] && sed -i "s/^gtk-decoration-layout=.*/gtk-decoration-layout=$buttons/" "$f"
         done`, "sh", layout])
+    // The compositor's title bar buttons follow the same GNOME button-layout, live: mirrored
+    // to window_buttons in com.system76.CosmicTk, which cosmic-comp-kriss reads.
+    Process {
+        running: true
+        command: ["sh", "-c", `
+            put() {
+                d=\${XDG_CONFIG_HOME:-$HOME/.config}/cosmic/com.system76.CosmicTk/v1
+                mkdir -p "$d" && printf '"%s"' "$1" > "$d/.window_buttons.new" && mv -f "$d/.window_buttons.new" "$d/window_buttons"
+            }
+            put "$(gsettings get org.gnome.desktop.wm.preferences button-layout | tr -d "'")"
+            gsettings monitor org.gnome.desktop.wm.preferences button-layout | while read -r _ v; do put "$(printf %s "$v" | tr -d "'")"; done`]
+    }
     property alias taskbarWidgets: config.taskbarWidgets
     property alias widgets: config.widgets
     property alias widgetsHidden: config.widgetsHidden
