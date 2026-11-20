@@ -9,7 +9,7 @@
 }
 /* Dark (Obsidian) is the base, and .scene sections stay dark in both themes, so the desktop
    screenshots always sit on Obsidian. Light (light_* tokens) follows the visitor's system. */
-:root, .scene, .night {
+:root, .scene, .night, footer {
   --bg: #000000;
   --surface: #0B0D0F;
   --accent: #24B1E6;      /* fills: buttons, dots, rings */
@@ -219,17 +219,26 @@ h2 kbd { font-size: .5em; vertical-align: middle; }
 .phases ul { padding-left: 1.1em; }
 .phases ul li { display: list-item; padding: 2px 0; border: 0; }
 
-/* Footer: a Sky Cyan block with the wordmark running off the bottom */
-footer { background: var(--accent); color: #000; padding: 64px 0 0; font-size: .95rem; overflow: hidden; }
-footer .wrap { display: flex; flex-wrap: wrap; gap: 24px 48px; justify-content: space-between; }
-footer p { max-width: 46ch; }
-footer nav { display: flex; flex-wrap: wrap; gap: 12px 24px; font-weight: 600; }
-footer a { color: #000; }
-footer::after {
-  content: "KrissOS"; display: block; text-align: center; white-space: nowrap;
-  font: 800 clamp(5rem, 24vw, 22rem)/.78 var(--sans); letter-spacing: -.06em;
-  color: #000; margin-top: 56px; transform: translateY(14%);
+/* Footer: always night. The clock tower rises in the corner and a live clock
+   keeps Sungai Petani time (clock.js), like the lock screen. */
+footer {
+  position: relative; overflow: hidden; padding: 72px 0 56px; font-size: .95rem; color: var(--soft);
+  background: var(--bg); border-top: 1px solid var(--line);
 }
+footer::before {
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: linear-gradient(to bottom, #000 0%, transparent 45%), url(sp/tower-dim-cut.webp) no-repeat;
+  background-size: auto, 1500px auto; background-position: 0 0, right -790px top 120px; /* tower sits 30% into the photo, so this puts it ~260px from the right edge */
+  opacity: .9;
+}
+footer .wrap { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 24px 48px; justify-content: space-between; }
+footer p { max-width: 46ch; margin: 0; }
+footer nav { display: flex; flex-wrap: wrap; gap: 12px 24px; }
+footer a { color: var(--fg); }
+footer .here { order: 4; flex-basis: 100%; max-width: none; margin-top: clamp(48px, 10vw, 120px); color: var(--fg); }
+footer .here span { display: block; font: 500 clamp(4.5rem, 15vw, 12rem)/.9 var(--mono); letter-spacing: -.06em; font-variant-numeric: tabular-nums; }
+footer .here small { display: block; margin-top: 16px; font: 500 .78rem/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--link); }
+@media (max-width: 640px) { footer::before { background-size: auto, 1000px auto; background-position: 0 0, right -640px top 260px; opacity: .6; } }
 
 /* Motion, in the spirit of LunariaOS: headlines lift out of a soft blur, screenshots zoom in,
    the dark scene opens from a rounded card to full width, cards arrive one after another.
@@ -269,10 +278,10 @@ footer::after {
 
 /* The dark scene: a soft Sky Cyan glow from the top, so it reads as its own space in dark mode too. */
 .scene { background: radial-gradient(ellipse 80% 55% at 50% 0%, rgba(36, 177, 230, .18), transparent 70%), var(--bg); }
-/* ponytail: on the cyan footer the sponsor logo is drawn black, like the text */
-footer .sponsor { order: 3; flex-basis: 100%; display: flex; align-items: center; gap: 16px; color: #000; font-size: .9rem; text-decoration: none; }
-footer .sponsor img { height: 36px; width: auto; filter: brightness(0); opacity: .8; transition: opacity .2s var(--ease); }
-footer .sponsor:hover img, footer .sponsor:focus-visible img { opacity: 1; }
+/* ponytail: sponsor logo sits grey with the footer text, full colour on hover */
+footer .sponsor { order: 3; flex-basis: 100%; display: flex; align-items: center; gap: 16px; color: var(--muted); font-size: .9rem; text-decoration: none; }
+footer .sponsor img { height: 36px; width: auto; filter: grayscale(1); opacity: .55; transition: opacity .2s var(--ease), filter .2s var(--ease); }
+footer .sponsor:hover img, footer .sponsor:focus-visible img { filter: none; opacity: 1; }
 
 /* ---------- Home: KrissOS Sungai Petani ---------- */
 .night .nav { margin-bottom: -64px; }
