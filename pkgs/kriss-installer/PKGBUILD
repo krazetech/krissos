@@ -1,6 +1,6 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-installer
-pkgver=0.2.0
+pkgver=0.3.0
 pkgrel=1
 pkgdesc='KrissOS installer: Calamares sequence, module configs, desktop picker and install scripts'
 arch=('any')
@@ -43,7 +43,7 @@ package() {
   install -Dm644 -t "$pkgdir/etc/calamares" "$s/calamares/settings.conf"
   install -Dm644 -t "$pkgdir/etc/calamares/modules" "$s"/calamares/modules/*.conf
   install -Dm755 -t "$pkgdir/usr/lib/kriss-installer" "$s"/lib/*
-  install -Dm644 -t "$pkgdir/usr/share/kriss-installer" "$s/notice.qml"
+  install -Dm644 -t "$pkgdir/usr/share/kriss-installer" "$s/notice.qml" "$s"/calamares/desktop-*.svg
   install -Dm755 "$s/kriss-install" "$pkgdir/usr/bin/kriss-install"
   install -Dm644 -t "$pkgdir/usr/share/applications" "$s/org.krissos.Installer.desktop"
 }

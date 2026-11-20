@@ -57,6 +57,9 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 
 ### Changed
 
+- The installer looks like the rest of KrissOS: a step list with ticks, round buttons,
+  readable cards on the summary page, pictures of each desktop to pick from and new
+  install slides. It follows your light or dark setting.
 - The live USB boots on the generic `linux-kriss-generic` kernel, so it starts on more PCs (#57).
 - The boot menu wallpaper is centred at screen size, and the menu appears about 38 s sooner (#63).
 - The screen locks before the PC sleeps, and when `loginctl lock-session` is run (#34).

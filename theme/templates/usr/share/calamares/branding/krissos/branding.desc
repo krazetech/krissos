@@ -6,10 +6,12 @@ componentName: krissos
 welcomeStyleCalamares: false
 welcomeExpandingLogo: true
 windowExpanding: normal
-windowSize: 1024px,640px
+windowSize: 1080px,680px
 windowPlacement: center
-sidebar: widget
-navigation: widget
+# QML step list and buttons (calamares-sidebar.qml, calamares-navigation.qml), drawn
+# like the shell's panels; the widget pages take stylesheet.qss.
+sidebar: qml
+navigation: qml
 
 strings:
     productName: KrissOS
@@ -31,10 +33,10 @@ images:
     productWelcome: /usr/share/pixmaps/krissos.svg
 
 style:
-    SidebarBackground: "{{bg}}"
+    SidebarBackground: "{{ui_win}}"
     SidebarText: "{{fg}}"
-    SidebarTextCurrent: "{{bg}}"
-    SidebarBackgroundCurrent: "{{accent}}"
+    SidebarTextCurrent: "{{fg}}"
+    SidebarBackgroundCurrent: "{{ui_card}}"
 
 slideshow: show.qml
 slideshowAPI: 2
