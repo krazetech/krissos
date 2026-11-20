@@ -134,6 +134,7 @@ Singleton {
     // ~/.config/kriss/shell.json. Missing keys keep the defaults below.
     property alias pinned: config.pinned
     property alias dnd: config.dnd
+    property alias quietApps: config.quietApps
     property alias trayHidden: config.trayHidden
     property alias taskbarAlignment: config.taskbarAlignment
     property alias taskbarAutoHide: config.taskbarAutoHide
@@ -227,6 +228,9 @@ Singleton {
             ]
             // Do not disturb: no toasts, notifications still collect behind the bell.
             property bool dnd: false
+            // Apps whose notifications go straight to the center, with no pop-up (Settings >
+            // Notifications), by the name they send.
+            property list<string> quietApps: []
             // Tray icons kept in the overflow flyout (^), by the id the app gives its icon.
             property list<string> trayHidden: []
             // Taskbar: "left" or "centre" (Start, search and the apps centred, as on Windows 11).
