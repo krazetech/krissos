@@ -1,0 +1,43 @@
+# Maintainer: Kraze Tech
+# The on-screen keyboard for 2-in-1s and tablets. It types through fcitx5 (D-Bus
+# VirtualKeyboardBackend1), so Pinyin, Tamil and Jawi work on it too, and it draws itself
+# with layer-shell, so it runs on cosmic-comp. Follows the upstream PKGBUILD (fortime), at a
+# release tag. KrissOS changes:
+# - no fcitx5-osk-key-helper: that root service exists only for capitals and Shift on an
+#   unpatched fcitx5. fcitx5-kriss carries the fix, so the keyboard runs without
+#   --modifier-workaround.
+# - no KWin launcher: KrissOS runs cosmic-comp.
+pkgname=fcitx5-osk
+pkgver=0.2.1
+pkgrel=1
+pkgdesc='On-screen keyboard that types through Fcitx 5'
+arch=('x86_64' 'aarch64')
+url='https://github.com/fortime/fcitx5-osk'
+license=('MIT')
+depends=('fcitx5' 'ttf-nerd-fonts-symbols' 'gcc-libs' 'glibc' 'libxkbcommon' 'wayland')
+makedepends=('cargo' 'git' 'cmake')
+# aws-lc does not build with LTO (upstream's note).
+options=('!lto')
+source=("git+https://github.com/fortime/fcitx5-osk.git#tag=$pkgver")
+b2sums=('SKIP')
+
+prepare() {
+  cd fcitx5-osk
+  sed -i 's/ --modifier-workaround//' pkg/share/dbus-1/services/fyi.fortime.Fcitx5Osk.service.in
+  # ponytail: a patched iced_layershell comes from git, so this needs the network.
+  cargo fetch --locked --target "$(rustc -vV | sed -n 's|host: ||p')"
+}
+
+build() {
+  cmake -D CMAKE_INSTALL_PREFIX=/usr -D DBUS_CONFIG_PARENT_DIR=/usr/share \
+        -B build -S fcitx5-osk
+  cmake --build build
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build --component Fcitx5Osk
+  rm "$pkgdir/usr/bin/fcitx5-osk-key-helper" \
+     "$pkgdir/usr/lib/systemd/system/fcitx5-osk-key-helper.service" \
+     "$pkgdir/usr/share/dbus-1/system.d/fyi.fortime.Fcitx5OskKeyHelper.conf"
+  find "$pkgdir" -type d -empty -delete
+}

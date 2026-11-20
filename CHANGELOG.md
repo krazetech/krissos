@@ -43,6 +43,10 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
   and over full-screen games), a tick when you change the volume, and a sound when you plug
   in or unplug the charger or a USB device. Sounds can be turned off, or another sound theme
   picked, in the settings.
+- On-screen keyboard for 2-in-1 laptops and tablets. On a PC with a touch screen, the
+  keyboard button in the taskbar brings it up; after that it comes up by itself whenever
+  you tap into a text box, until you type on a real keyboard. Chinese, Tamil and Jawi work
+  on it too.
 - The Store: find, install, update and remove apps without a terminal, from Flathub and
   the KrissOS packs (gaming, Windows apps). It is pinned to the taskbar, and searching in
   Start offers "Get … from the Store" for apps you don't have yet. A snapshot is taken

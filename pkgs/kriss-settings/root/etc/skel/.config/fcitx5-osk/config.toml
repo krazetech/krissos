@@ -1,0 +1,4 @@
+# The on-screen keyboard follows light and dark mode in KrissOS colours.
+theme = "Auto"
+dark_theme = "KrissOS Dark"
+light_theme = "KrissOS Light"

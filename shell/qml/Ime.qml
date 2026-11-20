@@ -71,10 +71,42 @@ Singleton {
         onFileChanged: profile.running = true
     }
 
+    // The on-screen keyboard (fcitx5-osk), offered on PCs with a touch screen. Showing it once
+    // puts fcitx5 in on-screen mode: from then on it comes up for every text box, until a key
+    // on a real keyboard is pressed. cosmic-comp does not say whether a tap was a touch.
+    property bool touch: false
+    readonly property bool oskReady: osk.loaded && touch && sni !== null
+    FileView {
+        id: osk
+        path: "/usr/share/dbus-1/services/fyi.fortime.Fcitx5Osk.service"
+        printErrors: false
+    }
+    // A touch screen is an input device with INPUT_PROP_DIRECT (bit 1 of B: PROP).
+    Process {
+        running: true
+        command: ["awk", "/^B: PROP=/ { if (and(strtonum(\"0x\" substr($2, 6)), 2)) t = 1 } END { exit !t }", "/proc/bus/input/devices"]
+        onExited: code => ip.touch = code === 0
+    }
+    // Start the keyboard (hidden) through D-Bus, so it outlives a shell restart and fcitx5 can
+    // bring it up on its own.
+    onOskReadyChanged: if (oskReady) oskStart.running = true
+    Process {
+        id: oskStart
+        command: ["gdbus", "call", "--session", "--dest", "org.freedesktop.DBus", "--object-path", "/org/freedesktop/DBus",
+            "--method", "org.freedesktop.DBus.StartServiceByName", "fyi.fortime.Fcitx5Osk", "0"]
+    }
+    Process {
+        id: oskToggle
+        command: ["gdbus", "call", "--session", "--dest", "org.fcitx.Fcitx5", "--object-path", "/virtualkeyboard",
+            "--method", "org.fcitx.Fcitx.VirtualKeyboard1.ToggleVirtualKeyboard"]
+    }
+    function toggleOsk() { if (sni) oskToggle.running = true; }
+
     IpcHandler {
         target: "input"
         function next(): void { ip.next(1); }
         function previous(): void { ip.next(-1); }
+        function osk(): void { ip.toggleOsk(); }
     }
 
 }
