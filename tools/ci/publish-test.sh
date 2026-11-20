@@ -13,6 +13,13 @@ mkdir "$FAKE_GH_ROOT" "$tmp/bin" "$tmp/run1" "$tmp/run2" "$tmp/run3"
 ln -s "$here/fake-gh" "$tmp/bin/gh"
 PATH=$tmp/bin:$PATH
 
+# Without the key: an error on the real repo, a skip on forks, and nothing published.
+if KRISS_GPG_KEY='' GH_REPO=krazetech/krissos "$here/publish.sh" "$tmp/run1" >/dev/null 2>&1; then
+  echo "publish.sh succeeded without a signing key on krazetech/krissos" >&2; exit 1
+fi
+KRISS_GPG_KEY='' GH_REPO=someone/krissos "$here/publish.sh" "$tmp/run1" >/dev/null
+[ -z "$(ls "$FAKE_GH_ROOT")" ] || { echo "publish.sh published without a signing key" >&2; exit 1; }
+
 gpg --batch --quiet --passphrase '' --quick-gen-key 'publish-test <test@example.invalid>' ed25519 sign never
 KRISS_GPG_KEY=$(gpg --armor --export-secret-keys)
 export KRISS_GPG_KEY

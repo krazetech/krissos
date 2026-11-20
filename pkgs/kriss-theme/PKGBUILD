@@ -5,16 +5,27 @@ pkgrel=1
 pkgdesc='KrissOS colours, fonts, wallpaper, Plasma, SDDM, Plymouth and Limine theme'
 arch=('any')
 url='https://github.com/krazetech/krissos'
-license=('GPL-3.0-or-later')
-depends=('adw-gtk-theme' 'vimix-cursors' 'papirus-icon-theme' 'qt6ct' 'inter-font' 'ttf-jetbrains-mono')
+license=('GPL-3.0-or-later' 'Apache-2.0')
+# The lock clock's fonts: Inter Display (inter-font), Nunito, IBM Plex Sans Condensed and
+# Noto Serif Display, all under the OFL.
+depends=('adw-gtk-theme' 'vimix-cursors' 'papirus-icon-theme' 'qt6ct' 'inter-font' 'ttf-jetbrains-mono'
+         'ttf-nunito' 'ttf-ibm-plex' 'noto-fonts')
 makedepends=('python' 'librsvg')
-optdepends=('plymouth: boot splash'
+optdepends=('python-onnxruntime-cpu: the lock clock depth effect on your own pictures (kriss-wallpaper-mask)'
+            'python-numpy: the same'
+            'python-pillow: the same'
+'plymouth: boot splash'
             'limine: boot menu'
             'plasma-desktop: the KrissOS Plasma colour scheme and global theme'
             'sddm: the KrissOS login screen background')
 
 # Sources live in this monorepo: every file is rendered from theme/tokens.json.
 _theme="$startdir/../../theme"
+# u2netp (U-2-Net's small model, Apache-2.0, by Xuebin Qin et al.) in ONNX form, as rembg
+# publishes it: kriss-wallpaper-mask finds a wallpaper's subject with it, on the PC, offline.
+source=("u2netp.onnx::https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2netp.onnx")
+sha256sums=('309c8469258dda742793dce0ebea8e6dd393174f89934733ecc8b14c76f4ddd8')
+noextract=('u2netp.onnx')
 
 build() {
   python "$_theme/generate.py" "$_theme/templates" "$srcdir/root"
@@ -62,6 +73,16 @@ package() {
   ln -s ../conf.avail/60-kriss.conf "$pkgdir/usr/share/fontconfig/conf.default/"
   # ponytail: old name of the dark wallpaper; drop once nothing points at it.
   ln -s kriss-dark.svg "$pkgdir/usr/share/backgrounds/kriss/default.svg"
+  # The scene's subject (the keris) for the lock clock's depth effect, made once with
+  # kriss-wallpaper-mask: onnxruntime is not packaged for aarch64, so no build runs it.
+  # Every light of the scene and the plain wallpapers share the one composition.
+  install -Dm644 "$_theme/kriss-scene.mask.png" "$pkgdir/usr/share/backgrounds/kriss/kriss-scene.mask.png"
+  install -Dm755 "$_theme/kriss-wallpaper-mask" "$pkgdir/usr/bin/kriss-wallpaper-mask"
+  install -Dm644 "$srcdir/u2netp.onnx" "$pkgdir/usr/share/kriss/models/u2netp.onnx"
+  install -d "$pkgdir/usr/share/licenses/kriss-theme"
+  printf '%s\n' "u2netp.onnx: U-2-Net (https://github.com/xuebinqin/U-2-Net), Apache-2.0," \
+    "converted to ONNX by rembg (https://github.com/danielgatis/rembg)." \
+    > "$pkgdir/usr/share/licenses/kriss-theme/u2netp"
 
   # Photo wallpapers: binary, so they skip generate.py. Plasma gets the same files as one
   # 3840x2160 image per mode; it scales to the screen itself.

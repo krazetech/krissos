@@ -1,0 +1,40 @@
+diff --git a/src/input/mod.rs b/src/input/mod.rs
+index 3d4908f..cd99615 100644
+--- a/src/input/mod.rs
++++ b/src/input/mod.rs
+@@ -2400,10 +2400,16 @@ impl State {
+                     seat.keyboard_shortcuts_inhibitor_for_surface(&surface)
+                         .map(|inhibitor| inhibitor.is_active())
+                         .unwrap_or(false)
+-                        || seat.has_active_xwayland_grab(&surface)
+                 })
+                 .unwrap_or(false)
+         });
++        // An X11 keyboard grab (most games, Wine) holds the other shortcuts, but not the window
++        // switcher: Alt+Tab always gets out, as on Windows. A Wayland inhibitor (a VM, remote
++        // desktop) still holds everything.
++        let xwayland_grab = current_focus.as_ref().is_some_and(|f| {
++            f.wl_surface()
++                .is_some_and(|surface| seat.has_active_xwayland_grab(&surface))
++        });
+ 
+         if let Some(a11y_keyboard_monitor) = self.common.dbus_state.a11y_keyboard_monitor() {
+             a11y_keyboard_monitor.key_event(modifiers, &handle, key_state);
+@@ -2664,6 +2670,17 @@ impl State {
+                 if *action == shortcuts::Action::Disable {
+                     continue;
+                 }
++                if xwayland_grab
++                    && !matches!(
++                        action,
++                        shortcuts::Action::System(
++                            shortcuts::action::System::WindowSwitcher
++                                | shortcuts::action::System::WindowSwitcherPrevious
++                        )
++                    )
++                {
++                    continue;
++                }
+ 
+                 // is this a released (triggered) modifier-only binding?
+                 if binding.key.is_none()

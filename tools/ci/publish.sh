@@ -1,7 +1,7 @@
 #!/bin/bash
 # Merge packages into a published pacman repo (a GitHub release).
 # usage: publish.sh <dir with *.pkg.tar.zst>
-# env: KRISS_GPG_KEY (armored secret key), GH_TOKEN,
+# env: KRISS_GPG_KEY (armored secret key), GH_TOKEN, GH_REPO,
 #      CHANNEL  testing (the default): [kriss-testing] on the testing-ARCH release.
 #               Every merge to main lands here.
 #               stable: [kriss] on the repo-ARCH release. Only promote.sh publishes here.
@@ -21,7 +21,13 @@ esac
 db=$name.db.tar.zst
 files=$name.files.tar.zst
 
+# Publishing reaches every install, so on the real repo a missing key is an error, not a
+# warning that a green run hides. Forks have no secret and only warn.
 if [ -z "${KRISS_GPG_KEY:-}" ]; then
+  if [ "${GH_REPO:-}" = krazetech/krissos ]; then
+    echo "::error::KRISS_GPG_KEY is not set; packages were built but not published."
+    exit 1
+  fi
   echo "::warning::KRISS_GPG_KEY is not set; packages were built but not published."
   exit 0
 fi

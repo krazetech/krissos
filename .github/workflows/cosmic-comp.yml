@@ -42,6 +42,16 @@ jobs:
           compression-level: 0
           retention-days: 7
 
+  # main requires a check named `build`, and the matrix above reports `build (PKG)`. This one
+  # passes only when every package built, so a PR that only changes these packages can merge.
+  done:
+    name: build
+    needs: build
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - run: test "${{ needs.build.result }}" = success
+
   publish:
     needs: build
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
