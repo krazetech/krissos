@@ -69,4 +69,44 @@ Item {
     }
     Light { id: a; z: root.flip ? 1 : 0; opacity: root.flip ? root.fraction : 1 }
     Light { id: b; z: root.flip ? 0 : 1; opacity: root.flip ? 1 : root.fraction }
+
+    // The tower's two clocks tell the time shown. The photos have their own hands painted
+    // out (theme/photos/erase-hands.py); these are drawn over them, once a minute.
+    // [hub x, hub y, disc rx, disc ry] in the 3840x2160 photo. The left face is seen at an
+    // angle, so its circle squashes to an ellipse; ponytail: no skew, it reads fine at this size.
+    readonly property var dials: [[1049, 1456, 23, 49], [1427, 1436, 41, 48]]
+    Canvas {
+        id: hands
+        anchors.fill: parent
+        z: 2
+        visible: !root.missing
+        onPaint: {
+            const ctx = getContext("2d");
+            ctx.resetTransform();
+            ctx.clearRect(0, 0, width, height);
+            // Where PreserveAspectCrop puts the photo.
+            const s = Math.max(width / 3840, height / 2160), ox = (width - 3840 * s) / 2, oy = (height - 2160 * s) / 2;
+            const h = root.at.getHours() % 12 + root.at.getMinutes() / 60, m = root.at.getMinutes();
+            ctx.fillStyle = ctx.strokeStyle = "#101a24";
+            ctx.lineCap = "round";
+            for (const [cx, cy, rx, ry] of root.dials) {
+                // Unit circle = the dial's centre disc.
+                ctx.setTransform(rx * s, 0, 0, ry * s, ox + cx * s, oy + cy * s);
+                for (const [turn, length, width] of [[h / 12, 0.55, 0.14], [m / 60, 0.88, 0.09]]) {
+                    const t = turn * 2 * Math.PI;
+                    ctx.lineWidth = width;
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(Math.sin(t) * length, -Math.cos(t) * length);
+                    ctx.stroke();
+                }
+                ctx.beginPath();
+                ctx.ellipse(-0.12, -0.12, 0.24, 0.24);
+                ctx.fill();
+            }
+        }
+        onWidthChanged: requestPaint()
+        onHeightChanged: requestPaint()
+        Connections { target: root; function onAtChanged() { hands.requestPaint(); } }
+    }
 }
