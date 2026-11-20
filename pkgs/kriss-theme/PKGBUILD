@@ -10,8 +10,9 @@ license=('GPL-3.0-or-later' 'Apache-2.0')
 # Noto Serif Display, all under the OFL.
 depends=('adw-gtk-theme' 'vimix-cursors' 'papirus-icon-theme' 'qt6ct' 'inter-font' 'ttf-jetbrains-mono'
          'ttf-nunito' 'ttf-ibm-plex' 'noto-fonts')
-makedepends=('python' 'librsvg' 'python-onnxruntime-cpu' 'python-numpy' 'python-pillow')
+makedepends=('python' 'librsvg')
 optdepends=('python-onnxruntime-cpu: the lock clock depth effect on your own pictures (kriss-wallpaper-mask)'
+            'python-numpy: the same'
             'python-pillow: the same'
 'plymouth: boot splash'
             'limine: boot menu'
@@ -60,11 +61,6 @@ build() {
         "$bg/kriss-$mode.svg" | rsvg-convert -o "$wp/$dir/$size.png"
     done
   done
-
-  # The time-of-day scene's subject (the keris), for the lock clock's depth effect: every light of the
-  # scene, and the plain light and dark wallpapers, share the one composition.
-  KRISS_MASK_MODEL="$srcdir/u2netp.onnx" python "$_theme/kriss-wallpaper-mask" \
-    "$bg/kriss-dark.svg" "$bg/kriss-scene.mask.png"
 }
 
 check() {
@@ -77,8 +73,13 @@ package() {
   ln -s ../conf.avail/60-kriss.conf "$pkgdir/usr/share/fontconfig/conf.default/"
   # ponytail: old name of the dark wallpaper; drop once nothing points at it.
   ln -s kriss-dark.svg "$pkgdir/usr/share/backgrounds/kriss/default.svg"
+  # The scene's subject (the keris) for the lock clock's depth effect, made once with
+  # kriss-wallpaper-mask: onnxruntime is not packaged for aarch64, so no build runs it.
+  # Every light of the scene and the plain wallpapers share the one composition.
+  install -Dm644 "$_theme/kriss-scene.mask.png" "$pkgdir/usr/share/backgrounds/kriss/kriss-scene.mask.png"
   install -Dm755 "$_theme/kriss-wallpaper-mask" "$pkgdir/usr/bin/kriss-wallpaper-mask"
   install -Dm644 "$srcdir/u2netp.onnx" "$pkgdir/usr/share/kriss/models/u2netp.onnx"
+  install -d "$pkgdir/usr/share/licenses/kriss-theme"
   printf '%s\n' "u2netp.onnx: U-2-Net (https://github.com/xuebinqin/U-2-Net), Apache-2.0," \
     "converted to ONNX by rembg (https://github.com/danielgatis/rembg)." \
     > "$pkgdir/usr/share/licenses/kriss-theme/u2netp"
