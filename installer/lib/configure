@@ -137,6 +137,10 @@ plasma)
   ;;
 esac
 
+# What the installer put on this PC, so kriss reset knows which apps were added later.
+mkdir -p "$root/var/lib/kriss"
+chr pacman -Qqe >"$root/var/lib/kriss/install-packages"
+
 chr mkinitcpio -P
 chr kriss-limine-update
 echo 'kriss: boot menu:'

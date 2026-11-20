@@ -1,0 +1,14 @@
+# Finishes "Reset this PC" (kriss reset) at boot, before anyone can log in.
+[Unit]
+Description=Finish resetting this PC
+ConditionPathExists=/var/lib/kriss/reset-pending
+After=local-fs.target
+Before=systemd-user-sessions.service display-manager.service greetd.service sddm.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/kriss reset --finish
+StandardOutput=journal+console
+
+[Install]
+WantedBy=multi-user.target

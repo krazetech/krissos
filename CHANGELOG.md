@@ -15,6 +15,9 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 
 ### Added
 
+- Reset this PC: `kriss reset --keep-files` removes the apps you added and resets your
+  settings but keeps your files; `kriss reset --everything` also deletes your files and saved
+  Wi-Fi, so the PC starts like new. Both take a snapshot first and work offline.
 - The Store: find, install, update and remove apps without a terminal, from Flathub and
   the KrissOS packs (gaming, Windows apps). It is pinned to the taskbar, and searching in
   Start offers "Get … from the Store" for apps you don't have yet. A snapshot is taken
