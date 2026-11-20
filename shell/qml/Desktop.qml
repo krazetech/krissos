@@ -50,6 +50,11 @@ Singleton {
     // The screen the launcher, notifications and quick settings open on. A click on a
     // bar sets it to that bar's screen; a key press uses the screen of the focused window.
     property var screen: Quickshell.screens[0]
+    // An unplugged screen is not one to open on.
+    Connections {
+        target: Quickshell
+        function onScreensChanged() { if (Quickshell.screens.indexOf(root.screen) < 0) root.screen = Quickshell.screens[0]; }
+    }
 
     // The media player the keys and quick settings control: one that is playing, else the
     // first one open.
