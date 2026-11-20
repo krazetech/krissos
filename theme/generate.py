@@ -16,8 +16,9 @@ rendered twice into usr/share/backgrounds/kriss/: kriss-dark.svg
 from the tokens as they are, kriss-light.svg with every light_X token in place of X.
 {{keris}} in it is the emblem's keris path with no fill, so the wallpaper colours it.
 It is rendered four more times for the time-of-day wallpaper, kriss-dawn/day/dusk/night.svg:
-the same scene under a sky and sun mixed from the tokens (see times()). The shell's lock
-screen, login screen and desktop blend between neighbours by the clock.
+the same scene under a sky and sun mixed from the tokens (see times()).
+ponytail: the shell's time-of-day wallpaper is now the Sungai Petani photo pair, so nothing
+reads these four; drop them (and times()) unless an abstract Dynamic option comes back.
 """
 import json
 import pathlib

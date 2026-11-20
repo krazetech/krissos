@@ -1,7 +1,7 @@
 # KrissOS look for the Breeze SDDM theme. Generated from theme/tokens.json; do not edit.
 [General]
 type=image
-background=/usr/share/backgrounds/kriss/default.svg
+background=/usr/share/backgrounds/kriss/sungai-petani-night.jpg
 color={{bg}}
 showlogo=shown
 logo=/usr/share/pixmaps/krissos.svg

@@ -1,10 +1,10 @@
 import QtQuick
 import Quickshell
 
-// The time-of-day wallpaper: one scene in four lights (kriss-dawn, -day, -dusk and -night,
-// from theme/generate.py), blended between neighbours by the clock like macOS's Dynamic
-// Desktop. The blend moves once a minute, about 1 % a step, so it never visibly jumps, and
-// nothing redraws in between or while the light holds (all day, all night).
+// The time-of-day wallpaper: the Sungai Petani clock tower by day and by night (the photo
+// pair kriss-theme ships), blended by the clock like macOS's Dynamic Desktop. The blend
+// moves once a minute, about 1 % a step, so it never visibly jumps, and nothing redraws in
+// between or while the light holds (all day, all night).
 Item {
     id: root
 
@@ -13,13 +13,15 @@ Item {
     // Minutes after midnight and the light reached then; between two, the light blends.
     // ponytail: fixed hours, no sunrise tables (no location offline); move these if it
     // looks wrong far from the equator.
-    readonly property var keys: [[270, "night"], [360, "dawn"], [480, "day"], [990, "day"], [1110, "dusk"], [1230, "night"]]
+    readonly property var keys: [[360, "night"], [450, "day"], [1050, "day"], [1170, "night"]]
     // Loaded and drawn, so a cover over it can fade.
     readonly property bool ready: (flip ? b : a).status === Image.Ready
 
-    // Before kriss-theme ships the four lights, fall back to the plain dark wallpaper.
+    // Before kriss-theme ships the photos, fall back to the plain dark wallpaper.
     property bool missing: false
-    function url(name) { return "file://" + Theme.wallpapers + "/kriss-" + (missing ? "dark" : name) + ".svg"; }
+    function url(name) {
+        return "file://" + Theme.wallpapers + (missing ? "/kriss-dark.svg" : "/sungai-petani-" + name + ".jpg");
+    }
 
     // [from, to, how far] at minute m.
     function blend(m) {

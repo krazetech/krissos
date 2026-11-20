@@ -1,6 +1,6 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-theme
-pkgver=0.5.1
+pkgver=0.5.2
 pkgrel=1
 pkgdesc='KrissOS colours, fonts, wallpaper, Plasma, SDDM, Plymouth and Limine theme'
 arch=('any')
@@ -62,4 +62,17 @@ package() {
   ln -s ../conf.avail/60-kriss.conf "$pkgdir/usr/share/fontconfig/conf.default/"
   # ponytail: old name of the dark wallpaper; drop once nothing points at it.
   ln -s kriss-dark.svg "$pkgdir/usr/share/backgrounds/kriss/default.svg"
+
+  # Photo wallpapers: binary, so they skip generate.py. Plasma gets the same files as one
+  # 3840x2160 image per mode; it scales to the screen itself.
+  local name kde
+  for name in sungai-petani; do
+    install -Dm644 -t "$pkgdir/usr/share/backgrounds/kriss" \
+      "$_theme/photos/$name-day.jpg" "$_theme/photos/$name-night.jpg" \
+      "$_theme/photos/$name.mask.png"  # the tower, for the lock clock's depth effect
+  done
+  kde="$pkgdir/usr/share/wallpapers/SungaiPetani/contents"
+  install -d "$kde/images" "$kde/images_dark"
+  ln -s /usr/share/backgrounds/kriss/sungai-petani-day.jpg "$kde/images/3840x2160.jpg"
+  ln -s /usr/share/backgrounds/kriss/sungai-petani-night.jpg "$kde/images_dark/3840x2160.jpg"
 }
