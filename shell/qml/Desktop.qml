@@ -156,6 +156,8 @@ Singleton {
     property alias transparency: config.transparency
     property alias nightLight: config.nightLight
     property alias layout: config.layout
+    property alias cursorTheme: config.cursorTheme
+    property alias cursorSize: config.cursorSize
     // The Mac layout: a slim top bar and a centred dock in place of the taskbar (see Bar.qml).
     readonly property bool mac: layout === "mac"
     // What the bars take at the top and bottom of a screen: the taskbar, or the top bar and dock.
@@ -263,6 +265,10 @@ Singleton {
             // "windows": the taskbar along the bottom. "mac": a top bar (the app's menu, the
             // tray, quick settings and the clock) and a centred dock. Switches live.
             property string layout: "windows"
+            // The mouse pointer (Theme.qml): a cursor theme's name, or "" for Breeze, dark on
+            // the light theme and light on the dark one; and its size in px (24, 32, 48...).
+            property string cursorTheme: ""
+            property int cursorSize: 24
             // The widgets button at the far left of the taskbar (Windows+W opens the panel either way).
             property bool taskbarWidgets: true
             // The widgets panel: card order, the cards hidden from it, the world clocks (tz

@@ -232,7 +232,7 @@ available as the installer's alternative.
 - **Type:** Inter + JetBrains Mono (OFL, both in Arch's extra repo; Inter is the closest free match to Apple's SF Pro, which may not ship off Apple hardware), rendered like macOS: grey smoothing, light hinting, stem darkening.
 - **Apps:** COSMIC Files, Terminal and Settings get KrissOS dark and light COSMIC themes, built
   from the tokens by libcosmic's own ThemeBuilder (`shell/cosmic-theme/`), and a matching
-  COSMIC Terminal scheme. Icons are Papirus-Dark and the cursor is Vimix white, both from
+  COSMIC Terminal scheme. Icons are Papirus-Dark and the cursor is Breeze (dark on light, light on dark), both from
   Arch. Flathub apps see the GTK colours through a global `flatpak override`, and Flatpak
   pulls the matching adw-gtk3 theme from Flathub.
 - **Reference:** the concept mockup at https://claude.ai/artifact/Cye2G1TUoXHAGoNX3typoD.
