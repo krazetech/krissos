@@ -47,6 +47,14 @@ libnotify
 firefox
 noto-fonts
 noto-fonts-emoji
+# Typing in Chinese (Pinyin), Tamil and Jawi: fcitx5, set up by kriss-settings
+fcitx5
+fcitx5-qt
+fcitx5-gtk
+fcitx5-chinese-addons
+fcitx5-m17n
+m17n-db
+adobe-source-han-sans-cn-fonts
 pipewire
 pipewire-alsa
 pipewire-pulse

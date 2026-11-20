@@ -364,6 +364,7 @@ FloatingWindow {
                     model: SystemTray.items
                     Toggle {
                         required property var modelData
+                        visible: modelData.id !== "Fcitx"  // shown as the input method instead
                         text: modelData.tooltipTitle || modelData.title || modelData.id
                         checked: !Desktop.isTrayHidden(modelData.id)
                         onToggled: Desktop.setTrayHidden(modelData.id, checked)

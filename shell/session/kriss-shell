@@ -23,6 +23,8 @@
 #   kriss-shell snap       the snap layouts for the window in front (Windows+Z)
 #   kriss-shell layout windows|mac
 #                          the taskbar, or the Mac layout (top bar and dock); saved, live
+#   kriss-shell input next|previous
+#                          the next input method, EN, 拼, த or ج (Windows+Space, Windows+Shift+Space)
 #   kriss-shell switcher next|previous
 #                          the Alt+Tab window switcher (Alt+Tab and Alt+Shift+Tab)
 #   kriss-shell media playPause|next|previous
@@ -75,6 +77,10 @@ layout)
     "") qs -p "$qml" ipc call layout get ;;
     *) echo "usage: kriss-shell layout windows|mac" >&2; exit 2 ;;
     esac
+    ;;
+input)
+    # Without the shell, fcitx5 still switches: toggle between the first and the last used.
+    qs -p "$qml" ipc call input "${2:-next}" 2>/dev/null || exec fcitx5-remote -t
     ;;
 switcher | media)
     qs -p "$qml" ipc call "$1" "${2:?usage: kriss-shell $1 ACTION}"
@@ -133,6 +139,10 @@ greeter)
     export XDG_CURRENT_DESKTOP=KrissOS:COSMIC XDG_SESSION_DESKTOP=KrissOS XDG_SESSION_TYPE=wayland
     # The qt6ct config from kriss-settings only applies with this set (see its PKGBUILD).
     export QT_QPA_PLATFORMTHEME=qt6ct
+    # Input methods (fcitx5, from kriss-settings). Wayland apps reach it through text-input
+    # on their own, GTK ones included, so there is no GTK_IM_MODULE. These cover Qt apps
+    # that fall back to fcitx's own module, and X11 apps and games under XWayland (XIM).
+    export XMODIFIERS=@im=fcitx QT_IM_MODULES="wayland;fcitx"
 
     # COSMIC defaults: the Windows key opens our launcher, Windows+L locks, the KrissOS
     # dark and light themes (accent, backgrounds, corners; no coloured ring around the
@@ -188,7 +198,8 @@ greeter)
     done
     # shellcheck disable=SC2086,SC2163 # one NAME=value per line; values are socket names, no spaces
     export $env
-    dbus-update-activation-environment --systemd XDG_CURRENT_DESKTOP XDG_SESSION_TYPE QT_QPA_PLATFORMTHEME 2>/dev/null
+    dbus-update-activation-environment --systemd XDG_CURRENT_DESKTOP XDG_SESSION_TYPE QT_QPA_PLATFORMTHEME \
+        XMODIFIERS QT_IM_MODULES 2>/dev/null
     # Switches light and dark (by hand or at sunset) and keeps the gsettings icon theme and
     # fonts in step with COSMIC's, so COSMIC apps and the terminal follow the mode live.
     cosmic-settings-daemon &
@@ -208,7 +219,7 @@ greeter)
     wait "$comp"
     ;;
 *)
-    echo "usage: kriss-shell [launcher|quick|notifications|calendar|widgets|lock|desktop|taskview|desktops add|clipboard|emoji|snap|layout windows|mac|taskbar ACTION|switcher next|media playPause|brightness STEP|screenshot [region]|greeter]" >&2
+    echo "usage: kriss-shell [launcher|quick|notifications|calendar|widgets|lock|desktop|taskview|desktops add|clipboard|emoji|snap|layout windows|mac|input next|taskbar ACTION|switcher next|media playPause|brightness STEP|screenshot [region]|greeter]" >&2
     exit 2
     ;;
 esac
