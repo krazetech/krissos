@@ -29,6 +29,10 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
   back (#79).
 - Windows apps: WinBoat, with `kriss winapps check` and `kriss winapps setup` to see whether
   a Windows app will run and set it up (#26).
+- Microsoft Office in WinBoat: `kriss winapps office`, "Microsoft Office" in the Store, or
+  the Office row in KrissOS Welcome downloads Word, Excel and PowerPoint from Microsoft
+  (about 3 GB) and puts them in Start, opening your .docx, .xlsx and .pptx files. Bring your
+  own Microsoft 365 account or product key; KrissOS includes no Office files.
 - The installer works with no internet at all: everything it needs is on the USB stick (#30).
 - Boot menu: KrissOS look, an entry for each installed kernel, and snapshots you can start
   from the menu to roll back a bad update (#28).
