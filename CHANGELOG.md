@@ -19,7 +19,8 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
   the KrissOS packs (gaming, Windows apps). It is pinned to the taskbar, and searching in
   Start offers "Get … from the Store" for apps you don't have yet. A snapshot is taken
   before every install, removal and update, so you can undo one from the boot menu.
-
+- A new terminal opens with the KrissOS emblem and a summary of your PC, instead of a bare
+  prompt or fish's welcome text.
 - Updates go through a testing channel first, so a bad package is caught before it reaches
   you. To try updates early, run `kriss channel testing`; `kriss channel stable` takes you
   back (#79).
@@ -60,6 +61,10 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 
 ### Fixed
 
+- Updates no longer stop at "invalid or corrupted package" when the signing keys are out
+  of date: `kriss update` refreshes the keys first and tries once more if a download fails.
+- The password prompt for installing and changing things comes back on its own if it
+  closes, instead of silently never appearing again.
 - Booting no longer loads nouveau's GSP firmware into the initramfs (#32).
 - kriss-vm boot entries and kriss-welcome pages (#33).
 - A stray duplicate file that stopped the shell from starting (#70).

@@ -53,6 +53,9 @@ jobs:
       - name: Test kriss nvidia
         run: tools/ci/nvidia-test.sh
 
+      - name: Test kriss update
+        run: tools/ci/update-test.sh
+
       - name: Test kriss migrate
         run: tools/ci/migrate-test.sh
 

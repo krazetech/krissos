@@ -248,11 +248,28 @@ snapshot() { # DESCRIPTION
   fi
 }
 
+# A keyring older than the packages makes good packages fail their signature check
+# ("invalid or corrupted package"), and pacman then upgrades nothing. Arch's fix is to update
+# the keyrings first; the -Syu straight after keeps it from being a partial upgrade.
+# --noconfirm answers yes to deleting a download that failed its checks, so one more try
+# fetches it again; that also gets past a dropped connection.
+update_system() {
+  local keyrings=() k
+  for k in archlinux-keyring kriss-keyring; do
+    pacman -Q "$k" &>/dev/null && keyrings+=("$k")
+  done
+  ((${#keyrings[@]} == 0)) || pacman -Sy --noconfirm --needed "${keyrings[@]}" ||
+    echo "kriss: could not update the keyrings first; trying the update anyway" >&2
+  pacman -Syu --noconfirm && return
+  echo "kriss: the update stopped; trying once more" >&2
+  pacman -Syu --noconfirm ||
+    die "the update did not finish. If this PC is offline, connect and run 'kriss update' again."
+}
+
 cmd_update() {
   ((EUID == 0)) || die "update needs root. Run: pkexec kriss update"
   snapshot 'before kriss update'
-  pacman -Syu --noconfirm ||
-    die "the update did not finish. If this PC is offline, connect and run 'kriss update' again."
+  update_system
   if command -v flatpak >/dev/null; then
     flatpak update --noninteractive --assumeyes
   fi
