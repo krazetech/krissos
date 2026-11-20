@@ -126,7 +126,7 @@ index aeedac0..b84e605 100644
 +
 +    /// One "KrissOS round" button: a soft circle in a 46 x 32 px target (Windows 11's caption
 +    /// buttons are 46 px wide), tinted with the accent under the pointer; close turns red.
-+    fn control(&self, control: Control, focused: bool) -> cosmic::Element<'_, Message> {
++    fn control(&self, control: Control, focused: bool) -> cosmic::Element<'static, Message> {
 +        use cosmic::{iced::Length, widget};
 +        let hovered = self.hovered == Some(control);
 +        let pressed = hovered && self.pressed == Some(control);
