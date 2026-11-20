@@ -489,8 +489,10 @@ cmd_winapps() {
 AUR_URL=${KRISS_AUR_URL:-https://aur.archlinux.org}
 PKG_CACHE=${KRISS_PKG_CACHE:-/var/cache/pacman/pkg}
 
+YES=0 # --yes: the Store has asked already (it runs kriss through pkexec, with no terminal)
 ask() { # ask PROMPT y|n: the answer, or the default on an empty line; no at end of input
   local a
+  ((YES == 0)) || return 0
   read -rp "$1 " a || return 1
   [[ ${a:-$2} == [yY]* ]]
 }
@@ -682,7 +684,8 @@ cmd_install() {
   while [[ ${1:-} == --* ]]; do
     case $1 in
       --repo | --flatpak | --aur) only=$1 ;;
-      *) die "unknown option '$1'. Use --repo, --flatpak or --aur." ;;
+      --yes) YES=1 ;;
+      *) die "unknown option '$1'. Use --repo, --flatpak, --aur or --yes." ;;
     esac
     shift
   done
@@ -701,6 +704,8 @@ cmd_install() {
     rc=""
   done
 
+  ((${#aur[@]} == 0 || YES == 0)) ||
+    die "AUR packages need someone to read their build script first. Run 'kriss install ${aur[*]}' in a terminal."
   if ((${#aur[@]})); then
     find_builder || die "AUR packages are built as you, never as root. Run 'kriss install' from your own account, not a root login."
     pacman -T base-devel >/dev/null || AUR_REPO_DEPS+=(base-devel)
@@ -750,6 +755,8 @@ cmd_install() {
   echo "To undo: kriss remove $*, or kriss rollback from the boot menu's KrissOS > Snapshots."
   ask "Go ahead? [Y/n]" y || return 1
 
+  # snap-pac snapshots pacman runs; Flatpak apps live on the root subvolume too, so snapshot them.
+  ((${#flat[@]} == 0)) || snapshot "before kriss install ${flat[*]}"
   if ((${#repo[@]})); then
     pacman -S --needed --noconfirm -- "${repo[@]}" || die "installing ${repo[*]} failed (see above)."
   fi
@@ -761,6 +768,7 @@ cmd_install() {
 }
 
 cmd_remove() {
+  [[ ${1:-} != --yes ]] || { YES=1; shift; }
   (($#)) || die "remove what? Example: kriss remove spotify"
   ((EUID == 0)) || exec sudo "$0" remove "$@"
   local n id pac=() flat=() also
@@ -777,6 +785,7 @@ cmd_remove() {
   ! has_snapper || echo "A snapshot is taken first."
   echo "To undo: kriss install $*, or kriss rollback from the boot menu's KrissOS > Snapshots."
   ask "Go ahead? [Y/n]" y || return 1
+  ((${#flat[@]} == 0)) || snapshot "before kriss remove ${flat[*]}"
   ((${#pac[@]} == 0)) || pacman -Rns --noconfirm -- "${pac[@]}"
   ((${#flat[@]} == 0)) || flatpak uninstall --noninteractive -- "${flat[@]}"
   echo "kriss: done. Removed: $*"
@@ -836,7 +845,8 @@ Usage: kriss [command]
 Commands:
   info       Show a summary of this system (default)
   search WORDS    Find apps in KrissOS, Arch, Flathub and the AUR, safest first
-  install NAME    Install from the safest place that has it (--repo, --flatpak, --aur to pick)
+  install NAME    Install from the safest place that has it (--repo, --flatpak, --aur to pick;
+                  --yes skips the question)
   remove NAME     Remove a package or Flatpak app, and what only it needed
   update     Update everything, AUR packages included, after a snapshot
   version    Show the kriss and KrissOS versions

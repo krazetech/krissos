@@ -73,6 +73,9 @@ case $1 in
   remote-info) echo "    Installed: 300.1 MB" ;;
 esac
 exit 0'
+stub snapper '
+echo "snapper $*" >>"$T/log"
+[[ $1 != list-configs ]] || echo "root  | /"'
 # The AUR repo stub: the current commit is in $T/commit; files are written at clone.
 stub git '
 echo "git $*" >>"$T/log"
@@ -145,6 +148,17 @@ unlogged 'pacman -S --needed' plan-no
 # Flathub before the AUR; --aur picks the AUR.
 reset; in=y run install spotify; has 'com.spotify.Client           from Flathub (sandboxed app), 300.1 MB' flathub
 logged 'flatpak install --noninteractive flathub com.spotify.Client' flathub; unlogged 'git clone' flathub
+logged 'snapper -c root create --cleanup-algorithm number --description before kriss install com.spotify.Client' flathub-snapshot
+before_log() { # before_log FIRST SECOND NAME: FIRST was run before SECOND
+  local a b; a=$(grep -nF -- "$1" "$T/log" | head -1 | cut -d: -f1); b=$(grep -nF -- "$2" "$T/log" | head -1 | cut -d: -f1)
+  if [[ -z $a || -z $b ]] || ((a >= b)); then fail "$3: '$1' not run before '$2'"; fi
+}
+before_log 'snapper -c root create' 'flatpak install' flathub-snapshot
+# --yes (the Store, through pkexec, with no terminal): no question, and never the AUR.
+reset; rc=0; out=$(PATH="$T/bin:$PATH" KRISS_AUR_URL=https://aur.test KRISS_PKG_CACHE="$T/cache" "$kriss" install --yes --flatpak com.spotify.Client 2>&1 </dev/null) || rc=$?
+[[ $rc == 0 ]] || fail yes; logged 'flatpak install --noninteractive flathub com.spotify.Client' yes
+reset; rc=0; out=$(PATH="$T/bin:$PATH" KRISS_AUR_URL=https://aur.test "$kriss" install --yes --aur spotify 2>&1 </dev/null) || rc=$?
+[[ $rc == 2 ]] || fail yes-aur; has 'need someone to read their build script first' yes-aur; unlogged 'git clone' yes-aur
 reset; in=$'y\ny' run install --aur spotify; has 'spotify                      from the AUR (community script' aur-only
 logged 'makepkg built spotify' aur-only; unlogged 'flatpak install' aur-only
 
@@ -179,6 +193,10 @@ reset; in=y rc=0; out=$(PATH="$T/bin:$PATH" KRISS_AUR_URL=https://aur.test "$kri
 reset; echo $'com.spotify.Client\tSpotify' >"$T/flatinstalled"; in=y run remove firefox spotify; [[ $rc == 0 ]] || fail remove
 has 'and what only they needed: libunused' remove; has 'To undo: kriss install firefox spotify' remove
 logged 'pacman -Rns --noconfirm -- firefox' remove; logged 'flatpak uninstall --noninteractive -- com.spotify.Client' remove
+logged 'snapper -c root create --cleanup-algorithm number --description before kriss remove com.spotify.Client' remove-snapshot
+reset; echo $'com.spotify.Client\tSpotify' >"$T/flatinstalled"; rc=0
+out=$(PATH="$T/bin:$PATH" "$kriss" remove --yes com.spotify.Client 2>&1 </dev/null) || rc=$?
+[[ $rc == 0 ]] || fail remove-yes; logged 'flatpak uninstall --noninteractive -- com.spotify.Client' remove-yes
 reset; run remove nothing-here; [[ $rc == 2 ]] || fail remove-missing; has "'nothing-here' is not installed" remove-missing
 
 # update: repo and Flatpak, then the AUR. With no terminal (the update notice) AUR waits.

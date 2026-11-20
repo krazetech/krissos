@@ -39,6 +39,8 @@ PanelWindow {
         .filter(e => !e.noDisplay)
         .sort((a, b) => a.name.localeCompare(b.name))
 
+    readonly property var installedIds: new Set(everything.map(e => e.id))
+
     // The grid when nothing is typed.
     readonly property var shown: allApps ? everything : Desktop.pinnedEntries()
 
@@ -143,6 +145,13 @@ PanelWindow {
                     run: () => { Qt.openUrlExternally(r.href); close(); },
                     alt: () => openFolder(r.href)
                 })) },
+                // Apps that are not installed yet: open them in the Store. Not for one letter.
+                { key: "store", title: Tr.t("Store"), items: q.length < 2 ? [] : ranked(providers.storeApps
+                    .filter(a => !installedIds.has(a.id)).map(a => ({
+                        kind: "store", label: a.name, icon: a.icon, detail: Tr.t("Get from the Store"),
+                        run: () => { close(); Quickshell.execDetached(["kriss-store", "--app", a.id]); },
+                        score: Fuzzy.score(a.name, q)
+                    })), 3) },
                 { key: "calc", title: Tr.t("Calculator"), items: expr && providers.calcFor === expr && providers.calcResult ? [{
                     kind: "calc", glyph: "calc", label: "= " + providers.calcResult, detail: q, score: 1,
                     run: () => { copy(providers.calcResult); close(); }
@@ -745,12 +754,14 @@ PanelWindow {
                 spacing: Theme.s3
                 Item {
                     implicitWidth: 28; implicitHeight: 28
-                    readonly property bool iconic: res.row.kind === "app" || res.row.kind === "setting"
+                    readonly property bool iconic: res.row.kind === "app" || res.row.kind === "setting" || res.row.kind === "store"
                     IconImage {
                         visible: parent.iconic
                         anchors.centerIn: parent
                         implicitSize: 26
-                        source: parent.iconic ? Quickshell.iconPath(res.row.icon, "preferences-system") : ""
+                        // A Store row's icon is Flatpak's cached file, when it has one.
+                        source: !parent.iconic ? "" : res.row.kind === "store" && res.row.icon ? res.row.icon
+                            : Quickshell.iconPath(res.row.icon || "system-software-install", "preferences-system")
                     }
                     Glyph {
                         visible: !parent.iconic

@@ -25,16 +25,19 @@ cp -a "$here/." "$profile"
 
 # Build the small [kriss] packages from this checkout and put them ahead of the
 # published repo, so an ISO from a branch carries that branch's theme and tools.
-pacman -S --noconfirm --needed base-devel python librsvg python-pywayland wayland wayland-protocols rust qt6-shadertools nodejs
+# nodejs runs kriss-shell's check(); qt6-tools builds kriss-store's translations.
+pacman -S --noconfirm --needed base-devel python librsvg python-pywayland wayland wayland-protocols rust qt6-shadertools nodejs qt6-tools
 id builder >/dev/null 2>&1 || useradd -m builder
 src="$work/src" local_repo="$work/kriss-local"
 rm -rf "$src" "$local_repo"
 mkdir -p "$src" "$local_repo"
-cp -a "$here/../pkgs" "$here/../theme" "$here/../tools" "$here/../shell" "$here/../installer" "$src/"
+cp -a "$here/../pkgs" "$here/../theme" "$here/../tools" "$here/../shell" "$here/../installer" "$here/../store" "$src/"
 chown -R builder "$src" "$local_repo"
 for p in kriss-keyring kriss-settings kriss-theme kriss-tools kriss-shell kriss-installer; do
   su builder -c "cd '$src/pkgs/$p' && PKGDEST='$local_repo' makepkg --noconfirm --nodeps"
 done
+# The Store's tests need PySide6 and Kirigami; the packages workflow runs them.
+su builder -c "cd '$src/pkgs/kriss-store' && PKGDEST='$local_repo' makepkg --noconfirm --nodeps --nocheck"
 # The repos this build installs from. Until the first publish there is no [kriss-testing].
 conf=$work/pacman.conf
 cp "$here/pacman.conf" "$conf"

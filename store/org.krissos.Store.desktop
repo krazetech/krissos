@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Store
+Name[ms]=Kedai
+GenericName=App store
+GenericName[ms]=Kedai aplikasi
+Comment=Find, install, update and remove apps
+Comment[ms]=Cari, pasang, kemas kini dan buang aplikasi
+Exec=kriss-store
+Icon=system-software-install
+Categories=System;PackageManager;
+Keywords=store;app store;microsoft store;install;uninstall;software;flathub;apps;games;kedai;pasang;aplikasi;perisian;
+StartupNotify=true

@@ -15,6 +15,10 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 
 ### Added
 
+- The Store: find, install, update and remove apps without a terminal, from Flathub and
+  the KrissOS packs (gaming, Windows apps). It is pinned to the taskbar, and searching in
+  Start offers "Get … from the Store" for apps you don't have yet. A snapshot is taken
+  before every install, removal and update, so you can undo one from the boot menu.
 - A new terminal opens with the KrissOS emblem and a summary of your PC, instead of a bare
   prompt or fish's welcome text.
 - Updates go through a testing channel first, so a bad package is caught before it reaches

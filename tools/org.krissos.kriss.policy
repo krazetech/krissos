@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Kraze Tech -->
+<!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<!-- pkexec kriss (the Store, the update notice): one password, then a few minutes without
+     asking again, like Windows asking once for a batch of installs. -->
+<policyconfig>
+  <vendor>KrissOS</vendor>
+  <action id="org.krissos.kriss">
+    <description>Install, remove or update apps</description>
+    <description xml:lang="ms">Pasang, buang atau kemas kini aplikasi</description>
+    <message>Enter your password to change the apps on this PC</message>
+    <message xml:lang="ms">Masukkan kata laluan anda untuk mengubah aplikasi pada PC ini</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/kriss</annotate>
+  </action>
+</policyconfig>

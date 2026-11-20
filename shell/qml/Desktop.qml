@@ -210,7 +210,7 @@ Singleton {
             id: config
             // Pinned apps, as desktop file ids, in taskbar order. Missing apps are skipped.
             property list<string> pinned: [
-                "firefox", "com.system76.CosmicFiles", "com.system76.CosmicTerm", "code", "steam",
+                "firefox", "com.system76.CosmicFiles", "org.krissos.Store", "com.system76.CosmicTerm", "code", "steam",
                 "winboat", "thunderbird", "com.github.th_ch.youtube_music", "com.system76.CosmicSettings"
             ]
             // Do not disturb: no toasts, notifications still collect behind the bell.

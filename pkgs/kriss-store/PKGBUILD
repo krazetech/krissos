@@ -1,0 +1,40 @@
+# Maintainer: Kraze Tech
+pkgname=kriss-store
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='KrissOS Store: find, install, update and remove apps from Flathub and KrissOS'
+arch=('any')
+url='https://github.com/krazetech/krissos'
+license=('GPL-3.0-or-later')
+depends=('flatpak' 'kirigami' 'pacman-contrib' 'polkit' 'pyside6' 'python' 'qqc2-desktop-style')
+makedepends=('qt6-tools')
+
+# Sources live in this monorepo, so package straight from store/.
+_src="$startdir/../../store"
+
+build() {
+  mkdir -p "$srcdir/i18n"
+  /usr/lib/qt6/bin/lrelease "$_src/i18n/kriss-store_ms.ts" -qm "$srcdir/i18n/kriss-store_ms.qm"
+}
+
+check() {
+  cd "$_src" && python -B test_store.py
+  QT_QPA_PLATFORM=offscreen python -B smoke_qml.py
+}
+
+package() {
+  # Added here, not above: makepkg --syncdeps cannot resolve sibling [kriss] packages.
+  # kriss-tools 0.8.0 has `kriss install --yes`, the snapshot before Flatpak changes and the
+  # polkit action that asks for the password once for a few minutes.
+  depends+=('kriss-theme>=0.2.0' 'kriss-tools>=0.8.0')
+  local share="$pkgdir/usr/share/kriss-store"
+  install -Dm644 -t "$share" "$_src"/kriss_store.py "$_src"/logic.py
+  install -Dm644 -t "$share/qml" "$_src"/qml/*.qml
+  install -Dm644 -t "$share/i18n" "$srcdir"/i18n/*.qm
+  install -Dm644 -t "$pkgdir/usr/share/applications" "$_src/org.krissos.Store.desktop"
+  # Writes the list Start searches for "Get X from the Store" at each login.
+  install -Dm644 "$_src/kriss-store-index.desktop" "$pkgdir/etc/xdg/autostart/kriss-store-index.desktop"
+  install -d "$pkgdir/usr/bin"
+  printf '#!/bin/sh\nexec python /usr/share/kriss-store/kriss_store.py "$@"\n' >"$pkgdir/usr/bin/kriss-store"
+  chmod 755 "$pkgdir/usr/bin/kriss-store"
+}
