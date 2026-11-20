@@ -1,15 +1,21 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-settings
-pkgver=0.5.0
+pkgver=0.5.1
 pkgrel=1
-pkgdesc='KrissOS default configs (Plasma, SDDM, GTK, Flatpak, terminals, prompt, fastfetch), os-release, Limine menu and pacman hooks'
+pkgdesc='KrissOS default configs (Plasma, SDDM, GTK, Flatpak, terminals, prompt, fastfetch, input methods), os-release, Limine menu and pacman hooks'
 arch=('any')
 url='https://github.com/krazetech/krissos'
 license=('GPL-3.0-or-later')
 # plymouth is the boot splash: kriss-plymouth.hook makes kriss its theme and the
 # installer puts its hook in the initramfs. snap-pac provides the snapper pre/post
 # snapshot hooks; it skips them when snapper has no config.
-depends=('diffutils' 'gsettings-desktop-schemas' 'snap-pac' 'fastfetch' 'plymouth' 'binutils')
+depends=('diffutils' 'gsettings-desktop-schemas' 'snap-pac' 'fastfetch' 'plymouth' 'binutils'
+         # Typing in Malaysia's languages (etc/xdg/fcitx5): fcitx5 with its Qt and GTK modules
+         # for apps that fall back to them, Pinyin, Tamil through m17n, and the CJK font
+         # the Pinyin candidates need (noto-fonts already has Tamil and Arabic). Jawi is an
+         # xkeyboard-config layout, my(phonetic), so it needs nothing more.
+         'fcitx5' 'fcitx5-qt' 'fcitx5-gtk' 'fcitx5-chinese-addons' 'fcitx5-m17n' 'm17n-db'
+         'adobe-source-han-sans-cn-fonts')
 makedepends=('python')
 optdepends=('limine: the boot menu with bootable snapshots (kriss-limine-update)'
             'sbctl: re-sign the kernel and bootloader for Secure Boot'

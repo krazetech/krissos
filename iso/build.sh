@@ -100,11 +100,11 @@ openssl req -new -x509 -newkey rsa:2048 -nodes -sha256 -days 3650 \
 openssl x509 -in "$sb/sb.crt" -outform der -out "$sb/KRISSOS.cer"
 sign() { sbsign --key "$sb/sb.key" --cert "$sb/sb.crt" --output "$2" "$1" >/dev/null; }
 iso=$w/iso img=$w/efiboot.img shim=$w/x86_64/airootfs/usr/share/shim-signed
-sign "$iso/EFI/BOOT/BOOTX64.EFI" "$sb/grubx64.efi"
-cp "$shim/shimx64.efi" "$iso/EFI/BOOT/BOOTX64.EFI"
+sign "$iso/EFI/BOOT/BOOTx64.EFI" "$sb/grubx64.efi"
+cp "$shim/shimx64.efi" "$iso/EFI/BOOT/BOOTx64.EFI"
 cp "$shim/mmx64.efi" "$sb/grubx64.efi" "$iso/EFI/BOOT/"
 cp "$sb/KRISSOS.cer" "$iso/"
-mcopy -o -i "$img" "$iso/EFI/BOOT/BOOTX64.EFI" "$iso/EFI/BOOT/mmx64.efi" "$iso/EFI/BOOT/grubx64.efi" ::/EFI/BOOT/
+mcopy -o -i "$img" "$iso/EFI/BOOT/BOOTx64.EFI" "$iso/EFI/BOOT/mmx64.efi" "$iso/EFI/BOOT/grubx64.efi" ::/EFI/BOOT/
 mcopy -o -i "$img" "$sb/KRISSOS.cer" ::/
 for k in "$iso/kriss/boot/x86_64/vmlinuz-"* "$iso/boot/memtest86+/memtest86x64.efi"; do
   [ -f "$k" ] || continue

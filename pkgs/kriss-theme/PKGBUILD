@@ -1,6 +1,6 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-theme
-pkgver=0.5.2
+pkgver=0.5.3
 pkgrel=1
 pkgdesc='KrissOS colours, fonts, wallpaper, Plasma, SDDM, Plymouth and Limine theme'
 arch=('any')
@@ -8,7 +8,7 @@ url='https://github.com/krazetech/krissos'
 license=('GPL-3.0-or-later' 'Apache-2.0')
 # The lock clock's fonts: Inter Display (inter-font), Nunito, IBM Plex Sans Condensed and
 # Noto Serif Display, all under the OFL.
-depends=('adw-gtk-theme' 'vimix-cursors' 'papirus-icon-theme' 'qt6ct' 'inter-font' 'ttf-jetbrains-mono'
+depends=('adw-gtk-theme' 'breeze-cursors' 'papirus-icon-theme' 'qt6ct' 'inter-font' 'ttf-jetbrains-mono'
          'ttf-nunito' 'ttf-ibm-plex' 'noto-fonts')
 makedepends=('python' 'librsvg')
 optdepends=('python-onnxruntime-cpu: the lock clock depth effect on your own pictures (kriss-wallpaper-mask)'

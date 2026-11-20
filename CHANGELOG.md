@@ -23,10 +23,16 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 - Reset this PC: `kriss reset --keep-files` removes the apps you added and resets your
   settings but keeps your files; `kriss reset --everything` also deletes your files and saved
   Wi-Fi, so the PC starts like new. Both take a snapshot first and work offline.
+- Type in Chinese (Pinyin), Tamil and Jawi out of the box. Windows+Space switches between
+  them and English, and the taskbar shows which one is on: EN, 拼, த or ج. Click it to
+  switch too.
 - The Store: find, install, update and remove apps without a terminal, from Flathub and
   the KrissOS packs (gaming, Windows apps). It is pinned to the taskbar, and searching in
   Start offers "Get … from the Store" for apps you don't have yet. A snapshot is taken
   before every install, removal and update, so you can undo one from the boot menu.
+- Window title bars get new round minimise, maximise and close buttons: they light up in your
+  accent colour, close turns red, and they are as easy to hit as on Windows 11. They follow
+  the side and order set for GTK apps, so the Mac layout puts them on the left.
 - A new terminal opens with the KrissOS emblem and a summary of your PC, instead of a bare
   prompt or fish's welcome text.
 - Updates go through a testing channel first, so a bad package is caught before it reaches
@@ -65,6 +71,9 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 - The installer looks like the rest of KrissOS: a step list with ticks, round buttons,
   readable cards on the summary page, pictures of each desktop to pick from and new
   install slides. It follows your light or dark setting.
+- The mouse pointer is now Breeze, KDE's cursor: dark on the light theme and light on the dark
+  one, switching with the theme (also when it changes by time of day) in every app. Its theme
+  and size are settings.
 - The live USB boots on the generic `linux-kriss-generic` kernel, so it starts on more PCs (#57).
 - The boot menu wallpaper is centred at screen size, and the menu appears about 38 s sooner (#63).
 - The screen locks before the PC sleeps, and when `loginctl lock-session` is run (#34).

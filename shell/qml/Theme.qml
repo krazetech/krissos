@@ -157,7 +157,9 @@ Singleton {
     function set(key, value) {
         if (key === "accent" && T.parseColor(value)) Desktop.accent = T.parseColor(value);
         else if (key === "mode" && T.isMode(value)) Desktop.theme = value;
-        else return "error: expected accent #RRGGBB or mode dark|light|system|auto";
+        else if (key === "cursor" && /^[A-Za-z0-9_.+-]*$/.test(value)) Desktop.cursorTheme = value;
+        else if (key === "cursorSize" && +value >= 16 && +value <= 128) Desktop.cursorSize = Math.round(+value);
+        else return "error: expected accent #RRGGBB, mode dark|light|system|auto, cursor NAME (empty for Breeze) or cursorSize 16-128";
         return "ok";
     }
 
@@ -181,6 +183,37 @@ Singleton {
     }
     onDarkChanged: syncMode()
     onModeChanged: syncMode()
+
+    // The mouse pointer: Breeze, its dark cursor on the light theme and its light one on the
+    // dark theme (also as "auto" turns), unless the user picked a theme ("cursorTheme").
+    // Written for the compositor (org.krissos.Cursor, read live by cosmic-comp-kriss, which
+    // also hands it to XWayland), GTK (the GNOME setting and settings.ini; Flatpak through the
+    // portal), Qt and KDE apps (kcminputrc), and apps that only know the "default" theme.
+    readonly property string cursorTheme: Desktop.cursorTheme !== "" ? Desktop.cursorTheme
+        : dark ? "{{cursor_theme}}" : "{{cursor_theme_light}}"
+    readonly property int cursorSize: Desktop.cursorSize >= 16 && Desktop.cursorSize <= 128 ? Desktop.cursorSize : 24
+    onCursorThemeChanged: syncCursorLater.restart()
+    onCursorSizeChanged: syncCursorLater.restart()
+    Component.onCompleted: syncCursorLater.restart()
+    Timer {
+        id: syncCursorLater
+        interval: 50
+        onTriggered: Quickshell.execDetached(["sh", "-c", `
+            c=\${XDG_CONFIG_HOME:-$HOME/.config}
+            put() { mkdir -p "$1" && printf %s "$3" > "$1/.$2.new" && mv -f "$1/.$2.new" "$1/$2"; }
+            put "$c/cosmic/org.krissos.Cursor/v1" theme "\\"$1\\""
+            put "$c/cosmic/org.krissos.Cursor/v1" size "$2"
+            gsettings set org.gnome.desktop.interface cursor-theme "$1"
+            gsettings set org.gnome.desktop.interface cursor-size "$2"
+            for f in "$c/gtk-3.0/settings.ini" "$c/gtk-4.0/settings.ini"; do
+                [ -f "$f" ] || continue
+                sed -i -e "s/^gtk-cursor-theme-name=.*/gtk-cursor-theme-name=$1/" -e '/^gtk-cursor-theme-size=/d' "$f"
+                sed -i "/^gtk-cursor-theme-name=/a gtk-cursor-theme-size=$2" "$f"
+            done
+            command -v kwriteconfig6 >/dev/null && kwriteconfig6 --file kcminputrc --group Mouse --key cursorTheme "$1" && kwriteconfig6 --file kcminputrc --group Mouse --key cursorSize "$2"
+            mkdir -p "$HOME/.icons/default" && printf '[Icon Theme]\nName=Default\nInherits=%s\n' "$1" > "$HOME/.icons/default/index.theme"`,
+            "sh", root.cursorTheme, String(root.cursorSize)])
+    }
     // COSMIC builds its own accent shades with libcosmic's ThemeBuilder.
     onChosenAccentChanged: Quickshell.execDetached(["kriss-cosmic-theme", "--accent", chosenAccent])
 
