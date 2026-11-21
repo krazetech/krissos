@@ -21,6 +21,8 @@
 # limine-bios.sys changes, as the boot sector and stage 2 must match it.
 # Secure Boot (UEFI only): once sbctl has keys, every path gets a BLAKE2b hash, the
 # config's hash is enrolled into Limine (limine enroll-config) and Limine is signed again.
+# Where the installer put Microsoft-signed shim in front of Limine (mmx64.efi next to it),
+# BOOTX64.EFI is shim and Limine is grubx64.efi, the file shim starts; see kriss-secureboot.
 set -euo pipefail
 shopt -s nullglob
 
@@ -96,6 +98,19 @@ entry() {  # entry INDENT NAME KERNEL INITRAMFS CMDLINE [COMMENT]  (KERNEL, INIT
     printf '%s    cmdline: %s\n' "$1" "$5"
 }
 
+# limine_efi OUT [SHIM]: Limine's EFI binary. For shim, with the .sbat section shim
+# insists on, placed after the image's last byte (SizeOfImage): .data runs on past its
+# file size, so the end of the last section in the file is not free.
+limine_efi() {
+    local src=/usr/share/limine/BOOTX64.EFI base size
+    if [ -z "${2:-}" ]; then cp "$src" "$1"; return; fi
+    read -r base size < <(objdump -p "$src" | awk '$1 == "ImageBase" {b = $2} $1 == "SizeOfImage" {s = $2} END {print b, s}')
+    printf 'sbat,1,SBAT Version,sbat,1,https://github.com/rhboot/shim/blob/main/SBAT.md\nlimine,1,Limine,limine,%s,https://limine-bootloader.org\n' \
+        "$(pacman -Q limine | cut -d' ' -f2)" >"$conf.sbat"
+    objcopy --add-section ".sbat=$conf.sbat" --set-section-flags .sbat=contents,alloc,load,readonly,data \
+        --change-section-vma ".sbat=$(printf '0x%x' $((16#$base + 16#$size)))" "$src" "$1"
+}
+
 # XML text of TAG in snapper's info.xml FILE, unescaped.
 xml() {
     sed -n "s:.*<$1>\(.*\)</$1>.*:\1:p" "$2" |
@@ -146,12 +161,28 @@ menu() {
                 "$base ${ver%%-*}, snapshot $n, taken ${date%:*} UTC"
         done
     fi
-    cat /etc/kriss/limine.d/*.conf 2>/dev/null || true
+    # Extra entries: Windows, the system before kriss migrate. Under Secure Boot Limine
+    # refuses a linux-protocol file without a hash, so those get one (from the partition
+    # mounted here); the firmware checks the signature of efi-protocol ones instead.
+    local f line proto mnt re='^([[:space:]]*(module_)?path:[[:space:]]*)guid\(([^)]*)\):(/[^#]*)$'
+    for f in /etc/kriss/limine.d/*.conf; do
+        proto=
+        while IFS= read -r line || [ -n "$line" ]; do
+            [[ $line != /* ]] || proto=
+            if [[ $line =~ ^[[:space:]]*protocol:[[:space:]]*([a-z]+) ]]; then proto=${BASH_REMATCH[1]}; fi
+            if (( sb )) && [ "$proto" = linux ] && [[ $line =~ $re ]] &&
+                mnt=$(findmnt -nfo TARGET --source "PARTUUID=${BASH_REMATCH[3]}") &&
+                [ -f "$mnt${BASH_REMATCH[4]}" ]; then
+                line=${BASH_REMATCH[1]}$(hashed "guid(${BASH_REMATCH[3]}):${BASH_REMATCH[4]}" "$mnt${BASH_REMATCH[4]}")
+            fi
+            printf '%s\n' "$line"
+        done <"$f"
+    done
 }
 
 # Not $(menu): that subshell would lose the keep list.
 conf=$(mktemp)
-trap 'rm -f "$conf"' EXIT
+trap 'rm -f "$conf" "$conf.sbat"' EXIT
 menu >"$conf"
 if (( bios )) && ! cmp -s /usr/share/limine/limine-bios.sys "$dir/limine-bios.sys"; then
     # Boot sector and stage 2 first: if that fails, the next run tries again.
@@ -161,13 +192,23 @@ fi
 for d in "${dirs[@]}"; do
     # EFI/BOOT is ours only when the installer put Limine there (and a limine.conf).
     [ -f "$d/limine.conf" ] || [ "$d" = "$dir" ] || continue
-    if (( sb )); then
-        # Start from a fresh copy, so the enrolled hash and signature are this config's.
-        cp /usr/share/limine/BOOTX64.EFI "$d/BOOTX64.EFI"
-        limine enroll-config "$d/BOOTX64.EFI" "$(b2sum "$conf" | cut -d' ' -f1)"
-        sbctl sign -s "$d/BOOTX64.EFI"
-    elif (( ! bios )) && ! cmp -s /usr/share/limine/BOOTX64.EFI "$d/BOOTX64.EFI"; then
-        cp /usr/share/limine/BOOTX64.EFI "$d/BOOTX64.EFI"
+    if (( ! bios )); then
+        efi=$d/BOOTX64.EFI shim=
+        if [ -f "$d/mmx64.efi" ]; then
+            efi=$d/grubx64.efi shim=1
+            for f in shimx64.efi:BOOTX64.EFI mmx64.efi:mmx64.efi; do
+                cmp -s "/usr/share/shim-signed/${f%%:*}" "$d/${f#*:}" ||
+                    cp "/usr/share/shim-signed/${f%%:*}" "$d/${f#*:}"
+            done
+        fi
+        # Built next to it and moved over it, so a power cut never leaves half a Limine.
+        limine_efi "$efi.new" "$shim"
+        if (( sb )); then
+            # A fresh copy each time, so the enrolled hash and signature are this config's.
+            limine enroll-config "$efi.new" "$(b2sum "$conf" | cut -d' ' -f1)" >/dev/null
+            sbctl sign "$efi.new" >/dev/null
+        fi
+        if cmp -s "$efi.new" "$efi"; then rm "$efi.new"; else mv "$efi.new" "$efi"; fi
     fi
     cp "$conf" "$d/limine.conf.new"
     mv "$d/limine.conf.new" "$d/limine.conf"

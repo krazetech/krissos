@@ -1,4 +1,4 @@
-# Rewrite the Limine menu after kernel, initramfs or Limine updates; on legacy BIOS,
+# Rewrite the Limine menu after kernel, initramfs, Limine or shim updates; on legacy BIOS,
 # kriss-limine-update also runs limine bios-install when Limine's boot code changed.
 # Sorts before zz-kriss-sbctl.hook, so the files are final before they are signed.
 [Trigger]
@@ -9,6 +9,7 @@ Type = Path
 Target = usr/lib/modules/*/vmlinuz
 Target = usr/lib/initcpio/*
 Target = usr/share/limine/*
+Target = usr/share/shim-signed/*
 
 [Action]
 Description = Updating the Limine boot menu...

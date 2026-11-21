@@ -3,7 +3,8 @@ import QtQuick.Layouts
 import Quickshell
 
 // What to do before KrissOS can be installed, shown by kriss-install instead of the
-// installer. KRISS_NOTICE picks the page: bitlocker or bios. Colours come from
+// installer, and the one step left after it (lib/restart). KRISS_NOTICE picks the page:
+// bitlocker, bios or secureboot. Colours come from
 // theme/tokens.json (rendered by kriss-installer's PKGBUILD).
 ShellRoot {
     id: root
@@ -64,6 +65,33 @@ ShellRoot {
                     "Pilih Pasang KrissOS."
                 ],
                 footer: "Untuk memasang dalam mod BIOS lama juga, jalankan  kriss-install --legacy  dalam terminal. Windows tidak akan ada dalam menu but KrissOS."
+            }
+        },
+        // MokManager's own words are English only, so they stay in English in both.
+        secureboot: {
+            en: {
+                title: "One blue screen after the restart",
+                body: "Secure Boot is on, so this PC must learn KrissOS's key once. Right after the restart a blue screen appears (MokManager). It shows only this time.",
+                steps: [
+                    "Press any key when it says \"Press any key to perform MOK management\". It waits 10 seconds; if you miss it, KrissOS asks again at the next start.",
+                    "Choose Enroll MOK, then Continue, then Yes.",
+                    "Type the password  krissos  and press Enter. It is not your own password.",
+                    "Choose Reboot. KrissOS starts."
+                ],
+                footer: "Nothing in the BIOS needs changing. Windows keeps starting as before.",
+                button: "Restart now"
+            },
+            ms: {
+                title: "Satu skrin biru selepas dimulakan semula",
+                body: "Secure Boot dihidupkan, jadi PC ini perlu mengenali kunci KrissOS sekali sahaja. Sejurus selepas dimulakan semula, satu skrin biru muncul (MokManager). Ia muncul kali ini sahaja.",
+                steps: [
+                    "Tekan sebarang kekunci apabila tertera \"Press any key to perform MOK management\". Ia menunggu 10 saat; jika terlepas, KrissOS akan bertanya lagi pada permulaan seterusnya.",
+                    "Pilih Enroll MOK, kemudian Continue, kemudian Yes.",
+                    "Taip kata laluan  krissos  dan tekan Enter. Ini bukan kata laluan anda sendiri.",
+                    "Pilih Reboot. KrissOS akan bermula."
+                ],
+                footer: "Tiada apa-apa dalam BIOS yang perlu diubah. Windows tetap bermula seperti biasa.",
+                button: "Mulakan semula sekarang"
             }
         }
     })
@@ -147,7 +175,7 @@ ShellRoot {
                 Text {
                     id: close
                     anchors.centerIn: parent
-                    text: root.ms ? "Tutup" : "Close"
+                    text: root.text.button ?? (root.ms ? "Tutup" : "Close")
                     color: "{{bg}}"
                     font.family: "{{font_sans}}"
                     font.pixelSize: 15

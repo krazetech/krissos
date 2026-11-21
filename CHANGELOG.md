@@ -15,6 +15,11 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 
 ### Added
 
+- Secure Boot can stay on, so a PC that dual-boots Windows 11 needs no BIOS change. The
+  USB starts through Microsoft-signed shim: the first time, a blue screen (MokManager) asks
+  you to pick *Enroll key from disk* and the `KRISSOS.cer` file on the USB. After installing,
+  that blue screen comes once more to enroll your PC's own key (password `krissos`); the
+  installer tells you the steps. Updates re-sign the boot menu by themselves.
 - Reset this PC: `kriss reset --keep-files` removes the apps you added and resets your
   settings but keeps your files; `kriss reset --everything` also deletes your files and saved
   Wi-Fi, so the PC starts like new. Both take a snapshot first and work offline.

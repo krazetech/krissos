@@ -1,0 +1,8 @@
+#!/bin/bash
+# Calamares' "Restart now" (finished.conf). When configure asked MokManager to enroll this
+# PC's Secure Boot key (kriss-secureboot), first say what the blue screen after the
+# restart wants. Calamares runs as root with the live session's environment (sudo -E).
+if mokutil --list-new 2>/dev/null | grep -qi fingerprint; then
+  KRISS_NOTICE=secureboot qs -p /usr/share/kriss-installer/notice.qml || true
+fi
+exec systemctl -i reboot
