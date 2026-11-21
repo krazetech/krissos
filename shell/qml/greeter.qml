@@ -113,8 +113,10 @@ ShellRoot {
             screen: modelData
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.namespace: "kriss-greeter"
-            // The first screen takes the keyboard; the others show the same field.
-            WlrLayershell.keyboardFocus: modelData === Quickshell.screens[0] ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+            // The main display its user chose (Settings > Display, in the copy of their lock clock)
+            // takes the keyboard and shows the field; the others show the picture and the clock.
+            readonly property bool main: modelData === (Quickshell.screens.find(s => s.name === root.lockClock.primary) ?? Quickshell.screens[0])
+            WlrLayershell.keyboardFocus: main ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
             exclusionMode: ExclusionMode.Ignore
             anchors { top: true; bottom: true; left: true; right: true }
             color: Theme.night
@@ -159,7 +161,7 @@ ShellRoot {
                 layer.enabled: win.open < 1
                 layer.effect: MultiEffect { maskEnabled: true; maskSource: hole }
 
-                LockFace { id: face; host: root }
+                LockFace { id: face; host: root; main: win.main }
 
                 // The users, as on Windows: picture and name; the one signing in is lit.
                 Column {

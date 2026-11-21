@@ -88,6 +88,7 @@ package() {
   # The shell runs it when the accent changes, so COSMIC apps rebuild their shades.
   install -Dm755 "$srcdir/target/release/kriss-cosmic-theme" "$pkgdir/usr/bin/kriss-cosmic-theme"
   install -Dm644 "$_shell/session/kriss-shell.desktop" "$pkgdir/usr/share/wayland-sessions/kriss-shell.desktop"
+  install -Dm644 "$_shell/session/org.krissos.Settings.desktop" "$pkgdir/usr/share/applications/org.krissos.Settings.desktop"
   install -Dm644 -t "$pkgdir/usr/lib/systemd/user" "$_shell/session/kriss-shell-session.target"
   install -Dm644 "$_shell/session/logind.conf" "$pkgdir/usr/lib/systemd/logind.conf.d/50-kriss-shell.conf"
   install -Dm644 "$_shell/session/greetd.conf" "$pkgdir/usr/lib/systemd/system/greetd.service.d/kriss-shell.conf"
