@@ -85,7 +85,9 @@ fi
 if ((EUID != 0)); then
   for c in realpath mkdir rm head tr basename; do ln -sf "$(command -v "$c")" "$t/bin/$c"; done
   h=$t/home; mkdir -p "$h/.winboat" "$h/Documents"
+  # shellcheck disable=SC2016 # literal ${HOME} for compose; the stub expands $1 and $* itself
   printf '    environment:\n      USERNAME: "MyWindowsUser"\n      PASSWORD: s3cret\n    volumes:\n      - ${HOME}:/shared\n' > "$h/.winboat/podman-compose.yml"
+  # shellcheck disable=SC2016
   printf '#!/bin/sh\necho "podman $*" >> "%s/log"\ncase "$1" in inspect) echo true;; port) echo 127.0.0.1:40000;; esac\n' "$t" > "$t/bin/podman"
   printf '#!/bin/sh\necho "xfreerdp3 $*" >> "%s/log"\ncase "$*" in *Office\\ setup*) echo ok > "%s/.local/share/kriss/office/installed";; esac\n' "$t" "$h" > "$t/bin/xfreerdp3"
   for c in curl xdg-mime update-desktop-database; do stub "$c" ''; done
@@ -99,7 +101,7 @@ if ((EUID != 0)); then
   grep -q 'O365HomePremRetail' "$h/.local/share/kriss/office/configuration.xml" || { echo 'FAIL office product'; exit 1; }
   grep -q 'AcceptEULA="FALSE"' "$h/.local/share/kriss/office/configuration.xml" || { echo 'FAIL office accepted the EULA'; exit 1; }
   grep -q 'officecdn.microsoft.com' "$h/.local/share/kriss/office/install.ps1" || { echo 'FAIL office source'; exit 1; }
-  grep -qF '/port:40000' "$t/log" && grep -qF '/u:MyWindowsUser /p:s3cret' "$t/log" || { echo "FAIL office rdp: $(cat "$t/log")"; exit 1; }
+  { grep -qF '/port:40000' "$t/log" && grep -qF '/u:MyWindowsUser /p:s3cret' "$t/log"; } || { echo "FAIL office rdp: $(cat "$t/log")"; exit 1; }
   grep -qF 'cmd:-NoProfile -ExecutionPolicy Bypass -File "\\host.lan\Data\.local\share\kriss\office\install.ps1"' "$t/log" ||
     { echo "FAIL office path: $(cat "$t/log")"; exit 1; }
   for a in word excel powerpoint; do
