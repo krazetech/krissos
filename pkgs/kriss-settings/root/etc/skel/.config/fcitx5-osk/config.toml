@@ -2,3 +2,5 @@
 theme = "Auto"
 dark_theme = "KrissOS Dark"
 light_theme = "KrissOS Light"
+# The taskbar has the keyboard button, so no floating one.
+indicator_display = "AlwaysOff"
