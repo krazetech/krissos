@@ -33,6 +33,7 @@ Item {
         performance: "M13 2L4 14h7l-1 8 9-12h-7z",
         saver: "M5 19c0-8 5-14 15-14 0 10-6 15-14 15M5 19l7-7",
         pin: "M12 17v5M9 4h6l-1 6 3 3v2H7v-2l3-3z",
+        keyboard: "M3 6h18v12H3zM7 10h.01M11 10h.01M15 10h.01M17 10h.01M7 14h10",
         unpin: "M12 17v5M9 4h6l-1 6 3 3v2H7v-2l3-3zM3 3l18 18",
         close: "M6 6l12 12M18 6L6 18",
         plus: "M12 5v14M5 12h14",

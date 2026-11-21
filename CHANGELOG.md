@@ -21,6 +21,10 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 - Type in Chinese (Pinyin), Tamil and Jawi out of the box. Windows+Space switches between
   them and English, and the taskbar shows which one is on: EN, 拼, த or ج. Click it to
   switch too.
+- On-screen keyboard for 2-in-1 laptops and tablets. On a PC with a touch screen, the
+  keyboard button in the taskbar brings it up; after that it comes up by itself whenever
+  you tap into a text box, until you type on a real keyboard. Chinese, Tamil and Jawi work
+  on it too.
 - The Store: find, install, update and remove apps without a terminal, from Flathub and
   the KrissOS packs (gaming, Windows apps). It is pinned to the taskbar, and searching in
   Start offers "Get … from the Store" for apps you don't have yet. A snapshot is taken

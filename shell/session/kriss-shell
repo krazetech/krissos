@@ -23,8 +23,9 @@
 #   kriss-shell snap       the snap layouts for the window in front (Windows+Z)
 #   kriss-shell layout windows|mac
 #                          the taskbar, or the Mac layout (top bar and dock); saved, live
-#   kriss-shell input next|previous
-#                          the next input method, EN, 拼, த or ج (Windows+Space, Windows+Shift+Space)
+#   kriss-shell input next|previous|osk
+#                          the next input method, EN, 拼, த or ج (Windows+Space, Windows+Shift+Space),
+#                          or show or hide the on-screen keyboard
 #   kriss-shell switcher next|previous
 #                          the Alt+Tab window switcher (Alt+Tab and Alt+Shift+Tab)
 #   kriss-shell media playPause|next|previous
