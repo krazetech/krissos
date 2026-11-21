@@ -69,6 +69,9 @@ if kriss help 2>&1 | grep -q '^ *channel '; then kriss channel testing
 else echo "upgrade: note stable's kriss has no channel command; used main's"; kriss-main channel testing; fi &&
   kriss update && echo "upgrade: testing ok" || echo "upgrade: FAIL kriss update on testing"
 echo "upgrade: now $(kriss version | head -n1)"
+# The update above ran the old kriss. Once more with this branch's, as the next update would.
+kriss-main update && echo "upgrade: again ok" || echo "upgrade: FAIL the second kriss update"
+echo "upgrade: now $(kriss version | head -n1)"
 for p in cosmic-settings cosmic-comp; do
   pacman -Q "$p-kriss" >/dev/null 2>&1 || echo "upgrade: FAIL $p was not replaced by $p-kriss"
 done
