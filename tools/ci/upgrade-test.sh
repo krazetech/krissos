@@ -63,7 +63,11 @@ rm -f /etc/systemd/system/multi-user.target.wants/kriss-upgrade-test.service
 echo "upgrade: from $(kriss version | head -n1)"
 kriss update && echo "upgrade: stable ok" || echo "upgrade: FAIL kriss update on stable"
 echo "upgrade: now $(kriss version | head -n1)"
-kriss channel testing && kriss update && echo "upgrade: testing ok" || echo "upgrade: FAIL kriss update on testing"
+# Stable's kriss may predate `kriss channel` (0.4.0 does); on release day stable carries main's,
+# so switch with main's own kriss then, and say so.
+if kriss help 2>&1 | grep -q '^ *channel '; then kriss channel testing
+else echo "upgrade: note stable's kriss has no channel command; used main's"; kriss-main channel testing; fi &&
+  kriss update && echo "upgrade: testing ok" || echo "upgrade: FAIL kriss update on testing"
 echo "upgrade: now $(kriss version | head -n1)"
 for p in cosmic-settings cosmic-comp; do
   pacman -Q "$p-kriss" >/dev/null 2>&1 || echo "upgrade: FAIL $p was not replaced by $p-kriss"
@@ -95,6 +99,7 @@ sudo udevadm settle
 mnt=$(mktemp -d)
 sudo mount -o subvol=@ /dev/nbd0p3 "$mnt"
 sudo install -Dm755 "$out/steps" "$mnt/usr/local/bin/kriss-upgrade-test"
+sudo install -Dm755 "$repo/tools/kriss" "$mnt/usr/local/bin/kriss-main"
 sudo install -Dm644 "$out/main-packages" "$mnt/usr/local/share/main-packages"
 sudo install -Dm644 "$out/unit" "$mnt/etc/systemd/system/kriss-upgrade-test.service"
 sudo ln -sf ../kriss-upgrade-test.service "$mnt/etc/systemd/system/multi-user.target.wants/"
