@@ -121,7 +121,10 @@ fi
 # serial log, so each step waits for its words there; a screenshot records each screen.
 rm -f "$out/mon"
 "${qemu[@]}" -drive "if=pflash,format=raw,unit=1,file=$out/vars-pc.fd" \
-  -drive "file=$disk,if=virtio,format=qcow2" -serial "file:$out/disk.log" &
+  -drive "file=$disk,if=virtio,format=qcow2" \
+  -smbios "$(cred systemd.extra-unit.kriss-sb-test.service "$unit")" \
+  -smbios "$(cred systemd.unit-dropin.multi-user.target "$dropin")" \
+  -serial "file:$out/disk.log" &
 pid=$!
 step() {  # step NAME PATTERN KEYS...: wait for PATTERN, screenshot, press KEYS
   local name=$1 pattern=$2 k; shift 2
@@ -146,8 +149,10 @@ done
 sleep 20
 shot installed
 stop
-grep -a -m3 'Linux version\|[Ss]ecure boot\|Failed to start' "$out/disk.log" || true
+grep -a 'kriss-sb-test\|[Ss]ecure boot\|Failed to start' "$out/disk.log" || true
 (( ok )) || { echo 'installed: no login screen within 5 minutes of MokManager.' >&2; exit 1; }
-grep -aq 'Secure boot enabled' "$out/disk.log" ||
+# The installed kernel runs with quiet, so its own "Secure boot enabled" never reaches
+# the serial log; the same unit as the live test reports it instead.
+grep -aq 'kriss-sb-test: SecureBoot enabled' "$out/disk.log" ||
   { echo 'installed: the kernel does not report Secure Boot as enabled.' >&2; exit 1; }
 echo 'installed: MokManager enrolled the PC key; shim -> Limine -> KrissOS with Secure Boot enabled.'
