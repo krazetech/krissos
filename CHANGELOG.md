@@ -76,6 +76,8 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 
 ### Fixed
 
+- `kriss update` now swaps in the KrissOS builds of COSMIC Settings and the compositor on
+  PCs installed before they existed; until now an update kept the old ones.
 - `loginctl unlock-session` unlocks the lock screen again, so remote and admin tools can
   unlock it.
 - Updates no longer stop at "invalid or corrupted package" when the signing keys are out

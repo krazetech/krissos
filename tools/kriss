@@ -2,7 +2,7 @@
 # kriss: KrissOS system tool.
 set -euo pipefail
 
-readonly KRISS_VERSION="0.5.0"
+readonly KRISS_VERSION="0.5.2"
 readonly OS_RELEASE="${KRISS_OS_RELEASE:-/etc/os-release}"
 # Overridable so tests can point hwcheck and winapps at fixture trees.
 readonly PROC="${KRISS_PROC:-/proc}" SYS="${KRISS_SYS:-/sys}" DEV="${KRISS_DEV:-/dev}" ETC="${KRISS_ETC:-/etc}"
@@ -266,10 +266,28 @@ update_system() {
     die "the update did not finish. If this PC is offline, connect and run 'kriss update' again."
 }
 
+# pacman reads replaces= only from the first repo with the installed package's own name, and
+# [kriss] comes after [extra], so -Syu keeps cosmic-settings although cosmic-settings-kriss
+# replaces it. Swap those here. --ask 4 answers yes to removing the package being replaced.
+replace_from_kriss() {
+  local names=() new=()
+  mapfile -t names < <(for r in kriss-testing kriss; do pacman -Slq "$r" 2>/dev/null; done | sort -u)
+  ((${#names[@]})) || return 0
+  mapfile -t new < <(pacman -Si -- "${names[@]}" 2>/dev/null | awk '
+      /^Name / { name = $3 }
+      /^Replaces / { for (i = 3; i <= NF; i++) if ($i != "None") { sub(/[<>=].*/, "", $i); print name, $i } }' |
+    while read -r n old; do pacman -Q "$old" &>/dev/null && ! pacman -Q "$n" &>/dev/null && echo "$n"; done | sort -u)
+  ((${#new[@]})) || return 0
+  echo "kriss: switching to KrissOS's own ${new[*]}"
+  pacman -S --noconfirm --ask 4 -- "${new[@]}" ||
+    echo "kriss: could not switch to ${new[*]}; the next kriss update tries again" >&2
+}
+
 cmd_update() {
   ((EUID == 0)) || die "update needs root. Run: pkexec kriss update"
   snapshot 'before kriss update'
   update_system
+  replace_from_kriss
   if command -v flatpak >/dev/null; then
     flatpak update --noninteractive --assumeyes
   fi
