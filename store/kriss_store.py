@@ -21,6 +21,7 @@ sys.path.insert(0, str(HERE))
 import logic  # noqa: E402
 
 ROOT = pathlib.Path(os.environ.get("KRISS_STORE_FLATPAK", logic.FLATPAK))
+OFFICE = pathlib.Path(os.environ.get("XDG_DATA_HOME") or pathlib.Path.home() / ".local/share") / "applications/kriss-office-word.desktop"
 INDEX = pathlib.Path(os.environ.get("XDG_CACHE_HOME") or pathlib.Path.home() / ".cache") / "kriss/store.json"
 
 
@@ -87,9 +88,11 @@ class Backend(QObject):
         """What is installed, then what has updates (that needs the network, so it is second)."""
         def work():
             ids = logic.parse_flatpak_ids(out(["flatpak", "list", "--app", "--columns=application"]))
-            packs = [p["id"] for p in logic.PACKS]
+            packs = [p["id"] for p in logic.PACKS if p["kind"] == "pacman"]
             have = out(["pacman", "-Q", *packs])
             self._installed = ids + [p for p in packs if p + " " in have]
+            if OFFICE.exists():
+                self._installed.append("microsoft-office")
             self.stateChanged.emit()
             ups = [{"name": n, "version": v} for n, v in logic.parse_checkupdates(out(["checkupdates"]))]
             ups += [{"name": self._by_id.get(i, {}).get("name", i), "version": ""}
@@ -174,12 +177,14 @@ class Backend(QObject):
     def install(self, app_id):
         a = self._by_id.get(app_id)
         if a:
-            self._change(app_id, "install", ["pkexec", "kriss", "install", "--yes",
-                                             "--repo" if a["kind"] == "pacman" else "--flatpak", app_id])
+            # Office installs as the user, into WinBoat; the Store page already said what it needs.
+            argv = (["kriss", "winapps", "office", "--yes"] if a["kind"] == "winapps" else
+                    ["pkexec", "kriss", "install", "--yes", "--repo" if a["kind"] == "pacman" else "--flatpak", app_id])
+            self._change(app_id, "install", argv)
 
     @Slot(str)
     def remove(self, app_id):
-        if app_id in self._installed:
+        if app_id in self._installed and self.canRemove(app_id):
             self._change(app_id, "remove", ["pkexec", "kriss", "remove", "--yes", app_id])
 
     @Slot()
@@ -188,11 +193,18 @@ class Backend(QObject):
 
     @Slot(str, result=bool)
     def canOpen(self, app_id):
-        return self._by_id.get(app_id, {}).get("kind") == "flatpak"
+        return self._by_id.get(app_id, {}).get("kind") in ("flatpak", "winapps")
+
+    @Slot(str, result=bool)
+    def canRemove(self, app_id):
+        # ponytail: Office is removed in Windows (Settings > Apps); the Store does not reach in there.
+        return self._by_id.get(app_id, {}).get("kind") != "winapps"
 
     @Slot(str)
     def open(self, app_id):
-        if self.canOpen(app_id):
+        if self._by_id.get(app_id, {}).get("kind") == "winapps":
+            QProcess.startDetached("kriss", ["winapps", "run", "word"])
+        elif self.canOpen(app_id):
             QProcess.startDetached("flatpak", ["run", app_id])
 
 

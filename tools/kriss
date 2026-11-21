@@ -616,13 +616,204 @@ cmd_winapps_setup() {
   setsid -f winboat >/dev/null 2>&1
 }
 
+# kriss winapps office|run: Microsoft Office in WinBoat's Windows, downloaded from Microsoft
+# when the user asks. KrissOS ships no Office files; the user signs in with their own
+# Microsoft account or product key. Apps open over RDP RemoteApp the same way WinBoat opens
+# them (its launchApp), so Word, Excel and PowerPoint get Start entries and file types here.
+# ponytail: Bottles/Wine is not offered; Microsoft 365 there still crashes and shows black
+# windows (bottlesdevs/programs#500). Revisit when that issue is closed.
+WB_DIR=${KRISS_WINBOAT_DIR:-${HOME:-}/.winboat}
+WB_COMPOSE=$WB_DIR/podman-compose.yml
+OFFICE_DIR=${HOME:-}/.local/share/kriss/office
+APPS_DIR=${XDG_DATA_HOME:-${HOME:-}/.local/share}/applications
+# Microsoft's own Office Deployment Tool (setup.exe), on Microsoft's CDN.
+OFFICE_ODT=https://officecdn.microsoft.com/pr/wsus/setup.exe
+
+wb_die() { # die, and say it on the desktop too when there is no terminal (a Start entry)
+  [[ -t 2 ]] || notify-send -a KrissOS -i dialog-error "Microsoft Office" "$*" 2>/dev/null || true
+  die "$*"
+}
+
+# A value from WinBoat's compose file, such as USERNAME or PASSWORD.
+wb_env() { sed -n "s/^ *$1: *//p" "$WB_COMPOSE" | head -1 | tr -d "\"'"; }
+
+# Start WinBoat's Windows if it is not running and wait until its guest server answers.
+wb_up() {
+  [[ -f $WB_COMPOSE ]] || wb_die "WinBoat is not set up yet. Run 'kriss winapps setup' and let WinBoat install Windows first."
+  grep -q ':/shared' "$WB_COMPOSE" ||
+    wb_die "WinBoat is not sharing your home folder. Turn on the shared folder in WinBoat's settings."
+  if [[ $(podman inspect -f '{{.State.Running}}' WinBoat 2>/dev/null) != true ]]; then
+    printf 'kriss: starting Windows (WinBoat)...\n' >&2
+    (cd "$WB_DIR" && PODMAN_COMPOSE_PROVIDER=podman-compose podman compose -f "$WB_COMPOSE" up -d >/dev/null 2>&1) ||
+      wb_die "Windows did not start. Open WinBoat to see why."
+  fi
+  local api i
+  api=$(podman port WinBoat 7148/tcp | head -1)
+  for ((i = 0; i < ${KRISS_WB_WAIT:-90}; i++)); do
+    curl -fsS -m 2 "http://$api/health" >/dev/null 2>&1 && return 0
+    sleep 2
+  done
+  wb_die "Windows did not answer within 3 minutes. Open WinBoat to see what it is doing."
+}
+
+# Run one Windows program as a window of its own: wb_rdp CLASS PROGRAM NAME [ARGS].
+wb_rdp() {
+  local rdp port
+  rdp=$(command -v xfreerdp3 || command -v xfreerdp) || wb_die "FreeRDP 3 is missing. Run 'kriss winapps setup'."
+  port=$(podman port WinBoat 3389/tcp | head -1)
+  # ponytail: the password is on FreeRDP's command line, as WinBoat itself does; it is the
+  # local VM's own password, already in plain text in WinBoat's compose file. A comma in a
+  # file name breaks FreeRDP's /app list; rename the file if that ever bites.
+  "$rdp" "/u:$(wb_env USERNAME)" "/p:$(wb_env PASSWORD)" /v:127.0.0.1 "/port:${port##*:}" /cert:ignore \
+    +clipboard /sound:sys:pulse /floatbar /compression -wallpaper "/wm-class:$1" \
+    "/app:program:$2,name:$3${4:+,cmd:$4}" >/dev/null 2>&1
+}
+
+# A path in the home folder as Windows sees it: WinBoat shares $HOME as \\host.lan\Data.
+wb_path() {
+  local f
+  f=$(realpath -- "$1") && [[ $f == "$HOME"/* ]] || return 1
+  f=${f#"$HOME"/}
+  printf '\\\\host.lan\\Data\\%s' "${f//\//\\}"
+}
+
+office_exe() {
+  case "$1" in
+    word) echo WINWORD ;; excel) echo EXCEL ;; powerpoint) echo POWERPNT ;;
+    *) die "unknown Office app '$1'. Use word, excel or powerpoint." ;;
+  esac
+}
+
+# kriss winapps run word|excel|powerpoint [FILE]: what the Start entries run.
+cmd_winapps_run() {
+  local app=${1:-} exe arg=""
+  exe=$(office_exe "$app")
+  if [[ -n ${2:-} ]]; then
+    arg=$(wb_path "$2") || wb_die "Windows can only open files in your home folder. Move $(basename -- "$2") there first."
+    arg="\"$arg\""
+  fi
+  wb_up
+  wb_rdp "kriss-$app" "C:\\Program Files\\Microsoft Office\\root\\Office16\\$exe.EXE" "${app^}" "$arg"
+}
+
+# The Start entries: Word, Excel and PowerPoint, the default apps for their Office files.
+office_launchers() {
+  local app name generic generic_ms cat icon mime
+  mkdir -p "$APPS_DIR"
+  while IFS='|' read -r app name generic generic_ms cat icon mime; do
+    cat >"$APPS_DIR/kriss-office-$app.desktop" <<EOF
+[Desktop Entry]
+Type=Application
+Name=$name
+GenericName=$generic
+GenericName[ms]=$generic_ms
+Comment=Microsoft $name, running in Windows (WinBoat)
+Comment[ms]=Microsoft $name, berjalan dalam Windows (WinBoat)
+Exec=kriss winapps run $app %f
+Icon=$icon
+Categories=Office;$cat;
+MimeType=$mime
+StartupWMClass=kriss-$app
+Keywords=microsoft;office;365;
+EOF
+    # ponytail: only the Office Open XML types become Office's; older formats stay where they were.
+    xdg-mime default "kriss-office-$app.desktop" "${mime%%;*}" 2>/dev/null || true
+  done <<'EOF'
+word|Word|Word processor|Pemproses kata|WordProcessor|x-office-document|application/vnd.openxmlformats-officedocument.wordprocessingml.document;application/msword;application/rtf;
+excel|Excel|Spreadsheet|Hamparan elektronik|Spreadsheet|x-office-spreadsheet|application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;application/vnd.ms-excel;text/csv;
+powerpoint|PowerPoint|Presentation|Persembahan|Presentation|x-office-presentation|application/vnd.openxmlformats-officedocument.presentationml.presentation;application/vnd.ms-powerpoint;
+EOF
+  update-desktop-database "$APPS_DIR" 2>/dev/null || true
+}
+
+# kriss winapps office [--business] [--yes]: install Word, Excel and PowerPoint in Windows.
+cmd_winapps_office() {
+  ((EUID != 0)) || die "run 'kriss winapps office' as yourself, not root: WinBoat runs as your user."
+  local a yes=0 product=O365HomePremRetail
+  for a; do
+    case "$a" in
+      --yes) yes=1 ;;
+      --business) product=O365BusinessRetail ;;
+      *) die "unknown option '$a'. Use --business or --yes." ;;
+    esac
+  done
+  cat <<'EOF'
+Microsoft Office (Word, Excel, PowerPoint) in WinBoat's Windows
+
+  download  about 3 GB, straight from Microsoft. KrissOS includes no Office files.
+  internet  needed for the whole install, and now and then for Office to stay activated.
+  licence   your own. Sign in with your Microsoft 365 account when Word first opens, or
+            choose to enter a product key there. Got a key on a card? Redeem it at
+            https://www.microsoft.com/microsoft-365/setup first.
+EOF
+  if ((!yes)); then
+    read -rp "Install Microsoft Office now? [y/N] " a || a=n
+    [[ $a == [yY]* ]] || return 0
+  fi
+  curl -fsSI -m 10 "$OFFICE_ODT" >/dev/null 2>&1 ||
+    wb_die "Microsoft's download server cannot be reached. Connect to the internet and try again."
+  wb_up
+  mkdir -p "$OFFICE_DIR"
+  rm -f "$OFFICE_DIR/installed"
+  # Word, Excel and PowerPoint only. AcceptEULA stays off: Office asks the user to accept
+  # Microsoft's licence terms itself.
+  cat >"$OFFICE_DIR/configuration.xml" <<EOF
+<Configuration>
+  <Add OfficeClientEdition="64" Channel="Current">
+    <Product ID="$product">
+      <Language ID="MatchOS" />
+      <ExcludeApp ID="Access" /><ExcludeApp ID="Groove" /><ExcludeApp ID="Lync" />
+      <ExcludeApp ID="OneDrive" /><ExcludeApp ID="OneNote" /><ExcludeApp ID="Outlook" />
+      <ExcludeApp ID="OutlookForWindows" /><ExcludeApp ID="Publisher" /><ExcludeApp ID="Teams" />
+      <ExcludeApp ID="Bing" />
+    </Product>
+  </Add>
+  <Display Level="Full" AcceptEULA="FALSE" />
+  <Updates Enabled="TRUE" />
+</Configuration>
+EOF
+  cat >"$OFFICE_DIR/install.ps1" <<EOF
+# KrissOS: download Microsoft's Office Deployment Tool from Microsoft and install Office.
+\$ErrorActionPreference = 'Stop'; \$ProgressPreference = 'SilentlyContinue'
+\$Host.UI.RawUI.WindowTitle = 'Microsoft Office setup'
+\$here = Split-Path -Parent \$MyInvocation.MyCommand.Path
+\$odt = Join-Path \$env:TEMP 'kriss-office-setup.exe'
+\$cfg = Join-Path \$env:TEMP 'kriss-office.xml'
+try {
+  Write-Host 'Downloading the Office installer from Microsoft...'
+  Invoke-WebRequest -UseBasicParsing '$OFFICE_ODT' -OutFile \$odt
+  \$sig = Get-AuthenticodeSignature \$odt
+  if (\$sig.Status -ne 'Valid' -or \$sig.SignerCertificate.Subject -notmatch 'O=Microsoft Corporation') {
+    throw 'The downloaded installer is not signed by Microsoft, so it was not run.'
+  }
+  Copy-Item (Join-Path \$here 'configuration.xml') \$cfg -Force
+  Write-Host 'Installing Word, Excel and PowerPoint. Office shows its own progress; this takes a while.'
+  \$p = Start-Process \$odt -ArgumentList '/configure', "\`"\$cfg\`"" -Verb RunAs -Wait -PassThru
+  if (\$p.ExitCode -ne 0) { throw "Office setup stopped with code \$(\$p.ExitCode)." }
+  Set-Content (Join-Path \$here 'installed') 'ok'
+} catch {
+  Write-Host \$_
+  Read-Host 'Office was not installed. Press Enter to close'
+  exit 1
+}
+EOF
+  printf 'kriss: Office setup is running in Windows. Leave this open until it finishes.\n'
+  wb_rdp kriss-office-setup 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe' 'Office setup' \
+    "-NoProfile -ExecutionPolicy Bypass -File \"$(wb_path "$OFFICE_DIR/install.ps1")\"" || true
+  [[ -f $OFFICE_DIR/installed ]] || wb_die "Office was not installed. Run 'kriss winapps office' to try again."
+  office_launchers
+  printf 'kriss: done. Word, Excel and PowerPoint are in Start. Sign in or enter your key when Word first opens.\n'
+}
+
 cmd_winapps() {
   # WinBoat runs x86 Windows in a KVM VM; ARCHITECTURE §13 leaves it off Apple Silicon.
   [[ $(uname -m) == x86_64 ]] || die "Windows apps through WinBoat need an x86_64 PC; this is $(uname -m)."
   case "${1:-check}" in
     check) winapps_check ;;
     setup) cmd_winapps_setup ;;
-    *) die "unknown winapps command '$1'. Use check or setup." ;;
+    office) cmd_winapps_office "${@:2}" ;;
+    run) cmd_winapps_run "${@:2}" ;;
+    *) die "unknown winapps command '$1'. Use check, setup, office or run." ;;
   esac
 }
 
@@ -1007,6 +1198,9 @@ Commands:
   migrate    Turn this Arch or CachyOS install into KrissOS (try --dry-run first)
   winapps check   Check this PC is ready for Windows apps in WinBoat (read-only)
   winapps setup   Fix what is missing (asks first), then open WinBoat
+  winapps office  Install Microsoft Office in WinBoat, downloaded from Microsoft (your own
+                  licence; --business for Microsoft 365 Business plans)
+  winapps run word|excel|powerpoint [FILE]   Open an Office app, or a file in it
   nvidia check    Say whether this PC's NVIDIA GPU can use the NVIDIA 580 driver
   nvidia setup    Install that driver (root, needs internet); nouveau stays otherwise
   help       Show this help

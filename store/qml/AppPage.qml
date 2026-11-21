@@ -43,13 +43,15 @@ Kirigami.ScrollablePage {
                     opacity: 0.7
                 }
                 QQC2.Label {
-                    text: page.app.kind === "pacman" ? qsTr("From KrissOS") : qsTr("From Flathub · runs in a sandbox")
+                    text: page.app.kind === "pacman" ? qsTr("From KrissOS")
+                        : page.app.kind === "winapps" ? qsTr("Downloaded from Microsoft · runs in WinBoat")
+                        : qsTr("From Flathub · runs in a sandbox")
                     opacity: 0.7
                 }
                 RowLayout {
                     AppButton { app: page.app }
                     QQC2.Button {
-                        visible: page.installed
+                        visible: page.installed && backend.canRemove(page.app.id)
                         text: qsTr("Uninstall")
                         icon.name: "edit-delete"
                         enabled: Object.keys(backend.busy).length === 0
