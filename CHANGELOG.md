@@ -31,6 +31,9 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 - Windows+P switches between PC screen only, Duplicate, Extend and Second screen only.
 - Right-click the clock, network, sound, battery or bell on the taskbar for their settings.
   Start has a Settings button next to power.
+- Settings has its own Sound (output, microphone and a volume mixer for each app),
+  Notifications (do not disturb, and turning off pop-ups per app), Power and battery, and
+  About (rename your PC, see its parts, copy them for a bug report) pages.
 - The Store: find, install, update and remove apps without a terminal, from Flathub and
   the KrissOS packs (gaming, Windows apps). It is pinned to the taskbar, and searching in
   Start offers "Get … from the Store" for apps you don't have yet. A snapshot is taken

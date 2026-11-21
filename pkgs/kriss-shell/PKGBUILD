@@ -7,7 +7,7 @@ arch=('any')
 url='https://github.com/krazetech/krissos'
 license=('GPL-3.0-or-later' 'MIT')
 depends=('cosmic-comp' 'cosmic-settings-daemon' 'xorg-xwayland' 'quickshell' 'python-pywayland' 'glib2' 'dbus'
-         'grim' 'slurp' 'wl-clipboard' 'noto-fonts-emoji' 'xdg-user-dirs' 'brightnessctl')
+         'grim' 'slurp' 'wl-clipboard' 'noto-fonts-emoji' 'xdg-user-dirs' 'brightnessctl' 'cosmic-idle')
 makedepends=('python' 'python-pywayland' 'wayland' 'wayland-protocols' 'cargo' 'qt6-shadertools')
 checkdepends=('nodejs')
 optdepends=('greetd: the KrissOS login screen'
