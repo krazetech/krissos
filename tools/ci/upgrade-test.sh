@@ -30,8 +30,9 @@ grep -B2 -A1 'config "$conf" -Sy' /usr/lib/kriss-installer/pacstrap
 grep -q '^sed -i "/^\\\[kriss-local' /usr/lib/kriss-installer/pacstrap
 ONLINE
 git -C "$repo" show "$tag:iso/test/autoinstall" |
-  awk -v f="$out/online-only" '/^\/usr\/lib\/kriss-installer\/pacstrap / { while ((getline l < f) > 0) print l } 1' \
-  >"$out/autoinstall"
+  awk -v f="$out/online-only" '/^\/usr\/lib\/kriss-installer\/pacstrap / { while ((getline l < f) > 0) print l } 1' |
+  # Today's kriss-tools nests Snapshots under the KrissOS entry (//Snapshots); accept both.
+  sed "s|grep -q '^/Snapshots'|grep -q '^//*Snapshots'|" >"$out/autoinstall"
 grep -q "^sed -i 's|^pacman --config" "$out/autoinstall" || { echo "$tag: no pacstrap step in its autoinstall" >&2; exit 1; }
 # What main's ISO installs, less what only the live system has, to see what an update misses.
 grep -v '^#' "$repo/iso/packages.x86_64" | grep -vxE 'kriss-installer|calamares|archinstall|.*-live|' |
