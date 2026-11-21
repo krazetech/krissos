@@ -23,7 +23,9 @@ b2sums=('SKIP')
 
 prepare() {
   cd fcitx5-osk
-  sed -i 's/ --modifier-workaround//' pkg/share/dbus-1/services/fyi.fortime.Fcitx5Osk.service.in
+  # --wait-for-socket waits for a Wayland socket from the KWin launcher, which COSMIC never sends,
+  # so the keyboard would never show. Modifiers come from fcitx5-kriss, not the root helper.
+  sed -i 's/ --wait-for-socket//; s/ --modifier-workaround//' pkg/share/dbus-1/services/fyi.fortime.Fcitx5Osk.service.in
   # ponytail: a patched iced_layershell comes from git, so this needs the network.
   cargo fetch --locked --target "$(rustc -vV | sed -n 's|host: ||p')"
 }
