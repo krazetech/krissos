@@ -84,9 +84,10 @@ After=network-online.target
 [Service]
 Type=oneshot
 ExecStart=/usr/local/bin/kriss-upgrade-test
-StandardOutput=tty
-StandardError=tty
-TTYPath=/dev/ttyS0
+# The journal, which the test kernel line forwards to ttyS0: the serial getty that starts
+# meanwhile hangs up a direct tty and the rest of the output is lost.
+StandardOutput=journal
+StandardError=journal
 UNIT
 sudo modprobe nbd max_part=8
 sudo qemu-nbd -c /dev/nbd0 "$disk"
@@ -101,7 +102,8 @@ sudo umount "$mnt"
 sudo qemu-nbd -d /dev/nbd0
 
 timeout 60m "${qemu[@]}" -serial "file:$out/update.log" || true
-grep -a '^upgrade: ' "$out/update.log" | tr -d '\r' | tee "$out/result"
+grep -a 'kriss-upgrade-test\[[0-9]*\]: upgrade: ' "$out/update.log" | tr -d '\r' | sed 's/^.*\]: //' |
+  tee "$out/result"
 grep -q '^upgrade: done' "$out/result" || { echo "$tag: the update run did not finish; see update.log" >&2; exit 1; }
 
 # 3. The updated system boots to the KrissOS login screen.
