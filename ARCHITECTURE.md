@@ -424,7 +424,9 @@ A new `[kriss]` package. It opens on first login and stays in the menu.
 4. **Drivers and extras.** Codecs, printers, the gaming pack (`kriss-meta-gaming`), and the local
    AI setup (Ollama plus the AI CLIs from §9).
 
-- **Stack:** Qt/QML (Kirigami) to match KDE. Every system change goes through `kriss` / `pkexec`
+- **Stack:** Qt/QML (PySide6) in the KrissOS Shell look: its tokens (`theme/tokens.json`), light
+  or dark as the shell follows it, the user's accent, and small components of its own
+  (`welcome/qml/Card.qml`, `Pill.qml`, ...) in place of Kirigami. Every system change goes through `kriss` / `pkexec`
   commands, or through udisks and Flatpak, which ask polkit themselves, so the app holds no root
   logic of its own.
 - **Strings:** every string is translatable from the start, with English and Bahasa Melayu shipped.

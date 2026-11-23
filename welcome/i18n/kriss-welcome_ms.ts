@@ -2,6 +2,19 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="ms">
 <context>
+    <name>Confirm</name>
+    <message>
+        <location filename="../qml/Confirm.qml" line="41"/>
+        <source>Cancel</source>
+        <translation>Batal</translation>
+    </message>
+    <message>
+        <location filename="../qml/Confirm.qml" line="42"/>
+        <source>Continue</source>
+        <translation>Teruskan</translation>
+    </message>
+</context>
+<context>
     <name>AppsPage</name>
     <message>
         <location filename="../qml/AppsPage.qml" line="18"/>

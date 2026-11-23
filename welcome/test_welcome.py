@@ -226,4 +226,14 @@ with tempfile.TemporaryDirectory() as t:
     logic.write_layout(cfg, "mac")
     assert logic.read_layout(cfg) == "mac"
 
+# The look follows the shell: its tokens, light or dark, and the user's accent.
+tokens = json.loads((ROOT.parent / "theme/tokens.json").read_text())
+d, l = logic.palette(tokens, True), logic.palette(tokens, False)
+assert d["win"] == tokens["surface"] and l["win"] == tokens["light_bg"] and l["card"] == tokens["light_surface"]
+assert d["accent"] == tokens["accent"] and d["accentInk"] == "#000000"
+assert logic.palette(tokens, True, "#5A1E9B")["accentInk"] == "#FFFFFF"
+assert logic.palette(tokens, True, "nonsense")["accent"] == tokens["accent"]
+assert logic.palette(tokens, True, "#GGGGGG")["accent"] == tokens["accent"]
+assert logic.mix("#000000", "#FF8000", 0.5) == "#804000"
+
 print("ok")
