@@ -35,8 +35,9 @@ PanelWindow {
     property bool powerMenu: false
     property int current: 0
 
+    // COSMIC Settings is left out: KrissOS Settings replaces it, and opens its pages itself.
     readonly property var everything: DesktopEntries.applications.values
-        .filter(e => !e.noDisplay)
+        .filter(e => !e.noDisplay && e.id !== "com.system76.CosmicSettings")
         .sort((a, b) => a.name.localeCompare(b.name))
 
     readonly property var installedIds: new Set(everything.map(e => e.id))
@@ -603,6 +604,35 @@ PanelWindow {
                     color: Theme.fg
                     font { family: Theme.sans; pixelSize: Theme.sp(14); weight: Font.DemiBold }
                 }
+            }
+
+            // Settings, next to power, as on Windows 11.
+            MouseArea {
+                id: settingsBtn
+                anchors.right: powerBtn.left
+                anchors.rightMargin: Theme.s1
+                anchors.verticalCenter: parent.verticalCenter
+                width: Theme.dp(38); height: Theme.dp(38)
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: { win.close(); SettingsPages.open(""); }
+                activeFocusOnTab: true
+                Keys.onReturnPressed: clicked(null)
+                Keys.onEnterPressed: clicked(null)
+                Keys.onSpacePressed: clicked(null)
+                Accessible.role: Accessible.Button
+                Accessible.name: Tr.t("Settings")
+                Accessible.onPressAction: clicked(null)
+                FocusRim { radius: height / 2 }
+                scale: pressed ? Theme.pressScale : 1
+                Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+                Rectangle {
+                    anchors.fill: parent
+                    radius: height / 2
+                    color: settingsBtn.containsMouse ? Theme.card : "transparent"
+                    Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+                }
+                Glyph { anchors.centerIn: parent; name: "settings"; size: 19 }
             }
 
             MouseArea {

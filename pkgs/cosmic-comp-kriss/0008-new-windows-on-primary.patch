@@ -1,0 +1,56 @@
+diff --git a/src/shell/mod.rs b/src/shell/mod.rs
+index 59e7019..1da98c3 100644
+--- a/src/shell/mod.rs
++++ b/src/shell/mod.rs
+@@ -2387,6 +2387,15 @@ impl Shell {
+         self.workspaces.sets.keys()
+     }
+ 
++    /// KrissOS: the output a new window opens on when nothing asks for one: the main display
++    /// (the output marked xwayland_primary, which KrissOS Settings sets), else the seat's.
++    pub fn new_window_output(&self, seat: &Seat<State>) -> Output {
++        self.outputs()
++            .find(|o| o.config().xwayland_primary)
++            .cloned()
++            .unwrap_or_else(|| seat.active_output())
++    }
++
+     pub fn next_output(&self, current_output: &Output, direction: Direction) -> Option<&Output> {
+         let current_output_geo = current_output.geometry();
+         self.outputs()
+@@ -3046,7 +3055,7 @@ impl Shell {
+                     Some(ActivationContext::Workspace(handle)) => Some(handle),
+                     _ => None,
+                 };
+-                (handle, output.unwrap_or_else(|| seat.active_output()), None)
++                (handle, output.unwrap_or_else(|| self.new_window_output(&seat)), None)
+             }
+         };
+ 
+diff --git a/src/wayland/handlers/xdg_shell/mod.rs b/src/wayland/handlers/xdg_shell/mod.rs
+index 7630e71..9a0d679 100644
+--- a/src/wayland/handlers/xdg_shell/mod.rs
++++ b/src/wayland/handlers/xdg_shell/mod.rs
+@@ -295,7 +295,8 @@ impl XdgShellHandler for State {
+                     .visible_output_for_surface(surface.wl_surface())
+                     .cloned()
+             })
+-            .unwrap_or_else(|| seat.focused_or_active_output());
++            // KrissOS: a window going fullscreen before it is shown (a game) starts on the main display.
++            .unwrap_or_else(|| shell.new_window_output(&seat));
+ 
+         match shell.fullscreen_request(
+             &surface,
+diff --git a/src/xwayland.rs b/src/xwayland.rs
+index 477ddec..b1dc88e 100644
+--- a/src/xwayland.rs
++++ b/src/xwayland.rs
+@@ -809,7 +809,7 @@ impl XwmHandler for State {
+                 *context,
+             );
+         }
+-        let fullscreen = window.is_fullscreen().then(|| seat.active_output());
++        let fullscreen = window.is_fullscreen().then(|| shell.new_window_output(&seat));
+         let minimized = window.is_hidden();
+         let maximized = window.is_maximized();
+         if let Some(pending) = shell

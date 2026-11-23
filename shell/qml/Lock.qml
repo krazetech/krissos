@@ -142,6 +142,7 @@ Scope {
     onEngagedChanged: if (engaged) drawn.restart()
 
     PanelWindow {
+        screen: Desktop.primary
         visible: Desktop.locked && !root.engaged
         implicitWidth: 1
         implicitHeight: 1
@@ -164,6 +165,7 @@ Scope {
             LockFace {
                 id: lockFace
                 host: root
+                main: surface.screen === Desktop.primary
                 Connections {
                     target: root
                     function onPicture() {

@@ -271,7 +271,7 @@ PanelWindow {
                         glyph: "text"
                         label: Tr.t("Text size")
                         opens: true
-                        onToggled: { win.close(); Desktop.personalise("text"); }
+                        onToggled: { win.close(); SettingsPages.open("text"); }
                     }
                     Tile {
                         glyph: "camera"
@@ -381,7 +381,7 @@ PanelWindow {
                         { glyph: "play", text: Tr.t("Reduce motion"), on: Theme.reduceMotion,
                           run: () => Quickshell.execDetached(["gsettings", "set", "org.gnome.desktop.interface", "enable-animations", String(Theme.reduceMotion)]) },
                         { glyph: "text", text: Tr.t("Text size"), detail: Math.round(Theme.textScale * 100) + "%", on: false,
-                          run: () => { win.close(); Desktop.personalise("text"); } }
+                          run: () => { win.close(); SettingsPages.open("text"); } }
                     ]
                     delegate: Row_ {
                         required property var modelData

@@ -4,54 +4,73 @@ import QtQuick.Dialogs
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.SystemTray
+import "reveal.js" as Reveal
 
-// Personalise: the shell's own small settings window, like Windows' Personalisation page.
-// Colours, background, taskbar, pins, and text size and contrast, a page each. Every change
-// applies at once and is saved to shell.json (Desktop.qml); nothing needs a restart.
-// Opened from Start search, the desktop's right-click menu and `kriss-shell personalise PAGE`.
+// KrissOS Settings: the shell's own settings window, a mix of Windows 11's (sections on the
+// left, cards, a breadcrumb at the top) and macOS's (grouped lists, a search that finds each
+// setting, not just pages). SettingsPages.qml lists the pages; a page the shell has no page
+// of its own for yet opens COSMIC Settings at it. Every change applies at once.
+// Opened from Start (the gear and search), the right-click menus, `kriss-shell settings PAGE`.
 FloatingWindow {
     id: win
 
-    visible: Desktop.personalisePage !== ""
-    title: Tr.t("Personalise")
+    visible: SettingsPages.page !== ""
+    title: Tr.t("Settings")
     color: Theme.win
     // Grows with the text size, like the panels.
-    implicitWidth: Theme.dp(820)
-    implicitHeight: Theme.dp(640)
-    minimumSize: Qt.size(Theme.dp(600), Theme.dp(440))
+    implicitWidth: Theme.dp(1000)
+    implicitHeight: Theme.dp(700)
+    minimumSize: Qt.size(Theme.dp(640), Theme.dp(460))
     // The window's close button.
     onVisibleChanged: {
-        if (!visible) Desktop.personalisePage = "";
+        if (!visible) SettingsPages.close();
         else focusNav.restart();
     }
 
-    readonly property string page: Desktop.personalisePage
-    readonly property var pages: [
-        ["colours", "sun", Tr.t("Colours")],
-        ["background", "image", Tr.t("Background")],
-        ["taskbar", "taskbar", Tr.t("Taskbar")],
-        ["pins", "pin", Tr.t("Pinned apps")],
-        ["lock", "lock", Tr.t("Lock screen")],
-        ["text", "text", Tr.t("Text and contrast")]
-    ]
-    readonly property int pageIndex: Math.max(0, pages.findIndex(p => p[0] === page))
-    onPageChanged: if (page) {
-        scroller.contentY = 0;
-        focusNav.restart();
-    }
+    // The open page (null on a section's list of pages) and its section.
+    readonly property var current: SettingsPages.find(SettingsPages.page)
+    readonly property string section: current ? current.group : SettingsPages.page
+    readonly property int sectionIndex: Math.max(0, SettingsPages.groups.findIndex(g => g[0] === section))
+    readonly property string query: searchInput.text.trim()
+    readonly property var results: SettingsPages.search(query)
+    onCurrentChanged: scroller.contentY = 0
+    onSectionChanged: scroller.contentY = 0
 
-    // The keyboard starts on the open page's entry in the list on the left.
+    // The keyboard starts on the open section in the list on the left.
     Timer {
         id: focusNav
         interval: 0
-        onTriggered: nav.itemAt(win.pageIndex)?.forceActiveFocus()
+        onTriggered: nav.itemAt(win.sectionIndex)?.forceActiveFocus()
     }
 
-    // A control that the keyboard reaches scrolls into view.
-    function reveal(item) {
-        const y = item.mapToItem(scroller.contentItem, 0, 0).y;
-        if (y < scroller.contentY) scroller.contentY = Math.max(0, y - 12);
-        else if (y + item.height > scroller.contentY + scroller.height) scroller.contentY = y + item.height - scroller.height + 12;
+    // Kept for the controls below that call it by the window's id.
+    function reveal(item) { Reveal.show(item); }
+
+    // A setting found by search: once its page is drawn, scroll to it and light it up.
+    function pointOut() {
+        const key = SettingsPages.key;
+        if (!key || !pageLoader.item) return;
+        const hit = findText(pageLoader.item, key);
+        SettingsPages.key = "";
+        if (!hit) return;
+        Reveal.show(hit, 48);
+        const p = hit.mapToItem(scroller.contentItem, 0, 0);
+        flash.x = p.x - 8; flash.y = p.y - 6; flash.width = hit.width + 16; flash.height = hit.height + 12;
+        flashAnim.restart();
+    }
+    function findText(item, text) {
+        if (!item.visible) return null;
+        if (item.text === text) return item;
+        for (const c of item.children) {
+            const f = findText(c, text);
+            if (f) return f;
+        }
+        return null;
+    }
+    Timer { id: pointLater; interval: 60; onTriggered: win.pointOut() }
+    Connections {
+        target: SettingsPages
+        function onKeyChanged() { if (SettingsPages.key) pointLater.restart(); }
     }
 
     // Rebuilt lists (pins) lose the focus; the row whose key is here takes it back.
@@ -69,86 +88,84 @@ FloatingWindow {
                 -o -iname '*.png' -o -iname '*.webp' -o -iname '*.svg' \\) -printf '%T@ %p\\n' 2>/dev/null |
                 sort -rn | cut -d' ' -f2- | head -40`]
         stdout: StdioCollector {
-            onStreamFinished: win.pictures = text.split("\n").filter(p => p && !p.startsWith(Theme.wallpapers + "/kriss-") && !p.startsWith(Theme.wallpapers + "/sungai-petani-") && !p.endsWith(".mask.png"))
+            onStreamFinished: win.pictures = text.split("\n").filter(p => p && !p.startsWith(Theme.wallpapers + "/kriss-") && !p.endsWith(".mask.png"))
         }
     }
 
     Item {
         anchors.fill: parent
         focus: true
-        Keys.onEscapePressed: Desktop.personalisePage = ""
+        Keys.onEscapePressed: {
+            if (searchInput.text) searchInput.text = "";
+            else SettingsPages.close();
+        }
+        // Ctrl+F or typing anywhere outside a field: search, as in macOS's System Settings.
+        Keys.onPressed: e => {
+            if ((e.key === Qt.Key_F && e.modifiers & Qt.ControlModifier) || (e.text.length === 1 && e.text > " " && !(e.modifiers & Qt.ControlModifier))) {
+                if (!(e.key === Qt.Key_F)) searchInput.text += e.text;
+                searchInput.forceActiveFocus();
+                e.accepted = true;
+            }
+        }
 
-        // The pages.
+        // The search field and the sections.
         Rectangle {
             id: side
-            width: Theme.dp(230)
+            width: Theme.dp(260)
             height: parent.height
             color: Theme.card
-            Accessible.role: Accessible.PageTabList
-            Accessible.name: Tr.t("Personalise")
-
             Column {
                 anchors.fill: parent
                 anchors.margins: Theme.s3
                 spacing: Theme.s1
-                // No title here: the window's title bar names it, and the page has its own.
+                Rectangle {
+                    width: parent.width
+                    height: Math.max(40, Theme.sp(14) + 24)
+                    radius: height / 2
+                    color: Theme.win
+                    border.width: searchInput.activeFocus ? Theme.focusWidth : Theme.rimWidth
+                    border.color: searchInput.activeFocus ? Theme.accentText : Theme.line
+                    Glyph { id: lens; name: "search"; size: 16; x: 14; anchors.verticalCenter: parent.verticalCenter; color: Theme.soft }
+                    TextInput {
+                        id: searchInput
+                        anchors { left: lens.right; leftMargin: Theme.s2; right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
+                        color: Theme.fg
+                        selectionColor: Theme.accent
+                        selectedTextColor: Theme.accentInk
+                        clip: true
+                        font { family: Theme.sans; pixelSize: Theme.sp(14) }
+                        activeFocusOnTab: true
+                        Keys.onDownPressed: resultList.itemAt(0)?.forceActiveFocus()
+                        Keys.onReturnPressed: if (win.results.length) SettingsPages.open(win.results[0].id, win.results[0].key), text = ""
+                        Accessible.role: Accessible.EditableText
+                        Accessible.name: Tr.t("Find a setting")
+                        Text {
+                            visible: !parent.text
+                            text: Tr.t("Find a setting")
+                            color: Theme.soft
+                            font: parent.font
+                        }
+                    }
+                }
+                Item { width: 1; height: Theme.s2 }
                 Repeater {
                     id: nav
-                    model: win.pages
-                    MouseArea {
-                        id: tab
+                    model: SettingsPages.groups
+                    NavRow {
                         required property var modelData
                         required property int index
-                        readonly property bool on: win.pageIndex === index
-                        width: parent.width
-                        height: Math.max(40, Theme.sp(14) + 24)
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        activeFocusOnTab: on
-                        onClicked: Desktop.personalisePage = modelData[0]
+                        on: !win.query && win.section === modelData[0]
+                        glyph: modelData[1]
+                        text: modelData[2]
+                        activeFocusOnTab: on || (win.query !== "" && index === 0)
+                        onPicked: { searchInput.text = ""; SettingsPages.open(modelData[0]); }
                         function go(d) {
-                            const i = (win.pageIndex + d + win.pages.length) % win.pages.length;
-                            Desktop.personalisePage = win.pages[i][0];
+                            const i = (win.sectionIndex + d + SettingsPages.groups.length) % SettingsPages.groups.length;
+                            SettingsPages.open(SettingsPages.groups[i][0]);
                             nav.itemAt(i).forceActiveFocus();
                         }
                         Keys.onUpPressed: go(-1)
                         Keys.onDownPressed: go(1)
-                        Keys.onReturnPressed: scroller.nextItemInFocusChain(true)?.forceActiveFocus()
-                        Accessible.role: Accessible.PageTab
-                        Accessible.name: modelData[2]
-                        Accessible.selectable: true
-                        Accessible.selected: on
-                        Accessible.onPressAction: clicked(null)
-                        FocusRim { anchors.margins: 0; radius: Theme.rControl }
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: Theme.rControl
-                            color: tab.on ? Theme.cardHover : tab.containsMouse ? Theme.alpha(Theme.fg, 0.06) : "transparent"
-                            Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
-                        }
-                        // The open page's mark, as Windows' settings lists have.
-                        Rectangle {
-                            visible: tab.on
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 3
-                            height: 16
-                            radius: width / 2
-                            color: Theme.accentText
-                        }
-                        Row {
-                            anchors.verticalCenter: parent.verticalCenter
-                            x: 14
-                            spacing: Theme.s3
-                            Glyph { name: tab.modelData[1]; size: 18; anchors.verticalCenter: parent.verticalCenter }
-                            Text {
-                                text: tab.modelData[2]
-                                width: Math.min(implicitWidth, tab.width - 14 - 18 - Theme.s3 - Theme.s2)
-                                elide: Text.ElideRight
-                                color: Theme.fg
-                                anchors.verticalCenter: parent.verticalCenter
-                                font { family: Theme.sans; pixelSize: Theme.sp(14); weight: tab.on ? Font.DemiBold : Font.Medium }
-                            }
-                        }
                     }
                 }
             }
@@ -161,35 +178,145 @@ FloatingWindow {
             clip: true
             boundsBehavior: Flickable.StopAtBounds
 
+            // Where a setting found by search is.
+            Rectangle {
+                id: flash
+                z: 2
+                radius: Theme.rControl
+                color: "transparent"
+                border.width: 2
+                border.color: Theme.accentText
+                opacity: 0
+                SequentialAnimation {
+                    id: flashAnim
+                    NumberAnimation { target: flash; property: "opacity"; to: 1; duration: Theme.ms(Theme.fast) }
+                    PauseAnimation { duration: Theme.ms(1200) }
+                    NumberAnimation { target: flash; property: "opacity"; to: 0; duration: Theme.ms(400) }
+                }
+            }
+
             Column {
                 id: body
                 x: 32
                 y: 24
-                width: scroller.width - 64
+                width: Math.min(scroller.width - 64, Theme.dp(900))
                 spacing: Theme.s3
+
+                // The breadcrumb: Section › Page, the section a link back to its list.
+                Row {
+                    spacing: Theme.s2
+                    visible: !win.query
+                    MouseArea {
+                        id: crumb
+                        visible: win.current !== null
+                        width: crumbText.implicitWidth
+                        height: crumbText.implicitHeight
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        activeFocusOnTab: visible
+                        onClicked: SettingsPages.open(win.section)
+                        Keys.onReturnPressed: clicked(null)
+                        Keys.onSpacePressed: clicked(null)
+                        Accessible.role: Accessible.Link
+                        Accessible.name: crumbText.text
+                        Accessible.onPressAction: clicked(null)
+                        FocusRim { radius: Theme.rControl }
+                        Text {
+                            id: crumbText
+                            text: SettingsPages.group(win.section)?.[2] ?? ""
+                            color: crumb.containsMouse ? Theme.fg : Theme.soft
+                            font { family: Theme.sans; pixelSize: Theme.sp(26); weight: Font.DemiBold }
+                        }
+                    }
+                    Text {
+                        visible: win.current !== null
+                        text: "›"
+                        color: Theme.soft
+                        font { family: Theme.sans; pixelSize: Theme.sp(26); weight: Font.DemiBold }
+                    }
+                    Text {
+                        text: win.current?.name ?? SettingsPages.group(win.section)?.[2] ?? ""
+                        color: Theme.fg
+                        font { family: Theme.sans; pixelSize: Theme.sp(26); weight: Font.DemiBold }
+                        Accessible.role: Accessible.Heading
+                        Accessible.name: text
+                    }
+                }
+
+                // Search results: the pages, then the settings, each with where it is.
                 Text {
-                    text: win.pages[win.pageIndex][2]
+                    visible: win.query !== ""
+                    text: win.results.length ? Tr.t("Results for “%1”", win.query) : Tr.t("Nothing matches “%1”", win.query)
                     color: Theme.fg
-                    font { family: Theme.sans; pixelSize: Theme.sp(24); weight: Font.DemiBold }
+                    font { family: Theme.sans; pixelSize: Theme.sp(22); weight: Font.DemiBold }
                     Accessible.role: Accessible.Heading
                     Accessible.name: text
                 }
+                SettingsUi.Card {
+                    visible: win.query !== "" && win.results.length > 0
+                    Repeater {
+                        id: resultList
+                        model: win.query ? win.results : []
+                        LinkRow {
+                            required property var modelData
+                            required property int index
+                            glyph: modelData.glyph
+                            text: modelData.name
+                            detail: modelData.path
+                            external: !!SettingsPages.find(modelData.id)?.cosmic
+                            onPicked: { searchInput.text = ""; SettingsPages.open(modelData.id, modelData.key); }
+                            Keys.onUpPressed: index ? resultList.itemAt(index - 1).forceActiveFocus() : searchInput.forceActiveFocus()
+                            Keys.onDownPressed: resultList.itemAt(index + 1)?.forceActiveFocus()
+                        }
+                    }
+                }
+
                 Loader {
+                    id: pageLoader
                     width: parent.width
+                    visible: !win.query
                     active: win.visible
-                    sourceComponent: ({ colours: colours, background: background, taskbar: taskbar, pins: pins, lock: lockPage, text: textPage })[win.pages[win.pageIndex][0]]
+                    sourceComponent: !win.current ? sectionPage
+                        : ({ display: displayPage, recovery: recoveryPage, report: reportPage, colours: colours, background: background, taskbar: taskbar, pins: pins, lock: lockPage, text: textPage })[win.current.id] ?? null
+                    onLoaded: if (SettingsPages.key) pointLater.restart()
                 }
             }
         }
     }
+
+    // A section: its pages, as Windows 11 lists them, each with what is on it.
+    Component {
+        id: sectionPage
+        Column {
+            spacing: Theme.s3
+            SettingsUi.Card {
+                Repeater {
+                    model: SettingsPages.pagesIn(win.section)
+                    LinkRow {
+                        required property var modelData
+                        glyph: modelData.glyph
+                        text: modelData.name
+                        detail: modelData.detail
+                        external: !!modelData.cosmic
+                        onPicked: SettingsPages.open(modelData.id)
+                    }
+                }
+            }
+        }
+    }
+
+    Component { id: displayPage; SettingsDisplay {} }
+
+    Component { id: recoveryPage; SettingsRecovery {} }
+    Component { id: reportPage; SettingsReport {} }
 
     // Colours: the accent and light or dark.
     Component {
         id: colours
         Column {
             spacing: Theme.s3
-            Card {
-                Choice {
+            SettingsUi.Card {
+                SettingsUi.Choice {
                     text: Tr.t("Choose your mode")
                     detail: Tr.t("Apps that follow the system switch with the shell.")
                     value: Theme.mode
@@ -203,17 +330,17 @@ FloatingWindow {
                     TimeField { text: Tr.t("Dark from"); value: Desktop.themeDark; onEdited: v => Desktop.themeDark = v }
                 }
             }
-            Card {
-                Toggle {
+            SettingsUi.Card {
+                SettingsUi.Toggle {
                     text: Tr.t("Transparency effects")
                     detail: Tr.t("The taskbar, Start, menus and notifications show a blur of what is behind them.")
                     checked: Desktop.transparency
                     onToggled: Desktop.transparency = !Desktop.transparency
                 }
             }
-            Card {
-                Label { text: Tr.t("Accent colour") }
-                Note { text: Theme.high ? Tr.t("High contrast uses its own colours. Your choice comes back when you turn it off.") : Tr.t("Buttons, switches and highlights use it.") }
+            SettingsUi.Card {
+                SettingsUi.Label { text: Tr.t("Accent colour") }
+                SettingsUi.Note { text: Theme.high ? Tr.t("High contrast uses its own colours. Your choice comes back when you turn it off.") : Tr.t("Buttons, switches and highlights use it.") }
                 Flow {
                     width: parent.width
                     spacing: Theme.s2
@@ -232,7 +359,7 @@ FloatingWindow {
                             Keys.onSpacePressed: clicked(null)
                             Keys.onReturnPressed: clicked(null)
                             Keys.onEnterPressed: clicked(null)
-                            onActiveFocusChanged: if (activeFocus) win.reveal(sw)
+                            onActiveFocusChanged: if (activeFocus) Reveal.show(sw)
                             Accessible.role: Accessible.RadioButton
                             Accessible.name: modelData.name
                             Accessible.description: Tr.t("Accent colour")
@@ -253,7 +380,7 @@ FloatingWindow {
                         }
                     }
                 }
-                Note { text: Theme.accents.find(a => a.color.toLowerCase() === Theme.chosenAccent.toLowerCase())?.name ?? "" }
+                SettingsUi.Note { text: Theme.accents.find(a => a.color.toLowerCase() === Theme.chosenAccent.toLowerCase())?.name ?? "" }
             }
         }
     }
@@ -266,9 +393,9 @@ FloatingWindow {
             spacing: Theme.s3
             readonly property string wall: Desktop.wallpaper
             Component.onCompleted: win.findPictures()
-            Card {
-                Label { text: Tr.t("Background") }
-                Note { text: Tr.t("Sungai Petani turns from day to night with the clock. KrissOS follows light and dark.") }
+            SettingsUi.Card {
+                SettingsUi.Label { text: Tr.t("Background") }
+                SettingsUi.Note { text: Tr.t("Sungai Petani turns from day to night with the clock. KrissOS follows light and dark.") }
                 Flow {
                     width: parent.width
                     spacing: Theme.s2
@@ -307,9 +434,9 @@ FloatingWindow {
         id: taskbar
         Column {
             spacing: Theme.s3
-            Card {
+            SettingsUi.Card {
                 // The two layouts, switched live (Desktop.setLayout, as kriss-welcome does).
-                Choice {
+                SettingsUi.Choice {
                     text: Tr.t("Desktop layout")
                     detail: Tr.t("The top bar and dock also put window buttons on the left, in apps that allow it.")
                     value: Desktop.layout
@@ -317,8 +444,8 @@ FloatingWindow {
                     onPicked: v => Desktop.setLayout(v)
                 }
             }
-            Card {
-                Choice {
+            SettingsUi.Card {
+                SettingsUi.Choice {
                     // The dock is always centred.
                     visible: !Desktop.mac
                     text: Tr.t("Taskbar alignment")
@@ -326,43 +453,43 @@ FloatingWindow {
                     options: [["left", Tr.t("Left")], ["centre", Tr.t("Centre")]]
                     onPicked: v => Desktop.taskbarAlignment = v
                 }
-                Choice {
+                SettingsUi.Choice {
                     text: Desktop.mac ? Tr.t("Dock size") : Tr.t("Taskbar size")
                     value: Desktop.taskbarSize
                     options: [["small", Tr.t("Small")], ["medium", Tr.t("Medium")], ["large", Tr.t("Large")]]
                     onPicked: v => Desktop.taskbarSize = v
                 }
-                Choice {
+                SettingsUi.Choice {
                     text: Tr.t("Combine taskbar buttons")
                     value: Desktop.taskbarCombine
                     options: [["always", Tr.t("Always")], ["full", Tr.t("When the taskbar is full")], ["never", Tr.t("Never")]]
                     onPicked: v => Desktop.taskbarCombine = v
                 }
             }
-            Card {
-                Toggle {
+            SettingsUi.Card {
+                SettingsUi.Toggle {
                     text: Tr.t("Automatically hide the taskbar")
                     detail: Tr.t("It comes back when the pointer reaches the bottom edge.")
                     checked: Desktop.taskbarAutoHide
                     onToggled: Desktop.taskbarAutoHide = !Desktop.taskbarAutoHide
                 }
-                Toggle {
+                SettingsUi.Toggle {
                     text: Tr.t("Task View button")
                     checked: Desktop.taskbarTaskView
                     onToggled: Desktop.taskbarTaskView = !Desktop.taskbarTaskView
                 }
-                Toggle {
+                SettingsUi.Toggle {
                     text: Tr.t("Show the taskbar on all screens")
                     checked: Desktop.taskbarAllScreens
                     onToggled: Desktop.taskbarAllScreens = !Desktop.taskbarAllScreens
                 }
             }
-            Card {
-                Label { text: Tr.t("Tray icons") }
-                Note { text: SystemTray.items.values.length ? Tr.t("Icons that are off wait behind the arrow next to the clock.") : Tr.t("No apps have a tray icon right now.") }
+            SettingsUi.Card {
+                SettingsUi.Label { text: Tr.t("Tray icons") }
+                SettingsUi.Note { text: SystemTray.items.values.length ? Tr.t("Icons that are off wait behind the arrow next to the clock.") : Tr.t("No apps have a tray icon right now.") }
                 Repeater {
                     model: SystemTray.items
-                    Toggle {
+                    SettingsUi.Toggle {
                         required property var modelData
                         visible: modelData.id !== "Fcitx"  // shown as the input method instead
                         text: modelData.tooltipTitle || modelData.title || modelData.id
@@ -379,9 +506,9 @@ FloatingWindow {
         id: pins
         Column {
             spacing: Theme.s3
-            Card {
-                Note { text: Tr.t("These apps are pinned to Start and the taskbar, in this order. Pin more from Start: right-click an app.") }
-                Note { visible: Desktop.pinned.length === 0; text: Tr.t("Nothing is pinned.") }
+            SettingsUi.Card {
+                SettingsUi.Note { text: Tr.t("These apps are pinned to Start and the taskbar, in this order. Pin more from Start: right-click an app.") }
+                SettingsUi.Note { visible: Desktop.pinned.length === 0; text: Tr.t("Nothing is pinned.") }
                 Repeater {
                     model: Desktop.pinned
                     Item {
@@ -462,7 +589,7 @@ FloatingWindow {
         id: lockPage
         Column {
             spacing: Theme.s3
-            Card {
+            SettingsUi.Card {
                 Item {
                     id: preview
                     width: parent.width
@@ -484,13 +611,13 @@ FloatingWindow {
                         }
                     }
                 }
-                Note { visible: text !== ""; text: face.depthNote }
+                SettingsUi.Note { visible: text !== ""; text: face.depthNote }
             }
-            Card {
+            SettingsUi.Card {
                 id: lockPics
                 readonly property string wall: Desktop.lockClock.wallpaper || "desktop"
                 Component.onCompleted: win.findPictures()
-                Label { text: Tr.t("Picture") }
+                SettingsUi.Label { text: Tr.t("Picture") }
                 Flow {
                     width: parent.width
                     spacing: Theme.s2
@@ -525,38 +652,38 @@ FloatingWindow {
                     onAccepted: Desktop.setLockClock("wallpaper", decodeURIComponent(String(selectedFile).replace(/^file:\/\//, "")))
                 }
             }
-            Card {
-                Choice {
+            SettingsUi.Card {
+                SettingsUi.Choice {
                     text: Tr.t("Position")
                     value: Desktop.lockClock.position
                     options: [["top", Tr.t("Top")], ["centre", Tr.t("Centre")], ["left", Tr.t("Left")], ["bottom", Tr.t("Bottom")]]
                     onPicked: v => Desktop.setLockClock("position", v)
                 }
-                Choice {
+                SettingsUi.Choice {
                     text: Tr.t("Layout")
                     value: Desktop.lockClock.stack
                     options: [["stacked", Tr.t("Hours over minutes")], ["line", Tr.t("One line")]]
                     onPicked: v => Desktop.setLockClock("stack", v)
                 }
-                Choice {
+                SettingsUi.Choice {
                     text: Tr.t("Size")
                     value: Desktop.lockClock.size
                     options: [["s", Tr.t("Small")], ["m", Tr.t("Medium")], ["l", Tr.t("Large")], ["xl", Tr.t("Extra large")]]
                     onPicked: v => Desktop.setLockClock("size", v)
                 }
-                Choice {
+                SettingsUi.Choice {
                     text: Tr.t("Weight")
                     value: Desktop.lockClock.weight
                     options: [["regular", Tr.t("Regular")], ["semibold", Tr.t("Semibold")], ["bold", Tr.t("Bold")], ["heavy", Tr.t("Heavy")]]
                     onPicked: v => Desktop.setLockClock("weight", v)
                 }
-                Choice {
+                SettingsUi.Choice {
                     text: Tr.t("Font")
                     value: Desktop.lockClock.font
                     options: [["inter-display", "Inter Display"], ["rounded", Tr.t("Rounded")], ["condensed", Tr.t("Condensed")], ["serif", Tr.t("Serif")]]
                     onPicked: v => Desktop.setLockClock("font", v)
                 }
-                Choice {
+                SettingsUi.Choice {
                     text: Tr.t("Style")
                     detail: Theme.solid ? Tr.t("Glass needs transparency effects and normal contrast, so the clock is solid now.") : ""
                     value: Desktop.lockClock.style
@@ -564,18 +691,18 @@ FloatingWindow {
                     onPicked: v => Desktop.setLockClock("style", v)
                 }
             }
-            Card {
-                Toggle {
+            SettingsUi.Card {
+                SettingsUi.Toggle {
                     text: Tr.t("Date")
                     checked: Desktop.lockClock.date
                     onToggled: Desktop.setLockClock("date", !checked)
                 }
-                Toggle {
+                SettingsUi.Toggle {
                     text: Tr.t("Media, battery and network")
                     checked: Desktop.lockClock.widgets
                     onToggled: Desktop.setLockClock("widgets", !checked)
                 }
-                Toggle {
+                SettingsUi.Toggle {
                     text: Tr.t("Depth effect")
                     detail: Tr.t("The picture's subject stands in front of the time. Worked out on this PC; nothing is sent anywhere.")
                     checked: Desktop.lockClock.depth
@@ -590,8 +717,8 @@ FloatingWindow {
         id: textPage
         Column {
             spacing: Theme.s3
-            Card {
-                Choice {
+            SettingsUi.Card {
+                SettingsUi.Choice {
                     text: Tr.t("Text size")
                     detail: Tr.t("For the shell and the apps that follow the system text size.")
                     value: String(Math.round(Theme.textScale * 100))
@@ -610,176 +737,13 @@ FloatingWindow {
                     Accessible.ignored: true
                 }
             }
-            Card {
-                Toggle {
+            SettingsUi.Card {
+                SettingsUi.Toggle {
                     text: Tr.t("High contrast")
                     detail: Tr.t("Black and white, with stronger outlines, for low vision.")
                     checked: Theme.high
                     onToggled: Desktop.contrast = Theme.high ? "normal" : "high"
                 }
-            }
-        }
-    }
-
-    // A group of settings on a raised card.
-    component Card: Rectangle {
-        default property alias content: inner.data
-        width: parent?.width ?? 0
-        implicitHeight: inner.implicitHeight + 32
-        radius: Theme.rCard
-        color: Theme.card
-        border.width: Theme.high ? Theme.rimWidth : 0
-        border.color: Theme.line
-        Column {
-            id: inner
-            x: 16
-            y: 16
-            width: parent.width - 32
-            spacing: Theme.s3
-        }
-    }
-
-    component Label: Text {
-        width: parent?.width ?? 0
-        wrapMode: Text.WordWrap
-        color: Theme.fg
-        font { family: Theme.sans; pixelSize: Theme.sp(15); weight: Font.DemiBold }
-    }
-
-    component Note: Text {
-        width: parent?.width ?? 0
-        wrapMode: Text.WordWrap
-        color: Theme.soft
-        font { family: Theme.sans; pixelSize: Theme.sp(13) }
-    }
-
-    // One of a few choices, as a row of buttons; a screen reader hears radio buttons.
-    component Choice: Column {
-        id: choice
-        property string text
-        property string detail
-        property var options    // [[value, label]]
-        property string value
-        signal picked(string v)
-        width: parent?.width ?? 0
-        spacing: Theme.s2
-        Label { text: choice.text }
-        Note { visible: text !== ""; text: choice.detail }
-        Flow {
-            width: parent.width
-            spacing: Theme.s2
-            Repeater {
-                model: choice.options
-                MouseArea {
-                    id: opt
-                    required property var modelData
-                    readonly property bool on: choice.value === modelData[0]
-                    width: optText.implicitWidth + 32
-                    height: Math.max(36, Theme.sp(13) + 20)
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    activeFocusOnTab: true
-                    onClicked: choice.picked(modelData[0])
-                    Keys.onSpacePressed: clicked(null)
-                    Keys.onReturnPressed: clicked(null)
-                    Keys.onEnterPressed: clicked(null)
-                    onActiveFocusChanged: if (activeFocus) win.reveal(opt)
-                    Accessible.role: Accessible.RadioButton
-                    Accessible.name: modelData[1]
-                    Accessible.description: choice.text
-                    Accessible.checkable: true
-                    Accessible.checked: on
-                    Accessible.onPressAction: clicked(null)
-                    FocusRim { radius: height / 2 + 4 }
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: height / 2
-                        color: opt.on ? (opt.containsMouse ? Theme.accentHover : Theme.accent) : opt.containsMouse ? Theme.cardHover : Theme.win
-                        border.width: opt.on ? 0 : Theme.rimWidth
-                        border.color: Theme.line
-                        scale: opt.pressed ? Theme.pressScale : 1
-                        Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
-                        Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
-                    }
-                    Text {
-                        id: optText
-                        anchors.centerIn: parent
-                        text: opt.modelData[1]
-                        color: opt.on ? Theme.accentInk : Theme.fg
-                        font { family: Theme.sans; pixelSize: Theme.sp(13); weight: opt.on ? Font.DemiBold : Font.Medium }
-                    }
-                }
-            }
-        }
-    }
-
-    // A setting that is on or off: the whole row is the switch.
-    component Toggle: MouseArea {
-        id: tg
-        property string text
-        property string detail
-        property bool checked
-        signal toggled()
-        width: parent?.width ?? 0
-        height: Math.max(48, words.implicitHeight + 16)
-        hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
-        activeFocusOnTab: true
-        onClicked: toggled()
-        Keys.onSpacePressed: toggled()
-        Keys.onReturnPressed: toggled()
-        Keys.onEnterPressed: toggled()
-        onActiveFocusChanged: if (activeFocus) win.reveal(tg)
-        Accessible.role: Accessible.CheckBox
-        Accessible.name: text
-        Accessible.description: detail
-        Accessible.checkable: true
-        Accessible.checked: checked
-        Accessible.onPressAction: toggled()
-        Accessible.onToggleAction: toggled()
-        FocusRim { anchors.margins: -4; radius: Theme.rControl + 4 }
-        Column {
-            id: words
-            anchors.left: parent.left
-            anchors.right: track.left
-            anchors.rightMargin: Theme.s4
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: Theme.s0
-            Text {
-                width: parent.width
-                wrapMode: Text.WordWrap
-                text: tg.text
-                color: Theme.fg
-                font { family: Theme.sans; pixelSize: Theme.sp(14); weight: Font.Medium }
-            }
-            Text {
-                visible: text !== ""
-                width: parent.width
-                wrapMode: Text.WordWrap
-                text: tg.detail
-                color: Theme.soft
-                font { family: Theme.sans; pixelSize: Theme.sp(12) }
-            }
-        }
-        Rectangle {
-            id: track
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            width: 44
-            height: 24
-            radius: height / 2
-            color: tg.checked ? (tg.containsMouse ? Theme.accentHover : Theme.accent) : Theme.win
-            border.width: tg.checked ? 0 : Theme.rimWidth + 1
-            border.color: Theme.soft
-            Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
-            Rectangle {
-                width: 16
-                height: 16
-                radius: height / 2
-                anchors.verticalCenter: parent.verticalCenter
-                x: tg.checked ? parent.width - width - 4 : 4
-                color: tg.checked ? Theme.accentInk : Theme.soft
-                Behavior on x { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
             }
         }
     }
@@ -791,7 +755,7 @@ FloatingWindow {
         property string value
         signal edited(string v)
         spacing: Theme.s1
-        Note { width: implicitWidth; text: tf.text }
+        SettingsUi.Note { width: implicitWidth; text: tf.text }
         Rectangle {
             width: 96
             height: Math.max(36, Theme.sp(14) + 20)
@@ -813,7 +777,7 @@ FloatingWindow {
                 activeFocusOnTab: true
                 validator: RegularExpressionValidator { regularExpression: /([01]\d|2[0-3]):[0-5]\d/ }
                 onEditingFinished: if (acceptableInput) tf.edited(text)
-                onActiveFocusChanged: if (activeFocus) { selectAll(); win.reveal(tf); }
+                onActiveFocusChanged: if (activeFocus) { selectAll(); Reveal.show(tf); }
                 Accessible.role: Accessible.EditableText
                 Accessible.name: tf.text
                 Accessible.description: Tr.t("Hours and minutes, like 07:00")
@@ -840,7 +804,7 @@ FloatingWindow {
         Keys.onSpacePressed: picked()
         Keys.onReturnPressed: picked()
         Keys.onEnterPressed: picked()
-        onActiveFocusChanged: if (activeFocus) win.reveal(th)
+        onActiveFocusChanged: if (activeFocus) Reveal.show(th)
         Accessible.role: glyph ? Accessible.Button : Accessible.RadioButton
         Accessible.name: text
         Accessible.description: glyph ? "" : group
@@ -901,7 +865,7 @@ FloatingWindow {
         Keys.onSpacePressed: picked()
         Keys.onReturnPressed: picked()
         Keys.onEnterPressed: picked()
-        onActiveFocusChanged: if (activeFocus) win.reveal(ib)
+        onActiveFocusChanged: if (activeFocus) Reveal.show(ib)
         Component.onCompleted: if (key && key === win.again && enabled) forceActiveFocus()
         Accessible.role: Accessible.Button
         Accessible.name: text
@@ -915,4 +879,110 @@ FloatingWindow {
         }
         Glyph { anchors.centerIn: parent; name: ib.glyph; size: 18 }
     }
+
+    // A section in the list on the left.
+    component NavRow: MouseArea {
+        id: tab
+        property bool on
+        property string glyph
+        property string text
+        signal picked()
+        width: parent?.width ?? 0
+        height: Math.max(40, Theme.sp(14) + 24)
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
+        onClicked: picked()
+        Keys.onReturnPressed: picked()
+        Keys.onSpacePressed: picked()
+        Accessible.role: Accessible.PageTab
+        Accessible.name: text
+        Accessible.selectable: true
+        Accessible.selected: on
+        Accessible.onPressAction: picked()
+        FocusRim { anchors.margins: 0; radius: Theme.rControl }
+        Rectangle {
+            anchors.fill: parent
+            radius: Theme.rControl
+            color: tab.on ? Theme.cardHover : tab.containsMouse ? Theme.alpha(Theme.fg, 0.06) : "transparent"
+            Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+        }
+        // The open section's mark, as Windows' settings lists have.
+        Rectangle {
+            visible: tab.on
+            anchors.verticalCenter: parent.verticalCenter
+            width: 3
+            height: 16
+            radius: width / 2
+            color: Theme.accentText
+        }
+        Row {
+            anchors.verticalCenter: parent.verticalCenter
+            x: 14
+            spacing: Theme.s3
+            Glyph { name: tab.glyph; size: 18; anchors.verticalCenter: parent.verticalCenter }
+            Text {
+                text: tab.text
+                width: Math.min(implicitWidth, tab.width - 14 - 18 - Theme.s3 - Theme.s2)
+                elide: Text.ElideRight
+                color: Theme.fg
+                anchors.verticalCenter: parent.verticalCenter
+                font { family: Theme.sans; pixelSize: Theme.sp(14); weight: tab.on ? Font.DemiBold : Font.Medium }
+            }
+        }
+    }
+
+    // A row that goes to a page: glyph, name, what is on it, and an arrow (another window's
+    // arrow for a COSMIC Settings page).
+    component LinkRow: MouseArea {
+        id: link
+        property string glyph
+        property string text
+        property string detail
+        property bool external
+        signal picked()
+        width: parent?.width ?? 0
+        height: Math.max(56, words.implicitHeight + 20)
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
+        activeFocusOnTab: true
+        onClicked: picked()
+        Keys.onReturnPressed: picked()
+        Keys.onSpacePressed: picked()
+        onActiveFocusChanged: if (activeFocus) Reveal.show(link)
+        Accessible.role: Accessible.Link
+        Accessible.name: text
+        Accessible.description: detail
+        Accessible.onPressAction: picked()
+        FocusRim { anchors.margins: -4; radius: Theme.rControl + 4 }
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: -6
+            radius: Theme.rControl
+            color: link.containsMouse ? Theme.cardHover : "transparent"
+            Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+        }
+        Glyph { id: lg; name: link.glyph; size: 20; anchors.verticalCenter: parent.verticalCenter }
+        Column {
+            id: words
+            anchors { left: lg.right; leftMargin: Theme.s3; right: arrow.left; rightMargin: Theme.s3; verticalCenter: parent.verticalCenter }
+            spacing: Theme.s0
+            Text {
+                width: parent.width
+                elide: Text.ElideRight
+                text: link.text
+                color: Theme.fg
+                font { family: Theme.sans; pixelSize: Theme.sp(14); weight: Font.Medium }
+            }
+            Text {
+                visible: text !== ""
+                width: parent.width
+                elide: Text.ElideRight
+                text: link.detail
+                color: Theme.soft
+                font { family: Theme.sans; pixelSize: Theme.sp(12) }
+            }
+        }
+        Glyph { id: arrow; name: link.external ? "external" : "chevron"; size: 16; color: Theme.soft; anchors { right: parent.right; verticalCenter: parent.verticalCenter } }
+    }
+
 }

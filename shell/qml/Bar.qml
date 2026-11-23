@@ -17,6 +17,8 @@ import Quickshell.Services.SystemTray
 PanelWindow {
     id: bar
     readonly property bool mac: Desktop.mac
+    // The main display's bar: the full one, with the tray (see Displays.qml).
+    readonly property bool main: screen === Desktop.primary
 
     required property var modelData
     screen: modelData
@@ -347,11 +349,12 @@ PanelWindow {
             // Tray icons (Steam, Discord...): click to open, right-click for the app's menu.
             // The ^ opens the overflow flyout with the hidden ones; drag an icon onto the ^, or
             // up off the bar, to hide it there. The ^ shows when something is hidden or dragged.
+            // Only the main display's bar has the tray, as on Windows.
             BarButton {
                 id: more
                 property bool dragging: false
                 readonly property bool open: overflow.visible && overflow.screen === bar.screen
-                visible: dragging || SystemTray.items.values.some(i => Desktop.isTrayHidden(i.id))
+                visible: bar.main && (dragging || SystemTray.items.values.some(i => Desktop.isTrayHidden(i.id)))
                 Layout.preferredWidth: 28
                 lit: open || dragging
                 name: Tr.t("Show hidden icons")
@@ -360,6 +363,7 @@ PanelWindow {
             }
             Row {
                 id: trayRow
+                visible: bar.main
                 spacing: Theme.s3
                 Layout.rightMargin: Theme.s1
                 Repeater {
@@ -388,6 +392,22 @@ PanelWindow {
                 name: Tr.t("Quick settings")
                 tip: [network.label, volume.label, battery.visible ? battery.label : ""].filter(s => s).join(", ")
                 onActivated: bar.toggle("quickOpen", false, quick)
+                // Right-click: the settings for the icon under the pointer, as on Windows; all
+                // three from the keyboard.
+                hasMenu: true
+                onMenuAsked: byKeyboard => {
+                    const hit = g => !byKeyboard && g.visible && g.contains(g.mapFromItem(quick, quick.mouseX, quick.mouseY));
+                    const any = byKeyboard || ![network, volume, battery].some(hit);
+                    const mixer = DesktopEntries.byId("org.pulseaudio.pavucontrol") ?? DesktopEntries.byId("pavucontrol");
+                    const out = [];
+                    if (any || hit(network)) out.push({ text: Tr.t("Network and internet settings"), glyph: "wifi", run: () => SettingsPages.open("wifi") });
+                    if (any || hit(volume)) {
+                        out.push({ text: Tr.t("Sound settings"), glyph: "volume", run: () => SettingsPages.open("sound") });
+                        if (mixer) out.push({ text: Tr.t("Open volume mixer"), icon: mixer.icon, run: () => mixer.execute() });
+                    }
+                    if (battery.visible && (any || hit(battery))) out.push({ text: Tr.t("Power and battery settings"), glyph: "power", run: () => SettingsPages.open("power") });
+                    menu.show(quick, out, byKeyboard);
+                }
                 Row {
                     id: status
                     anchors.centerIn: parent
@@ -405,6 +425,10 @@ PanelWindow {
                 tip: (Notifs.unseen ? Tr.t("%1 new notifications", Notifs.unseen) : Tr.t("No new notifications"))
                     + (Desktop.dnd ? ", " + Tr.t("Do not disturb is on") : "")
                 onActivated: bar.toggle("notificationsOpen", false, bell)
+                hasMenu: true
+                onMenuAsked: byKeyboard => menu.show(bell, [
+                    { text: Desktop.dnd ? Tr.t("Turn off do not disturb") : Tr.t("Turn on do not disturb"), glyph: Desktop.dnd ? "bell" : "bellOff", run: () => Desktop.dnd = !Desktop.dnd },
+                    { text: Tr.t("Notification settings"), glyph: "settings", run: () => SettingsPages.open("notifications") }], byKeyboard)
                 Glyph { anchors.centerIn: parent; name: Desktop.dnd ? "bellOff" : "bell" }
                 // New since the center was last open: a count in the button's corner, clear
                 // of the bell; a dot past 9.
@@ -434,6 +458,10 @@ PanelWindow {
                 name: Qt.formatDateTime(clock.date, "HH:mm") + ", " + clock.date.toLocaleString(Qt.locale(), "dddd d MMMM yyyy")
                 tip: Tr.t("Calendar")
                 onActivated: bar.toggle("calendarOpen", false, clockArea)
+                hasMenu: true
+                onMenuAsked: byKeyboard => menu.show(clockArea, [
+                    { text: Tr.t("Adjust date and time"), glyph: "clock", run: () => SettingsPages.open("datetime") },
+                    { text: Tr.t("Notification settings"), glyph: "bell", run: () => SettingsPages.open("notifications") }], byKeyboard)
                 // Two lines on the taskbar; one in the top bar, the date before the time.
                 Grid {
                     id: clockText
@@ -651,10 +679,12 @@ PanelWindow {
         const system = appEntries([[settings + ".Applications", Tr.t("Installed apps")],
                                    [settings + ".Power", Tr.t("Power options")],
                                    [settings + ".About", Tr.t("System")],
-                                   [settings + ".Network", Tr.t("Network connections")]]);
+                                   [settings + ".Network", Tr.t("Network connections")]])
+            .concat([{ text: Tr.t("Display settings"), run: () => SettingsPages.open("display") }]);
         const tools = appEntries([["com.system76.CosmicTerm", Tr.t("Terminal")]]);
         const apps = (tm ? [{ text: Tr.t("Task Manager"), run: () => tm.execute() }] : [])
-            .concat(appEntries([[settings, Tr.t("Settings")], ["com.system76.CosmicFiles", Tr.t("Files")]]))
+            .concat([{ text: Tr.t("Settings"), run: () => SettingsPages.open("") }])
+            .concat(appEntries([["com.system76.CosmicFiles", Tr.t("Files")]]))
             .concat([{ text: Tr.t("Search"), run: () => bar.toggle("launcherOpen", true) }]);
         const power = { text: Tr.t("Shut down or sign out"), sub: [
             { text: Tr.t("Sign out"), glyph: "signout", run: () => Qt.quit() },  // the session ends with the shell
@@ -672,8 +702,8 @@ PanelWindow {
     function barMenu(item, byKeyboard) {
         const tm = taskManager();
         const out = tm ? [{ text: Tr.t("Task Manager"), icon: tm.icon, run: () => tm.execute() }] : [];
-        out.push({ text: mac ? Tr.t("Dock settings") : Tr.t("Taskbar settings"), glyph: "sun", run: () => Desktop.personalise("taskbar") });
-        // The other layout, live (also on the Personalise page and in kriss-welcome).
+        out.push({ text: mac ? Tr.t("Dock settings") : Tr.t("Taskbar settings"), glyph: "sun", run: () => SettingsPages.open("taskbar") });
+        // The other layout, live (also in Settings and kriss-welcome).
         out.push(mac ? { text: Tr.t("Switch to the taskbar"), glyph: "taskView", run: () => Desktop.setLayout("windows") }
                      : { text: Tr.t("Switch to the top bar and dock"), glyph: "apps", run: () => Desktop.setLayout("mac") });
         menu.show(item, out, byKeyboard);

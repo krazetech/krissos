@@ -29,6 +29,16 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 - Report a problem: `kriss report` gathers what a bug report needs, takes out your name,
   Wi-Fi names and serial numbers, shows you all of it, then opens a GitHub issue for you to
   submit. With no internet it saves the report to a file instead.
+- KrissOS Settings: one Settings app with a search that finds single settings, not just
+  pages. Display lets you drag your screens into place, pick the main display, and change
+  scale, resolution, refresh rate and orientation, with a 15-second undo if a screen goes
+  blank. It also has Recovery (Reset this PC) and Report a problem. Pages it doesn't have yet
+  open COSMIC Settings at the right place.
+- The main display: the full taskbar with the tray, Start and notifications from the
+  keyboard, desktop icons, new windows, the sign-in field and fullscreen games all go there.
+- Windows+P switches between PC screen only, Duplicate, Extend and Second screen only.
+- Right-click the clock, network, sound, battery or bell on the taskbar for their settings.
+  Start has a Settings button next to power.
 - The Store: find, install, update and remove apps without a terminal, from Flathub and
   the KrissOS packs (gaming, Windows apps). It is pinned to the taskbar, and searching in
   Start offers "Get … from the Store" for apps you don't have yet. A snapshot is taken
