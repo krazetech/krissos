@@ -1,6 +1,6 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-tools
-pkgver=0.9.0
+pkgver=0.9.1
 pkgrel=1
 pkgdesc='KrissOS system tools'
 arch=('any')
@@ -17,7 +17,9 @@ optdepends=('power-profiles-daemon: show and set the power profile (kriss tune)'
             'libvirt: manage the passthrough VM (kriss-vm)'
             'edk2-ovmf: UEFI firmware for the passthrough VM (kriss-vm)'
             'looking-glass: show the passthrough VM on the host (kriss-vm)'
-            'psmisc: kriss-vm bind checks nothing is using the GPU')
+            'psmisc: kriss-vm bind checks nothing is using the GPU'
+            'pciutils: the GPU and driver in kriss report'
+            'xdg-utils: kriss report opens the issue in the browser')
 
 # Sources live in this monorepo, so package straight from tools/.
 package() {

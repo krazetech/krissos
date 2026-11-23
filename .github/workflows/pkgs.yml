@@ -59,6 +59,9 @@ jobs:
       - name: Test kriss reset
         run: tools/ci/reset-test.sh
 
+      - name: Test kriss report
+        run: tools/ci/report-test.sh
+
       - name: Test kriss migrate
         run: tools/ci/migrate-test.sh
 
