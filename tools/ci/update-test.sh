@@ -2,6 +2,8 @@
 # Checks kriss update's pacman steps: keyrings first, then one retry, with a fake pacman.
 # shellcheck disable=SC2329 # the fakes are called by the kriss functions under test
 set -euo pipefail
+KRISS_DEFAULTS_SEEN=$(mktemp -u)
+export KRISS_DEFAULTS_SEEN
 # shellcheck source=/dev/null # tools/kriss is linted on its own
 . "$(dirname "$0")/../kriss"
 
@@ -57,4 +59,13 @@ installed='old-comp cosmic-settings-kriss'
 [[ $(swap) == '-S --noconfirm --ask 4 -- cosmic-comp-kriss' ]] || fail "second replaces name: $(swap)"
 slq() { :; }
 [[ -z $(swap) ]] || fail "no [kriss] repo: $(swap)"
+
+# add_new_defaults: new KrissOS apps once, and never again after the user removes one.
+add() { : >"$log"; add_new_defaults >/dev/null; cat "$log"; }
+installed=''
+[[ $(add) == '-S --noconfirm --needed -- kriss-store' ]] || fail "new default: $(add)"
+[[ -z $(add) ]] || fail "a removed default stays removed: $(add)"
+rm -f "$KRISS_DEFAULTS_SEEN"; installed='kriss-store'
+[[ -z $(add) && -s $KRISS_DEFAULTS_SEEN ]] || fail "already installed: $(add)"
+rm -f "$KRISS_DEFAULTS_SEEN"
 echo "update-test: ok"
