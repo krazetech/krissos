@@ -71,6 +71,7 @@ else echo "upgrade: note stable's kriss has no channel command; used main's"; kr
 echo "upgrade: now $(kriss version | head -n1)"
 # The update above ran the old kriss. Once more with this branch's, as the next update would.
 kriss-main update && echo "upgrade: again ok" || echo "upgrade: FAIL the second kriss update"
+pacman -Q kriss-store >/dev/null 2>&1 || echo "upgrade: FAIL kriss update did not add the Store"
 echo "upgrade: now $(kriss version | head -n1)"
 for p in cosmic-settings cosmic-comp; do
   pacman -Q "$p-kriss" >/dev/null 2>&1 || echo "upgrade: FAIL $p was not replaced by $p-kriss"
