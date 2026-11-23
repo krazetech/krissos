@@ -307,42 +307,8 @@ FloatingWindow {
 
     Component { id: displayPage; SettingsDisplay {} }
 
-    // Recovery: start again from a clean KrissOS. `kriss reset` does the work and asks first;
-    // it runs in a terminal so its questions and progress show.
-    // ponytail: a terminal, not the shell's own progress; move in when kriss reset has a --json mode.
-    Component {
-        id: recoveryPage
-        Column {
-            spacing: Theme.s3
-            SettingsUi.Card {
-                SettingsUi.Label { text: Tr.t("Reset this PC") }
-                SettingsUi.Note { text: Tr.t("Puts KrissOS back the way it was installed. A snapshot is taken first, so you can still go back from the boot menu.") }
-                Row {
-                    spacing: Theme.s2
-                    SettingsUi.Push { text: Tr.t("Keep my files"); onPicked: win.terminal(["kriss", "reset", "--keep-files"]) }
-                    SettingsUi.Push { text: Tr.t("Remove everything"); onPicked: win.terminal(["kriss", "reset", "--remove-everything"]) }
-                }
-                SettingsUi.Note { text: Tr.t("Keep my files: your apps and settings go, your files in Home stay. Remove everything: your files go too.") }
-            }
-        }
-    }
-
-    // Report a problem: `kriss report` gathers what went wrong (logs, the PC's parts) and
-    // says where it went; it runs in a terminal so you can read it first.
-    Component {
-        id: reportPage
-        Column {
-            spacing: Theme.s3
-            SettingsUi.Card {
-                SettingsUi.Label { text: Tr.t("Report a problem") }
-                SettingsUi.Note { text: Tr.t("Collects the logs and a summary of this PC, so the KrissOS team can see what went wrong. You see it before anything is sent.") }
-                SettingsUi.Push { text: Tr.t("Report a problem"); main: true; onPicked: win.terminal(["kriss", "report"]) }
-            }
-        }
-    }
-    function terminal(cmd) {
-        Quickshell.execDetached(["sh", "-c", 'command -v cosmic-term >/dev/null && exec cosmic-term -- "$@" || exec xdg-terminal-exec "$@"', "sh"].concat(cmd));
-    }
+    Component { id: recoveryPage; SettingsRecovery {} }
+    Component { id: reportPage; SettingsReport {} }
 
     // Colours: the accent and light or dark.
     Component {
