@@ -39,6 +39,10 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 - Windows+P switches between PC screen only, Duplicate, Extend and Second screen only.
 - Right-click the clock, network, sound, battery or bell on the taskbar for their settings.
   Start has a Settings button next to power.
+- System sounds, from KDE's Ocean set: a chime with notifications (quiet in do not disturb
+  and over full-screen games), a tick when you change the volume, and a sound when you plug
+  in or unplug the charger or a USB device. Sounds can be turned off, or another sound theme
+  picked, in the settings.
 - The Store: find, install, update and remove apps without a terminal, from Flathub and
   the KrissOS packs (gaming, Windows apps). It is pinned to the taskbar, and searching in
   Start offers "Get … from the Store" for apps you don't have yet. A snapshot is taken

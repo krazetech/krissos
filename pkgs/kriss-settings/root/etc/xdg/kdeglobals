@@ -7,3 +7,6 @@ Theme={{icon_theme}}
 LookAndFeelPackage=org.krissos.desktop
 widgetStyle=Breeze
 
+
+[Sounds]
+Theme=ocean

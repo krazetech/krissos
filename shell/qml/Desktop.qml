@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Services.Mpris
+import Quickshell.Services.UPower
 
 // What the bar, launcher, panels and lock screen share, and the user's shell settings.
 Singleton {
@@ -134,6 +135,42 @@ Singleton {
     // ~/.config/kriss/shell.json. Missing keys keep the defaults below.
     property alias pinned: config.pinned
     property alias dnd: config.dnd
+    property alias sounds: config.sounds
+    property alias soundTheme: config.soundTheme
+
+    // Plays a freedesktop sound by its name (message-new-instant, audio-volume-change, ...)
+    // from the sound theme, through libcanberra, which looks it up in the theme set below and
+    // falls back to freedesktop's. Quiet when sounds are off.
+    function sound(id) {
+        if (sounds) Quickshell.execDetached(["canberra-gtk-play", "-i", id]);
+    }
+    // The theme for every app too: GTK and canberra read the GNOME setting, KDE apps
+    // kdeglobals.
+    function syncSound() {
+        Quickshell.execDetached(["sh", "-c", `
+            gsettings set org.gnome.desktop.sound theme-name "$1"
+            gsettings set org.gnome.desktop.sound event-sounds "$2"
+            command -v kwriteconfig6 >/dev/null && kwriteconfig6 --file kdeglobals --group Sounds --key Theme "$1"
+            exit 0`, "sh", soundTheme || "ocean", String(sounds)]);
+    }
+    onSoundsChanged: syncSound()
+    onSoundThemeChanged: syncSound()
+
+    // Plug and unplug: the charger (UPower) and USB devices (udev, one line per device).
+    Connections {
+        target: UPower
+        function onOnBatteryChanged() { root.sound(UPower.onBattery ? "power-unplug" : "power-plug"); }
+    }
+    Process {
+        running: true
+        command: ["udevadm", "monitor", "--udev", "--subsystem-match=usb/usb_device"]
+        stdout: SplitParser {
+            onRead: line => {
+                if (/^UDEV.* add /.test(line)) root.sound("device-added");
+                else if (/^UDEV.* remove /.test(line)) root.sound("device-removed");
+            }
+        }
+    }
     property alias trayHidden: config.trayHidden
     property alias taskbarAlignment: config.taskbarAlignment
     property alias taskbarAutoHide: config.taskbarAutoHide
@@ -227,6 +264,10 @@ Singleton {
             ]
             // Do not disturb: no toasts, notifications still collect behind the bell.
             property bool dnd: false
+            // System sounds (Desktop.sound): on or off, and the freedesktop sound theme
+            // (/usr/share/sounds/NAME) they come from. KDE's Ocean by default.
+            property bool sounds: true
+            property string soundTheme: "ocean"
             // Tray icons kept in the overflow flyout (^), by the id the app gives its icon.
             property list<string> trayHidden: []
             // Taskbar: "left" or "centre" (Start, search and the apps centred, as on Windows 11).
@@ -334,7 +375,7 @@ Singleton {
     property string pictureMask: ""
     readonly property string wallpaperMask: stockMask(lockPicture) || pictureMask
     onLockPictureChanged: findMask()
-    Component.onCompleted: findMask()
+    Component.onCompleted: { findMask(); syncSound(); }
     function findMask() {
         pictureMask = "";
         if (stockMask(lockPicture) !== "") return;
