@@ -1,6 +1,6 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-settings
-pkgver=0.5.1
+pkgver=0.5.2
 pkgrel=1
 pkgdesc='KrissOS default configs (Plasma, SDDM, GTK, Flatpak, terminals, prompt, fastfetch, input methods), os-release, Limine menu and pacman hooks'
 arch=('any')
@@ -17,7 +17,8 @@ depends=('diffutils' 'gsettings-desktop-schemas' 'snap-pac' 'fastfetch' 'plymout
          'fcitx5' 'fcitx5-qt' 'fcitx5-gtk' 'fcitx5-chinese-addons' 'fcitx5-m17n' 'm17n-db'
          'adobe-source-han-sans-cn-fonts')
 makedepends=('python')
-optdepends=('limine: the boot menu with bootable snapshots (kriss-limine-update)'
+optdepends=('fcitx5-osk: the on-screen keyboard on touch screens (its KrissOS themes are here)'
+            'limine: the boot menu with bootable snapshots (kriss-limine-update)'
             'sbctl: re-sign the kernel and bootloader for Secure Boot'
             'shim-signed: start Limine with Secure Boot on and the stock keys (kriss-secureboot)'
             "mokutil: enroll this PC's key in shim's MOK list (kriss-secureboot)")

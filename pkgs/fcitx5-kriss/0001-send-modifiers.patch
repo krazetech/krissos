@@ -1,0 +1,534 @@
+diff --git a/src/frontend/waylandim/waylandimserver.cpp b/src/frontend/waylandim/waylandimserver.cpp
+index b789650..b3c59f6 100644
+--- a/src/frontend/waylandim/waylandimserver.cpp
++++ b/src/frontend/waylandim/waylandimserver.cpp
+@@ -464,6 +464,8 @@ void WaylandIMInputContextV1::keymapCallback(uint32_t format, int32_t fd,
+     server_->stateMask_.meta_mask =
+         1 << xkb_keymap_mod_get_index(server_->keymap_.get(), "Meta");
+ 
++    server_->updateModMasksMappings();
++
+     server_->parent_->wayland()->call<IWaylandModule::reloadXkbOption>();
+ }
+ 
+@@ -621,6 +623,18 @@ void WaylandIMInputContextV1::sendKeyToVK(uint32_t time, const Key &key,
+     }
+ }
+ 
++void WaylandIMInputContextV1::sendModifiers(
++    const WlModifiersParams &params) const {
++    if (!ic_ || !server_->state_) {
++        return;
++    }
++    const auto modsDepressed = std::get<0>(params);
++    const auto modsLatched = std::get<1>(params);
++    const auto modsLocked = std::get<2>(params);
++    const auto group = std::get<3>(params);
++    ic_->modifiers(serial_, modsDepressed, modsLatched, modsLocked, group);
++}
++
+ void WaylandIMInputContextV1::updatePreeditDelegate(InputContext *ic) {
+     if (!ic_) {
+         return;
+diff --git a/src/frontend/waylandim/waylandimserver.h b/src/frontend/waylandim/waylandimserver.h
+index 0759d4e..b61218e 100644
+--- a/src/frontend/waylandim/waylandimserver.h
++++ b/src/frontend/waylandim/waylandimserver.h
+@@ -105,19 +105,24 @@ protected:
+         if (!ic_) {
+             return;
+         }
++
++        auto state = key.isRelease() ? WL_KEYBOARD_KEY_STATE_RELEASED
++                                     : WL_KEYBOARD_KEY_STATE_PRESSED;
++
+         if (key.rawKey().code() && key.rawKey().states() == KeyState::NoState) {
+-            sendKeyToVK(time_, key.rawKey(),
+-                        key.isRelease() ? WL_KEYBOARD_KEY_STATE_RELEASED
+-                                        : WL_KEYBOARD_KEY_STATE_PRESSED);
+-            if (!key.isRelease()) {
+-                sendKeyToVK(time_, key.rawKey(),
+-                            WL_KEYBOARD_KEY_STATE_RELEASED);
++            auto params = server_->mayChangeModifiers(key.rawKey().code(),
++                                                      state);
++            if (params) {
++                sendModifiers(params.value());
++            } else {
++                sendKeyToVK(time_, key.rawKey(), state);
++                if (!key.isRelease()) {
++                    sendKeyToVK(time_, key.rawKey(),
++                                WL_KEYBOARD_KEY_STATE_RELEASED);
++                }
+             }
+         } else {
+-            sendKey(time_, key.rawKey().sym(),
+-                    key.isRelease() ? WL_KEYBOARD_KEY_STATE_RELEASED
+-                                    : WL_KEYBOARD_KEY_STATE_PRESSED,
+-                    key.rawKey().states());
++            sendKey(time_, key.rawKey().sym(), state, key.rawKey().states());
+             if (!key.isRelease()) {
+                 sendKey(time_, key.rawKey().sym(),
+                         WL_KEYBOARD_KEY_STATE_RELEASED, key.rawKey().states());
+@@ -149,6 +154,8 @@ private:
+                  KeyStates states) const;
+     void sendKeyToVK(uint32_t time, const Key &key, uint32_t state) const;
+ 
++    void sendModifiers(const WlModifiersParams &params) const;
++
+     static uint32_t toModifiers(KeyStates states) {
+         uint32_t modifiers = 0;
+         // We use Shift Control Mod1 Mod4
+diff --git a/src/frontend/waylandim/waylandimserverbase.cpp b/src/frontend/waylandim/waylandimserverbase.cpp
+index 716234f..e5488d3 100644
+--- a/src/frontend/waylandim/waylandimserverbase.cpp
++++ b/src/frontend/waylandim/waylandimserverbase.cpp
+@@ -22,6 +22,28 @@
+ #include "waylandim.h"
+ #include "wl_seat.h"
+ 
++void updateModMasksMappingsForKey(
++    struct xkb_keymap *keymap,
++    struct xkb_state *state,
++    xkb_keycode_t key,
++    xkb_layout_index_t layout,
++    xkb_level_index_t level,
++    std::unordered_map<xkb_keycode_t, std::vector<std::tuple<
++        xkb_mod_mask_t,
++        fcitx::WlModifiersParams>>>
++    &keycodeToNormalModMasks,
++    std::unordered_map<xkb_keycode_t, std::vector<std::tuple<
++        xkb_mod_mask_t,
++        fcitx::WlModifiersParams,
++        fcitx::WlModifiersParams>>>
++    &keycodeToLockModMasks);
++
++std::vector<xkb_mod_mask_t> getKeyModMasks(
++    struct xkb_keymap *keymap,
++    xkb_keycode_t key,
++    xkb_layout_index_t layout,
++    xkb_level_index_t level);
++
+ namespace fcitx {
+ 
+ WaylandIMServerBase::WaylandIMServerBase(wl_display *display, FocusGroup *group,
+@@ -85,4 +107,280 @@ int32_t WaylandIMServerBase::repeatDelay(
+     return 600;
+ }
+ 
++void WaylandIMServerBase::updateModMasksMappings() {
++    if (!keymap_) {
++        return;
++    }
++
++    std::unordered_map<xkb_keycode_t, std::vector<std::tuple<
++        xkb_mod_mask_t,
++        WlModifiersParams>>>
++    keycodeToNormalModMasks;
++
++    std::unordered_map<xkb_keycode_t, std::vector<std::tuple<
++        xkb_mod_mask_t,
++        WlModifiersParams,
++        WlModifiersParams>>>
++    keycodeToLockModMasks;
++
++    // used for calculating modifier masks.
++    struct xkb_state* state = xkb_state_new(keymap_.get());
++
++    xkb_keycode_t min = xkb_keymap_min_keycode(keymap_.get());
++    xkb_keycode_t max = xkb_keymap_max_keycode(keymap_.get());
++
++    for (auto key = min; key <= max; ++key) {
++        xkb_layout_index_t layouts = xkb_keymap_num_layouts_for_key(
++            keymap_.get(), key);
++        for (xkb_layout_index_t layout = 0; layout < layouts; ++layout) {
++            xkb_level_index_t levels = xkb_keymap_num_levels_for_key(
++                keymap_.get(), key, layout);
++            for (xkb_level_index_t level = 0; level < levels; ++level) {
++                updateModMasksMappingsForKey(
++                    keymap_.get(),
++                    state,
++                    key,
++                    layout,
++                    level,
++                    keycodeToNormalModMasks,
++                    keycodeToLockModMasks);
++            }
++        }
++    }
++
++    xkb_state_unref(state);
++
++    keycodeToNormalModMasks_ = keycodeToNormalModMasks;
++    keycodeToLockModMasks_ = keycodeToLockModMasks;
++}
++
++std::optional<WlModifiersParams> WaylandIMServerBase::mayChangeModifiers(
++    const xkb_keycode_t key,
++    const uint32_t state) const {
++    if (!keymap_ || !state_) {
++        return std::nullopt;
++    }
++
++    xkb_mod_mask_t modsDepressed, modsLatched, modsLocked, modsEffective;
++    xkb_layout_index_t layout;
++    modsDepressed = xkb_state_serialize_mods(state_.get(),
++                                             XKB_STATE_MODS_DEPRESSED);
++    modsLatched = xkb_state_serialize_mods(state_.get(),
++                                           XKB_STATE_MODS_LATCHED);
++    modsLocked = xkb_state_serialize_mods(state_.get(), XKB_STATE_MODS_LOCKED);
++    modsEffective = xkb_state_serialize_mods(state_.get(),
++                                             XKB_STATE_MODS_EFFECTIVE);
++    layout = xkb_state_serialize_layout(state_.get(), XKB_STATE_LAYOUT_LOCKED);
++
++    if (auto it = keycodeToNormalModMasks_.find(key);
++             it != keycodeToNormalModMasks_.end()) {
++        for (auto const &modMasks : it->second) {
++            if ((modsEffective & std::get<0>(modMasks)) != std::get<0>(modMasks)) {
++                continue;
++            }
++            const WlModifiersParams &params = std::get<1>(modMasks);
++            if (layout != std::get<3>(params)) {
++                continue;
++            }
++            if (state == WL_KEYBOARD_KEY_STATE_PRESSED) {
++                return std::optional<WlModifiersParams>({
++                    modsDepressed | (std::get<0>(params)),
++                    modsLatched | (std::get<1>(params)),
++                    modsLocked | (std::get<2>(params)),
++                    layout});
++            } else {
++                return std::optional<WlModifiersParams>({
++                    modsDepressed & (~std::get<0>(params)),
++                    modsLatched & (~std::get<1>(params)),
++                    modsLocked & (~std::get<2>(params)),
++                    layout});
++            }
++        }
++    }
++
++    if (auto it = keycodeToLockModMasks_.find(key);
++             it != keycodeToLockModMasks_.end()) {
++        for (auto const &modMasks : it->second) {
++            if ((modsEffective & std::get<0>(modMasks)) == 0) {
++                continue;
++            }
++
++            const WlModifiersParams &pressedParams = std::get<1>(modMasks);
++            if (layout != std::get<3>(pressedParams)) {
++                continue;
++            }
++            const xkb_mod_mask_t downModsDepressed = std::get<0>(pressedParams);
++            const xkb_mod_mask_t downModsLatched = std::get<1>(pressedParams);
++            const xkb_mod_mask_t downModsLocked = std::get<2>(pressedParams);
++
++            const WlModifiersParams &releasedParams = std::get<2>(modMasks);
++            const xkb_mod_mask_t upModsDepressed = std::get<0>(releasedParams);
++            const xkb_mod_mask_t upModsLatched = std::get<1>(releasedParams);
++            const xkb_mod_mask_t upModsLocked = std::get<2>(releasedParams);
++
++            if (((upModsDepressed & modsDepressed) == upModsDepressed) &&
++                ((upModsLatched & modsLatched) == upModsLatched) &&
++                ((upModsLocked & modsLocked) == upModsLocked)) {
++                if (state == WL_KEYBOARD_KEY_STATE_PRESSED) {
++                    // the second time pressing the key.
++                    // the modifiers is the same as the first pressing.
++                    return std::optional<WlModifiersParams>({
++                        modsDepressed | downModsDepressed,
++                        modsLatched | downModsLatched,
++                        modsLocked | downModsLocked,
++                        layout});
++                } else {
++                    // releasing in the first time pressing.
++                    return std::optional<WlModifiersParams>({
++                        (modsDepressed & (~downModsDepressed)) |
++                        upModsDepressed,
++                        (modsLatched & (~downModsLatched)) | upModsLatched,
++                        (modsLocked & (~downModsLocked)) | upModsLocked,
++                        layout});
++                }
++            } else {
++                if (state == WL_KEYBOARD_KEY_STATE_PRESSED) {
++                    // the first time pressing the key.
++                    return std::optional<WlModifiersParams>({
++                        modsDepressed | downModsDepressed,
++                        modsLatched | downModsLatched,
++                        modsLocked | downModsLocked,
++                        layout});
++                } else {
++                    // releasing in the second time pressing.
++                    // reset all related masks.
++                    return std::optional<WlModifiersParams>({
++                        modsDepressed & (~downModsDepressed),
++                        modsLatched & (~downModsLatched),
++                        modsLocked & (~downModsLocked),
++                        layout});
++                }
++            }
++        }
++    }
++
++    return std::nullopt;
++}
++
+ } // namespace fcitx
++
++void updateModMasksMappingsForKey(
++    struct xkb_keymap *keymap,
++    struct xkb_state *state,
++    xkb_keycode_t key,
++    xkb_layout_index_t layout,
++    xkb_level_index_t level,
++    std::unordered_map<xkb_keycode_t, std::vector<std::tuple<
++        xkb_mod_mask_t,
++        fcitx::WlModifiersParams>>>
++    &keycodeToNormalModMasks,
++    std::unordered_map<xkb_keycode_t, std::vector<std::tuple<
++        xkb_mod_mask_t,
++        fcitx::WlModifiersParams,
++        fcitx::WlModifiersParams>>>
++    &keycodeToLockModMasks) {
++
++    auto modMasks = getKeyModMasks(keymap, key, layout, level);
++    if (!keycodeToNormalModMasks.contains(key)) {
++        keycodeToNormalModMasks[key] = std::vector<std::tuple<
++            xkb_mod_mask_t,
++            fcitx::WlModifiersParams>>();
++    }
++    if (!keycodeToLockModMasks.contains(key)) {
++        keycodeToLockModMasks[key] = std::vector<std::tuple<
++            xkb_mod_mask_t,
++            fcitx::WlModifiersParams,
++            fcitx::WlModifiersParams>>();
++    }
++
++    xkb_mod_mask_t modsDepressed, modsLatched, modsLocked;
++    xkb_mod_mask_t downModsDepressed, downModsLatched, downModsLocked;
++    xkb_mod_mask_t upModsDepressed, upModsLatched, upModsLocked;
++
++    for (auto modMask : modMasks) {
++        // check if pressing this key will modify the state of modifiers under
++        // the certain state of modifiers.
++        xkb_state_update_mask(state, modMask, 0, 0, 0, 0, layout);
++        modsDepressed = xkb_state_serialize_mods(state,
++                                                 XKB_STATE_MODS_DEPRESSED);
++        modsLatched = xkb_state_serialize_mods(state, XKB_STATE_MODS_LATCHED);
++        modsLocked = xkb_state_serialize_mods(state, XKB_STATE_MODS_LOCKED);
++
++        enum xkb_state_component downComponentMask = xkb_state_update_key(
++            state, key, XKB_KEY_DOWN);
++        downModsDepressed = xkb_state_serialize_mods(state,
++                                                     XKB_STATE_MODS_DEPRESSED);
++        downModsLatched = xkb_state_serialize_mods(state,
++                                                   XKB_STATE_MODS_LATCHED);
++        downModsLocked = xkb_state_serialize_mods(state, XKB_STATE_MODS_LOCKED);
++
++        enum xkb_state_component upComponentMask = xkb_state_update_key(
++            state, key, XKB_KEY_UP);
++        upModsDepressed = xkb_state_serialize_mods(state,
++                                                   XKB_STATE_MODS_DEPRESSED);
++        upModsLatched = xkb_state_serialize_mods(state, XKB_STATE_MODS_LATCHED);
++        upModsLocked = xkb_state_serialize_mods(state, XKB_STATE_MODS_LOCKED);
++
++        if (downComponentMask != 0 || upComponentMask != 0) {
++            if (upModsDepressed == modsDepressed &&
++                upModsLatched == modsLatched &&
++                upModsLocked == modsLocked) {
++                keycodeToNormalModMasks[key].push_back({
++                    modMask,
++                    {
++                        downModsDepressed ^ modsDepressed,
++                        downModsLatched ^ modsLatched,
++                        downModsLocked ^ modsLocked,
++                        layout}});
++            } else {
++                keycodeToLockModMasks[key].push_back({
++                    modMask,
++                    {
++                        downModsDepressed ^ modsDepressed,
++                        downModsLatched ^ modsLatched,
++                        downModsLocked ^ modsLocked,
++                        layout},
++                    {
++                        upModsDepressed ^ modsDepressed,
++                        upModsLatched ^ modsLatched,
++                        upModsLocked ^ modsLocked,
++                        layout}});
++            }
++        }
++    }
++}
++
++std::vector<xkb_mod_mask_t> getKeyModMasks(
++    struct xkb_keymap *keymap,
++    xkb_keycode_t key,
++    xkb_layout_index_t layout,
++    xkb_level_index_t level) {
++
++    std::vector<xkb_mod_mask_t> out;
++    size_t masks_size = 4;
++    xkb_mod_index_t* masks = NULL;
++    while (true) {
++        if (masks) {
++            delete[] masks;
++        }
++        masks = new xkb_mod_index_t[masks_size];
++        size_t num = xkb_keymap_key_get_mods_for_level(
++            keymap, key, layout, level, masks, masks_size);
++        if (num == masks_size) {
++            // if num equals to masks_size, it may contain more items.
++            masks_size <<= 1;
++            continue;
++        }
++        masks_size = num;
++        break;
++    }
++
++    if (masks) {
++        for (size_t i = 0; i < masks_size; ++i) {
++            out.push_back(masks[i]);
++        }
++        delete[] masks;
++    }
++
++    return out;
++}
+diff --git a/src/frontend/waylandim/waylandimserverbase.h b/src/frontend/waylandim/waylandimserverbase.h
+index a3db9f8..fe9c960 100644
+--- a/src/frontend/waylandim/waylandimserverbase.h
++++ b/src/frontend/waylandim/waylandimserverbase.h
+@@ -14,6 +14,7 @@
+ #include <optional>
+ #include <string>
+ #include <tuple>
++#include <unordered_map>
+ #include <wayland-client-core.h>
+ #include <xkbcommon/xkbcommon.h>
+ #include "fcitx-utils/key.h"
+@@ -26,6 +27,12 @@
+ 
+ namespace fcitx {
+ 
++typedef std::tuple<xkb_mod_mask_t,
++                   xkb_mod_mask_t,
++                   xkb_mod_mask_t,
++                   xkb_layout_index_t>
++WlModifiersParams;
++
+ class WaylandIMServerBase {
+ public:
+     WaylandIMServerBase(wl_display *display, FocusGroup *group,
+@@ -38,6 +45,10 @@ public:
+     std::optional<std::string> mayCommitAsText(const Key &key,
+                                                uint32_t state) const;
+ 
++    std::optional<WlModifiersParams> mayChangeModifiers(
++        const xkb_keycode_t key,
++        const uint32_t state) const;
++
+     int32_t repeatRate(
+         const std::shared_ptr<wayland::WlSeat> &seat,
+         const std::optional<std::tuple<int32_t, int32_t>> &defaultValue) const;
+@@ -60,6 +71,8 @@ public:
+     static constexpr size_t safeStringLimit = 4000;
+ 
+ protected:
++    void updateModMasksMappings();
++
+     FocusGroup *group_;
+     std::string name_;
+     WaylandIMModule *parent_;
+@@ -71,6 +84,17 @@ protected:
+ 
+     KeyStates modifiers_;
+ 
++    std::unordered_map<xkb_keycode_t, std::vector<std::tuple<
++        xkb_mod_mask_t,
++        WlModifiersParams>>>
++    keycodeToNormalModMasks_;
++
++    std::unordered_map<xkb_keycode_t, std::vector<std::tuple<
++        xkb_mod_mask_t,
++        WlModifiersParams,
++        WlModifiersParams>>>
++    keycodeToLockModMasks_;
++
+ private:
+     template <typename Callback>
+     static void commitStringWrapperImpl(std::string text,
+diff --git a/src/frontend/waylandim/waylandimserverv2.cpp b/src/frontend/waylandim/waylandimserverv2.cpp
+index 3ca9bf8..eaf8759 100644
+--- a/src/frontend/waylandim/waylandimserverv2.cpp
++++ b/src/frontend/waylandim/waylandimserverv2.cpp
+@@ -23,6 +23,7 @@
+ #include "fcitx-utils/eventloopinterface.h"
+ #include "fcitx-utils/key.h"
+ #include "fcitx-utils/keysym.h"
++#include <fcitx-utils/log.h>
+ #include "fcitx-utils/macros.h"
+ #include "fcitx-utils/textformatflags.h"
+ #include "fcitx-utils/unixfd.h"
+@@ -483,6 +484,8 @@ void WaylandIMInputContextV2::keymapCallback(uint32_t format, int32_t fd,
+         }
+     }
+ 
++    server_->updateModMasksMappings();
++
+     server_->parent_->wayland()->call<IWaylandModule::reloadXkbOption>();
+ }
+ 
+@@ -627,6 +630,18 @@ void WaylandIMInputContextV2::sendKeyToVK(uint32_t time, const Key &key,
+     vk_->key(time, code, state);
+ }
+ 
++void WaylandIMInputContextV2::sendModifiers(
++    const WlModifiersParams &params) const {
++    if (!vkReady_ || !server_->state_) {
++        return;
++    }
++    const auto modsDepressed = std::get<0>(params);
++    const auto modsLatched = std::get<1>(params);
++    const auto modsLocked = std::get<2>(params);
++    const auto group = std::get<3>(params);
++    vk_->modifiers(modsDepressed, modsLatched, modsLocked, group);
++}
++
+ void WaylandIMInputContextV2::forwardKeyDelegate(InputContext * /*ic*/,
+                                                  const ForwardKeyEvent &key) {
+     uint32_t code = 0;
+@@ -645,11 +660,20 @@ void WaylandIMInputContextV2::forwardKeyDelegate(InputContext * /*ic*/,
+         }
+     }
+ 
++    auto state = key.isRelease() ? WL_KEYBOARD_KEY_STATE_RELEASED
++                                 : WL_KEYBOARD_KEY_STATE_PRESSED;
++
++    if (code) {
++        auto params = server_->mayChangeModifiers(code, state);
++        if (params) {
++            sendModifiers(params.value());
++            return;
++        }
++    }
++
+     Key keyWithCode(key.rawKey().sym(), key.rawKey().states(), code);
+ 
+-    sendKeyToVK(time_, keyWithCode,
+-                key.isRelease() ? WL_KEYBOARD_KEY_STATE_RELEASED
+-                                : WL_KEYBOARD_KEY_STATE_PRESSED);
++    sendKeyToVK(time_, keyWithCode, state);
+     if (!key.isRelease()) {
+         sendKeyToVK(time_, keyWithCode, WL_KEYBOARD_KEY_STATE_RELEASED);
+     }
+diff --git a/src/frontend/waylandim/waylandimserverv2.h b/src/frontend/waylandim/waylandimserverv2.h
+index 6d6eae4..ee6f036 100644
+--- a/src/frontend/waylandim/waylandimserverv2.h
++++ b/src/frontend/waylandim/waylandimserverv2.h
+@@ -133,6 +133,8 @@ private:
+     void repeatInfoCallback(int32_t rate, int32_t delay);
+     void sendKeyToVK(uint32_t time, const Key &key, uint32_t state);
+ 
++    void sendModifiers(const WlModifiersParams &params) const;
++
+     int32_t repeatRate() const;
+     int32_t repeatDelay() const;
+ 

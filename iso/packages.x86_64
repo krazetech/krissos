@@ -47,8 +47,10 @@ libnotify
 firefox
 noto-fonts
 noto-fonts-emoji
-# Typing in Chinese (Pinyin), Tamil and Jawi: fcitx5, set up by kriss-settings
-fcitx5
+# Typing in Chinese (Pinyin), Tamil and Jawi: fcitx5, set up by kriss-settings.
+# fcitx5-kriss is fcitx5 with the modifier fix the on-screen keyboard needs.
+fcitx5-kriss
+fcitx5-osk
 fcitx5-qt
 fcitx5-gtk
 fcitx5-chinese-addons

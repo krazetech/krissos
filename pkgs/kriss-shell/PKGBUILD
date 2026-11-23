@@ -1,6 +1,6 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-shell
-pkgver=0.2.14
+pkgver=0.2.15
 pkgrel=1
 pkgdesc='KrissOS Shell: bar, launcher, quick settings, notifications and lock screen on cosmic-comp'
 arch=('any')
@@ -20,6 +20,7 @@ optdepends=('greetd: the KrissOS login screen'
             'cosmic-settings: the settings app pinned to the bar'
             'pipewire: volume, microphone and sound output'
             'upower: battery in the bar'
+            'fcitx5-osk: the on-screen keyboard button on touch screens'
             'power-profiles-daemon: power profile switch in the bar and quick settings')
 
 # Sources live in this monorepo. Colours and fonts in the QML and the COSMIC defaults
