@@ -102,6 +102,21 @@ grep -q '^    ///.* install test (#[0-9]*)$' "$conf"
 grep -q 'subvol=@snapshots/[0-9]*/snapshot.* kriss_snapshot=1' "$conf"
 if [ -n "$efi" ]; then
   cmp -s "$conf" "$t/efi/EFI/BOOT/limine.conf"
+  # Microsoft-signed shim first, Limine (with the .sbat section shim wants) as grubx64.efi.
+  for d in "$dir" "$t/efi/EFI/BOOT"; do
+    cmp -s "$t/usr/share/shim-signed/shimx64.efi" "$d/BOOTX64.EFI"
+    cmp -s "$t/usr/share/shim-signed/mmx64.efi" "$d/mmx64.efi"
+    objdump -h "$d/grubx64.efi" | grep -q ' \.sbat '
+  done
+  # With Secure Boot on (iso/secureboot-test.sh): this PC's key, Limine signed with it,
+  # every path in the menu hashed, and the key waiting for MokManager.
+  if mokutil --sb-state | grep -q 'SecureBoot enabled'; then
+    test -s "$t/var/lib/sbctl/keys/db/db.der"
+    objdump -p "$dir/grubx64.efi" | awk '/Security Directory/ {s = $4} END {exit s ~ /^0*$/}'  # signed
+    grep -Eq '^    path: guid\([^)]*\):/vmlinuz-[^#]*#[0-9a-f]{128}$' "$conf"
+    mokutil --list-new | grep -qi fingerprint
+    echo 'kriss-autoinstall: Secure Boot key queued for MokManager'
+  fi
 else
   # Limine's BIOS boot code: in the first sector (sgdisk left it zeroed), its stage 2 in
   # the BIOS boot partition configure added, and limine-bios.sys next to the menu.

@@ -34,7 +34,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Lint tools
-        run: shellcheck tools/kriss tools/kriss-migrate tools/kriss-update-notify tools/ci/*.sh tools/ci/fake-gh aarch64/*.sh installer/kriss-install installer/lib/* pkgs/kriss-settings/root/usr/bin/kriss-limine-update pkgs/kriss-settings/root/usr/share/libalpm/scripts/kriss-plymouth pkgs/kriss-settings/root/usr/lib/initcpio/post/kriss-limine iso/install-test.sh
+        run: shellcheck tools/kriss tools/kriss-migrate tools/kriss-update-notify tools/ci/*.sh tools/ci/fake-gh aarch64/*.sh installer/kriss-install installer/lib/* pkgs/kriss-settings/root/usr/bin/kriss-limine-update pkgs/kriss-settings/root/usr/share/libalpm/scripts/kriss-plymouth pkgs/kriss-settings/root/usr/lib/initcpio/post/kriss-limine iso/install-test.sh iso/secureboot-test.sh pkgs/kriss-settings/root/usr/bin/kriss-secureboot
 
       - name: Test the publish and promote scripts
         run: |

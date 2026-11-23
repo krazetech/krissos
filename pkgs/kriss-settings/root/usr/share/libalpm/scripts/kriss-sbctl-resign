@@ -4,9 +4,9 @@
 command -v sbctl >/dev/null 2>&1 || exit 0
 [ -d /var/lib/sbctl/keys ] || [ -d /usr/share/secureboot/keys ] || exit 0
 
-# ponytail: this signs the files sbctl already tracks (`sbctl sign -s`). Limine itself is
-# re-copied, hash-enrolled and signed by kriss-limine-update (zz-kriss-limine.hook runs
-# first). The installer does not set up Secure Boot yet; real-firmware testing is a gap.
+# ponytail: this signs the files sbctl already tracks (`sbctl sign -s`), such as kernels
+# signed by hand for Setup Mode keys. Limine itself is re-copied, hash-enrolled and signed
+# by kriss-limine-update (zz-kriss-limine.hook runs first); shim keeps Microsoft's signature.
 sbctl sign-all -g || {
   echo 'kriss: sbctl sign-all failed; fix this before rebooting with Secure Boot on' >&2
   exit 1

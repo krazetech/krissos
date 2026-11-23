@@ -90,11 +90,18 @@ if [ ! -d /sys/firmware/efi ]; then
 else
   esp=$root/efi
   conf=$esp/EFI/limine/limine.conf
-  install -Dm644 "$root/usr/share/limine/BOOTX64.EFI" "$esp/EFI/limine/BOOTX64.EFI"
+  # Secure Boot stays on: the firmware starts Microsoft-signed shim (BOOTX64.EFI), shim
+  # starts Limine (grubx64.efi, written and signed by kriss-limine-update) once this PC's
+  # key is in its MOK list (kriss-secureboot below). mmx64.efi is MokManager.
+  shim() {
+    install -Dm644 "$root/usr/share/shim-signed/shimx64.efi" "$1/BOOTX64.EFI"
+    install -Dm644 "$root/usr/share/shim-signed/mmx64.efi" "$1/mmx64.efi"
+  }
+  shim "$esp/EFI/limine"
   # Firmware that forgets boot entries (and QEMU without saved NVRAM) falls back to
   # EFI/BOOT/BOOTX64.EFI. Take that path only when nothing else, like Windows, owns it.
   if [ ! -e "$esp/EFI/BOOT/BOOTX64.EFI" ]; then
-    install -Dm644 "$root/usr/share/limine/BOOTX64.EFI" "$esp/EFI/BOOT/BOOTX64.EFI"
+    shim "$esp/EFI/BOOT"
     touch "$esp/EFI/BOOT/limine.conf"  # kriss-limine-update keeps this copy current too
   fi
   espdev=$(findmnt -nvo SOURCE "$esp")
@@ -141,6 +148,8 @@ esac
 mkdir -p "$root/var/lib/kriss"
 chr pacman -Qqe >"$root/var/lib/kriss/install-packages"
 
+# This PC's Secure Boot key, before the initramfs hook first writes and signs Limine.
+[ ! -d /sys/firmware/efi ] || chr kriss-secureboot
 chr mkinitcpio -P
 chr kriss-limine-update
 echo 'kriss: boot menu:'

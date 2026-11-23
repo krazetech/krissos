@@ -50,7 +50,7 @@ ship.
 | Our packages | A `[kriss]` repo, ideally fewer than 25 packages, fed only from a `[kriss-testing]` repo (§4) |
 | Rollback | btrfs + snapper, with snapshots bootable from the Limine menu |
 | Installer | Calamares on an archiso live image |
-| Secure Boot | Supported at 1.0 via `sbctl`. A pacman hook re-signs the kernel and bootloader on every update |
+| Secure Boot | On, with the PC's stock keys: Microsoft-signed shim, then Limine signed with a per-PC key enrolled once in MokManager. Updates re-sign it ([docs/secure-boot.md](docs/secure-boot.md)) |
 
 Only our own packages are built for x86-64-v3. Rebuilding all of Arch for v3 is a full
 distro team's workload, and it is out of scope.
@@ -127,10 +127,17 @@ and installs KDE Plasma, which is not on the ISO. Offline, Plasma falls back to 
   For Maxwell, Pascal and Volta, kriss-welcome offers NVIDIA's 580 driver afterwards as an
   optional online extra (`kriss nvidia setup`, pinned AUR builds in `[kriss]`; see
   `pkgs/nvidia-580xx-utils/SOURCES.md`).
-- **Secure Boot:** not set up by the installer yet. Once `sbctl` has keys,
-  `kriss-limine-update` hashes every path in `limine.conf` (BLAKE2b), enrolls the config's
-  hash into Limine with `limine enroll-config` and signs it with `sbctl`; the pacman hook
-  re-signs the rest. Untested on real firmware. UEFI only: skipped on legacy BIOS.
+- **Secure Boot:** stays on, with the PC's stock keys. The ESP holds Microsoft-signed shim
+  (`shim-signed`, Fedora's build) as `BOOTX64.EFI`, MokManager as `mmx64.efi` and Limine as
+  `grubx64.efi`, the file shim starts. With Secure Boot on, the installer's
+  `kriss-secureboot` makes the PC's own key (`sbctl create-keys`, offline) and queues it for
+  MokManager, which asks once at the next start (password `krissos`). `kriss-limine-update`
+  adds the `.sbat` section shim requires, hashes every path in `limine.conf` (BLAKE2b),
+  enrolls the config's hash with `limine enroll-config` and signs Limine with that key after
+  every change. With Secure Boot off nothing is signed (`kriss-secureboot --enroll` prepares
+  it). The live ISO: shim, then systemd-boot and the kernel signed with a key made for that
+  build only, whose `KRISSOS.cer` the user enrolls from the USB. UEFI only: legacy BIOS is
+  unchanged. Why shim and not sbctl in Setup Mode: [docs/secure-boot.md](docs/secure-boot.md).
 
 ## 3. Repository layout (monorepo, public GitHub org)
 
