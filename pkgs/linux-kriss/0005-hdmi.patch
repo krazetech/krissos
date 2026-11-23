@@ -1,4 +1,4 @@
-Origin: https://github.com/CachyOS/linux tag cachyos-7.3.4-1, commit 4a9cb58cea8a6087494c2279670e2132b6373a2c (Merge branch '7.3/hdmi' into 7.3/base-dev)
+Origin: https://github.com/CachyOS/linux tag cachyos-7.3.6-1, commit dc3b057fa5216f730c146528b14ac95184b61d2f (Merge branch '7.3/hdmi' into 7.3/base-dev)
 Squashed diff of the upstream commits below; their headers are unmodified.
 
 commit bfd02102c6dbd93c02c26ef154211cc6fdd6d1ef
@@ -180,10 +180,10 @@ Date:   Tue Sep 1 15:12:51 2026 -0400
 
 ---
 diff --git a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c
-index a1eef5ec2..4b35de53e 100644
+index fa0c3ed6a..fc7cf1403 100644
 --- a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c
 +++ b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c
-@@ -4049,9 +4049,12 @@ static void amdgpu_dm_commit_planes(struct drm_atomic_commit *state,
+@@ -4053,9 +4053,12 @@ static void amdgpu_dm_commit_planes(struct drm_atomic_commit *state,
  		}
  
  		if (acrtc_state->stream) {
@@ -210,7 +210,7 @@ index 881c8d1c3..20095d28b 100644
  	bool abm_sysfs_forbidden;
  	uint8_t abm_level;
 diff --git a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_connector.c b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_connector.c
-index 45a69bf43..11f1f223f 100644
+index bfcc8ad75..f11164506 100644
 --- a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_connector.c
 +++ b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_connector.c
 @@ -2007,6 +2007,7 @@ amdgpu_dm_connector_atomic_duplicate_state(struct drm_connector *connector)
@@ -316,7 +316,7 @@ index 45a69bf43..11f1f223f 100644
  	}
  
  	if (amdgpu_dm_connector->dc_link)
-@@ -3967,7 +4033,8 @@ void amdgpu_dm_update_freesync_caps(struct drm_connector *connector,
+@@ -3985,7 +4051,8 @@ void amdgpu_dm_update_freesync_caps(struct drm_connector *connector,
  	if (do_mccs) {
  		dm_helpers_read_mccs_caps(adev->dm.dc->ctx, amdgpu_dm_connector->dc_link, sink);
  
@@ -326,7 +326,7 @@ index 45a69bf43..11f1f223f 100644
  			freesync_capable = false;
  
  		if (sink->mccs_caps.freesync_supported && freesync_capable)
-@@ -3975,8 +4042,15 @@ void amdgpu_dm_update_freesync_caps(struct drm_connector *connector,
+@@ -3993,8 +4060,15 @@ void amdgpu_dm_update_freesync_caps(struct drm_connector *connector,
  	}
  
  update:
@@ -343,7 +343,7 @@ index 45a69bf43..11f1f223f 100644
  
  	if (connector->state && amdgpu_dm_connector->dc_link && !freesync_capable &&
  	    amdgpu_dm_connector->dc_link->replay_settings.config.replay_supported) {
-@@ -3987,4 +4061,7 @@ update:
+@@ -4005,4 +4079,7 @@ update:
  	if (connector->vrr_capable_property)
  		drm_connector_set_vrr_capable_property(connector,
  						       freesync_capable);
@@ -352,7 +352,7 @@ index 45a69bf43..11f1f223f 100644
 +		drm_connector_set_passive_vrr_capable_property(connector, freesync_capable);
  }
 diff --git a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_freesync.c b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_freesync.c
-index 7e484adb4..db3bc37a1 100644
+index a51cf46d0..6d6e3b3b8 100644
 --- a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_freesync.c
 +++ b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_freesync.c
 @@ -37,6 +37,7 @@
@@ -363,7 +363,7 @@ index 7e484adb4..db3bc37a1 100644
  
  bool amdgpu_dm_is_dc_timing_adjust_needed(struct dm_crtc_state *old_state,
  					  struct dm_crtc_state *new_state)
-@@ -137,6 +138,12 @@ void amdgpu_dm_get_freesync_config_for_crtc(
+@@ -145,6 +146,12 @@ void amdgpu_dm_get_freesync_config_for_crtc(
  		config.vsif_supported = true;
  		config.btr = true;
  
@@ -376,7 +376,7 @@ index 7e484adb4..db3bc37a1 100644
  		if (fs_vid_mode) {
  			config.state = VRR_STATE_ACTIVE_FIXED;
  			config.fixed_refresh_in_uhz = new_crtc_state->freesync_config.fixed_refresh_in_uhz;
-@@ -148,9 +155,18 @@ void amdgpu_dm_get_freesync_config_for_crtc(
+@@ -156,9 +163,18 @@ void amdgpu_dm_get_freesync_config_for_crtc(
  		}
  	} else {
  		config.state = VRR_STATE_UNSUPPORTED;
@@ -395,7 +395,7 @@ index 7e484adb4..db3bc37a1 100644
  }
  EXPORT_IF_KUNIT(amdgpu_dm_get_freesync_config_for_crtc);
  
-@@ -229,6 +245,9 @@ void amdgpu_dm_update_freesync_state_on_stream(
+@@ -254,6 +270,9 @@ void amdgpu_dm_update_freesync_state_on_stream(
  		&vrr_infopacket,
  		pack_sdp_v1_3);
  
@@ -405,7 +405,7 @@ index 7e484adb4..db3bc37a1 100644
  	new_crtc_state->freesync_vrr_info_changed |=
  		(memcmp(&new_crtc_state->vrr_infopacket,
  			&vrr_infopacket,
-@@ -240,6 +259,35 @@ void amdgpu_dm_update_freesync_state_on_stream(
+@@ -265,6 +284,35 @@ void amdgpu_dm_update_freesync_state_on_stream(
  	new_stream->vrr_infopacket = vrr_infopacket;
  	new_stream->allow_freesync = mod_freesync_get_freesync_enabled(&vrr_params);
  
@@ -606,10 +606,10 @@ index 68d59e17f..6ca4b369e 100644
  		*val = (state->degamma_lut) ? state->degamma_lut->base.id : 0;
  	else if (property == config->ctm_property)
 diff --git a/drivers/gpu/drm/drm_connector.c b/drivers/gpu/drm/drm_connector.c
-index 8b4baed06..8dd69ec4a 100644
+index 0e39431e8..f10b0452e 100644
 --- a/drivers/gpu/drm/drm_connector.c
 +++ b/drivers/gpu/drm/drm_connector.c
-@@ -2393,6 +2393,16 @@ EXPORT_SYMBOL(drm_mode_create_scaling_mode_property);
+@@ -2395,6 +2395,16 @@ EXPORT_SYMBOL(drm_mode_create_scaling_mode_property);
   *
   *	Absence of the property should indicate absence of support.
   *
@@ -626,7 +626,7 @@ index 8b4baed06..8dd69ec4a 100644
   * "VRR_ENABLED":
   *	Default &drm_crtc boolean property that notifies the driver that the
   *	content on the CRTC is suitable for variable refresh rate presentation.
-@@ -2411,6 +2421,17 @@ EXPORT_SYMBOL(drm_mode_create_scaling_mode_property);
+@@ -2413,6 +2423,17 @@ EXPORT_SYMBOL(drm_mode_create_scaling_mode_property);
   *
   *	The driver may place further restrictions within these minimum
   *	and maximum bounds.
@@ -644,7 +644,7 @@ index 8b4baed06..8dd69ec4a 100644
   */
  
  /**
-@@ -2444,6 +2465,37 @@ int drm_connector_attach_vrr_capable_property(
+@@ -2446,6 +2467,37 @@ int drm_connector_attach_vrr_capable_property(
  }
  EXPORT_SYMBOL(drm_connector_attach_vrr_capable_property);
  
@@ -682,7 +682,7 @@ index 8b4baed06..8dd69ec4a 100644
  /**
   * drm_connector_attach_scaling_mode_property - attach atomic scaling mode property
   * @connector: connector to attach scaling mode property on.
-@@ -3154,6 +3206,27 @@ void drm_connector_set_vrr_capable_property(
+@@ -3156,6 +3208,27 @@ void drm_connector_set_vrr_capable_property(
  }
  EXPORT_SYMBOL(drm_connector_set_vrr_capable_property);
  
@@ -711,10 +711,10 @@ index 8b4baed06..8dd69ec4a 100644
   * drm_connector_set_panel_orientation - sets the connector's panel_orientation
   * @connector: connector for which to set the panel-orientation property.
 diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
-index 63ead8ba6..bd666dbc3 100644
+index 5295ec122..78daf8c2a 100644
 --- a/drivers/gpu/drm/drm_crtc.c
 +++ b/drivers/gpu/drm/drm_crtc.c
-@@ -322,6 +322,8 @@ static int __drm_crtc_init_with_planes(struct drm_device *dev, struct drm_crtc *
+@@ -319,6 +319,8 @@ static int __drm_crtc_init_with_planes(struct drm_device *dev, struct drm_crtc *
  					   config->prop_out_fence_ptr, 0);
  		drm_object_attach_property(&crtc->base,
  					   config->prop_vrr_enabled, 0);

@@ -22,10 +22,10 @@ case "$_march" in
   *) echo "_march must be v3 or generic" >&2; exit 1 ;;
 esac
 
-pkgver=7.3.4
+pkgver=7.3.6
 pkgrel=1
-_upstream_tag=cachyos-7.3.4-1
-_tarball_sha256=b11b6df8295e8e991ff040b71aaa4994a8b55caa23b6b092907f195b5840fd1f
+_upstream_tag=cachyos-7.3.6-1
+_tarball_sha256=8183d475a76a0faffa92d6cd500af421f589dfd0300a0f1060bb875e11d45723
 _srcname=linux-${pkgver%.0}
 pkgdesc='Linux with BORE, sched_ext and Clang ThinLTO for KrissOS'
 arch=('x86_64')

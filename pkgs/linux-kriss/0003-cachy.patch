@@ -1,4 +1,4 @@
-Origin: https://github.com/CachyOS/linux tag cachyos-7.3.4-1, commit 49268e20b3724dde7b527b857554ca5726f83254 (Merge branch '7.3/cachy' into 7.3/base-dev)
+Origin: https://github.com/CachyOS/linux tag cachyos-7.3.6-1, commit dcd86ad3d7fa7f3c96de455e7209a9eee9eb4d68 (Merge branch '7.3/cachy' into 7.3/base-dev)
 Squashed diff of the upstream commits below; their headers are unmodified.
 
 commit e4cd5992b0dee43530c414418946a007b8227e7d
@@ -692,12 +692,37 @@ Date:   Wed Nov 4 12:14:56 2026 +0100
     
     This reverts commit 661ebafdadd7e7c47e60c220edd5aea45f9da691.
 
+commit fbd9d3c8f13cfa029ace0c1bd16492bfc8fff7b9
+Author: Miguel Ojeda <ojeda@kernel.org>
+Date:   Fri Nov 6 08:35:28 2026 +0100
+
+    kbuild: rust: support stabilized flag `-Cprofile-sample-use` for Rust >= 1.100
+    
+    Starting with Rust 1.100.0 (expected 2026-11-12), the
+    `-Zprofile-sample-use` flag has been stabilized as
+    `-Cprofile-sample-use` and the former is not available anymore [1].
+    
+    Without this change, when building with `CLANG_AUTOFDO_PROFILE` set, one
+    gets in the latest betas and nightlies:
+    
+        error: unknown unstable option: `profile-sample-use`
+    
+    Thus pass the right name.
+    
+    Cc: stable@vger.kernel.org # 7.3.x
+    Link: https://github.com/rust-lang/rust/pull/155942 [1]
+    Reviewed-by: Alice Ryhl <aliceryhl@google.com>
+    Acked-by: Nicolas Schier <nsc@kernel.org>
+    Link: https://patch.msgid.link/20261106073528.93371-1-ojeda@kernel.org
+    Signed-off-by: Miguel Ojeda <ojeda@kernel.org>
+    (cherry picked from commit 1178120c3bed1733aea1c465200a6b42f8a7105d)
+
 ---
 diff --git a/Documentation/admin-guide/kernel-parameters.txt b/Documentation/admin-guide/kernel-parameters.txt
-index 4e64219c8..d569733f3 100644
+index b92d84e33..5c1c7e276 100644
 --- a/Documentation/admin-guide/kernel-parameters.txt
 +++ b/Documentation/admin-guide/kernel-parameters.txt
-@@ -2532,6 +2532,9 @@ Kernel parameters
+@@ -2525,6 +2525,9 @@ Kernel parameters
  			disable
  			  Do not enable intel_pstate as the default
  			  scaling driver for the supported processors
@@ -707,7 +732,7 @@ index 4e64219c8..d569733f3 100644
                          active
                            Use intel_pstate driver to bypass the scaling
                            governors layer of cpufreq and provides it own
-@@ -5102,6 +5105,16 @@ Kernel parameters
+@@ -5095,6 +5098,16 @@ Kernel parameters
  		nomsi		[MSI] If the PCI_MSI kernel config parameter is
  				enabled, this kernel boot option can be used to
  				disable the use of MSI interrupts system-wide.
@@ -724,7 +749,7 @@ index 4e64219c8..d569733f3 100644
  		noioapicquirk	[APIC] Disable all boot interrupt quirks.
  				Safety option to keep boot IRQs enabled. This
  				should never be necessary.
-@@ -7987,6 +8000,8 @@ Kernel parameters
+@@ -7983,6 +7996,8 @@ Kernel parameters
  			obtained from HW or FW using either an MSR or CPUID(0x15).
  			Warn if the difference is more than 500 ppm.
  			[x86] watchdog: Enforce the clocksource watchdog on TSC
@@ -734,10 +759,10 @@ index 4e64219c8..d569733f3 100644
  	tsc_early_khz=  [X86,EARLY] Skip early TSC calibration and use the given
  			value instead. Useful when the early TSC frequency discovery
 diff --git a/Makefile b/Makefile
-index 05c5b682a..d75cfb77c 100644
+index 28ae92d9d..a65752bd7 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -932,11 +932,20 @@ KBUILD_CFLAGS	+= -fno-delete-null-pointer-checks
+@@ -933,11 +933,20 @@ KBUILD_CFLAGS	+= -fno-delete-null-pointer-checks
  ifdef CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE
  KBUILD_CFLAGS += -O2
  KBUILD_RUSTFLAGS += -Copt-level=2
@@ -3183,7 +3208,7 @@ index 000000000..e55d966a6
 +MODULE_DESCRIPTION(ADIOS_PROGNAME);
 \ No newline at end of file
 diff --git a/block/elevator.c b/block/elevator.c
-index 2161b6eea..e81bf2233 100644
+index 66edf1a57..c94d83bf8 100644
 --- a/block/elevator.c
 +++ b/block/elevator.c
 @@ -740,6 +740,19 @@ void elevator_set_default(struct request_queue *q)
@@ -3249,10 +3274,10 @@ index e113bcbbb..854349418 100644
  		pr->flags.power_setup_done = 1;
  
 diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 9b8c09350..46389f86a 100644
+index fdce36596..4a3edab25 100644
 --- a/drivers/ata/ahci.c
 +++ b/drivers/ata/ahci.c
-@@ -2659,7 +2659,7 @@ static irqreturn_t ahci_mv_irq_handler(int irq, void *dev_instance)
+@@ -2650,7 +2650,7 @@ static irqreturn_t ahci_mv_irq_handler(int irq, void *dev_instance)
  	return IRQ_RETVAL(rc);
  }
  
@@ -3261,7 +3286,7 @@ index 9b8c09350..46389f86a 100644
  		struct ahci_host_priv *hpriv)
  {
  	int i;
-@@ -2672,7 +2672,7 @@ static void ahci_remap_check(struct pci_dev *pdev, int bar,
+@@ -2663,7 +2663,7 @@ static void ahci_remap_check(struct pci_dev *pdev, int bar,
  	    pci_resource_len(pdev, bar) < SZ_512K ||
  	    bar != AHCI_PCI_BAR_STANDARD ||
  	    !(readl(hpriv->mmio + AHCI_VSCAP) & 1))
@@ -3270,7 +3295,7 @@ index 9b8c09350..46389f86a 100644
  
  	cap = readq(hpriv->mmio + AHCI_REMAP_CAP);
  	for (i = 0; i < AHCI_MAX_REMAP; i++) {
-@@ -2687,18 +2687,11 @@ static void ahci_remap_check(struct pci_dev *pdev, int bar,
+@@ -2678,18 +2678,11 @@ static void ahci_remap_check(struct pci_dev *pdev, int bar,
  	}
  
  	if (!hpriv->remapped_nvme)
@@ -3293,7 +3318,7 @@ index 9b8c09350..46389f86a 100644
  }
  
  static int ahci_get_irq_vector(struct ata_host *host, int port)
-@@ -2988,7 +2981,9 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+@@ -2979,7 +2972,9 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
  		return rc;
  
  	/* detect remapped nvme devices */
@@ -3318,10 +3343,10 @@ index 0e6ae4cdd..90887b3b0 100644
  		default_driver = &intel_pstate;
  	else if (!strcmp(str, "passive"))
 diff --git a/drivers/gpu/drm/amd/display/Kconfig b/drivers/gpu/drm/amd/display/Kconfig
-index 1727d2564..986481dde 100644
+index 617bc1932..55eaf3e0d 100644
 --- a/drivers/gpu/drm/amd/display/Kconfig
 +++ b/drivers/gpu/drm/amd/display/Kconfig
-@@ -68,4 +68,10 @@ config DRM_AMD_DC_KUNIT_TEST
+@@ -77,4 +77,10 @@ config DRM_AMD_DC_KUNIT_TEST
  	  For more information on KUnit and unit tests in general, please
  	  refer to the KUnit documentation in Documentation/dev-tools/kunit/.
  
@@ -3333,10 +3358,10 @@ index 1727d2564..986481dde 100644
 +
  endmenu
 diff --git a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c
-index f3551bd0b..a1eef5ec2 100644
+index 0c92f9c5d..fa0c3ed6a 100644
 --- a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c
 +++ b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c
-@@ -2265,7 +2265,7 @@ static int amdgpu_dm_mode_config_init(struct amdgpu_device *adev)
+@@ -2269,7 +2269,7 @@ static int amdgpu_dm_mode_config_init(struct amdgpu_device *adev)
  	if (r)
  		return r;
  
@@ -7977,7 +8002,7 @@ index 000000000..62b9b9c4a
 +MODULE_AUTHOR("Daniel Drake <drake@endlessm.com>");
 +MODULE_LICENSE("GPL v2");
 diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index d4fcc336b..1dff2c4fc 100644
+index 50fcb6675..212c408e2 100644
 --- a/drivers/pci/quirks.c
 +++ b/drivers/pci/quirks.c
 @@ -3782,6 +3782,109 @@ static void quirk_no_bus_reset(struct pci_dev *dev)
@@ -9452,7 +9477,7 @@ index f294dad43..4a5ae8bd9 100644
  	help
  	  This option turns the kernel into a real-time kernel by replacing
 diff --git a/kernel/fork.c b/kernel/fork.c
-index 8ad346469..cb0a7b19f 100644
+index ddd3dbc08..a3fc98f08 100644
 --- a/kernel/fork.c
 +++ b/kernel/fork.c
 @@ -127,6 +127,12 @@
@@ -9468,7 +9493,7 @@ index 8ad346469..cb0a7b19f 100644
  /*
   * Minimum number of threads to boot the kernel
   */
-@@ -2122,6 +2128,11 @@ __latent_entropy struct task_struct *copy_process(
+@@ -2130,6 +2136,11 @@ __latent_entropy struct task_struct *copy_process(
  			return ERR_PTR(-EPERM);
  	}
  
@@ -9480,7 +9505,7 @@ index 8ad346469..cb0a7b19f 100644
  	/*
  	 * Force any signals received before this point to be delivered
  	 * before the fork happens.  Collect up signals sent to multiple
-@@ -3205,6 +3216,10 @@ static int check_unshare_flags(unsigned long unshare_flags)
+@@ -3219,6 +3230,10 @@ static int check_unshare_flags(unsigned long unshare_flags)
  		if (!current_is_single_threaded())
  			return -EINVAL;
  	}
@@ -9491,7 +9516,7 @@ index 8ad346469..cb0a7b19f 100644
  
  	return 0;
  }
-@@ -3438,6 +3453,15 @@ static const struct ctl_table fork_sysctl_table[] = {
+@@ -3452,6 +3467,15 @@ static const struct ctl_table fork_sysctl_table[] = {
  		.mode		= 0644,
  		.proc_handler	= sysctl_max_threads,
  	},
@@ -9508,7 +9533,7 @@ index 8ad346469..cb0a7b19f 100644
  
  static int __init init_fork_sysctl(void)
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 1754d9f95..5d38537dd 100644
+index 4a051764e..39f70dbae 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
 @@ -673,7 +673,7 @@ void raw_spin_rq_lock_nested(struct rq *rq, int subclass)
@@ -9529,7 +9554,7 @@ index 1754d9f95..5d38537dd 100644
  		return;
  	rq->clock += delta;
  
-@@ -6254,7 +6254,7 @@ pick_next_task(struct rq *rq, struct rq_flags *rf)
+@@ -6258,7 +6258,7 @@ pick_next_task(struct rq *rq, struct rq_flags *rf)
  	struct rq *rq_i;
  	bool need_sync = false;
  
@@ -9538,7 +9563,7 @@ index 1754d9f95..5d38537dd 100644
  		return __pick_next_task(rq, rf);
  
  	cpu = cpu_of(rq);
-@@ -7802,7 +7802,7 @@ out_unlock:
+@@ -7816,7 +7816,7 @@ out_unlock:
  #if !defined(CONFIG_PREEMPTION) || defined(CONFIG_PREEMPT_DYNAMIC)
  int __sched __cond_resched(void)
  {
@@ -9548,7 +9573,7 @@ index 1754d9f95..5d38537dd 100644
  		return 1;
  	}
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index b35e23f93..9d657f70c 100644
+index 327d5f8f4..ff24bb7a0 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
 @@ -82,10 +82,19 @@ unsigned int sysctl_sched_tunable_scaling = SCHED_TUNABLESCALING_LOG;
@@ -9572,10 +9597,10 @@ index b35e23f93..9d657f70c 100644
  static int __init setup_sched_thermal_decay_shift(char *str)
  {
 diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 4c25fbe84..87750d280 100644
+index 8d805aa7c..2bb50dad8 100644
 --- a/kernel/sched/sched.h
 +++ b/kernel/sched/sched.h
-@@ -3138,7 +3138,7 @@ static inline void attach_one_task(struct rq *rq, struct task_struct *p)
+@@ -3148,7 +3148,7 @@ static inline void attach_one_task(struct rq *rq, struct task_struct *p)
  	attach_task(rq, p);
  }
  
@@ -9601,7 +9626,7 @@ index a04941551..d9bb55c56 100644
  static int __read_mostly sysctl_compact_memory;
  
 diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 779c02e0b..f36eed66c 100644
+index 5f7e3320d..f9f9a12b9 100644
 --- a/mm/huge_memory.c
 +++ b/mm/huge_memory.c
 @@ -65,7 +65,11 @@ unsigned long transparent_hugepage_flags __read_mostly =
@@ -9617,7 +9642,7 @@ index 779c02e0b..f36eed66c 100644
  	(1<<TRANSPARENT_HUGEPAGE_USE_ZERO_PAGE_FLAG);
  
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 8ca2289d0..d60899225 100644
+index 8714425ff..99f72970a 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
 @@ -275,7 +275,11 @@ const char * const migratetype_names[MIGRATE_TYPES] = {
@@ -9657,7 +9682,7 @@ index 0d9b0d876..046157fe5 100644
  	register_sysctl_init("vm", swap_readahead_sysctl_table);
  }
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 6a53762d5..9a8091a5c 100644
+index 88fd31d13..1256a089e 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
 @@ -198,7 +198,11 @@ struct scan_control {
@@ -9672,7 +9697,7 @@ index 6a53762d5..9a8091a5c 100644
  
  static int sc_swappiness(struct scan_control *sc, struct mem_cgroup *memcg)
  {
-@@ -4203,7 +4207,11 @@ static bool lruvec_is_reclaimable(struct lruvec *lruvec, struct scan_control *sc
+@@ -4206,7 +4210,11 @@ static bool lruvec_is_reclaimable(struct lruvec *lruvec, struct scan_control *sc
  }
  
  /* to protect the working set of the last N jiffies */
@@ -9684,6 +9709,19 @@ index 6a53762d5..9a8091a5c 100644
  
  static void lru_gen_age_node(struct pglist_data *pgdat, struct scan_control *sc)
  {
+diff --git a/scripts/Makefile.autofdo b/scripts/Makefile.autofdo
+index 57a3aba6f..32c18df23 100644
+--- a/scripts/Makefile.autofdo
++++ b/scripts/Makefile.autofdo
+@@ -13,7 +13,7 @@ endif
+ ifdef CLANG_AUTOFDO_PROFILE
+   CFLAGS_AUTOFDO_CLANG += -fprofile-sample-use=$(CLANG_AUTOFDO_PROFILE) -ffunction-sections
+   CFLAGS_AUTOFDO_CLANG += -fsplit-machine-functions
+-  RUSTFLAGS_AUTOFDO_CLANG += -Zprofile-sample-use=$(CLANG_AUTOFDO_PROFILE) -Zfunction-sections=y
++  RUSTFLAGS_AUTOFDO_CLANG += $(if $(call rustc-min-version,110000),-Cprofile-sample-use,-Zprofile-sample-use)=$(CLANG_AUTOFDO_PROFILE) -Zfunction-sections=y
+   RUSTFLAGS_AUTOFDO_CLANG += -Cllvm-args=-split-machine-functions
+ endif
+ 
 diff --git a/scripts/package/PKGBUILD b/scripts/package/PKGBUILD
 index 66e4b6a37..e187908d3 100644
 --- a/scripts/package/PKGBUILD

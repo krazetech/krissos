@@ -1,4 +1,4 @@
-Origin: https://github.com/CachyOS/linux tag cachyos-7.3.4-1, commit 7f61a03a1e9849556d0740e671281e49c8072a2c (Merge branch '7.3/amd-iommu' into 7.3/base-dev)
+Origin: https://github.com/CachyOS/linux tag cachyos-7.3.6-1, commit dc7778cd19086b6172a9b7aefc9cb6a163ad1ab3 (Merge branch '7.3/amd-iommu' into 7.3/base-dev)
 Squashed diff of the upstream commits below; their headers are unmodified.
 
 commit f5ec5d9476c43874ccab647f8b44ba783da37421
@@ -425,7 +425,7 @@ index a63404adc..45624e5f0 100644
  extern int amdgpu_vis_vram_limit;
  extern int amdgpu_gart_size;
 diff --git a/drivers/gpu/drm/amd/amdgpu/amdgpu_device.c b/drivers/gpu/drm/amd/amdgpu/amdgpu_device.c
-index 5b72e4afb..ba59d3dca 100644
+index 948886fff..bbdbc666d 100644
 --- a/drivers/gpu/drm/amd/amdgpu/amdgpu_device.c
 +++ b/drivers/gpu/drm/amd/amdgpu/amdgpu_device.c
 @@ -33,6 +33,7 @@
@@ -597,7 +597,7 @@ index 4a15b16bd..0e79c43be 100644
  	struct ratelimit_state rs;        /* Ratelimit IOPF messages */
  };
 diff --git a/drivers/iommu/amd/init.c b/drivers/iommu/amd/init.c
-index 0506617b2..de6db5621 100644
+index cfc061a42..9dd55da5f 100644
 --- a/drivers/iommu/amd/init.c
 +++ b/drivers/iommu/amd/init.c
 @@ -163,7 +163,6 @@ int amd_iommu_gpt_level = PAGE_MODE_4_LEVEL;
@@ -672,7 +672,7 @@ index 0506617b2..de6db5621 100644
  
  static int __init alloc_cwwb_sem(struct amd_iommu *iommu)
  {
-@@ -1965,6 +1960,9 @@ static int __init init_iommu_one(struct amd_iommu *iommu, struct ivhd_header *h,
+@@ -1986,6 +1981,9 @@ static int __init init_iommu_one(struct amd_iommu *iommu, struct ivhd_header *h,
  	if (!iommu->mmio_base)
  		return -ENOMEM;
  
@@ -682,7 +682,7 @@ index 0506617b2..de6db5621 100644
  	return init_iommu_from_acpi(iommu, h);
  }
  
-@@ -2169,6 +2167,27 @@ static void __init late_iommu_features_init(struct amd_iommu *iommu)
+@@ -2190,6 +2188,27 @@ static void __init late_iommu_features_init(struct amd_iommu *iommu)
  	}
  }
  
@@ -710,7 +710,7 @@ index 0506617b2..de6db5621 100644
  static int __init iommu_init_pci(struct amd_iommu *iommu)
  {
  	int cap_ptr = iommu->cap_ptr;
-@@ -2213,6 +2232,12 @@ static int __init iommu_init_pci(struct amd_iommu *iommu)
+@@ -2234,6 +2253,12 @@ static int __init iommu_init_pci(struct amd_iommu *iommu)
  	if (check_feature(FEATURE_PPR) && amd_iommu_alloc_ppr_log(iommu))
  		return -ENOMEM;
  
@@ -723,7 +723,7 @@ index 0506617b2..de6db5621 100644
  	if (iommu->cap & (1UL << IOMMU_CAP_NPCACHE)) {
  		pr_info("Using strict mode due to virtualization\n");
  		iommu_set_dma_strict();
-@@ -3027,22 +3052,9 @@ static void enable_iommus_vapic(void)
+@@ -3058,22 +3083,9 @@ static void enable_iommus_vapic(void)
  	if (!AMD_IOMMU_GUEST_IR_VAPIC(amd_iommu_guest_ir))
  		return;
  
@@ -747,7 +747,7 @@ index 0506617b2..de6db5621 100644
  			return;
  
  		iommu_feature_enable(iommu, CONTROL_GAM_EN);
-@@ -3055,10 +3067,46 @@ static void enable_iommus_vapic(void)
+@@ -3086,10 +3098,46 @@ static void enable_iommus_vapic(void)
  #endif
  }
  
@@ -794,7 +794,7 @@ index 0506617b2..de6db5621 100644
  	for_each_iommu(iommu)
  		iommu_disable(iommu);
  
-@@ -3084,6 +3132,10 @@ static void amd_iommu_resume(void *data)
+@@ -3115,6 +3163,10 @@ static void amd_iommu_resume(void *data)
  	for_each_iommu(iommu)
  		early_enable_iommu(iommu);
  
@@ -805,7 +805,7 @@ index 0506617b2..de6db5621 100644
  	iommu_enable_event_buffer();
  	amd_iommu_enable_interrupts();
  }
-@@ -3245,9 +3297,6 @@ static int __init early_amd_iommu_init(void)
+@@ -3276,9 +3328,6 @@ static int __init early_amd_iommu_init(void)
  	acpi_status status;
  	u8 efr_hats, max_vasize;
  
@@ -815,7 +815,7 @@ index 0506617b2..de6db5621 100644
  	status = acpi_get_table("IVRS", 0, &ivrs_base);
  	if (status == AE_NOT_FOUND)
  		return -ENODEV;
-@@ -3326,7 +3375,7 @@ static int __init early_amd_iommu_init(void)
+@@ -3357,7 +3406,7 @@ static int __init early_amd_iommu_init(void)
  	}
  
  	/* Disable any previously enabled IOMMUs */
@@ -824,7 +824,7 @@ index 0506617b2..de6db5621 100644
  		disable_iommus();
  
  	if (amd_iommu_irq_remap)
-@@ -3421,12 +3470,6 @@ static __init void iommu_snp_enable(void)
+@@ -3452,12 +3501,6 @@ static __init void iommu_snp_enable(void)
  	if (!cc_platform_has(CC_ATTR_HOST_SEV_SNP))
  		return;
  
@@ -837,7 +837,7 @@ index 0506617b2..de6db5621 100644
  	amd_iommu_snp_mode0_sup = check_feature2(FEATURE_SNP_PAGE_MODE0_SUP);
  	/*
  	 * If SNP page mode 0 is not enabled, then SNP support requires that IOMMU
-@@ -3493,6 +3536,8 @@ static void amd_iommu_apply_erratum_snp(void)
+@@ -3524,6 +3567,8 @@ static void amd_iommu_apply_erratum_snp(void)
  #endif
  }
  
@@ -846,7 +846,7 @@ index 0506617b2..de6db5621 100644
  /****************************************************************************
   *
   * AMD IOMMU Initialization State Machine
-@@ -3505,7 +3550,13 @@ static int __init state_next(void)
+@@ -3536,7 +3581,13 @@ static int __init state_next(void)
  
  	switch (init_state) {
  	case IOMMU_START_STATE:
@@ -861,7 +861,7 @@ index 0506617b2..de6db5621 100644
  			init_state	= IOMMU_NOT_FOUND;
  			ret		= -ENODEV;
  		} else {
-@@ -3513,13 +3564,8 @@ static int __init state_next(void)
+@@ -3544,13 +3595,8 @@ static int __init state_next(void)
  		}
  		break;
  	case IOMMU_IVRS_DETECTED:
@@ -877,7 +877,7 @@ index 0506617b2..de6db5621 100644
  		break;
  	case IOMMU_ACPI_FINISHED:
  		early_enable_iommus();
-@@ -3591,6 +3637,19 @@ static int __init iommu_go_to_state(enum iommu_init_state state)
+@@ -3622,6 +3668,19 @@ static int __init iommu_go_to_state(enum iommu_init_state state)
  {
  	int ret = -EINVAL;
  
@@ -897,7 +897,7 @@ index 0506617b2..de6db5621 100644
  	while (init_state != state) {
  		if (init_state == IOMMU_NOT_FOUND         ||
  		    init_state == IOMMU_INIT_ERROR        ||
-@@ -3599,6 +3658,7 @@ static int __init iommu_go_to_state(enum iommu_init_state state)
+@@ -3630,6 +3689,7 @@ static int __init iommu_go_to_state(enum iommu_init_state state)
  		ret = state_next();
  	}
  
@@ -905,7 +905,7 @@ index 0506617b2..de6db5621 100644
  	/*
  	 * SNP platform initilazation requires IOMMUs to be fully configured.
  	 * If the SNP support on IOMMUs has NOT been checked, simply mark SNP
-@@ -3718,17 +3778,10 @@ void __init amd_iommu_detect(void)
+@@ -3749,17 +3809,10 @@ void __init amd_iommu_detect(void)
  {
  	int ret;
  
@@ -924,10 +924,10 @@ index 0506617b2..de6db5621 100644
  	x86_init.iommu.iommu_init = amd_iommu_init;
  	return;
 diff --git a/drivers/iommu/amd/iommu.c b/drivers/iommu/amd/iommu.c
-index 893cd2be1..c1eaa6820 100644
+index b19496f8c..a1e80edeb 100644
 --- a/drivers/iommu/amd/iommu.c
 +++ b/drivers/iommu/amd/iommu.c
-@@ -573,10 +573,17 @@ static inline int pdev_enable_cap_ats(struct pci_dev *pdev)
+@@ -577,10 +577,17 @@ static inline int pdev_enable_cap_ats(struct pci_dev *pdev)
  	if (amd_iommu_iotlb_sup &&
  	    (dev_data->flags & AMD_IOMMU_DEVICE_FLAG_ATS_SUP)) {
  		ret = pci_enable_ats(pdev, PAGE_SHIFT);
@@ -949,7 +949,7 @@ index 893cd2be1..c1eaa6820 100644
  	}
  
  	return ret;
-@@ -675,7 +682,8 @@ static void pdev_disable_caps(struct pci_dev *pdev)
+@@ -679,7 +686,8 @@ static void pdev_disable_caps(struct pci_dev *pdev)
   * This function checks if the driver got a valid device from the caller to
   * avoid dereferencing invalid pointers.
   */
@@ -959,7 +959,7 @@ index 893cd2be1..c1eaa6820 100644
  {
  	struct amd_iommu_pci_seg *pci_seg;
  	struct amd_iommu *iommu;
-@@ -690,7 +698,7 @@ static bool check_device(struct device *dev)
+@@ -694,7 +702,7 @@ static bool check_device(struct device *dev)
  	devid = PCI_SBDF_TO_DEVID(sbdf);
  
  	iommu = rlookup_amd_iommu(dev);
@@ -968,7 +968,7 @@ index 893cd2be1..c1eaa6820 100644
  		return false;
  
  	/* Out of our scope? */
-@@ -698,65 +706,35 @@ static bool check_device(struct device *dev)
+@@ -702,65 +710,35 @@ static bool check_device(struct device *dev)
  	if (devid > pci_seg->last_bdf)
  		return false;
  
@@ -1043,7 +1043,7 @@ index 893cd2be1..c1eaa6820 100644
  
  
  /****************************************************************************
-@@ -2392,6 +2370,9 @@ static int attach_device(struct device *dev,
+@@ -2396,6 +2374,9 @@ static int attach_device(struct device *dev,
  	if (ret)
  		goto out;
  
@@ -1053,7 +1053,7 @@ index 893cd2be1..c1eaa6820 100644
  	/* Setup GCR3 table */
  	if (pdom_is_sva_capable(domain)) {
  		ret = init_gcr3_table(dev_data, domain);
-@@ -2416,6 +2397,7 @@ static int attach_device(struct device *dev,
+@@ -2420,6 +2401,7 @@ static int attach_device(struct device *dev,
  		pdev_enable_cap_ats(pdev);
  	}
  
@@ -1061,7 +1061,7 @@ index 893cd2be1..c1eaa6820 100644
  	/* Update data structures */
  	dev_data->domain = domain;
  	spin_lock_irqsave(&domain->lock, flags);
-@@ -2484,73 +2466,289 @@ out:
+@@ -2488,68 +2470,294 @@ out:
  	mutex_unlock(&dev_data->mutex);
  }
  
@@ -1361,24 +1361,20 @@ index 893cd2be1..c1eaa6820 100644
  	}
  
 -	iommu_completion_wait(iommu);
--
++	return iommu_dev;
++}
+ 
 -	if (FEATURE_NUM_INT_REMAP_SUP_2K(amd_iommu_efr2))
 -		dev_data->max_irqs = MAX_IRQS_PER_TABLE_2K;
 -	else
 -		dev_data->max_irqs = MAX_IRQS_PER_TABLE_512;
--
++static void amd_iommu_release_device(struct device *dev)
++{
++	struct iommu_dev_data *dev_data = dev_iommu_priv_get(dev);
++	struct amd_iommu *iommu = get_amd_iommu_from_dev_data(dev_data);
+ 
 -	if (dev_is_pci(dev))
 -		pci_prepare_ats(to_pci_dev(dev), PAGE_SHIFT);
--
--out_err:
- 	return iommu_dev;
- }
- 
- static void amd_iommu_release_device(struct device *dev)
- {
- 	struct iommu_dev_data *dev_data = dev_iommu_priv_get(dev);
-+	struct amd_iommu *iommu = get_amd_iommu_from_dev_data(dev_data);
-+
 +	if (dev_data->perfopt) {
 +		if (WARN_ON(perfopt_put(iommu)))
 +			dev_err(dev, "IOMMU%d: failed to clear PerfOpt on release\n",
@@ -1386,9 +1382,16 @@ index 893cd2be1..c1eaa6820 100644
 +		dev_data->perfopt = false;
 +	}
  
- 	WARN_ON(dev_data->domain);
+-out_err:
+-	return iommu_dev;
++	/*
++	 * We keep dev_data around for unplugged devices and reuse it when the
++	 * device is re-plugged - not doing so would introduce a ton of races.
++	 */
+ }
  
-@@ -2925,6 +3123,19 @@ static int blocked_domain_attach_device(struct iommu_domain *domain,
+ static struct iommu_group *amd_iommu_device_group(struct device *dev)
+@@ -2917,6 +3125,19 @@ static int blocked_domain_attach_device(struct iommu_domain *domain,
  					struct iommu_domain *old)
  {
  	struct iommu_dev_data *dev_data = dev_iommu_priv_get(dev);
@@ -1408,7 +1411,7 @@ index 893cd2be1..c1eaa6820 100644
  
  	if (dev_data->domain)
  		detach_device(dev);
-@@ -2993,6 +3204,9 @@ static int amd_iommu_attach_device(struct iommu_domain *dom, struct device *dev,
+@@ -2985,6 +3206,9 @@ static int amd_iommu_attach_device(struct iommu_domain *dom, struct device *dev,
  	struct amd_iommu *iommu = get_amd_iommu_from_dev(dev);
  	int ret;
  
@@ -1418,7 +1421,15 @@ index 893cd2be1..c1eaa6820 100644
  	/*
  	 * Skip attach device to domain if new domain is same as
  	 * devices current domain
-@@ -3902,8 +4116,11 @@ static int irq_remapping_alloc(struct irq_domain *domain, unsigned int virq,
+@@ -3197,6 +3421,7 @@ const struct iommu_ops amd_iommu_ops = {
+ 	.domain_alloc_paging_flags = amd_iommu_domain_alloc_paging_flags,
+ 	.domain_alloc_sva = amd_iommu_domain_alloc_sva,
+ 	.probe_device = amd_iommu_probe_device,
++	.release_device = amd_iommu_release_device,
+ 	.device_group = amd_iommu_device_group,
+ 	.get_resv_regions = amd_iommu_get_resv_regions,
+ 	.is_attach_deferred = amd_iommu_is_attach_deferred,
+@@ -3893,8 +4118,11 @@ static int irq_remapping_alloc(struct irq_domain *domain, unsigned int virq,
  out_free_data:
  	for (i--; i >= 0; i--) {
  		irq_data = irq_domain_get_irq_data(domain, virq + i);

@@ -1,4 +1,4 @@
-Origin: https://github.com/CachyOS/linux tag cachyos-7.3.4-1, commit 5a0cc00bc09af5cba01639d19649283b786e9342 (Merge branch '7.3/vesa-dsc-bpp' into 7.3/base-dev)
+Origin: https://github.com/CachyOS/linux tag cachyos-7.3.6-1, commit ae401ab7fa93abf0b14d84e86c31c6c00facd3c1 (Merge branch '7.3/vesa-dsc-bpp' into 7.3/base-dev)
 Squashed diff of the upstream commits below; their headers are unmodified.
 
 commit 0a5931ca6469d08b9f98f240db7040531348855a
@@ -107,7 +107,7 @@ Date:   Tue Feb 24 02:15:01 2026 +0800
 
 ---
 diff --git a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_connector.c b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_connector.c
-index 6a276b471..e0be6c51e 100644
+index 6f1f2a7bc..8383177da 100644
 --- a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_connector.c
 +++ b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_connector.c
 @@ -990,6 +990,11 @@ STATIC_IFN_KUNIT void fill_stream_properties_from_drm_display_mode(

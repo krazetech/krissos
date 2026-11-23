@@ -1,4 +1,4 @@
-Origin: https://github.com/CachyOS/linux tag cachyos-7.3.4-1, commit 3b85859a20d93c4fec6bbf15445009fff644afe5 (Merge branch '7.3/bbr3' into 7.3/base-dev)
+Origin: https://github.com/CachyOS/linux tag cachyos-7.3.6-1, commit 1857c8a5501d1fb649e7d5f2d4b5d44baa952f79 (Merge branch '7.3/bbr3' into 7.3/base-dev)
 Squashed diff of the upstream commits below; their headers are unmodified.
 
 commit 5b121d2f9e4f78cc7eff04290ae42381bad79655
@@ -416,10 +416,10 @@ index 791e15063..4f2c7bca2 100644
  	.undo_cwnd = bpf_tcp_ca_undo_cwnd,
  	.sndbuf_expand = bpf_tcp_ca_sndbuf_expand,
 diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 87ef6d5cb..67e951b9c 100644
+index 73d5b7c8e..b2c579130 100644
 --- a/net/ipv4/tcp.c
 +++ b/net/ipv4/tcp.c
-@@ -3484,6 +3484,7 @@ int tcp_disconnect(struct sock *sk, int flags)
+@@ -3492,6 +3492,7 @@ int tcp_disconnect(struct sock *sk, int flags)
  	tp->rx_opt.dsack = 0;
  	tp->rx_opt.num_sacks = 0;
  	tp->rcv_ooopack = 0;
@@ -427,7 +427,7 @@ index 87ef6d5cb..67e951b9c 100644
  
  
  	/* Clean up fastopen related fields */
-@@ -4269,6 +4270,8 @@ void tcp_get_info(struct sock *sk, struct tcp_info *info)
+@@ -4277,6 +4278,8 @@ void tcp_get_info(struct sock *sk, struct tcp_info *info)
  		info->tcpi_options |= TCPI_OPT_ECN;
  	if (tp->ecn_flags & TCP_ECN_SEEN)
  		info->tcpi_options |= TCPI_OPT_ECN_SEEN;
