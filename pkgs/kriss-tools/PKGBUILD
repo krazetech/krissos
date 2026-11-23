@@ -1,6 +1,6 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-tools
-pkgver=0.9.1
+pkgver=0.9.3
 pkgrel=1
 pkgdesc='KrissOS system tools'
 arch=('any')
