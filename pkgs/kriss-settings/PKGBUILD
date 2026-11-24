@@ -1,8 +1,8 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-settings
-pkgver=0.5.2
+pkgver=0.5.3
 pkgrel=1
-pkgdesc='KrissOS default configs (Plasma, SDDM, GTK, Flatpak, terminals, prompt, fastfetch, input methods), os-release, Limine menu and pacman hooks'
+pkgdesc='KrissOS default configs (Plasma, SDDM, GTK, Flatpak, terminals, prompt, fastfetch, input methods, printing), os-release, Limine menu and pacman hooks'
 arch=('any')
 url='https://github.com/krazetech/krissos'
 license=('GPL-3.0-or-later')
@@ -15,7 +15,11 @@ depends=('diffutils' 'gsettings-desktop-schemas' 'snap-pac' 'fastfetch' 'plymout
          # the Pinyin candidates need (noto-fonts already has Tamil and Arabic). Jawi is an
          # xkeyboard-config layout, my(phonetic), so it needs nothing more.
          'fcitx5' 'fcitx5-qt' 'fcitx5-gtk' 'fcitx5-chinese-addons' 'fcitx5-m17n' 'm17n-db'
-         'adobe-source-han-sans-cn-fonts')
+         'adobe-source-han-sans-cn-fonts'
+         # Printing (Settings > Printers): CUPS, started on demand by cups.socket, and
+         # cups-browsed finding printers on the network through Avahi (DNS-SD only, see
+         # cups-browsed.service.d/kriss.conf). cupsd listens on localhost:631 and its socket only.
+         'cups' 'cups-browsed' 'avahi')
 makedepends=('python')
 optdepends=('fcitx5-osk: the on-screen keyboard on touch screens (its KrissOS themes are here)'
             'limine: the boot menu with bootable snapshots (kriss-limine-update)'
@@ -50,4 +54,11 @@ package() {
   # up once pkgs.yml installs sibling packages before building.
   depends+=('kriss-theme')
   cp -r --no-preserve=ownership "$srcdir/root/." "$pkgdir/"
+  # Printing on for everyone, new installs and updates alike: CUPS on demand through its
+  # socket (never cups.service at boot), Avahi for DNS-SD, and cups-browsed (see its drop-in).
+  local units="$pkgdir/usr/lib/systemd/system"
+  install -d "$units/sockets.target.wants" "$units/multi-user.target.wants"
+  ln -s ../cups.socket "$units/sockets.target.wants/cups.socket"
+  ln -s ../avahi-daemon.socket "$units/sockets.target.wants/avahi-daemon.socket"
+  ln -s ../cups-browsed.service "$units/multi-user.target.wants/cups-browsed.service"
 }
