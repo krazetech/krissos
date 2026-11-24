@@ -740,6 +740,8 @@ Before you go on, what WinPodX changes in Windows:
     app gets its own window. Microsoft's licence terms do not allow working around Windows'
     limits like this; the choice is yours. Turn it off any time:
       winpodx guest multi-session off
+  - So Microsoft Defender leaves that patch and WinPodX's helpers alone, it tells Defender
+    not to scan C:\OEM, C:\winpodx and C:\Users\Public\winpodx.
   - It hides from Windows that it is running in a virtual machine ("disguise", balanced).
     Turn it off with: winpodx config set pod.disguise_level off
   - Windows itself (about 7.5 GB) is downloaded from Microsoft.

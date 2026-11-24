@@ -78,7 +78,7 @@ if ((EUID != 0)); then
   grep -q '^sudo modprobe kvm_intel$' "$t/log" || { echo "FAIL setup-yes: $(cat "$t/log")"; exit 1; }
   # Ready: say what WinPodX changes in Windows, then run its setup only on y.
   reset; run setup; want_rc 0 setup-ready; has 'winpodx guest multi-session off' setup-ready
-  has 'pod.disguise_level off' setup-ready; [[ $(cat "$t/log") != *'winpodx setup'* ]] || { echo 'FAIL setup without y'; exit 1; }
+  has 'pod.disguise_level off' setup-ready; has 'not to scan C:\OEM' setup-ready; [[ $(cat "$t/log") != *'winpodx setup'* ]] || { echo 'FAIL setup without y'; exit 1; }
   reset; echo y > "$t/in"; input=$t/in run setup; want_rc 0 setup-go
   grep -qx 'winpodx setup' "$t/log" || { echo "FAIL setup-go: $(cat "$t/log")"; exit 1; }
 else
