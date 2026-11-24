@@ -101,7 +101,8 @@ fi
 if ((EUID != 0)); then
   for c in mkdir rm cp sed; do ln -sf "$(command -v "$c")" "$t/bin/$c"; done
   h=$t/home; mkdir -p "$h/.config" "$t/etc/xdg"
-  wpx=$h/.local/share/winpodx apps=$h/.local/share/winpodx/apps
+  wpx=$h/.local/share/winpodx apps=$h/.local/share/winpodx/apps ico=$h/.local/share/icons/hicolor
+  mkdir -p "$h/.local/share/applications"
   # A set-up WinPodX: running our installer app "installs" Office (the marker the Windows
   # script writes); refresh discovers Word, Excel and Edge as WinPodX stores them.
   cat > "$t/bin/winpodx" <<EOF
@@ -116,7 +117,14 @@ case "\$*" in
       mkdir -p "$wpx/discovered/\${a%%:*}"
       printf 'name = "%s"\\nfull_name = "%s"\\nexecutable = "C:\\\\\\\\Program Files\\\\\\\\X\\\\\\\\%s.EXE"\\nmime_types = ["text/plain"]\\nurl_schemes = ["https"]\\nsource = "win32"\\n' \\
         "\${a%%:*}" "\${a%%:*}" "\${a#*:}" > "$wpx/discovered/\${a%%:*}/app.toml"
-    done ;;
+      printf '[Desktop Entry]\\nName=%s\\nIcon=winpodx-%s\\n' "\${a%%:*}" "\${a%%:*}" > "$h/.local/share/applications/winpodx-\${a%%:*}.desktop"
+    done
+    # Icons as WinPodX installs them: Word in two sizes, Excel as SVG, Edge none.
+    mkdir -p "$ico/256x256/apps" "$ico/48x48/apps" "$ico/scalable/apps"
+    : > "$ico/256x256/apps/winpodx-microsoft-word.png"; : > "$ico/48x48/apps/winpodx-microsoft-word.png"
+    : > "$ico/scalable/apps/winpodx-microsoft-excel.svg" ;;
+  "app install "*)
+    printf '[Desktop Entry]\\nName=%s\\nIcon=winpodx-%s\\n' "\$3" "\$3" > "$h/.local/share/applications/winpodx-\$3.desktop" ;;
 esac
 exit 0
 EOF
@@ -156,6 +164,13 @@ EOF
   if command -v python3 >/dev/null; then
     python3 -c 'import sys, tomllib; d = tomllib.load(open(sys.argv[1], "rb")); assert len(d["mime_types"]) == 5 and d["name"] == "microsoft-word", d' "$w" || { echo 'FAIL word toml'; exit 1; }
   fi
+
+  # Icons: Start entries point at the icon file (the running shell's icon cache misses new
+  # theme icons): the SVG, else the largest PNG; a name with no file stays a name.
+  e=$h/.local/share/applications
+  grep -qx "Icon=$ico/256x256/apps/winpodx-microsoft-word.png" "$e/winpodx-microsoft-word.desktop" || { echo "FAIL word icon: $(cat "$e/winpodx-microsoft-word.desktop")"; exit 1; }
+  grep -qx "Icon=$ico/scalable/apps/winpodx-microsoft-excel.svg" "$e/winpodx-microsoft-excel.desktop" || { echo 'FAIL excel icon'; exit 1; }
+  grep -qx 'Icon=winpodx-microsoft-edge' "$e/winpodx-microsoft-edge.desktop" || { echo 'FAIL edge icon'; exit 1; }
 
   # No display (an ssh shell): say so, start nothing.
   : > "$t/log"; NODISPLAY='' orun office --yes; want_rc 2 office-nodisplay; has 'no display' office-nodisplay

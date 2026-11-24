@@ -785,6 +785,7 @@ cmd_winapps_setup() {
   read -rp "Set up Windows apps with WinPodX now? [y/N] " a || a=n
   [[ $a == [yY]* ]] || return 0
   winpodx setup
+  wpx_icons
 }
 
 # kriss winapps office: Microsoft Office in WinPodX's Windows, downloaded from Microsoft
@@ -798,6 +799,22 @@ WPX_DIR=${XDG_DATA_HOME:-${HOME:-}/.local/share}/winpodx
 WPX_APPS=$WPX_DIR/apps
 # Microsoft's own Office Deployment Tool (setup.exe), on Microsoft's CDN.
 OFFICE_ODT=https://officecdn.microsoft.com/pr/wsus/setup.exe
+
+# Point each WinPodX Start entry's Icon= at its file. WinPodX installs the icons into
+# ~/.local/share/icons/hicolor while the shell is running, and Qt's icon theme cache misses
+# files added after start, so the taskbar showed a generic icon until the next login.
+wpx_icons() {
+  local f name best dir=${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor
+  for f in "${XDG_DATA_HOME:-$HOME/.local/share}"/applications/winpodx-*.desktop; do
+    [[ -f $f ]] || continue
+    name=$(sed -n 's/^Icon=//p' "$f")
+    [[ -n $name && $name != /* ]] || continue
+    for best in "$dir/scalable/apps/$name.svg" "$dir"/{512,256,128,96,64,48,32,24,16}x*/apps/"$name.png" ""; do
+      [[ -f $best ]] && break
+    done
+    [[ -z $best ]] || sed -i "s|^Icon=.*|Icon=$best|" "$f"
+  done
+}
 
 # Word, Excel and PowerPoint open their own Office formats and nothing else. WinPodX (with
 # KrissOS's patch) gives discovered apps no file types, so this adds them as user-defined
@@ -929,6 +946,7 @@ EOF
   # WinPodX finds Word, Excel and PowerPoint and gives each a Start entry and its file types.
   winpodx app refresh || die "Office is installed, but WinPodX could not list it. Run 'winpodx app refresh'."
   office_types
+  wpx_icons
   printf 'kriss: done. Word, Excel and PowerPoint are in Start. Sign in or enter your key when Word first opens.\n'
 }
 
