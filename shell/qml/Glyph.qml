@@ -36,6 +36,7 @@ Item {
         info: "M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0M12 11v5M12 8h.01",
         settings: "M4 6h10M18 6h2M14 4v4M4 12h4M12 12h8M8 10v4M4 18h12M16 16v4",
         external: "M14 4h6v6M20 4l-9 9M18 14v6H4V6h6",
+        shield: "M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z",
         power: "M12 3v9M6.3 6.3a8 8 0 1 0 11.4 0",
         search: "M4 11a7 7 0 1 0 14 0a7 7 0 1 0-14 0M20 20l-4-4",
         balanced: "M4 16a8 8 0 1 1 16 0M12 16l4-5",
