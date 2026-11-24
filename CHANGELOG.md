@@ -15,6 +15,9 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 
 ### Added
 
+- More taskbar choices in Settings > Personalise > Taskbar: show search as a box, an icon
+  or not at all, hide the Widgets button, make the taskbar more or less see-through, and
+  show button labels by turning off "Combine taskbar buttons and hide labels".
 - Settings > Personalise > Windows: square, slightly round or round window corners, a
   border in your accent colour around the window you are using, softer or stronger
   shadows, and relaxed, normal or quick animations for windows and the whole shell.
