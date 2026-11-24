@@ -59,8 +59,9 @@ Singleton {
         { id: "touchpad", group: "devices", glyph: "mouse", name: Tr.t("Touchpad"), detail: Tr.t("Tapping, scrolling, gestures"),
           words: "touchpad;trackpad;gestures;tap to click;pad sentuh;gerak isyarat",
           keys: [Tr.t("Touchpad speed"), Tr.t("Tap to click"), Tr.t("Turn off while typing"), Tr.t("Gestures")] },
-        { id: "keyboard", group: "devices", glyph: "keyboard", name: Tr.t("Keyboard"), detail: Tr.t("Layouts, shortcuts, typing"), cosmic: "keyboard",
-          words: "keyboard;layout;language;shortcuts;input method;papan kekunci;susun atur;pintasan" },
+        { id: "keyboard", group: "devices", glyph: "keyboard", name: Tr.t("Keyboard"), detail: Tr.t("Languages, typing, shortcuts"),
+          words: "keyboard;layout;language;shortcuts;input method;chinese;pinyin;tamil;jawi;repeat;papan kekunci;susun atur;pintasan;bahasa",
+          keys: [Tr.t("Chinese (Pinyin)"), Tr.t("Tamil"), Tr.t("Jawi"), Tr.t("Repeat delay"), Tr.t("Repeat rate"), Tr.t("Keyboard shortcuts")] },
 
         { id: "wifi", group: "network", glyph: "wifi", name: Tr.t("Wi-Fi"), detail: Tr.t("Wireless networks"),
           words: "wifi;wi-fi;wireless;internet;hotspot;wayarles;tanpa wayar",
