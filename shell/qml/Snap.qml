@@ -374,7 +374,7 @@ Scope {
                             id: card
                             required property int index
                             readonly property var w: assist.wins[index]
-                            readonly property var entry: DesktopEntries.heuristicLookup(w?.appId ?? "")
+                            readonly property var entry: Windows.entryFor(w?.appId ?? "")
                             readonly property bool lit: assist.cur === index
                             width: assist.cardW
                             height: assist.cardW / 1.6 + assist.head

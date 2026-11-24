@@ -58,7 +58,7 @@ PanelWindow {
             const key = w.appId.toLowerCase();
             if (!key || seen[key]) continue;
             seen[key] = true;
-            out.push({ entry: DesktopEntries.heuristicLookup(w.appId), appId: w.appId });
+            out.push({ entry: Windows.entryFor(w.appId), appId: w.appId });
         }
         return out;
     }

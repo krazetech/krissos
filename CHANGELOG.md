@@ -57,6 +57,9 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
   Bluetooth (pair, connect, remove, battery level), Mouse and Touchpad pages: pointer speed,
   "Enhance pointer precision", natural scrolling, scrolling speed, swapped buttons, tap to
   click, and the touchpad off while typing or while a mouse is plugged in.
+- Settings > Apps: uninstall any app (a snapshot is taken first), choose which app opens web
+  links, email, music, video, pictures, PDFs and text, and turn off apps that start when you
+  sign in.
 - The Store: find, install, update and remove apps without a terminal, from Flathub and
   the KrissOS packs (gaming, Windows apps). It is pinned to the taskbar, and searching in
   Start offers "Get … from the Store" for apps you don't have yet. A snapshot is taken
@@ -114,6 +117,8 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 
 ### Fixed
 
+- Steam games (World of Tanks and the like) show their own icon and name on the taskbar, in
+  Alt+Tab and in Task View, instead of a blank one, and line up with the game you pinned.
 - `kriss update` now swaps in the KrissOS builds of COSMIC Settings and the compositor on
   PCs installed before they existed; until now an update kept the old ones.
 - `kriss update` adds the Store to PCs installed before it existed, once; if you remove it,
