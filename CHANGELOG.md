@@ -64,6 +64,8 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 - Settings now covers your name and picture, password, date and time zone, English or Bahasa
   Melayu, privacy (what KrissOS sends, which apps use the microphone, clearing history) and
   updates (update now, the Stable or Testing channel, going back to a snapshot).
+- Settings > Keyboard: turn Chinese, Tamil and Jawi typing on or off, and set how fast a
+  held key repeats.
 - The Store: find, install, update and remove apps without a terminal, from Flathub and
   the KrissOS packs (gaming, Windows apps). It is pinned to the taskbar, and searching in
   Start offers "Get … from the Store" for apps you don't have yet. A snapshot is taken
