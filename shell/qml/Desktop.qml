@@ -68,6 +68,35 @@ Singleton {
             mkdir -p "$d" && f="$d/$(date +%F_%H-%M-%S).png" && grim "$f" && notify-send -i "$f" "$1" "$f"`,
             "sh", Tr.t("Screenshot saved")]);
     }
+    // Screen recording (Windows+Alt+R, the snipping bar, the taskbar's stop button): the
+    // screen, or a window, through the COSMIC portal (it asks which the first time and
+    // remembers), with the sound the PC plays, into Videos/Screen Recordings as MP4, encoded
+    // on the graphics card. Stopping (SIGINT) finishes the file.
+    // ponytail: a shell restart ends a recording; gpu-screen-recorder still closes the file.
+    readonly property bool recording: recorder.running
+    property string recordingFile: ""
+    property real recordingSince: 0
+    function record() {
+        if (recorder.running) { recorder.signal(2); return; }
+        recordingFile = "";
+        recorder.running = true;
+    }
+    Process {
+        id: recorder
+        command: ["sh", "-c", `d="$(xdg-user-dir VIDEOS 2>/dev/null || echo "$HOME/Videos")/$1"
+            mkdir -p "$d" && f="$d/Recording_$(date +%Y%m%d_%H%M%S).mp4" && printf '%s\n' "$f" || exit 1
+            exec gpu-screen-recorder -w portal -restore-portal-session yes -f 60 -a default_output -c mp4 -o "$f"`,
+            "sh", Tr.t("Screen Recordings")]
+        stdout: SplitParser { onRead: line => { if (!root.recordingFile) { root.recordingFile = line; root.recordingSince = Date.now(); } } }
+        onExited: code => {
+            const f = root.recordingFile;
+            // Not a file if the portal was cancelled before anything was recorded.
+            if (f) Quickshell.execDetached(["sh", "-c", '[ -s "$1" ] && notify-send -a "$2" -i video-x-generic "$3" "$4"',
+                "sh", f, Tr.t("Screen recording"), Tr.t("Recording saved"), Tr.t("%1 is in Videos > Screen Recordings.", f.split("/").pop())]);
+            root.recordingFile = "";
+        }
+    }
+
     // Esc in a panel: the bar that opened it from the keyboard takes the focus back (see
     // Bar.returnTo), then the panel closes.
     signal backOut()

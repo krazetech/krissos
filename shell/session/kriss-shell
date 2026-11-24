@@ -35,9 +35,11 @@
 #                          the media keys, for the player playing (or the last one)
 #   kriss-shell brightness STEP
 #                          change the brightness and show the level (brightness keys, e.g. 5%+)
-#   kriss-shell screenshot [region]
-#                          the whole screen (Print Screen) or a dragged region
-#                          (Windows+Shift+S) to ~/Pictures/Screenshots and the clipboard
+#   kriss-shell screenshot [region|area]
+#                          the whole screen (Print Screen) to ~/Pictures/Screenshots and the
+#                          clipboard; region opens the snipping bar (Windows+Shift+S), area a
+#                          dragged box straight away
+#   kriss-shell record     start or stop a screen recording (Windows+Alt+R)
 set -u
 
 data=${KRISS_SHELL_DATA:-/usr/share/kriss-shell}
@@ -103,11 +105,17 @@ brightness)
     qs -p "$qml" ipc call osd brightness "${2:?usage: kriss-shell brightness 5%+}" 2>/dev/null ||
         exec brightnessctl -q -c backlight set "$2"
     ;;
+record)
+    # Windows+Alt+R: start or stop a screen recording.
+    exec qs -p "$qml" ipc call snip record
+    ;;
 screenshot)
+    # Windows+Shift+S (region): the snipping bar, whose Rectangle comes back here as `area`.
+    if [ "${2:-}" = region ] && qs -p "$qml" ipc call snip toggle 2>/dev/null; then exit 0; fi
     dir=$(xdg-user-dir PICTURES 2>/dev/null || echo "$HOME/Pictures")/Screenshots
     file=$dir/Screenshot_$(date +%Y%m%d_%H%M%S).png
     mkdir -p "$dir"
-    if [ "${2:-}" = region ]; then
+    if [ "${2:-}" = region ] || [ "${2:-}" = area ]; then
         area=$(slurp) || exit 0  # Escape cancels
         grim -g "$area" "$file" || exit 1
     else
