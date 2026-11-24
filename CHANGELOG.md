@@ -76,8 +76,16 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 - Updates go through a testing channel first, so a bad package is caught before it reaches
   you. To try updates early, run `kriss channel testing`; `kriss channel stable` takes you
   back (#79).
-- Windows apps: WinBoat, with `kriss winapps check` and `kriss winapps setup` to see whether
-  a Windows app will run and set it up (#26).
+- Windows apps: WinPodX, with `kriss winapps check` and `kriss winapps setup` to see whether
+  a Windows app will run and set it up (#26). Each Windows app opens as its own window with
+  its own Start entry, and opens its file types when you double-click them. Before setup
+  starts it tells you what WinPodX changes in Windows: it lifts Windows' one-session limit
+  (which Microsoft's licence terms don't allow) and hides the virtual machine from Windows.
+  Both can be turned off.
+- Microsoft Office in WinPodX: `kriss winapps office`, "Microsoft Office" in the Store, or
+  the Office row in KrissOS Welcome downloads Word, Excel and PowerPoint from Microsoft
+  (about 3 GB) and puts them in Start, opening your .docx, .xlsx and .pptx files. Bring your
+  own Microsoft 365 account or product key; KrissOS includes no Office files.
 - The installer works with no internet at all: everything it needs is on the USB stick (#30).
 - Boot menu: KrissOS look, an entry for each installed kernel, and snapshots you can start
   from the menu to roll back a bad update (#28).

@@ -192,6 +192,14 @@ class Backend(QObject):
     def installExtra(self, extra_id):
         self._run(extra_id, logic.extra_command(extra_id, self._hw["gpus"]))
 
+    @Slot()
+    def setupWinapps(self):
+        """`kriss winapps setup` in a terminal: it asks before each fix and before WinPodX
+        changes Windows, so it needs one. Same terminal order as the shell's Launcher."""
+        term = (["xdg-terminal-exec"] if shutil.which("xdg-terminal-exec")
+                else ["cosmic-term", "-e"] if shutil.which("cosmic-term") else ["konsole", "-e"])
+        QProcess.startDetached(term[0], term[1:] + ["sh", "-c", 'kriss winapps setup; exec "${SHELL:-sh}"'])
+
     # Local AI models
     @Slot(result="QVariantMap")
     def ollamaModels(self):
