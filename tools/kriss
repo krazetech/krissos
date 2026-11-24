@@ -716,6 +716,20 @@ winapps_check() {
   if [[ -e $SYS/fs/cgroup/cgroup.controllers ]]; then wa_row cgroups ok "v2"
   else wa_row cgroups FAIL "rootless Podman needs cgroup v2. Remove systemd.unified_cgroup_hierarchy=0 from the kernel command line."; fi
 
+  # WinPodX publishes these on 127.0.0.1. Its agent (8765) and SMB (4445) ports are fixed; RDP
+  # and VNC can move in its config. Skipped while its own container runs: it holds them then.
+  if [[ $(podman inspect -f '{{.State.Running}}' winpodx-windows 2>/dev/null) != true ]]; then
+    for f in 8765:agent 4445:SMB 3390:RDP 8007:VNC; do
+      v=$(ss -Hltnp "sport = :${f%%:*}" 2>/dev/null | sed -n 1p)
+      [[ -n $v ]] || continue
+      # Best effort: ss names the process only when it belongs to this user.
+      v=$(grep -o 'users:(("[^"]*' <<<"$v" | cut -d'"' -f2 || true)
+      wa_row port FAIL "127.0.0.1:${f%%:*} is in use${v:+ by $v}. WinPodX needs it for its ${f#*:} connection; stop or move that program.$(
+        case ${f#*:} in RDP) echo " Or move WinPodX's: winpodx config set rdp.port <free port>" ;;
+          VNC) echo " Or move WinPodX's: winpodx config set pod.vnc_port <free port>" ;; esac)"
+    done
+  fi
+
   # Windows gets 4 GB RAM and 4 threads, and its disk image wants room to grow (WinPodX's
   # default disk is 64 GB, plus a ~7.5 GB ISO). Warnings only: it still runs on less.
   v=$(ram_mb)

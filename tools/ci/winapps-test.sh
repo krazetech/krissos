@@ -20,6 +20,7 @@ stub podman 'podman version 5.4.0'
 stub podman-compose 'podman-compose version 1.6.0'
 stub xfreerdp3 'This is FreeRDP version 3.10.3 (n/a)'
 stub winpodx ''
+stub ss ''
 stub sudo ''
 
 reset() {
@@ -61,6 +62,17 @@ stub podman 'podman version 5.4.0'
 reset; echo 'alice:100000:65536' | tee "$t/etc/subuid" > "$t/etc/subgid"; run check; want_rc 1 no-subid
 has "usermod --add-subuids 165536-231071 --add-subgids 165536-231071 $me" no-subid
 reset; : > "$t/etc/subuid"; : > "$t/etc/subgid"; run check; has 'add-subuids 100000-165535' empty-subid
+
+# A port WinPodX needs is taken: FAIL and name the program when ss can.
+reset; printf '#!/bin/sh\ncase "$*" in *:8765*) echo "LISTEN 0 4096 127.0.0.1:8765 0.0.0.0:* users:((\\"syncthing\\",pid=42,fd=9))";; esac\n' > "$t/bin/ss"
+chmod +x "$t/bin/ss"; run check; want_rc 1 port-taken; has 'port      FAIL: 127.0.0.1:8765 is in use by syncthing' port-taken
+[[ $out != *4445* ]] || { echo "FAIL port-taken flagged a free port: $out"; exit 1; }
+# shellcheck disable=SC2016
+printf '#!/bin/sh\ncase "$*" in *:3390*) echo "LISTEN 0 5 0.0.0.0:3390 0.0.0.0:*";; esac\n' > "$t/bin/ss"; run check; want_rc 1 port-rdp
+has '127.0.0.1:3390 is in use. WinPodX needs it for its RDP connection' port-rdp; has 'winpodx config set rdp.port' port-rdp
+# WinPodX's own container holds them once it runs: no FAIL then.
+printf '#!/bin/sh\ncase "$1" in inspect) echo true;; *) echo "podman version 5.4.0";; esac\n' > "$t/bin/podman"; run check; want_rc 0 port-own
+stub podman 'podman version 5.4.0'; stub ss ''
 
 # Low memory and threads only warn.
 reset; echo 'MemTotal: 8000000 kB' > "$t/proc/meminfo"; printf 'flags : vmx\nprocessor : 0\n' > "$t/proc/cpuinfo"
