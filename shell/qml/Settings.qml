@@ -277,7 +277,7 @@ FloatingWindow {
                     visible: !win.query
                     active: win.visible
                     sourceComponent: !win.current ? sectionPage
-                        : ({ display: displayPage, sound: soundPage, notifications: notificationsPage, power: powerPage, about: aboutPage, recovery: recoveryPage, report: reportPage, colours: colours, background: background, taskbar: taskbar, pins: pins, icons: iconsPage, lock: lockPage, text: textPage })[win.current.id] ?? null
+                        : ({ wifi: wifiPage, ethernet: ethernetPage, bluetooth: bluetoothPage, mouse: mousePage, touchpad: touchpadPage, display: displayPage, sound: soundPage, notifications: notificationsPage, power: powerPage, about: aboutPage, recovery: recoveryPage, report: reportPage, colours: colours, background: background, taskbar: taskbar, pins: pins, icons: iconsPage, lock: lockPage, text: textPage })[win.current.id] ?? null
                     onLoaded: if (SettingsPages.key) pointLater.restart()
                 }
             }
@@ -306,6 +306,11 @@ FloatingWindow {
     }
 
     Component { id: displayPage; SettingsDisplay {} }
+    Component { id: wifiPage; SettingsWifi {} }
+    Component { id: ethernetPage; SettingsEthernet {} }
+    Component { id: bluetoothPage; SettingsBluetooth {} }
+    Component { id: mousePage; SettingsPointer {} }
+    Component { id: touchpadPage; SettingsPointer { touchpad: true } }
     Component { id: soundPage; SettingsSound {} }
     Component { id: notificationsPage; SettingsNotifications {} }
     Component { id: powerPage; SettingsPower {} }
