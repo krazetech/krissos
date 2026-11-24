@@ -24,7 +24,7 @@ for dir; do
   # Pinned builds of other people's packages are large (the NVIDIA driver is ~400 MB) and
   # change only on a bump, so skip one whose exact version is already published, in
   # [kriss-testing] or (once promoted) [kriss].
-  case ${dir%/} in pkgs/winboat | pkgs/nvidia-580xx-utils | pkgs/lib32-nvidia-580xx-utils)
+  case ${dir%/} in pkgs/nvidia-580xx-utils | pkgs/lib32-nvidia-580xx-utils)
     : "${published:=$(for r in testing-$(uname -m)/kriss-testing repo-$(uname -m)/kriss; do
         curl -fsSL "https://github.com/${GITHUB_REPOSITORY:-krazetech/krissos}/releases/download/$r.db" \
           | bsdtar -tf - 2>/dev/null | cut -d/ -f1 || true

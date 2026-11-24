@@ -30,11 +30,23 @@ PACKS = [
     {"id": "kriss-meta-gaming", "kind": "pacman", "name": "KrissOS Gaming Pack", "icon": "input-gaming",
      "summary": "Steam, GameMode, Gamescope and MangoHud, with the Vulkan drivers",
      "desc": "What you need to play Windows games on KrissOS: Steam (with Proton), GameMode, Gamescope, the MangoHud overlay and the Vulkan drivers. Check your games' anti-cheat in KrissOS Welcome first.",
-     "cats": ["games"], "dev": "KrissOS"},
-    {"id": "kriss-meta-winapps", "kind": "pacman", "name": "Windows Apps (WinBoat)", "icon": "computer",
+     "cats": ["games"], "dev": "KrissOS",
+     "summary_ms": "Steam, GameMode, Gamescope dan MangoHud, bersama pemacu Vulkan",
+     "desc_ms": "Apa yang anda perlukan untuk bermain permainan Windows di KrissOS: Steam (dengan Proton), GameMode, Gamescope, lapisan MangoHud dan pemacu Vulkan. Semak anti-tipu permainan anda dalam KrissOS Welcome dahulu."},
+    {"id": "kriss-meta-winapps", "kind": "pacman", "name": "Windows Apps (WinPodX)", "icon": "computer",
      "summary": "Run real Windows apps in a Windows virtual machine",
-     "desc": "WinBoat runs Windows in the background and shows its apps as normal windows. Needs about 16 GB of RAM and CPU virtualisation turned on. After installing, run 'kriss winapps setup' once.",
-     "cats": ["productivity", "utilities"], "dev": "KrissOS"},
+     "desc": "WinPodX runs Windows in the background and shows each of its apps as a normal window, with its own Start entry and file types. Needs about 16 GB of RAM and CPU virtualisation turned on. After installing, run 'kriss winapps setup' once: it downloads Windows from Microsoft and says what WinPodX changes in Windows before it starts.",
+     "cats": ["productivity", "utilities"], "dev": "KrissOS",
+     "summary_ms": "Jalankan aplikasi Windows sebenar dalam mesin maya Windows",
+     "desc_ms": "WinPodX menjalankan Windows di latar belakang dan memaparkan setiap aplikasinya sebagai tetingkap biasa, dengan entri Start dan jenis failnya sendiri. Memerlukan kira-kira 16 GB RAM dan virtualisasi CPU dihidupkan. Selepas memasang, jalankan 'kriss winapps setup' sekali: ia memuat turun Windows daripada Microsoft dan menerangkan perubahan yang dibuat oleh WinPodX dalam Windows sebelum bermula."},
+    # Not a package: `kriss winapps office` downloads Office from Microsoft into WinPodX's
+    # Windows. Installed means its Start entries exist.
+    {"id": "microsoft-office", "kind": "winapps", "name": "Microsoft Office (Word, Excel, PowerPoint)",
+     "icon": "x-office-document", "summary": "The real Word, Excel and PowerPoint, in WinPodX, with your own licence",
+     "desc": "Downloads Microsoft's Office installer from Microsoft (about 3 GB) and installs Word, Excel and PowerPoint in WinPodX's Windows. They then open from Start and open your .docx, .xlsx and .pptx files. Needs the internet, WinPodX set up first ('kriss winapps setup'), and your own Microsoft 365 subscription or product key: sign in or enter the key when Word first opens. KrissOS includes no Office files.",
+     "summary_ms": "Word, Excel dan PowerPoint sebenar, dalam WinPodX, dengan lesen anda sendiri",
+     "desc_ms": "Memuat turun pemasang Office terus daripada Microsoft (kira-kira 3 GB) dan memasang Word, Excel dan PowerPoint dalam Windows WinPodX. Selepas itu, aplikasi ini dibuka dari Start dan membuka fail .docx, .xlsx dan .pptx anda. Memerlukan internet, WinPodX yang telah disediakan ('kriss winapps setup') dan langganan Microsoft 365 atau kunci produk anda sendiri: log masuk atau masukkan kunci apabila Word dibuka kali pertama. KrissOS tidak menyertakan sebarang fail Office.",
+     "cats": ["productivity"], "dev": "Microsoft"},
 ]
 
 # Home's featured row, Flathub ids, after the packs.
@@ -144,7 +156,16 @@ def load_catalogue(root=FLATPAK, lang="en"):
     else:
         apps = []
     apps.sort(key=lambda a: a["name"].lower())
-    return [dict(p, shot="", keywords="") for p in PACKS] + apps
+    return [pack(p, lang) for p in PACKS] + apps
+
+
+def pack(p, lang="en"):
+    """A pack as the Store shows it, in Malay when there is a Malay text."""
+    p = dict(p, shot="", keywords="")
+    for k in ("summary", "desc"):
+        p[k] = p.pop(k + "_ms") if lang == "ms" and k + "_ms" in p else p[k]
+        p.pop(k + "_ms", None)
+    return p
 
 
 def search(apps, query, limit=60):

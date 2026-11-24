@@ -67,6 +67,11 @@ QMetaObject.invokeMethod(root, "openApp", Q_ARG("QVariant", "org.libreoffice.Lib
 spin()
 if shots:
     root.grabWindow().save(f"{shots}/app.png")
+# Microsoft Office: not a package, so Open and no Uninstall once its Start entries exist.
+QMetaObject.invokeMethod(root, "openApp", Q_ARG("QVariant", "microsoft-office"))
+spin()
+if shots:
+    root.grabWindow().save(f"{shots}/office.png")
 # Let the AppStream refresh and the update check finish before tearing down.
 for _ in range(600):
     spin()
