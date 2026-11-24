@@ -90,7 +90,7 @@ jobs:
 
   # The architecture-neutral packages again, on Arch Linux ARM, for the Apple Silicon image
   # (ARCHITECTURE §13). Left out: calamares and kriss-installer (the Asahi installer does
-  # that job), kriss-meta-winapps (WinBoat is x86 only) and kriss-meta-gaming (its lib32
+  # that job), kriss-meta-winapps (Windows apps in a VM are x86 only here) and kriss-meta-gaming (its lib32
   # and Intel/AMD Vulkan packages do not exist on aarch64; games there go through FEX).
   build-aarch64:
     runs-on: ubuntu-24.04-arm
