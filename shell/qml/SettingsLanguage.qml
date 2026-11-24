@@ -13,7 +13,7 @@ Column {
     readonly property string file: (Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config") + "/locale.conf"
     FileView { id: conf; path: page.file; watchChanges: true; printErrors: false; onFileChanged: reload() }
     readonly property string lang: (/^LANG=(\w+)/m.exec(conf.text() ?? "")?.[1] ?? Tr.lang) .startsWith("ms") ? "ms" : "en"
-    readonly property string formats: /^LC_TIME=(\w+)/m.exec(conf.text() ?? "")?.[1] ?? (Qt.locale().name.startsWith("ms") ? "ms_MY" : "en_US")
+    readonly property string formats: /^LC_TIME=(\w+)/m.exec(conf.text() ?? "")?.[1] ?? ((Quickshell.env("LC_TIME") || Qt.locale().name).startsWith("ms") ? "ms_MY" : "en_US")
     property bool changed: false
     function write(lang, formats) {
         const l = lang === "ms" ? "ms_MY.UTF-8" : "en_US.UTF-8", f = formats + ".UTF-8";
