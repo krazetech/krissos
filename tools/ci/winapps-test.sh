@@ -125,6 +125,9 @@ if ((EUID != 0)); then
   orun run notepad; want_rc 2 run-unknown
 
   # Not set up yet: point at kriss winapps setup.
-  rm "$h/.winboat/podman-compose.yml"; orun office --yes; want_rc 2 office-no-winboat; has "kriss winapps setup" office-no-winboat
+  # WinBoat after 0.9 keeps its compose file in $XDG_DATA_HOME/winboat-app.
+  mkdir -p "$h/.local/share/winboat-app"; mv "$h/.winboat/podman-compose.yml" "$h/.local/share/winboat-app/"
+  : > "$t/log"; orun run word; want_rc 0 new-winboat-dir; grep -qF '/u:MyWindowsUser' "$t/log" || { echo "FAIL new dir: $(cat "$t/log")"; exit 1; }
+  rm "$h/.local/share/winboat-app/podman-compose.yml"; orun office --yes; want_rc 2 office-no-winboat; has "kriss winapps setup" office-no-winboat
 fi
 echo 'winapps: ok'

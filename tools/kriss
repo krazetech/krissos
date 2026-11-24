@@ -758,7 +758,11 @@ cmd_winapps_setup() {
 # them (its launchApp), so Word, Excel and PowerPoint get Start entries and file types here.
 # ponytail: Bottles/Wine is not offered; Microsoft 365 there still crashes and shows black
 # windows (bottlesdevs/programs#500). Revisit when that issue is closed.
-WB_DIR=${KRISS_WINBOAT_DIR:-${HOME:-}/.winboat}
+# WinBoat 0.9 keeps its files in ~/.winboat; its next release moves them to
+# $XDG_DATA_HOME/winboat-app (upstream e42fcbf). Use whichever holds the compose file.
+WB_DIR=${XDG_DATA_HOME:-${HOME:-}/.local/share}/winboat-app
+[[ -f $WB_DIR/podman-compose.yml ]] || WB_DIR=${HOME:-}/.winboat
+WB_DIR=${KRISS_WINBOAT_DIR:-$WB_DIR}
 WB_COMPOSE=$WB_DIR/podman-compose.yml
 OFFICE_DIR=${HOME:-}/.local/share/kriss/office
 APPS_DIR=${XDG_DATA_HOME:-${HOME:-}/.local/share}/applications
