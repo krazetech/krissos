@@ -257,7 +257,7 @@ FloatingWindow {
                     Repeater {
                         id: resultList
                         model: win.query ? win.results : []
-                        LinkRow {
+                        SettingsUi.LinkRow {
                             required property var modelData
                             required property int index
                             glyph: modelData.glyph
@@ -277,7 +277,7 @@ FloatingWindow {
                     visible: !win.query
                     active: win.visible
                     sourceComponent: !win.current ? sectionPage
-                        : ({ display: displayPage, recovery: recoveryPage, report: reportPage, colours: colours, background: background, taskbar: taskbar, pins: pins, lock: lockPage, text: textPage })[win.current.id] ?? null
+                        : ({ display: displayPage, sound: soundPage, notifications: notificationsPage, power: powerPage, about: aboutPage, recovery: recoveryPage, report: reportPage, colours: colours, background: background, taskbar: taskbar, pins: pins, lock: lockPage, text: textPage })[win.current.id] ?? null
                     onLoaded: if (SettingsPages.key) pointLater.restart()
                 }
             }
@@ -292,7 +292,7 @@ FloatingWindow {
             SettingsUi.Card {
                 Repeater {
                     model: SettingsPages.pagesIn(win.section)
-                    LinkRow {
+                    SettingsUi.LinkRow {
                         required property var modelData
                         glyph: modelData.glyph
                         text: modelData.name
@@ -306,6 +306,10 @@ FloatingWindow {
     }
 
     Component { id: displayPage; SettingsDisplay {} }
+    Component { id: soundPage; SettingsSound {} }
+    Component { id: notificationsPage; SettingsNotifications {} }
+    Component { id: powerPage; SettingsPower {} }
+    Component { id: aboutPage; SettingsAbout {} }
 
     Component { id: recoveryPage; SettingsRecovery {} }
     Component { id: reportPage; SettingsReport {} }
@@ -929,60 +933,6 @@ FloatingWindow {
                 font { family: Theme.sans; pixelSize: Theme.sp(14); weight: tab.on ? Font.DemiBold : Font.Medium }
             }
         }
-    }
-
-    // A row that goes to a page: glyph, name, what is on it, and an arrow (another window's
-    // arrow for a COSMIC Settings page).
-    component LinkRow: MouseArea {
-        id: link
-        property string glyph
-        property string text
-        property string detail
-        property bool external
-        signal picked()
-        width: parent?.width ?? 0
-        height: Math.max(56, words.implicitHeight + 20)
-        hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
-        activeFocusOnTab: true
-        onClicked: picked()
-        Keys.onReturnPressed: picked()
-        Keys.onSpacePressed: picked()
-        onActiveFocusChanged: if (activeFocus) Reveal.show(link)
-        Accessible.role: Accessible.Link
-        Accessible.name: text
-        Accessible.description: detail
-        Accessible.onPressAction: picked()
-        FocusRim { anchors.margins: -4; radius: Theme.rControl + 4 }
-        Rectangle {
-            anchors.fill: parent
-            anchors.margins: -6
-            radius: Theme.rControl
-            color: link.containsMouse ? Theme.cardHover : "transparent"
-            Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
-        }
-        Glyph { id: lg; name: link.glyph; size: 20; anchors.verticalCenter: parent.verticalCenter }
-        Column {
-            id: words
-            anchors { left: lg.right; leftMargin: Theme.s3; right: arrow.left; rightMargin: Theme.s3; verticalCenter: parent.verticalCenter }
-            spacing: Theme.s0
-            Text {
-                width: parent.width
-                elide: Text.ElideRight
-                text: link.text
-                color: Theme.fg
-                font { family: Theme.sans; pixelSize: Theme.sp(14); weight: Font.Medium }
-            }
-            Text {
-                visible: text !== ""
-                width: parent.width
-                elide: Text.ElideRight
-                text: link.detail
-                color: Theme.soft
-                font { family: Theme.sans; pixelSize: Theme.sp(12) }
-            }
-        }
-        Glyph { id: arrow; name: link.external ? "external" : "chevron"; size: 16; color: Theme.soft; anchors { right: parent.right; verticalCenter: parent.verticalCenter } }
     }
 
 }
