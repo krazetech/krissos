@@ -218,6 +218,11 @@ greeter)
     # fonts in step with COSMIC's, so COSMIC apps and the terminal follow the mode live.
     cosmic-settings-daemon &
     daemon=$!
+    # Turns the screens off and puts the PC to sleep after the times in Settings > Power and
+    # battery (com.system76.CosmicIdle), locking as the screens go off; videos and games that
+    # ask the screen to stay on hold it off.
+    cosmic-idle &
+    idle=$!
     # Apps in /etc/xdg/autostart and ~/.config/autostart, such as kriss-welcome on first
     # login, through systemd's XDG autostart units.
     systemctl --user --no-block start kriss-shell-session.target
@@ -229,7 +234,7 @@ greeter)
     "$0" --inside
     kriss-shell-clipboard clear 2>/dev/null
     systemctl --user stop kriss-shell-session.target graphical-session.target
-    kill "$daemon" "$comp" 2>/dev/null
+    kill "$daemon" "$idle" "$comp" 2>/dev/null
     wait "$comp"
     ;;
 *)
