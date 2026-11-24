@@ -277,7 +277,7 @@ FloatingWindow {
                     visible: !win.query
                     active: win.visible
                     sourceComponent: !win.current ? sectionPage
-                        : ({ users: accountPage, datetime: timePage, language: languagePage, privacy: privacyPage, updates: updatesPage, installed: installedPage, defaultapps: defaultAppsPage, startup: startupPage, wifi: wifiPage, ethernet: ethernetPage, bluetooth: bluetoothPage, mouse: mousePage, touchpad: touchpadPage, display: displayPage, sound: soundPage, notifications: notificationsPage, power: powerPage, about: aboutPage, recovery: recoveryPage, report: reportPage, colours: colours, background: background, taskbar: taskbar, pins: pins, windows: windowsPage, lock: lockPage, text: textPage })[win.current.id] ?? null
+                        : ({ users: accountPage, datetime: timePage, language: languagePage, privacy: privacyPage, updates: updatesPage, installed: installedPage, defaultapps: defaultAppsPage, startup: startupPage, wifi: wifiPage, ethernet: ethernetPage, bluetooth: bluetoothPage, mouse: mousePage, keyboard: keyboardPage, touchpad: touchpadPage, display: displayPage, sound: soundPage, notifications: notificationsPage, power: powerPage, about: aboutPage, recovery: recoveryPage, report: reportPage, colours: colours, background: background, taskbar: taskbar, pins: pins, windows: windowsPage, lock: lockPage, text: textPage })[win.current.id] ?? null
                     onLoaded: if (SettingsPages.key) pointLater.restart()
                 }
             }
@@ -318,6 +318,7 @@ FloatingWindow {
     Component { id: ethernetPage; SettingsEthernet {} }
     Component { id: bluetoothPage; SettingsBluetooth {} }
     Component { id: mousePage; SettingsPointer {} }
+    Component { id: keyboardPage; SettingsKeyboard {} }
     Component { id: touchpadPage; SettingsPointer { touchpad: true } }
     Component { id: soundPage; SettingsSound {} }
     Component { id: notificationsPage; SettingsNotifications {} }
