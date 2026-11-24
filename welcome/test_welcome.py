@@ -152,6 +152,7 @@ assert cmd[3].endswith("systemctl enable --now ollama.service") and cmd[-2:] == 
 assert logic.extra_command("claude-code", [])[0] == "sh"  # per-user install, no root
 assert logic.extra_command("nvidia-legacy", ["intel", "nvidia"]) == ["pkexec", "kriss", "nvidia", "setup"]
 assert all(logic.extra_command(e, ["amd"]) for e in logic.EXTRAS)
+assert logic.extra_command("office", []) == ["sh", "-c", "kriss winapps office --yes"]  # as the user, never root
 
 # Local AI models: graphics memory when there is a card, else RAM less 4 GB for the rest.
 def fits(hw):
@@ -168,7 +169,7 @@ assert logic.ollama_names("NAME ID SIZE MODIFIED\nllama3.2:3b a80c4f17acd5 2.0 G
 assert logic.ollama_names("") == []
 
 qml = (ROOT / "qml/ExtrasPage.qml").read_text()
-assert set(re.findall(r'\{ id: "([a-z-]+)"', qml)) - {"antigravity"} == set(logic.EXTRAS)
+assert set(re.findall(r'\{ id: "([a-z-]+)"', qml)) - {"antigravity"} == set(logic.EXTRAS) - {"office"}
 
 # kriss update refuses to run without root (it needs pkexec).
 if os.geteuid():

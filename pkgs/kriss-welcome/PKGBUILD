@@ -1,6 +1,6 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-welcome
-pkgver=0.3.0
+pkgver=0.3.1
 pkgrel=1
 pkgdesc='KrissOS first-boot app: game checker, apps, copy from Windows, drivers and extras'
 arch=('any')

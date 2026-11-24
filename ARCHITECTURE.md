@@ -262,11 +262,18 @@ available as the installer's alternative.
 
 ## 7. Windows apps
 
-### Tier 1: productivity (WinBoat)
-- The `kriss-meta-winapps` package installs WinBoat with Podman, Compose v2, KVM and FreeRDP
-  3.x.
-- `kriss winapps setup` checks for KVM and group membership, then provisions the Windows
-  container.
+### Tier 1: productivity (WinPodX)
+- The `kriss-meta-winapps` package installs WinPodX with rootless Podman, podman-compose, KVM
+  and FreeRDP 3.x. WinPodX (MIT) opens each Windows app as its own window with its own Start
+  entry and file types. KrissOS moved to it from WinBoat for 110.
+- `kriss winapps setup` checks for KVM and group membership, says what WinPodX changes in
+  Windows (below), then runs `winpodx setup`, which downloads Windows from Microsoft.
+- WinPodX's defaults are kept: it patches Windows' one-session-per-user limit (rdprrap, based
+  on RDP Wrapper) so apps get separate windows, and hides the VM from Windows ("disguise",
+  balanced). Microsoft's licence terms do not allow working around Windows' limits, so setup
+  says so before it starts and how to turn each off; the user decides.
+- `kriss winapps office` installs Word, Excel and PowerPoint from Microsoft's Office Deployment
+  Tool with the user's own licence; KrissOS ships no Office files.
 
 ### Tier 2: gaming and heavy GPU apps (`kriss-vm`)
 `kriss-vm` follows the approach of Omarchy PR #3454; that PR is to be reviewed before
@@ -363,7 +370,7 @@ until `110` ships. Details: `docs/apple-silicon.md`.
   builds the image and boots it in a QEMU `virt` VM (UEFI) until the KrissOS Shell starts.
 - **Boot:** a unified kernel image at the ESP's fallback path, started directly by U-Boot (or
   edk2 in a VM). Root is ext4 for now.
-- **Not on this image:** the CachyOS kernel, x86-64-v3, WinBoat and `kriss-vm`. Games go through
+- **Not on this image:** the CachyOS kernel, x86-64-v3, WinPodX and `kriss-vm`. Games go through
   FEX + muvm.
 
 Shared code stays architecture-neutral from day one so this image costs as little as possible.
@@ -381,7 +388,7 @@ office users, and creators and AI tinkerers. Every default is checked against on
 | NVIDIA | The installer detects the GPU and installs the right driver (open modules on Turing and newer), so games work on first boot |
 | Apps | The Store (`kriss-store`, pinned to the taskbar): Flathub apps and the KrissOS packs, with categories, search, Install, Uninstall and Update all. Every change runs `pkexec kriss install/remove/update`, which takes a snapper snapshot first, so it rolls back from the boot menu. Start's search offers "Get X from the Store" for apps not installed yet. Plasma keeps Discover. In a terminal, `kriss install` reaches the repos, Flathub and the AUR in one command (below) |
 | Updates | A desktop notification with an Update button (`kriss-update-notify.timer`). One click runs `kriss update`, which takes a btrfs snapshot through snapper first, so a bad update rolls back from the boot menu |
-| Windows apps | WinBoat up front, adapted to the hardware (see `kriss-welcome`). The Windows licence follows WinBoat's own approach; KrissOS adds no licence step |
+| Windows apps | WinPodX up front, adapted to the hardware (see `kriss-welcome`). Windows is downloaded from Microsoft; the user's own licence. KrissOS adds no licence step, and setup says what WinPodX changes in Windows (§7) |
 | Anti-cheat | Said upfront: gamers check their games before switching, on the website and in `kriss-welcome` |
 | Language | English and Bahasa Melayu from day one: installer, `kriss-welcome`, website |
 
@@ -419,7 +426,7 @@ One command for what people otherwise reach for yay for, with KrissOS's promises
 A new `[kriss]` package. It opens on first login and stays in the menu.
 
 1. **Bring your apps.** The user picks the Windows apps they use. Each gets one answer: a native
-   alternative, Wine/Proton, or WinBoat. A hardware check decides what is offered: WinBoat only
+   alternative, Wine/Proton, or WinPodX. A hardware check decides what is offered: WinPodX only
    when the PC can run a Windows VM well (about 16 GB RAM, CPU virtualisation on, enough cores);
    otherwise Wine/Proton and native apps.
 2. **Game checker.** Search a game and see whether it runs, and whether its anti-cheat blocks

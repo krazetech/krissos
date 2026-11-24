@@ -61,11 +61,11 @@ PanelWindow {
         ["camera", Tr.t("Take a screenshot"), () => { close(); Desktop.screenshot(); },
             "screenshot;screen capture;print screen;snip;snipping tool;tangkapan skrin;cetak skrin"],
         // kriss actions that work offline: a summary of this PC, and whether it can run
-        // Windows apps in WinBoat (read-only; WinBoat is x86_64 only).
+        // Windows apps in WinPodX (read-only; WinPodX is x86_64 only).
         ["file", Tr.t("About this PC"), () => { close(); inTerminal("kriss info; kriss version"); },
             "system info;specs;version;kriss info;perihal pc;maklumat sistem;spesifikasi"],
         ...(providers.x86 ? [["check", Tr.t("Check this PC can run Windows apps"), () => { close(); inTerminal("kriss winapps check"); },
-            "windows apps;winboat;exe;run windows programs;aplikasi windows;program windows"]] : []),
+            "windows apps;winpodx;winboat;exe;run windows programs;aplikasi windows;program windows"]] : []),
         // Updates need the internet, so this one is offered only online.
         ...(providers.online ? [["update", Tr.t("Update KrissOS"), () => { close(); inTerminal("pkexec kriss update"); },
             "update;upgrade;windows update;check for updates;kemas kini;naik taraf"]] : [])
