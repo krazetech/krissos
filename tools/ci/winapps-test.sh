@@ -71,6 +71,7 @@ chmod +x "$t/bin/ss"; run check; want_rc 1 port-taken; has 'port      FAIL: 127.
 printf '#!/bin/sh\ncase "$*" in *:3390*) echo "LISTEN 0 5 0.0.0.0:3390 0.0.0.0:*";; esac\n' > "$t/bin/ss"; run check; want_rc 1 port-rdp
 has '127.0.0.1:3390 is in use. WinPodX needs it for its RDP connection' port-rdp; has 'winpodx config set rdp.port' port-rdp
 # WinPodX's own container holds them once it runs: no FAIL then.
+# shellcheck disable=SC2016 # the stub expands $1 itself
 printf '#!/bin/sh\ncase "$1" in inspect) echo true;; *) echo "podman version 5.4.0";; esac\n' > "$t/bin/podman"; run check; want_rc 0 port-own
 stub podman 'podman version 5.4.0'; stub ss ''
 
@@ -153,7 +154,9 @@ EOF
   # File types: Word and Excel get their own Office formats only, as user apps of WinPodX's;
   # Edge gets nothing. A type with an explicit default (.docx here) is left alone.
   w=$apps/microsoft-word/app.toml
-  grep -q '^executable = .*WINWORD.EXE"$' "$w" && grep -q '^mime_types = \["application/msword", ' "$w" || { echo "FAIL word types: $(cat "$w")"; exit 1; }
+  if ! grep -q '^executable = .*WINWORD.EXE"$' "$w" || ! grep -q '^mime_types = \["application/msword", ' "$w"; then
+    echo "FAIL word types: $(cat "$w")"; exit 1
+  fi
   ! grep -q 'text/plain\|url_schemes\|source' "$w" || { echo "FAIL word claims more: $(cat "$w")"; exit 1; }
   grep -q 'spreadsheetml.sheet' "$apps/microsoft-excel/app.toml" || { echo 'FAIL excel types'; exit 1; }
   [[ ! -e $apps/microsoft-edge ]] || { echo 'FAIL edge got file types'; exit 1; }
