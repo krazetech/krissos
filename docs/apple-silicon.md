@@ -19,7 +19,7 @@ tarball and checks its signature against the vendored build key in `tools/ci/key
 dependency-checked on Arch Linux ARM: `kriss-keyring`, `kriss-settings`, `kriss-theme`,
 `kriss-tools`, `kriss-shell` and `kriss-welcome`, plus `linux-kriss-asahi`. Left out:
 `calamares` and `kriss-installer` (the Asahi installer does that job), `kriss-meta-winapps`
-and `winboat` (x86 only), `kriss-meta-gaming` (its lib32 and Intel/AMD Vulkan packages do not
+and `winpodx` (x86 only here), `kriss-meta-gaming` (its lib32 and Intel/AMD Vulkan packages do not
 exist on aarch64), and `linux-kriss`. `kriss winapps` and `kriss-vm` refuse to run on a
 non-x86_64 machine.
 
