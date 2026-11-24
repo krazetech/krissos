@@ -20,11 +20,19 @@ Singleton {
         const pins = Desktop.pinned;
         const cmd = id => DesktopEntries.byId(id)?.command.join(" ");
         return raw.map(w => {
-            const c = DesktopEntries.heuristicLookup(w.appId)?.command.join(" ");
+            const c = root.entryFor(w.appId)?.command.join(" ");
             const pin = pins.find(p => p.toLowerCase() === w.appId.toLowerCase() || c && cmd(p) === c);
             return pin ? Object.assign({}, w, { appId: pin }) : w;
         });
     }
+    // The app a window belongs to. heuristicLookup misses Steam games: their windows say
+    // steam_app_N, and Steam's shortcut for game N has the icon steam_icon_N.
+    function entryFor(appId) {
+        const steam = /^steam_app_(\d+)$/.exec(appId ?? "");
+        if (steam) return DesktopEntries.applications.values.find(e => e.icon === "steam_icon_" + steam[1]) ?? null;
+        return appId ? DesktopEntries.heuristicLookup(appId) : null;
+    }
+
     // Windows that Show desktop minimized, to bring back on the second press.
     property var hidden: []
     // Window ids, the most recently focused first, for Alt+Tab.

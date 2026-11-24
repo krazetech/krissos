@@ -125,7 +125,7 @@ PanelWindow {
                 height: row.height
                 hoverEnabled: true
                 onClicked: { win.current = index; win.finish(true); }
-                readonly property var entry: DesktopEntries.heuristicLookup(modelData.appId)
+                readonly property var entry: Windows.entryFor(modelData.appId)
                 Accessible.role: Accessible.ListItem
                 Accessible.name: modelData.title || entry?.name || modelData.appId
                 Accessible.description: entry?.name ?? ""
