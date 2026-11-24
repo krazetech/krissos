@@ -54,6 +54,10 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 - Settings has its own Sound (output, microphone and a volume mixer for each app),
   Notifications (do not disturb, and turning off pop-ups per app), Power and battery, and
   About (rename your PC, see its parts, copy them for a bug report) pages.
+- Settings has its own Wi-Fi (connect, enter a password, forget a network), Ethernet,
+  Bluetooth (pair, connect, remove, battery level), Mouse and Touchpad pages: pointer speed,
+  "Enhance pointer precision", natural scrolling, scrolling speed, swapped buttons, tap to
+  click, and the touchpad off while typing or while a mouse is plugged in.
 - The Store: find, install, update and remove apps without a terminal, from Flathub and
   the KrissOS packs (gaming, Windows apps). It is pinned to the taskbar, and searching in
   Start offers "Get … from the Store" for apps you don't have yet. A snapshot is taken
