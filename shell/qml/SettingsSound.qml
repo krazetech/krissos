@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Services.Pipewire
 
 // Settings > System > Sound: where sound goes and comes from, their levels, and each app's
@@ -15,6 +16,16 @@ Column {
     // Apps playing sound now.
     readonly property var apps: Pipewire.nodes.values.filter(n => n.audio && n.isSink && n.isStream)
     PwObjectTracker { objects: [page.sink, page.source].concat(page.apps) }
+
+    // Sound themes installed (/usr/share/sounds/NAME/index.theme), as [name, shown name].
+    property var themes: []
+    Process {
+        running: true
+        command: ["sh", "-c", "for f in /usr/share/sounds/*/index.theme; do d=${f%/index.theme}; printf '%s\\t%s\\n' \"${d##*/}\" \"$(sed -n 's/^Name=//p' \"$f\" | head -1)\"; done"]
+        stdout: StdioCollector {
+            onStreamFinished: page.themes = text.trim().split("\n").filter(l => l).map(l => l.split("\t")).map(t => [t[0], t[1] || t[0]])
+        }
+    }
 
     function label(n) { return n.properties?.["application.name"] || n.description || n.nickname || n.name; }
 
@@ -86,6 +97,23 @@ Column {
                     onMoved: v => { modelData.audio.muted = false; modelData.audio.volume = v; }
                 }
             }
+        }
+    }
+
+    SettingsUi.Card {
+        SettingsUi.Label { text: Tr.t("System sounds") }
+        SettingsUi.Toggle {
+            text: Tr.t("Play system sounds")
+            detail: Tr.t("A chime with notifications, a tick when the volume changes, and a sound when you plug something in")
+            checked: Desktop.sounds
+            onToggled: Desktop.sounds = !checked
+        }
+        SettingsUi.Choice {
+            visible: Desktop.sounds && page.themes.length > 1
+            text: Tr.t("Sound theme")
+            value: Desktop.soundTheme || "ocean"
+            options: page.themes
+            onPicked: v => Desktop.soundTheme = v
         }
     }
 }
