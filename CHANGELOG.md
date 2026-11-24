@@ -107,6 +107,8 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 
 ### Fixed
 
+- Steam games (World of Tanks and the like) show their own icon and name on the taskbar, in
+  Alt+Tab and in Task View, instead of a blank one, and line up with the game you pinned.
 - `kriss update` now swaps in the KrissOS builds of COSMIC Settings and the compositor on
   PCs installed before they existed; until now an update kept the old ones.
 - `kriss update` adds the Store to PCs installed before it existed, once; if you remove it,

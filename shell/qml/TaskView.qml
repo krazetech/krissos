@@ -259,7 +259,7 @@ Scope {
                             required property int index
                             readonly property var w: pane.wins[index]
                             readonly property var box: pane.boxes[index] ?? { x: 0, y: 0, w: 0, h: 0 }
-                            readonly property var entry: DesktopEntries.heuristicLookup(w?.appId ?? "")
+                            readonly property var entry: Windows.entryFor(w?.appId ?? "")
                             readonly property bool lit: pane.current === index && !pane.inDesks
                             Accessible.role: Accessible.ListItem
                             Accessible.name: w?.title || entry?.name || w?.appId || ""
@@ -465,7 +465,7 @@ Scope {
                                     delegate: IconImage {
                                         required property var modelData
                                         implicitSize: 24
-                                        source: Quickshell.iconPath(DesktopEntries.heuristicLookup(modelData.appId)?.icon ?? modelData.appId, "application-x-executable")
+                                        source: Quickshell.iconPath(Windows.entryFor(modelData.appId)?.icon ?? modelData.appId, "application-x-executable")
                                     }
                                 }
                             }
