@@ -77,6 +77,9 @@ Singleton {
     // compositor does not blur. Solid with high contrast or "transparency": false in shell.json.
     readonly property bool solid: high || !Desktop.transparency
     readonly property color bar: solid ? win : alpha(dark ? "{{surface}}" : "{{light_bg}}", dark ? 0.9 : 0.96)
+    // The taskbar and top bar: the same, or solid or clearer as the user picks.
+    readonly property color taskbar: solid || Desktop.taskbarTransparency === "none" ? win
+        : Desktop.taskbarTransparency === "more" ? alpha(dark ? "{{surface}}" : "{{light_bg}}", dark ? 0.72 : 0.8) : bar
     readonly property color rim: high ? "{{hc_fg}}" : dark ? alpha("{{fg}}", 0.08) : alpha("{{light_surface}}", 0.6)
 
     // The lock screen and wallpaper are always dark.

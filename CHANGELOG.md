@@ -15,6 +15,9 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 
 ### Added
 
+- More taskbar choices in Settings > Personalise > Taskbar: show search as a box, an icon
+  or not at all, hide the Widgets button, make the taskbar more or less see-through, and
+  show button labels by turning off "Combine taskbar buttons and hide labels".
 - Switch user: click your picture in Start, then Switch user. Your apps stay open behind
   your lock screen while someone else signs in; "Back to" on the login screen returns to you.
 - A guest account you can turn on from the same menu: no password, can't change the PC, and
