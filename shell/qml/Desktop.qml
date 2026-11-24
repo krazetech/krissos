@@ -135,6 +135,7 @@ Singleton {
     // ~/.config/kriss/shell.json. Missing keys keep the defaults below.
     property alias pinned: config.pinned
     property alias dnd: config.dnd
+    property alias mainChosen: config.mainChosen
     property alias sounds: config.sounds
     property alias soundTheme: config.soundTheme
 
@@ -265,6 +266,8 @@ Singleton {
             ]
             // Do not disturb: no toasts, notifications still collect behind the bell.
             property bool dnd: false
+            // The user picked the main display in Settings (else cosmic-comp picked it).
+            property bool mainChosen: false
             // System sounds (Desktop.sound): on or off, and the freedesktop sound theme
             // (/usr/share/sounds/NAME) they come from. KDE's Ocean by default.
             property bool sounds: true
