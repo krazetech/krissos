@@ -74,7 +74,7 @@ Column {
         property real part
         width: parent.width
         height: 8
-        radius: 4
+        radius: height / 2
         color: Theme.track
         Rectangle {
             width: Math.max(height, parent.width * Math.min(1, parent.part))
