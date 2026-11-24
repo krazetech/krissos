@@ -90,11 +90,13 @@ Singleton {
           words: "text size;font size;bigger text;high contrast;accessibility;saiz teks;teks besar;kontras tinggi;kebolehcapaian",
           keys: [Tr.t("Text size"), Tr.t("High contrast")] },
 
-        { id: "installed", group: "apps", glyph: "apps", name: Tr.t("Installed apps"), detail: Tr.t("Apps on this PC"), cosmic: "applications",
-          words: "apps;installed apps;applications;uninstall;remove;aplikasi;nyahpasang" },
-        { id: "defaultapps", group: "apps", glyph: "apps", name: Tr.t("Default apps"), detail: Tr.t("Which app opens web pages, music, pictures"), cosmic: "default-apps",
-          words: "default apps;default browser;open with;aplikasi lalai;pelayar lalai" },
-        { id: "startup", group: "apps", glyph: "restart", name: Tr.t("Startup"), detail: Tr.t("Apps that start when you sign in"), cosmic: "startup-apps",
+        { id: "installed", group: "apps", glyph: "apps", name: Tr.t("Installed apps"), detail: Tr.t("Apps on this PC"),
+          words: "apps;installed apps;applications;uninstall;remove;programs and features;aplikasi;nyahpasang;buang",
+          keys: [Tr.t("Find an app"), Tr.t("Get more apps from the Store")] },
+        { id: "defaultapps", group: "apps", glyph: "apps", name: Tr.t("Default apps"), detail: Tr.t("Which app opens web pages, music, pictures"),
+          words: "default apps;default browser;open with;email;pdf;aplikasi lalai;pelayar lalai",
+          keys: [Tr.t("Web browser"), Tr.t("Email"), Tr.t("Music"), Tr.t("Video"), Tr.t("Pictures"), Tr.t("PDF files"), Tr.t("Text files")] },
+        { id: "startup", group: "apps", glyph: "restart", name: Tr.t("Startup"), detail: Tr.t("Apps that start when you sign in"),
           words: "startup apps;autostart;run at login;aplikasi permulaan;mula automatik" },
 
         { id: "users", group: "accounts", glyph: "user", name: Tr.t("Your info and sign-in"), detail: Tr.t("Your name, picture and password; other people"), cosmic: "users",
