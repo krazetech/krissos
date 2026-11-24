@@ -15,6 +15,10 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 
 ### Added
 
+- Switch user: click your picture in Start, then Switch user. Your apps stay open behind
+  your lock screen while someone else signs in; "Back to" on the login screen returns to you.
+- A guest account you can turn on from the same menu: no password, can't change the PC, and
+  everything a guest did is gone the next time a guest signs in.
 - Secure Boot can stay on, so a PC that dual-boots Windows 11 needs no BIOS change. The
   USB starts through Microsoft-signed shim: the first time, a blue screen (MokManager) asks
   you to pick *Enroll key from disk* and the `KRISSOS.cer` file on the USB. After installing,

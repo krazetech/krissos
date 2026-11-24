@@ -33,6 +33,21 @@ PanelWindow {
     property string query: ""
     property bool allApps: false
     property bool powerMenu: false
+    // The account menu, from the picture at the bottom left, as on Windows.
+    property bool accountMenu: false
+    // Whether the guest account is on (`kriss guest on`), checked when the menu opens.
+    property bool guestOn: false
+    readonly property bool isGuest: Quickshell.env("USER") === "guest"
+    readonly property var accountActions: [
+        ["user", Tr.t("Change account settings"), () => { close(); SettingsPages.open("users"); }],
+        ["lock", Tr.t("Lock"), () => { close(); Desktop.locked = true; }],
+        ["signout", Tr.t("Sign out"), () => Qt.quit()],
+        ["users", Tr.t("Switch user"), () => { close(); Quickshell.execDetached(["kriss-shell", "switch-user"]); }]
+    ].concat(isGuest ? [] : [[guestOn ? "check" : "plus", guestOn ? Tr.t("Turn off the guest account") : Tr.t("Turn on the guest account"),
+        () => { guestSwitch.command = ["pkexec", "kriss", "guest", guestOn ? "off" : "on"]; guestSwitch.running = true; }]])
+    Process { id: guestCheck; command: ["test", "-e", "/var/lib/kriss/guest"]; onExited: code => win.guestOn = code === 0 }
+    Process { id: guestSwitch; onExited: guestCheck.running = true }
+    onAccountMenuChanged: if (accountMenu) guestCheck.running = true
     property int current: 0
 
     // COSMIC Settings is left out: KrissOS Settings replaces it, and opens its pages itself.
@@ -54,6 +69,7 @@ PanelWindow {
         ["power", Tr.t("Shut down"), () => Quickshell.execDetached(["systemctl", "poweroff"]), "shutdown;power off;turn off;tutup;matikan"],
         // Quitting the shell cleanly ends the session (see kriss-shell).
         ["signout", Tr.t("Sign out"), () => Qt.quit(), "log out;logout;sign off;log keluar;daftar keluar"],
+        ["users", Tr.t("Switch user"), () => { close(); Quickshell.execDetached(["kriss-shell", "switch-user"]); }, "switch user;change user;other user;tukar pengguna;pengguna lain"],
         ["sun", Tr.t("Quick settings"), () => { close(); Desktop.quickOpen = true; }, "wifi;volume;brightness;tetapan pantas;kecerahan"],
         ["bell", Tr.t("Notifications"), () => { close(); Desktop.notificationsOpen = true; }, "notification centre;pemberitahuan"],
         [Desktop.dnd ? "bell" : "bellOff", Desktop.dnd ? Tr.t("Turn off do not disturb") : Tr.t("Turn on do not disturb"),
@@ -234,7 +250,7 @@ PanelWindow {
         function onLauncherOpenChanged() { if (Desktop.launcherOpen) win.reset(); }
     }
     function reset() {
-        query = ""; allApps = false; powerMenu = false; current = 0;
+        query = ""; allApps = false; powerMenu = false; accountMenu = false; current = 0;
         search.text = "";
         search.forceActiveFocus();
     }
@@ -257,6 +273,7 @@ PanelWindow {
         Keys.onPressed: event => {
             if (event.key === Qt.Key_Escape) {
                 if (win.powerMenu) { win.powerMenu = false; powerBtn.forceActiveFocus(); }
+                else if (win.accountMenu) { win.accountMenu = false; accountBtn.forceActiveFocus(); }
                 else Desktop.back("launcherOpen");
             } else if (event.text && event.text.trim() && !(event.modifiers & (Qt.ControlModifier | Qt.AltModifier))) {
                 search.forceActiveFocus();
@@ -292,7 +309,7 @@ PanelWindow {
         // The panel grows and shrinks with the results instead of jumping (cmdk does the same).
         Behavior on height { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
 
-        MouseArea { anchors.fill: parent; onClicked: win.powerMenu = false; Accessible.ignored: true }
+        MouseArea { anchors.fill: parent; onClicked: { win.powerMenu = false; win.accountMenu = false; } Accessible.ignored: true }
 
         ColumnLayout {
             id: body
@@ -585,24 +602,54 @@ PanelWindow {
             color: "transparent"
             Rectangle { anchors { left: parent.left; right: parent.right; top: parent.top } height: 1; color: Theme.line }
 
-            Row {
+            // The picture and name: the account menu.
+            MouseArea {
+                id: accountBtn
                 anchors.left: parent.left
-                anchors.leftMargin: Theme.s6
+                anchors.leftMargin: Theme.s4
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: Theme.s2
-                Accessible.role: Accessible.StaticText
-                Accessible.name: Tr.t("Signed in as %1", Desktop.personName)
-                Avatar {
-                    size: Theme.dp(34)
-                    name: Desktop.personName
-                    faces: Desktop.faces
-                    border.color: Theme.line
+                width: who.implicitWidth + 2 * Theme.s2
+                height: Theme.dp(46)
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: toggle()
+                function toggle() {
+                    win.powerMenu = false;
+                    win.accountMenu = !win.accountMenu;
+                    if (win.accountMenu && activeFocus) powerItems.itemAt(0)?.forceActiveFocus();
                 }
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: Desktop.personName
-                    color: Theme.fg
-                    font { family: Theme.sans; pixelSize: Theme.sp(14); weight: Font.DemiBold }
+                activeFocusOnTab: true
+                Keys.onReturnPressed: toggle()
+                Keys.onEnterPressed: toggle()
+                Keys.onSpacePressed: toggle()
+                Accessible.role: Accessible.ButtonMenu
+                Accessible.name: Tr.t("Signed in as %1", Desktop.personName)
+                Accessible.onPressAction: toggle()
+                FocusRim { radius: Theme.rControl }
+                scale: pressed ? Theme.pressScale : 1
+                Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+                Rectangle {
+                    anchors.fill: parent
+                    radius: Theme.rControl
+                    color: accountBtn.containsMouse || win.accountMenu ? Theme.card : "transparent"
+                    Behavior on color { ColorAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+                }
+                Row {
+                    id: who
+                    anchors.centerIn: parent
+                    spacing: Theme.s2
+                    Avatar {
+                        size: Theme.dp(34)
+                        name: Desktop.personName
+                        faces: Desktop.faces
+                        border.color: Theme.line
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: Desktop.personName
+                        color: Theme.fg
+                        font { family: Theme.sans; pixelSize: Theme.sp(14); weight: Font.DemiBold }
+                    }
                 }
             }
 
@@ -645,6 +692,7 @@ PanelWindow {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: toggle()
                 function toggle() {
+                    win.accountMenu = false;
                     win.powerMenu = !win.powerMenu;
                     if (win.powerMenu && activeFocus) powerItems.itemAt(0)?.forceActiveFocus();
                 }
@@ -669,13 +717,13 @@ PanelWindow {
         }
 
         // Power menu, above the power button.
+        // Or the account menu, above the picture.
         Rectangle {
-            visible: win.powerMenu
-            anchors.right: parent.right
-            anchors.rightMargin: Theme.s3
+            visible: win.powerMenu || win.accountMenu
+            x: win.accountMenu ? Theme.s3 : parent.width - width - Theme.s3
             anchors.bottom: foot.top
             anchors.bottomMargin: -4
-            width: Theme.dp(190)
+            width: Theme.dp(win.accountMenu ? 260 : 190)
             height: menu.implicitHeight + 12
             radius: Theme.rCard
             color: Theme.card
@@ -688,7 +736,7 @@ PanelWindow {
                 width: parent.width - 12
                 Repeater {
                     id: powerItems
-                    model: win.actions.slice(0, 5)
+                    model: win.accountMenu ? win.accountActions : win.actions.slice(0, 5)
                     delegate: MouseArea {
                         id: item
                         required property var modelData

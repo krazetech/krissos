@@ -83,6 +83,25 @@ ShellRoot {
         }
     }
 
+    // People still signed in (Switch user): [[session id, name to show]]. Their screen is
+    // locked; going back shows their own lock screen. Looked at again every few seconds.
+    property var others: []
+    Process {
+        id: othersCheck
+        command: ["loginctl", "list-sessions", "--json=short"]
+        running: true
+        stdout: StdioCollector {
+            // Kept as it was if loginctl gives nothing readable.
+            onStreamFinished: {
+                try {
+                    root.others = JSON.parse(text).filter(s => s.class === "user" && s.user !== "greeter" && s.seat)
+                        .map(s => [String(s.session), (root.users.find(u => u[0] === s.user) ?? [s.user, s.user])[1]]);
+                } catch (e) {}
+            }
+        }
+    }
+    Timer { running: true; repeat: true; interval: 5000; onTriggered: othersCheck.running = true }
+
     // Desktops to start, from the Wayland session files.
     Process {
         command: ["sh", "-c", "grep -H -E '^(Name|Exec|DesktopNames)=' /usr/share/wayland-sessions/*.desktop"]
@@ -167,7 +186,17 @@ ShellRoot {
                 Column {
                     anchors { left: parent.left; bottom: parent.bottom; margins: 28 }
                     spacing: Theme.s1
-                    visible: root.users.length > 1
+                    visible: root.users.length > 1 || root.others.length > 0
+                    Repeater {
+                        model: root.others
+                        delegate: LockButton {
+                            required property var modelData
+                            glyph: "back"
+                            label: Tr.t("Back to %1", modelData[1])
+                            accessibleName: label
+                            onClicked: Quickshell.execDetached(["loginctl", "activate", modelData[0]])
+                        }
+                    }
                     Repeater {
                         model: root.users
                         delegate: LockButton {

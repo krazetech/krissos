@@ -1,0 +1,9 @@
+# kriss-switch-user.service: the same login screen as /etc/greetd/config.toml, on the next
+# free VT, switched to straight away.
+[terminal]
+vt = "next"
+switch = true
+
+[default_session]
+command = "kriss-shell greeter"
+user = "greeter"

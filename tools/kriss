@@ -1144,6 +1144,9 @@ Commands:
   channel    Show which update channel this PC is on (stable or testing)
   channel testing   Get updates from [kriss-testing] before they reach everyone
   channel stable    Go back to [kriss] (downgrades what came from testing, after a snapshot)
+  guest      Say whether the guest account is on
+  guest on   Add a guest account: no password, not an admin, emptied at every sign-in (root)
+  guest off  Remove it and what is in it (root)
   migrate    Turn this Arch or CachyOS install into KrissOS (try --dry-run first)
   winapps check   Check this PC is ready for Windows apps in WinBoat (read-only)
   winapps setup   Fix what is missing (asks first), then open WinBoat
@@ -1151,6 +1154,36 @@ Commands:
   nvidia setup    Install that driver (root, needs internet); nouveau stays otherwise
   help       Show this help
 EOF
+}
+
+# The guest account: "guest", no password, not an admin, shown on the login screen. The
+# KrissOS Shell empties its home at every sign-in (kriss-shell), so nothing a guest does
+# stays. The marker file says the account is ours; a "guest" someone made by hand is left alone.
+readonly GUEST_MARK="${KRISS_GUEST_MARK:-/var/lib/kriss/guest}"
+cmd_guest() {
+  case "${1:-status}" in
+    status)
+      if [[ -e $GUEST_MARK ]]; then echo on; else echo off; fi
+      ;;
+    on)
+      ((EUID == 0)) || die "run 'pkexec kriss guest on': it adds an account."
+      [[ -e $GUEST_MARK ]] && { echo "The guest account is already on."; return 0; }
+      id guest &>/dev/null && die "there is already an account called guest that KrissOS did not make; it is left alone."
+      useradd --create-home --comment "Guest" --shell /bin/bash guest
+      passwd --delete guest >/dev/null
+      mkdir -p "${GUEST_MARK%/*}" && : >"$GUEST_MARK"
+      echo "The guest account is on. Pick Guest on the login screen; it needs no password."
+      ;;
+    off)
+      ((EUID == 0)) || die "run 'pkexec kriss guest off': it removes an account."
+      [[ -e $GUEST_MARK ]] || { echo "The guest account is already off."; return 0; }
+      loginctl terminate-user guest 2>/dev/null || true
+      userdel --remove guest 2>/dev/null || true
+      rm -f "$GUEST_MARK"
+      echo "The guest account is off, and what was in it is gone."
+      ;;
+    *) die "usage: kriss guest [status|on|off]" ;;
+  esac
 }
 
 main() {
@@ -1169,6 +1202,7 @@ main() {
     reset) cmd_reset "${@:2}" ;;
     report) cmd_report "${@:2}" ;;
     channel) cmd_channel "${@:2}" ;;
+    guest) cmd_guest "${@:2}" ;;
     migrate) exec kriss-migrate "${@:2}" ;;
     help | --help | -h) cmd_help ;;
     --kapcai) cmd_kapcai ;;
