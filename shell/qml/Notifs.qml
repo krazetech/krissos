@@ -51,7 +51,7 @@ Singleton {
     function isPopup(n) {
         if (n.saved) return false;
         if (n.urgency === NotificationUrgency.Critical) return true;
-        return !Desktop.dnd && !held[n.id] && !Windows.fullscreenOn(Desktop.screen) && now - (arrived[n.id] ?? 0) < popupMs;
+        return !Desktop.dnd && Desktop.quietApps.indexOf(n.appName) < 0 && !held[n.id] && !Windows.fullscreenOn(Desktop.screen) && now - (arrived[n.id] ?? 0) < popupMs;
     }
 
     // Taking an action finishes a notification, as on Windows, unless the app asked
