@@ -211,6 +211,8 @@ Singleton {
     // which reserves no room of its own.
     readonly property int barRoom: taskbarAutoHide ? bottomRoom : 0
     property alias taskbarTaskView: config.taskbarTaskView
+    property alias taskbarSearch: config.taskbarSearch
+    property alias taskbarTransparency: config.taskbarTransparency
     property alias desktopNames: config.desktopNames
     property alias accent: config.accent
     property alias theme: config.theme
@@ -311,12 +313,17 @@ Singleton {
             // of room) or "never". Uncombined buttons are one per window, with its title.
             property string taskbarCombine: "always"
             // A bar on every screen, each with the windows on that screen; false: one bar,
-            // on the first screen, with every window.
+            // on the main display, with every window.
             property bool taskbarAllScreens: true
             // "small", "medium" or "large": the bar's height and its icons (Theme.barScale).
             property string taskbarSize: "medium"
             // The Task View button on the taskbar, after Start.
             property bool taskbarTaskView: true
+            // Search on the taskbar: "box" (the pill with the word), "icon" or "hidden".
+            property string taskbarSearch: "box"
+            // How much shows through the taskbar and top bar: "none", "normal" or "more".
+            // Only with transparency effects on (Colours).
+            property string taskbarTransparency: "normal"
             // Desktop names given in Task View, by position ("" keeps "Desktop N").
             property list<string> desktopNames: []
             // Theme.qml: the accent ("#RRGGBB", empty for Sky Cyan), "dark", "light",

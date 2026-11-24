@@ -15,6 +15,9 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 
 ### Added
 
+- More taskbar choices in Settings > Personalise > Taskbar: show search as a box, an icon
+  or not at all, hide the Widgets button, make the taskbar more or less see-through, and
+  show button labels by turning off "Combine taskbar buttons and hide labels".
 - Record your screen: Windows+Alt+R starts and stops, or press Windows+Shift+S for the
   new snipping bar (a box, the whole screen, or a recording). The first time, you pick the
   screen or a window to record. The taskbar shows how long it has been recording; click it
