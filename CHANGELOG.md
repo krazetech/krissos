@@ -64,6 +64,10 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
   held key repeats.
 - Settings > Storage: how much space each drive has left, what's using it (your folders,
   Steam games, Store apps, temporary files, the bin), and emptying the bin.
+- Printing: printers on your network show up by themselves (most printers made since 2015
+  need no driver). Settings > Printers sets the default, prints a test page, removes one or
+  adds one by its address. New dependencies: cups, cups-browsed and avahi. CUPS starts only
+  when something prints, listens on this PC only, and finds printers over DNS-SD alone.
 - The Store: find, install, update and remove apps without a terminal, from Flathub and
   the KrissOS packs (gaming, Windows apps). It is pinned to the taskbar, and searching in
   Start offers "Get … from the Store" for apps you don't have yet. A snapshot is taken
