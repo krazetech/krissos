@@ -23,7 +23,7 @@ Column {
             echo "cpu=$(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2- | sed 's/^ *//')"
             echo "mem=$(awk '/MemTotal/ { printf "%.0f", $2 / 1048576 }' /proc/meminfo)"
             echo "gpu=$(lspci 2>/dev/null | grep -Ei 'vga|3d controller|display' | cut -d: -f3- | sed 's/^ *//; s/ (rev .*//' | paste -sd ';')"
-            echo "disk=$(df -h --output=size / | tail -1 | tr -d ' ')"`]
+            echo "disk=$(df -H --output=size / | tail -1 | tr -d ' ')"`]
         stdout: StdioCollector {
             onStreamFinished: {
                 const o = {};
