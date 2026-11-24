@@ -175,7 +175,7 @@ PanelWindow {
         Behavior on y { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
         Behavior on width { NumberAnimation { duration: Theme.ms(Theme.normal); easing.type: Theme.ease } }
         radius: bar.mac ? Theme.rPanel : 0
-        color: Theme.bar
+        color: Theme.taskbar
         border.width: bar.mac ? Theme.rimWidth : 0
         border.color: Theme.rim
         HoverHandler { id: hover }
@@ -251,25 +251,30 @@ PanelWindow {
                 }
             }
 
-            // The search box: opens Start ready to search.
+            // The search box: opens Start ready to search. Or just its icon, or nothing
+            // (`taskbarSearch`); Windows+S still searches.
             BarButton {
                 id: searchBox
-                visible: !bar.mac
-                Layout.preferredWidth: Math.max(200, searchRow.implicitWidth + 24)
-                Layout.preferredHeight: Theme.barButton - 8
-                radius: height / 2
-                lit: true
-                boxed: true
-                litColor: containsMouse || Desktop.launcherOpen && Desktop.launcherSearch && Desktop.screen === bar.screen ? Theme.cardHover : Theme.card
+                readonly property bool icon: Desktop.taskbarSearch === "icon"
+                readonly property bool searching: Desktop.launcherOpen && Desktop.launcherSearch && Desktop.screen === bar.screen
+                visible: !bar.mac && Desktop.taskbarSearch !== "hidden"
+                Layout.preferredWidth: icon ? bar.button : Math.max(200, searchRow.implicitWidth + 24)
+                Layout.preferredHeight: icon ? bar.button : Theme.barButton - 8
+                radius: icon ? Theme.rControl : height / 2
+                lit: !icon || searching
+                boxed: !icon
+                litColor: icon ? (containsMouse || searching ? Theme.card : "transparent")
+                    : containsMouse || searching ? Theme.cardHover : Theme.card
                 name: Tr.t("Search")
                 onActivated: bar.toggle("launcherOpen", true, searchBox)
                 Row {
                     id: searchRow
                     anchors.verticalCenter: parent.verticalCenter
-                    x: 12
+                    x: searchBox.icon ? (parent.width - width) / 2 : 12
                     spacing: Theme.s2
-                    Glyph { anchors.verticalCenter: parent.verticalCenter; name: "search"; size: 16; color: Theme.soft }
+                    Glyph { anchors.verticalCenter: parent.verticalCenter; name: "search"; size: searchBox.icon ? 20 : 16; color: searchBox.icon ? Theme.fg : Theme.soft }
                     Text {
+                        visible: !searchBox.icon
                         anchors.verticalCenter: parent.verticalCenter
                         text: Tr.t("Search")
                         color: Theme.soft
@@ -557,7 +562,7 @@ PanelWindow {
         Rectangle {
             id: topBody
             anchors.fill: parent
-            color: Theme.bar
+            color: Theme.taskbar
             Accessible.role: Accessible.ToolBar
             Accessible.name: Tr.t("Top bar")
             Keys.onPressed: event => bar.barKeys(event, topBody)

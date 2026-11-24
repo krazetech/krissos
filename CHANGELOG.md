@@ -15,6 +15,9 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 
 ### Added
 
+- More taskbar choices in Settings > Personalise > Taskbar: show search as a box, an icon
+  or not at all, hide the Widgets button, make the taskbar more or less see-through, and
+  show button labels by turning off "Combine taskbar buttons and hide labels".
 - Secure Boot can stay on, so a PC that dual-boots Windows 11 needs no BIOS change. The
   USB starts through Microsoft-signed shim: the first time, a blue screen (MokManager) asks
   you to pick *Enroll key from disk* and the `KRISSOS.cer` file on the USB. After installing,

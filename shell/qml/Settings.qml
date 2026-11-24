@@ -480,10 +480,39 @@ FloatingWindow {
                     onPicked: v => Desktop.taskbarSize = v
                 }
                 SettingsUi.Choice {
-                    text: Tr.t("Combine taskbar buttons")
+                    // The dock always combines.
+                    visible: !Desktop.mac
+                    text: Tr.t("Combine taskbar buttons and hide labels")
                     value: Desktop.taskbarCombine
                     options: [["always", Tr.t("Always")], ["full", Tr.t("When the taskbar is full")], ["never", Tr.t("Never")]]
                     onPicked: v => Desktop.taskbarCombine = v
+                }
+                SettingsUi.Choice {
+                    visible: !Theme.solid
+                    text: Desktop.mac ? Tr.t("Top bar transparency") : Tr.t("Taskbar transparency")
+                    value: Desktop.taskbarTransparency
+                    options: [["none", Tr.t("None")], ["normal", Tr.t("A little")], ["more", Tr.t("More")]]
+                    onPicked: v => Desktop.taskbarTransparency = v
+                }
+            }
+            SettingsUi.Card {
+                visible: !Desktop.mac
+                SettingsUi.Label { text: Tr.t("Taskbar items") }
+                SettingsUi.Choice {
+                    text: Tr.t("Search")
+                    value: Desktop.taskbarSearch
+                    options: [["hidden", Tr.t("Hide")], ["icon", Tr.t("Search icon only")], ["box", Tr.t("Search box")]]
+                    onPicked: v => Desktop.taskbarSearch = v
+                }
+                SettingsUi.Toggle {
+                    text: Tr.t("Task View button")
+                    checked: Desktop.taskbarTaskView
+                    onToggled: Desktop.taskbarTaskView = !Desktop.taskbarTaskView
+                }
+                SettingsUi.Toggle {
+                    text: Tr.t("Widgets button")
+                    checked: Desktop.taskbarWidgets
+                    onToggled: Desktop.taskbarWidgets = !Desktop.taskbarWidgets
                 }
             }
             SettingsUi.Card {
@@ -494,12 +523,8 @@ FloatingWindow {
                     onToggled: Desktop.taskbarAutoHide = !Desktop.taskbarAutoHide
                 }
                 SettingsUi.Toggle {
-                    text: Tr.t("Task View button")
-                    checked: Desktop.taskbarTaskView
-                    onToggled: Desktop.taskbarTaskView = !Desktop.taskbarTaskView
-                }
-                SettingsUi.Toggle {
                     text: Tr.t("Show the taskbar on all screens")
+                    detail: Tr.t("Off: only on the main display.")
                     checked: Desktop.taskbarAllScreens
                     onToggled: Desktop.taskbarAllScreens = !Desktop.taskbarAllScreens
                 }
