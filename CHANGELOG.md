@@ -66,6 +66,8 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
   updates (update now, the Stable or Testing channel, going back to a snapshot).
 - Settings > Keyboard: turn Chinese, Tamil and Jawi typing on or off, and set how fast a
   held key repeats.
+- Settings > Storage: how much space each drive has left, what's using it (your folders,
+  Steam games, Store apps, temporary files, the bin), and emptying the bin.
 - The Store: find, install, update and remove apps without a terminal, from Flathub and
   the KrissOS packs (gaming, Windows apps). It is pinned to the taskbar, and searching in
   Start offers "Get … from the Store" for apps you don't have yet. A snapshot is taken
