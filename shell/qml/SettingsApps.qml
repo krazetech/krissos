@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import Quickshell.Widgets
 
 // Settings > Apps > Installed apps: every app in Start, a search, and Uninstall, through
 // `pkexec kriss remove --yes` as the Store does (a snapshot first; polkit asks for the
@@ -93,10 +94,9 @@ Column {
                 Row {
                     width: parent.width
                     spacing: Theme.s3
-                    Image {
+                    IconImage {
                         source: Quickshell.iconPath(app.modelData.icon, "application-x-executable")
-                        sourceSize: Qt.size(28, 28)
-                        width: 28; height: 28
+                        implicitSize: 28
                         anchors.verticalCenter: parent.verticalCenter
                     }
                     Text {
