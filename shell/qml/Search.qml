@@ -23,7 +23,7 @@ Scope {
 
     // Online when NetworkManager says the internet is reachable; checked each time Start opens.
     property bool online: false
-    // WinBoat (Windows apps) runs on x86_64 only.
+    // WinPodX (Windows apps) runs on x86_64 only.
     readonly property bool x86: !!has.x86_64
 
     // The latest answers, each with the text it was for, so a slow one never shows for newer text.

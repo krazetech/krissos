@@ -86,8 +86,8 @@ Page {
             Txt { soft: true; text: qsTr("Windows apps:") }
             Txt {
                 Layout.fillWidth: true
-                text: backend.hw.winboat_ok ? qsTr("This PC can run Windows apps in WinBoat")
-                                            : qsTr("Linux apps and Wine (WinBoat needs a stronger PC)")
+                text: backend.hw.winboat_ok ? qsTr("This PC can run Windows apps in WinPodX")
+                                            : qsTr("Linux apps and Wine (WinPodX needs a stronger PC)")
             }
         }
     }
