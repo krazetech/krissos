@@ -181,6 +181,10 @@ Singleton {
     // which reserves no room of its own.
     readonly property int barRoom: taskbarAutoHide ? bottomRoom : 0
     property alias taskbarTaskView: config.taskbarTaskView
+    property alias windowCorners: config.windowCorners
+    property alias windowBorder: config.windowBorder
+    property alias windowShadow: config.windowShadow
+    property alias animationSpeed: config.animationSpeed
     property alias desktopNames: config.desktopNames
     property alias accent: config.accent
     property alias theme: config.theme
@@ -284,6 +288,14 @@ Singleton {
             property string taskbarSize: "medium"
             // The Task View button on the taskbar, after Start.
             property bool taskbarTaskView: true
+            // App windows (Settings > Personalise > Windows, applied in Theme.qml): corners
+            // "square", "small" or "round"; the focused window's border "off", "thin" or
+            // "thick"; shadows "off", "soft", "normal" or "strong"; and how fast windows and
+            // the shell animate, "slow", "normal" or "fast".
+            property string windowCorners: "round"
+            property string windowBorder: "off"
+            property string windowShadow: "normal"
+            property string animationSpeed: "normal"
             // Desktop names given in Task View, by position ("" keeps "Desktop N").
             property list<string> desktopNames: []
             // Theme.qml: the accent ("#RRGGBB", empty for Sky Cyan), "dark", "light",

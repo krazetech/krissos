@@ -15,6 +15,9 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 
 ### Added
 
+- Settings > Personalise > Windows: square, slightly round or round window corners, a
+  border in your accent colour around the window you are using, softer or stronger
+  shadows, and relaxed, normal or quick animations for windows and the whole shell.
 - Secure Boot can stay on, so a PC that dual-boots Windows 11 needs no BIOS change. The
   USB starts through Microsoft-signed shim: the first time, a blue screen (MokManager) asks
   you to pick *Enroll key from disk* and the `KRISSOS.cer` file on the USB. After installing,

@@ -129,7 +129,9 @@ Singleton {
     // Reduced motion: the desktop-wide "animations off" switch (GNOME's enable-animations,
     // which COSMIC and GTK apps follow too). Every duration goes through ms().
     property bool reduceMotion: false
-    function ms(duration) { return reduceMotion ? 0 : duration; }
+    // And the user's animation speed (Settings > Personalise > Windows).
+    readonly property real speed: ({ slow: 0.7, fast: 1.5 })[Desktop.animationSpeed] ?? 1
+    function ms(duration) { return reduceMotion ? 0 : Math.round(duration / speed); }
 
     // Motion: every animation takes its length from these, through ms().
     readonly property int fast: 140    // hover, press, fades, small moves
@@ -196,7 +198,7 @@ Singleton {
     readonly property int cursorSize: Desktop.cursorSize >= 16 && Desktop.cursorSize <= 128 ? Desktop.cursorSize : 24
     onCursorThemeChanged: syncCursorLater.restart()
     onCursorSizeChanged: syncCursorLater.restart()
-    Component.onCompleted: syncCursorLater.restart()
+    Component.onCompleted: { syncCursorLater.restart(); lookReady = true; }
     Timer {
         id: syncCursorLater
         interval: 50
@@ -216,6 +218,35 @@ Singleton {
             mkdir -p "$HOME/.icons/default" && printf '[Icon Theme]\nName=Default\nInherits=%s\n' "$1" > "$HOME/.icons/default/index.theme"`,
             "sh", root.cursorTheme, String(root.cursorSize)])
     }
+    // The window look, for COSMIC and the compositor: the corners (radius_s, which
+    // cosmic-comp rounds windows with) and the focused window's border in both theme
+    // builders, rebuilt into the themes by kriss-cosmic-theme; the border's switch; and the
+    // shadow and animation speed in org.krissos.Look, which cosmic-comp-kriss reads live.
+    // Only on a change, so a look set in COSMIC Settings stays until one is picked here.
+    readonly property var windowLook: [Desktop.windowCorners, Desktop.windowBorder, Desktop.windowShadow, Desktop.animationSpeed]
+    onWindowLookChanged: if (lookReady) syncLookLater.restart()
+    property bool lookReady: false
+    Timer {
+        id: syncLookLater
+        interval: 50
+        onTriggered: Quickshell.execDetached(["sh", "-c", `
+            c=\${XDG_CONFIG_HOME:-$HOME/.config}/cosmic
+            put() { mkdir -p "$1" && printf %s "$3" > "$1/.$2.new" && mv -f "$1/.$2.new" "$1/$2"; }
+            put "$c/org.krissos.Look/v1" shadow "$3"
+            put "$c/org.krissos.Look/v1" animation_speed "$4"
+            put "$c/com.system76.CosmicComp/v1" active_hint "$([ "$2" = 0 ] && echo false || echo true)"
+            for b in Dark Light; do
+                d="$c/com.system76.CosmicTheme.$b.Builder/v2"
+                [ "$2" = 0 ] || put "$d" active_hint "$2"
+                [ -f "$d/corner_radii" ] && sed -i "s/radius_s: ([^)]*)/radius_s: ($1, $1, $1, $1)/" "$d/corner_radii"
+            done
+            exec kriss-cosmic-theme --rebuild`, "sh",
+            ({ square: "0.0", small: "8.0" })[Desktop.windowCorners] ?? "20.0",
+            ({ thin: "2", thick: "4" })[Desktop.windowBorder] ?? "0",
+            ({ off: "0.0", soft: "0.5", strong: "1.6" })[Desktop.windowShadow] ?? "1.0",
+            ({ slow: "0.7", fast: "1.5" })[Desktop.animationSpeed] ?? "1.0"])
+    }
+
     // COSMIC builds its own accent shades with libcosmic's ThemeBuilder.
     onChosenAccentChanged: Quickshell.execDetached(["kriss-cosmic-theme", "--accent", chosenAccent])
 

@@ -1,0 +1,175 @@
+diff --git a/src/backend/render/shadow.rs b/src/backend/render/shadow.rs
+index 87fdd2e..1369069 100644
+--- a/src/backend/render/shadow.rs
++++ b/src/backend/render/shadow.rs
+@@ -27,6 +27,7 @@ pub struct ShadowParameters {
+     alpha: f32,
+     radius: [u8; 4],
+     dark_mode: bool,
++    strength: f32,
+ }
+ type ShadowCache = RefCell<HashMap<CosmicMappedKey, (ShadowParameters, PixelShaderElement)>>;
+ 
+@@ -56,6 +57,7 @@ impl ShadowShader {
+             alpha,
+             radius,
+             dark_mode,
++            strength: crate::shell::open_close::shadow_strength(),
+         };
+         let ceil = |logical: f64| (logical * scale).ceil() / scale;
+ 
+@@ -84,7 +86,8 @@ impl ShadowShader {
+             let softness = 25.;
+             let spread = 5.;
+             let offset = [0., 5.];
+-            let color = [0., 0., 0., if dark_mode { 0.45 } else { 0.35 }];
++            let base = if dark_mode { 0.45 } else { 0.35 };
++            let color = [0., 0., 0., (base * params.strength).min(0.9)];
+             let radius = radius.map(|r| ceil(r as f64));
+ 
+             let width = softness;
+diff --git a/src/config/mod.rs b/src/config/mod.rs
+index 515e340..06bf082 100644
+--- a/src/config/mod.rs
++++ b/src/config/mod.rs
+@@ -387,6 +387,38 @@ impl Config {
+             }
+         }
+ 
++        // KrissOS: animation speed and shadow strength, live (org.krissos.Look).
++        if let Ok(look_config) = cosmic_config::Config::new("org.krissos.Look", 1) {
++            fn apply_look(config: &cosmic_config::Config) -> bool {
++                crate::shell::open_close::set_look(
++                    config.get::<f32>("animation_speed").unwrap_or(1.0),
++                    config.get::<f32>("shadow").unwrap_or(1.0),
++                )
++            }
++            apply_look(&look_config);
++            match cosmic_config::calloop::ConfigWatchSource::new(&look_config) {
++                Ok(source) => {
++                    if let Err(err) =
++                        loop_handle.insert_source(source, |(config, _keys), (), state| {
++                            if apply_look(&config) {
++                                let outputs =
++                                    state.common.shell.read().outputs().cloned().collect::<Vec<_>>();
++                                for output in &outputs {
++                                    state.backend.schedule_render(output);
++                                }
++                            }
++                        })
++                    {
++                        warn!(?err, "Failed to watch org.krissos.Look config");
++                    }
++                }
++                Err(err) => warn!(
++                    ?err,
++                    "failed to create config watch source for org.krissos.Look"
++                ),
++            }
++        }
++
+         let _ = loop_handle.insert_idle(|state| {
+             let filter_conf = state.common.config.dynamic_conf.screen_filter();
+             state
+diff --git a/src/shell/open_close.rs b/src/shell/open_close.rs
+index f4c099d..c6c6ea7 100644
+--- a/src/shell/open_close.rs
++++ b/src/shell/open_close.rs
+@@ -16,7 +16,7 @@ use std::{
+     process::{Command, Stdio},
+     sync::{
+         Mutex,
+-        atomic::{AtomicBool, Ordering},
++        atomic::{AtomicBool, AtomicU32, Ordering},
+     },
+     time::{Duration, Instant},
+ };
+@@ -50,8 +50,38 @@ use crate::{
+     utils::prelude::*,
+ };
+ 
+-pub const OPEN_DURATION: Duration = Duration::from_millis(180);
+-pub const CLOSE_DURATION: Duration = Duration::from_millis(150);
++const OPEN_BASE: Duration = Duration::from_millis(180);
++const CLOSE_BASE: Duration = Duration::from_millis(150);
++
++/// KrissOS: the window look from org.krissos.Look, set in KrissOS Settings > Personalise >
++/// Windows: `animation_speed` (2.0 is twice as fast) and `shadow` (0.0 none, 1.0 COSMIC's).
++/// Stored as f32 bits; read from the render loop, written by the config watcher.
++static SPEED: AtomicU32 = AtomicU32::new(0x3f80_0000); // 1.0
++static SHADOW: AtomicU32 = AtomicU32::new(0x3f80_0000); // 1.0
++
++pub fn set_look(speed: f32, shadow: f32) -> bool {
++    let speed = if speed.is_finite() { speed.clamp(0.25, 4.0) } else { 1.0 };
++    let shadow = if shadow.is_finite() { shadow.clamp(0.0, 2.0) } else { 1.0 };
++    let a = SPEED.swap(speed.to_bits(), Ordering::Relaxed) != speed.to_bits();
++    let b = SHADOW.swap(shadow.to_bits(), Ordering::Relaxed) != shadow.to_bits();
++    a || b
++}
++
++pub fn shadow_strength() -> f32 {
++    f32::from_bits(SHADOW.load(Ordering::Relaxed))
++}
++
++fn speed() -> f32 {
++    f32::from_bits(SPEED.load(Ordering::Relaxed))
++}
++
++pub fn open_duration() -> Duration {
++    OPEN_BASE.div_f32(speed())
++}
++
++pub fn close_duration() -> Duration {
++    CLOSE_BASE.div_f32(speed())
++}
+ /// Size a window opens from and closes to, as a fraction of its own.
+ const MIN_SCALE: f64 = 0.94;
+ 
+@@ -121,14 +151,14 @@ impl CosmicMapped {
+     /// Alpha and scale while the window is opening.
+     pub fn open_animation(&self) -> Option<(f32, f64)> {
+         let start = (*self.opened_at.lock().unwrap())?;
+-        let e = progress(EaseOutCubic, start, OPEN_DURATION)?;
++        let e = progress(EaseOutCubic, start, open_duration())?;
+         Some((e as f32, MIN_SCALE + (1.0 - MIN_SCALE) * e))
+     }
+ 
+     /// Ends a finished open animation; true if one ended, so one more frame is due.
+     pub fn finish_open_animation(&self) -> bool {
+         let mut opened_at = self.opened_at.lock().unwrap();
+-        if opened_at.is_some_and(|start| start.elapsed() >= OPEN_DURATION) {
++        if opened_at.is_some_and(|start| start.elapsed() >= open_duration()) {
+             *opened_at = None;
+             return true;
+         }
+@@ -157,7 +187,7 @@ impl fmt::Debug for ClosingWindow {
+ 
+ impl ClosingWindow {
+     pub fn is_done(&self) -> bool {
+-        self.start.elapsed() >= CLOSE_DURATION
++        self.start.elapsed() >= close_duration()
+     }
+ 
+     pub fn render_element<R: AsGlowRenderer>(
+@@ -166,7 +196,7 @@ impl ClosingWindow {
+         output_scale: f64,
+     ) -> Option<TextureRenderElement<GlesTexture>> {
+         // Ease-in-out: with ease-out the window is mostly gone after a third of the time.
+-        let e = progress(EaseInOutCubic, self.start, CLOSE_DURATION)?;
++        let e = progress(EaseInOutCubic, self.start, close_duration())?;
+         // Whole pixels: a fractional position leaves a 1 px trail when the damage is rounded.
+         let geometry = scale_rect(self.geometry, 1.0 - (1.0 - MIN_SCALE) * e);
+ 
+@@ -338,9 +368,9 @@ mod tests {
+ 
+     #[test]
+     fn progress_ends() {
+-        let start = Instant::now() - CLOSE_DURATION;
+-        assert!(progress(EaseOutCubic, start, CLOSE_DURATION).is_none());
+-        let p = progress(EaseOutCubic, Instant::now(), CLOSE_DURATION).unwrap();
++        let start = Instant::now() - close_duration();
++        assert!(progress(EaseOutCubic, start, close_duration()).is_none());
++        let p = progress(EaseOutCubic, Instant::now(), close_duration()).unwrap();
+         assert!((0.0..0.1).contains(&p));
+     }
+ }

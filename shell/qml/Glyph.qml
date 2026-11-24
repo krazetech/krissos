@@ -48,6 +48,7 @@ Item {
         edit: "M4 20h4L19 9l-4-4L4 16zM14 6l4 4",
         taskView: "M3 9h12v11H3zM8 9V4h13v11h-6",
         taskbar: "M3 5h18v14H3zM3 15h18M7 17h.01M10 17h.01",
+        window: "M3 5h18v14H3zM3 9h18M6 7h.01M9 7h.01",
         image: "M3 5h18v14H3zM3 16l5-5 5 5 3-3 5 5M15 9h.01",
         text: "M5 7V5h14v2M12 5v14M9 19h6",
         apps: "M4 4h4v4H4zM10 4h4v4h-4zM16 4h4v4h-4zM4 10h4v4H4zM10 10h4v4h-4zM16 10h4v4h-4zM4 16h4v4H4zM10 16h4v4h-4zM16 16h4v4h-4z",

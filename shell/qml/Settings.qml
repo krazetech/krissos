@@ -277,7 +277,7 @@ FloatingWindow {
                     visible: !win.query
                     active: win.visible
                     sourceComponent: !win.current ? sectionPage
-                        : ({ display: displayPage, recovery: recoveryPage, report: reportPage, colours: colours, background: background, taskbar: taskbar, pins: pins, lock: lockPage, text: textPage })[win.current.id] ?? null
+                        : ({ display: displayPage, recovery: recoveryPage, report: reportPage, colours: colours, background: background, taskbar: taskbar, windows: windowsPage, pins: pins, lock: lockPage, text: textPage })[win.current.id] ?? null
                     onLoaded: if (SettingsPages.key) pointLater.restart()
                 }
             }
@@ -309,6 +309,7 @@ FloatingWindow {
 
     Component { id: recoveryPage; SettingsRecovery {} }
     Component { id: reportPage; SettingsReport {} }
+    Component { id: windowsPage; SettingsWindows {} }
 
     // Colours: the accent and light or dark.
     Component {
