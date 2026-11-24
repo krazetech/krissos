@@ -6,7 +6,7 @@ import pathlib
 import shutil
 import subprocess
 
-# Shown when `kriss hwcheck` is missing or fails: assume the PC cannot run WinBoat.
+# Shown when `kriss hwcheck` is missing or fails: assume the PC cannot run WinPodX.
 NO_HW = {"ram_mb": 0, "cores": 0, "virt": "", "kvm": False, "gpus": [], "winboat_ok": False,
          "reasons": ["unknown"]}
 
@@ -60,7 +60,7 @@ def answer(app, winboat_ok):
         "kind": kind,
         "alts": app["alts"],
         "wine": app["wine"] if kind != "native" else "no",
-        # WinBoat would help, but this PC cannot run it well.
+        # WinPodX would help, but this PC cannot run it well.
         "winboat_blocked": app["winboat"] and not winboat_ok and not app["native"],
         "web": app.get("web", ""),
     }
@@ -196,9 +196,9 @@ EXTRAS = {
     "claude-code": {"user": "curl -fsSL https://claude.ai/install.sh | bash", "binary": "claude"},
     # Pre-Turing NVIDIA GPUs (hwcheck's nvidia_legacy). kriss nvidia setup also adds the kernel
     # headers, the initramfs and command line changes and, on hybrid laptops, prime-run.
-    # Microsoft Office in WinBoat, downloaded from Microsoft as the user; offered on the Apps
+    # Microsoft Office in WinPodX, downloaded from Microsoft as the user; offered on the Apps
     # page's Office row, not on the Extras page. Installed means its Start entry exists.
-    "office": {"user": "kriss winapps office --yes", "file": ".local/share/applications/kriss-office-word.desktop"},
+    "office": {"user": "kriss winapps office --yes", "file": ".local/share/kriss/office/installed"},
     "nvidia-legacy": {"root": ["kriss", "nvidia", "setup"], "packages": ["nvidia-580xx-dkms", "nvidia-580xx-utils"]},
 }
 

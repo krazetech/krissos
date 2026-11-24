@@ -1,6 +1,6 @@
 #!/bin/bash
 # Checks kriss winapps' detection against fixture /proc, /sys, /dev and /etc trees and
-# stub podman, podman-compose, xfreerdp3 and winboat. Touches nothing outside a temp dir.
+# stub podman, podman-compose, xfreerdp3 and winpodx. Touches nothing outside a temp dir.
 set -euo pipefail
 kriss=$(realpath "$(dirname "$0")/../kriss")
 t=$(mktemp -d)
@@ -19,7 +19,7 @@ stub() { # stub NAME OUTPUT: a command that logs its args and prints OUTPUT
 stub podman 'podman version 5.4.0'
 stub podman-compose 'podman-compose version 1.6.0'
 stub xfreerdp3 'This is FreeRDP version 3.10.3 (n/a)'
-stub winboat ''
+stub winpodx ''
 stub sudo ''
 
 reset() {
@@ -49,9 +49,9 @@ has 'fix: sudo modprobe kvm_intel' no-kvm; has '/dev/kvm is missing' no-kvm
 reset; rm "$t/sys/fs/cgroup/cgroup.controllers"; run check; want_rc 1 cgroup-v1; has 'cgroups   FAIL' cgroup-v1
 
 # One install fix for every missing package, not one per package.
-reset; rm "$t/bin/podman-compose" "$t/bin/winboat"; run check; want_rc 1 no-pkgs
+reset; rm "$t/bin/podman-compose" "$t/bin/winpodx"; run check; want_rc 1 no-pkgs
 [[ $(grep -c 'fix: sudo pacman' <<<"$out") == 2 ]] || { echo "FAIL no-pkgs: $out"; exit 1; }
-stub podman-compose 'podman-compose version 1.6.0'; stub winboat ''
+stub podman-compose 'podman-compose version 1.6.0'; stub winpodx ''
 reset; stub xfreerdp3 'This is FreeRDP version 2.11.7'; run check; want_rc 1 rdp2; has 'freerdp   FAIL' rdp2
 stub xfreerdp3 'This is FreeRDP version 3.10.3 (n/a)'
 reset; stub podman 'podman version 3.4.4'; run check; want_rc 1 old-podman; has 'version 3.4.4 is too old' old-podman
@@ -76,58 +76,50 @@ if ((EUID != 0)); then
   [[ $(cat "$t/log") != *sudo* ]] || { echo 'FAIL setup ran a fix after n'; exit 1; }
   reset; rm -r "$t/sys/module/kvm_intel"; echo y > "$t/in"; input=$t/in run setup; want_rc 2 setup-yes
   grep -q '^sudo modprobe kvm_intel$' "$t/log" || { echo "FAIL setup-yes: $(cat "$t/log")"; exit 1; }
-  reset; run setup; want_rc 0 setup-ready; has 'pick Podman' setup-ready
+  # Ready: say what WinPodX changes in Windows, then run its setup only on y.
+  reset; run setup; want_rc 0 setup-ready; has 'winpodx guest multi-session off' setup-ready
+  has 'pod.disguise_level off' setup-ready; [[ $(cat "$t/log") != *'winpodx setup'* ]] || { echo 'FAIL setup without y'; exit 1; }
+  reset; echo y > "$t/in"; input=$t/in run setup; want_rc 0 setup-go
+  grep -qx 'winpodx setup' "$t/log" || { echo "FAIL setup-go: $(cat "$t/log")"; exit 1; }
 else
   echo 'winapps: setup prompts skipped (running as root)'
 fi
-# office and run: a set-up WinBoat (compose file, running container) and FreeRDP that
-# "installs" Office by leaving the marker the Windows script writes.
+# office: a set-up WinPodX whose run of our installer app "installs" Office by leaving the
+# marker the Windows script writes.
 if ((EUID != 0)); then
-  for c in realpath mkdir rm head tr basename; do ln -sf "$(command -v "$c")" "$t/bin/$c"; done
-  h=$t/home; mkdir -p "$h/.winboat" "$h/Documents"
-  # shellcheck disable=SC2016 # literal ${HOME} for compose; the stub expands $1 and $* itself
-  printf '    environment:\n      USERNAME: "MyWindowsUser"\n      PASSWORD: s3cret\n    volumes:\n      - ${HOME}:/shared\n' > "$h/.winboat/podman-compose.yml"
-  # shellcheck disable=SC2016
-  printf '#!/bin/sh\necho "podman $*" >> "%s/log"\ncase "$1" in inspect) echo true;; port) echo 127.0.0.1:40000;; esac\n' "$t" > "$t/bin/podman"
-  printf '#!/bin/sh\necho "xfreerdp3 $*" >> "%s/log"\ncase "$*" in *Office\\ setup*) echo ok > "%s/.local/share/kriss/office/installed";; esac\n' "$t" "$h" > "$t/bin/xfreerdp3"
-  for c in curl xdg-mime update-desktop-database; do stub "$c" ''; done
-  chmod +x "$t/bin/podman" "$t/bin/xfreerdp3"
+  for c in mkdir rm cp; do ln -sf "$(command -v "$c")" "$t/bin/$c"; done
+  h=$t/home; mkdir -p "$h"
+  apps=$h/.local/share/winpodx/apps
+  # shellcheck disable=SC2016 # the stub expands $* itself
+  printf '#!/bin/sh\necho "winpodx $*" >> "%s/log"\ncase "$*" in "app run kriss-office-setup --wait") cp "%s/kriss-office-setup/app.toml" "%s/app.toml" && [ -z "$FAIL" ] && echo ok > "%s/.local/share/kriss/office/installed";; esac\nexit 0\n' \
+    "$t" "$apps" "$t" "$h" > "$t/bin/winpodx"
+  chmod +x "$t/bin/winpodx"; stub curl ''
   orun() { rc=0; out=$(HOME=$h PATH="$t/bin" "$kriss" winapps "$@" 2>&1 < "${input:-/dev/null}") || rc=$?; }
 
   : > "$t/log"; echo n > "$t/in"; input=$t/in orun office; want_rc 0 office-no; has 'about 3 GB' office-no
-  [[ $(cat "$t/log") != *xfreerdp3* ]] || { echo 'FAIL office ran setup after n'; exit 1; }
+  [[ ! -s $t/log ]] || { echo "FAIL office did something after n: $(cat "$t/log")"; exit 1; }
 
   : > "$t/log"; orun office --yes; want_rc 0 office-yes; has 'Word, Excel and PowerPoint are in Start' office-yes
   grep -q 'O365HomePremRetail' "$h/.local/share/kriss/office/configuration.xml" || { echo 'FAIL office product'; exit 1; }
   grep -q 'AcceptEULA="FALSE"' "$h/.local/share/kriss/office/configuration.xml" || { echo 'FAIL office accepted the EULA'; exit 1; }
   grep -q 'officecdn.microsoft.com' "$h/.local/share/kriss/office/install.ps1" || { echo 'FAIL office source'; exit 1; }
-  { grep -qF '/port:40000' "$t/log" && grep -qF '/u:MyWindowsUser /p:s3cret' "$t/log"; } || { echo "FAIL office rdp: $(cat "$t/log")"; exit 1; }
-  grep -qF 'cmd:-NoProfile -ExecutionPolicy Bypass -File "\\host.lan\Data\.local\share\kriss\office\install.ps1"' "$t/log" ||
-    { echo "FAIL office path: $(cat "$t/log")"; exit 1; }
-  for a in word excel powerpoint; do
-    grep -q "^Exec=kriss winapps run $a %f$" "$h/.local/share/applications/kriss-office-$a.desktop" || { echo "FAIL launcher $a"; exit 1; }
-  done
-  grep -q 'xdg-mime default kriss-office-word.desktop application/vnd.openxmlformats-officedocument.wordprocessingml.document' "$t/log" ||
-    { echo "FAIL docx default: $(cat "$t/log")"; exit 1; }
+  # WinPodX starts Windows, runs our installer app, then finds Word, Excel and PowerPoint.
+  [[ $(grep winpodx "$t/log") == $'winpodx pod start --wait\nwinpodx app run kriss-office-setup --wait\nwinpodx app refresh' ]] ||
+    { echo "FAIL office steps: $(cat "$t/log")"; exit 1; }
+  grep -qF '\\tsclient\home\.local\share\kriss\office\install.ps1' "$t/app.toml" || { echo "FAIL office path: $(cat "$t/app.toml")"; exit 1; }
+  [[ ! -e $apps/kriss-office-setup ]] || { echo 'FAIL installer app left behind'; exit 1; }
+  if command -v python3 >/dev/null; then  # WinPodX reads it with tomllib
+    python3 -c 'import sys, tomllib; d = tomllib.load(open(sys.argv[1], "rb")); assert d["name"] == "kriss-office-setup" and "," not in d["args"], d' "$t/app.toml" ||
+      { echo 'FAIL app.toml'; exit 1; }
+  fi
 
   orun office --business --yes; grep -q 'O365BusinessRetail' "$h/.local/share/kriss/office/configuration.xml" || { echo 'FAIL business'; exit 1; }
 
-  # Setup that did not finish leaves no launchers behind it.
-  rm "$h"/.local/share/applications/kriss-office-*.desktop
-  printf '#!/bin/sh\n:\n' > "$t/bin/xfreerdp3"; orun office --yes; want_rc 2 office-failed; has 'Office was not installed' office-failed
-  [[ ! -e $h/.local/share/applications/kriss-office-word.desktop ]] || { echo 'FAIL launchers after a failed setup'; exit 1; }
-  printf '#!/bin/sh\necho "xfreerdp3 $*" >> "%s/log"\n' "$t" > "$t/bin/xfreerdp3"
+  # Setup that did not finish: no app refresh, a clear message.
+  : > "$t/log"; FAIL=1 orun office --yes; want_rc 2 office-failed; has 'Office was not installed' office-failed
+  [[ $(cat "$t/log") != *refresh* ]] || { echo 'FAIL refreshed after a failed setup'; exit 1; }
 
-  : > "$h/Documents/Report 1.docx"; : > "$t/log"; orun run word "$h/Documents/Report 1.docx"; want_rc 0 run-word
-  grep -qF '/app:program:C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE,name:Word,cmd:"\\host.lan\Data\Documents\Report 1.docx"' "$t/log" ||
-    { echo "FAIL run word: $(cat "$t/log")"; exit 1; }
-  : > "$t/outside.docx"; orun run word "$t/outside.docx"; want_rc 2 run-outside; has 'only open files in your home folder' run-outside
-  orun run notepad; want_rc 2 run-unknown
-
-  # Not set up yet: point at kriss winapps setup.
-  # WinBoat after 0.9 keeps its compose file in $XDG_DATA_HOME/winboat-app.
-  mkdir -p "$h/.local/share/winboat-app"; mv "$h/.winboat/podman-compose.yml" "$h/.local/share/winboat-app/"
-  : > "$t/log"; orun run word; want_rc 0 new-winboat-dir; grep -qF '/u:MyWindowsUser' "$t/log" || { echo "FAIL new dir: $(cat "$t/log")"; exit 1; }
-  rm "$h/.local/share/winboat-app/podman-compose.yml"; orun office --yes; want_rc 2 office-no-winboat; has "kriss winapps setup" office-no-winboat
+  # WinPodX missing: point at kriss winapps setup.
+  rm "$t/bin/winpodx"; orun office --yes; want_rc 2 office-no-winpodx; has "kriss winapps setup" office-no-winpodx
 fi
 echo 'winapps: ok'

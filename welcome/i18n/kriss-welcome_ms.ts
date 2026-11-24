@@ -102,13 +102,13 @@ Arahan: flatpak install flathub %1</translation>
     </message>
     <message>
         <location filename="../qml/AppsPage.qml" line="47"/>
-        <source>Pick the Windows apps you use. This PC can also run the real Windows versions in WinBoat, a Windows virtual machine.</source>
-        <translation>Pilih aplikasi Windows yang anda guna. PC ini juga boleh menjalankan versi Windows yang sebenar dalam WinBoat, sebuah mesin maya Windows.</translation>
+        <source>Pick the Windows apps you use. This PC can also run the real Windows versions in WinPodX, a Windows virtual machine.</source>
+        <translation>Pilih aplikasi Windows yang anda guna. PC ini juga boleh menjalankan versi Windows yang sebenar dalam WinPodX, sebuah mesin maya Windows.</translation>
     </message>
     <message>
         <location filename="../qml/AppsPage.qml" line="48"/>
-        <source>Pick the Windows apps you use. WinBoat (a Windows virtual machine) is not offered on this PC: %1.</source>
-        <translation>Pilih aplikasi Windows yang anda guna. WinBoat (mesin maya Windows) tidak ditawarkan pada PC ini: %1.</translation>
+        <source>Pick the Windows apps you use. WinPodX (a Windows virtual machine) is not offered on this PC: %1.</source>
+        <translation>Pilih aplikasi Windows yang anda guna. WinPodX (mesin maya Windows) tidak ditawarkan pada PC ini: %1.</translation>
     </message>
     <message>
         <location filename="../qml/AppsPage.qml" line="84"/>
@@ -117,8 +117,8 @@ Arahan: flatpak install flathub %1</translation>
     </message>
     <message>
         <location filename="../qml/AppsPage.qml" line="85"/>
-        <source>Run the real Windows version in WinBoat.</source>
-        <translation>Jalankan versi Windows yang sebenar dalam WinBoat.</translation>
+        <source>Run the real Windows version in WinPodX.</source>
+        <translation>Jalankan versi Windows yang sebenar dalam WinPodX.</translation>
     </message>
     <message>
         <location filename="../qml/AppsPage.qml" line="86"/>
@@ -142,8 +142,8 @@ Arahan: flatpak install flathub %1</translation>
     </message>
     <message>
         <location filename="../qml/AppsPage.qml" line="94"/>
-        <source>Get WinBoat</source>
-        <translation>Dapatkan WinBoat</translation>
+        <source>Set up WinPodX</source>
+        <translation>Sediakan WinPodX</translation>
     </message>
     <message>
         <location filename="../qml/AppsPage.qml" line="102"/>
@@ -197,8 +197,8 @@ Arahan: flatpak install flathub %1</translation>
     </message>
     <message>
         <location filename="../qml/AppsPage.qml" line="146"/>
-        <source>The full Windows version needs WinBoat, which this PC cannot run well.</source>
-        <translation>Versi Windows penuh memerlukan WinBoat, yang tidak dapat dijalankan dengan baik pada PC ini.</translation>
+        <source>The full Windows version needs WinPodX, which this PC cannot run well.</source>
+        <translation>Versi Windows penuh memerlukan WinPodX, yang tidak dapat dijalankan dengan baik pada PC ini.</translation>
     </message>
     <message>
         <location filename="../qml/AppsPage.qml" line="151"/>
@@ -217,10 +217,10 @@ Arahan: flatpak install flathub %1</translation>
     </message>
     <message>
         <location filename="../qml/AppsPage.qml" line="36"/>
-        <source>Word, Excel and PowerPoint are downloaded from Microsoft (about 3 GB) and installed in WinBoat&apos;s Windows. It needs the internet, WinBoat set up first, and your own Microsoft 365 account or product key: sign in or enter the key when Word first opens. KrissOS includes no Office files.
+        <source>Word, Excel and PowerPoint are downloaded from Microsoft (about 3 GB) and installed in WinPodX&apos;s Windows. It needs the internet, WinPodX set up first, and your own Microsoft 365 account or product key: sign in or enter the key when Word first opens. KrissOS includes no Office files.
 
 Runs: kriss winapps office</source>
-        <translation>Word, Excel dan PowerPoint dimuat turun daripada Microsoft (kira-kira 3 GB) dan dipasang dalam Windows WinBoat. Ia memerlukan internet, WinBoat yang telah disediakan dan akaun Microsoft 365 atau kunci produk anda sendiri: log masuk atau masukkan kunci apabila Word dibuka kali pertama. KrissOS tidak menyertakan sebarang fail Office.
+        <translation>Word, Excel dan PowerPoint dimuat turun daripada Microsoft (kira-kira 3 GB) dan dipasang dalam Windows WinPodX. Ia memerlukan internet, WinPodX yang telah disediakan dan akaun Microsoft 365 atau kunci produk anda sendiri: log masuk atau masukkan kunci apabila Word dibuka kali pertama. KrissOS tidak menyertakan sebarang fail Office.
 
 Menjalankan: kriss winapps office</translation>
     </message>
@@ -236,8 +236,8 @@ Menjalankan: kriss winapps office</translation>
     </message>
     <message>
         <location filename="../qml/AppsPage.qml" line="117"/>
-        <source>Office did not install. Set up WinBoat first, then try again</source>
-        <translation>Office tidak dipasang. Sediakan WinBoat dahulu, kemudian cuba lagi</translation>
+        <source>Office did not install. Set up WinPodX first, then try again</source>
+        <translation>Office tidak dipasang. Sediakan WinPodX dahulu, kemudian cuba lagi</translation>
     </message>
     <message>
         <location filename="../qml/AppsPage.qml" line="118"/>
@@ -805,13 +805,13 @@ Menjalankan: %1</translation>
     </message>
     <message>
         <location filename="../qml/WelcomePage.qml" line="70"/>
-        <source>This PC can run Windows apps in WinBoat</source>
-        <translation>PC ini boleh menjalankan aplikasi Windows dalam WinBoat</translation>
+        <source>This PC can run Windows apps in WinPodX</source>
+        <translation>PC ini boleh menjalankan aplikasi Windows dalam WinPodX</translation>
     </message>
     <message>
         <location filename="../qml/WelcomePage.qml" line="71"/>
-        <source>Linux apps and Wine (WinBoat needs a stronger PC)</source>
-        <translation>Aplikasi Linux dan Wine (WinBoat perlukan PC yang lebih berkuasa)</translation>
+        <source>Linux apps and Wine (WinPodX needs a stronger PC)</source>
+        <translation>Aplikasi Linux dan Wine (WinPodX perlukan PC yang lebih berkuasa)</translation>
     </message>
 </context>
 </TS>

@@ -44,7 +44,7 @@ Kirigami.ScrollablePage {
                 }
                 QQC2.Label {
                     text: page.app.kind === "pacman" ? qsTr("From KrissOS")
-                        : page.app.kind === "winapps" ? qsTr("Downloaded from Microsoft · runs in WinBoat")
+                        : page.app.kind === "winapps" ? qsTr("Downloaded from Microsoft · runs in WinPodX")
                         : qsTr("From Flathub · runs in a sandbox")
                     opacity: 0.7
                 }

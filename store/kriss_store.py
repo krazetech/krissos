@@ -21,7 +21,8 @@ sys.path.insert(0, str(HERE))
 import logic  # noqa: E402
 
 ROOT = pathlib.Path(os.environ.get("KRISS_STORE_FLATPAK", logic.FLATPAK))
-OFFICE = pathlib.Path(os.environ.get("XDG_DATA_HOME") or pathlib.Path.home() / ".local/share") / "applications/kriss-office-word.desktop"
+# Written by `kriss winapps office` once Office installed in Windows.
+OFFICE = pathlib.Path.home() / ".local/share/kriss/office/installed"
 INDEX = pathlib.Path(os.environ.get("XDG_CACHE_HOME") or pathlib.Path.home() / ".cache") / "kriss/store.json"
 
 
@@ -177,7 +178,7 @@ class Backend(QObject):
     def install(self, app_id):
         a = self._by_id.get(app_id)
         if a:
-            # Office installs as the user, into WinBoat; the Store page already said what it needs.
+            # Office installs as the user, into WinPodX; the Store page already said what it needs.
             argv = (["kriss", "winapps", "office", "--yes"] if a["kind"] == "winapps" else
                     ["pkexec", "kriss", "install", "--yes", "--repo" if a["kind"] == "pacman" else "--flatpak", app_id])
             self._change(app_id, "install", argv)
@@ -203,7 +204,7 @@ class Backend(QObject):
     @Slot(str)
     def open(self, app_id):
         if self._by_id.get(app_id, {}).get("kind") == "winapps":
-            QProcess.startDetached("kriss", ["winapps", "run", "word"])
+            QProcess.startDetached("winpodx", ["app", "run", "word"])
         elif self.canOpen(app_id):
             QProcess.startDetached("flatpak", ["run", app_id])
 

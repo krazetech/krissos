@@ -1,19 +1,17 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-meta-winapps
-pkgver=2
+pkgver=3
 pkgrel=1
-pkgdesc='KrissOS Windows apps pack: WinBoat with rootless Podman and FreeRDP 3'
+pkgdesc='KrissOS Windows apps pack: WinPodX with rootless Podman and FreeRDP 3'
 arch=('any')
 url='https://github.com/krazetech/krissos'
 license=('GPL-3.0-or-later')
-# WinBoat drives Podman through `podman compose` with PODMAN_COMPOSE_PROVIDER=podman-compose,
-# so podman-compose is the compose it needs; Docker's Compose v2 is only for its Docker mode.
-# KVM is in the kernel; `kriss winapps setup` checks the module and /dev/kvm.
-# xdg-utils and desktop-file-utils: `kriss winapps office` makes Word, Excel and PowerPoint
-# the apps for .docx, .xlsx and .pptx.
+# WinPodX's default backend is rootless Podman with podman-compose. KVM is in the kernel;
+# `kriss winapps setup` checks the module and /dev/kvm. xdg-utils and desktop-file-utils:
+# WinPodX makes each Windows app the handler for its file types (xdg-mime) in Start.
 depends=('podman' 'podman-compose' 'freerdp>=3' 'xdg-utils' 'desktop-file-utils')
 
 package() {
   # Added here, not above: CI resolves the list above against Arch's repos only.
-  depends+=('winboat' 'kriss-tools>=0.10.0')
+  depends+=('winpodx' 'kriss-tools>=0.10.0')
 }

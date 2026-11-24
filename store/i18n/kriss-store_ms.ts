@@ -39,8 +39,8 @@
         <translation>Daripada KrissOS</translation>
     </message>
     <message>
-        <source>Downloaded from Microsoft · runs in WinBoat</source>
-        <translation>Dimuat turun daripada Microsoft · berjalan dalam WinBoat</translation>
+        <source>Downloaded from Microsoft · runs in WinPodX</source>
+        <translation>Dimuat turun daripada Microsoft · berjalan dalam WinPodX</translation>
     </message>
     <message>
         <source>From Flathub · runs in a sandbox</source>

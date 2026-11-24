@@ -57,8 +57,8 @@ gpu_vendors() {
   printf '[%s]' "$(tr ',' '\n' <<<"$out" | sed '/^$/d' | sort -u | paste -sd, -)"
 }
 
-# Hardware facts as JSON, read without root. kriss-welcome uses winboat_ok to
-# decide whether to offer WinBoat (a Windows VM): about 16 GB RAM, CPU
+# Hardware facts as JSON, read without root. kriss-welcome uses winboat_ok to decide whether
+# to offer Windows apps in a VM (the name predates the move to WinPodX): about 16 GB RAM, CPU
 # virtualisation, /dev/kvm and enough cores.
 ram_mb() { echo $(($(sed -n 's/^MemTotal: *\([0-9]*\) kB/\1/p' "$PROC/meminfo") / 1024)); }
 cpu_threads() { grep -c '^processor' "$PROC/cpuinfo" || true; }
@@ -88,7 +88,7 @@ cmd_hwcheck() {
   ram_mb=$(ram_mb) cores=$(cpu_threads) virt=$(cpu_virt)
   [[ -e $DEV/kvm ]] && kvm=true
   # ponytail: 14 GiB, because a 16 GB PC reports less after firmware and iGPU
-  # reservations. 4 threads is WinBoat's own minimum.
+  # reservations. 4 threads is what the Windows VM gets.
   ((ram_mb >= 14336)) || reasons+='"ram",'
   [[ -n $virt ]] || reasons+='"virt",'
   [[ $kvm == true ]] || reasons+='"kvm",'
@@ -633,9 +633,10 @@ cmd_report() {
   echo "kriss: the issue is open in your browser. Add what happened, then press Submit."
 }
 
-# kriss winapps check|setup: Windows apps in WinBoat (ARCHITECTURE §7, tier 1).
+# kriss winapps check|setup|office: Windows apps in WinPodX (ARCHITECTURE §7, tier 1).
 # check only reads. setup offers the fixes that are safe to make, asks before each one,
-# then opens WinBoat, which downloads and installs Windows itself.
+# then runs `winpodx setup`, which downloads Windows from Microsoft and installs it.
+# WinPodX opens each Windows app as its own window with its own Start entry and file types.
 WA_BAD=0 WA_FIX=()
 wa_row() { # wa_row NAME ok|warn|FAIL MESSAGE [FIX]
   row "$1" "$2: $3"
@@ -684,14 +685,14 @@ winapps_check() {
   fi
 
   if ! command -v podman >/dev/null; then
-    wa_row podman FAIL "Podman is not installed. WinBoat runs Windows inside a Podman container." "$pkg"
+    wa_row podman FAIL "Podman is not installed. WinPodX runs Windows inside a Podman container." "$pkg"
   else
     v=$(wa_ver podman)
     if [[ ${v%%.*} =~ ^[0-9]+$ ]] && ((${v%%.*} >= 4)); then wa_row podman ok "version $v"
-    else wa_row podman FAIL "version ${v:-unknown} is too old; WinBoat needs 4 or newer." "$pkg"; fi
+    else wa_row podman FAIL "version ${v:-unknown} is too old; WinPodX needs 4 or newer." "$pkg"; fi
   fi
   if command -v podman-compose >/dev/null; then wa_row compose ok "podman-compose $(wa_ver podman-compose)"
-  else wa_row compose FAIL "podman-compose is missing. WinBoat starts its container with it." "$pkg"; fi
+  else wa_row compose FAIL "podman-compose is missing. WinPodX starts its container with it." "$pkg"; fi
 
   for f in xfreerdp3 xfreerdp; do
     command -v "$f" >/dev/null || continue
@@ -699,10 +700,10 @@ winapps_check() {
     if [[ $v == 3.* ]]; then rdp="$f $v"; break; fi
   done
   if [[ -n $rdp ]]; then wa_row freerdp ok "$rdp"
-  else wa_row freerdp FAIL "FreeRDP 3 is missing. WinBoat shows each Windows app as a window through it." "$pkg"; fi
+  else wa_row freerdp FAIL "FreeRDP 3 is missing. WinPodX shows each Windows app as a window through it." "$pkg"; fi
 
-  if command -v winboat >/dev/null; then wa_row winboat ok "installed"
-  else wa_row winboat FAIL "WinBoat is not installed." "$pkg"; fi
+  if command -v winpodx >/dev/null; then wa_row winpodx ok "installed"
+  else wa_row winpodx FAIL "WinPodX is not installed." "$pkg"; fi
 
   # Rootless Podman maps the container's users onto a range of IDs this user owns.
   if grep -q "^$user:" "$ETC/subuid" 2>/dev/null && grep -q "^$user:" "$ETC/subgid" 2>/dev/null; then
@@ -715,13 +716,13 @@ winapps_check() {
   if [[ -e $SYS/fs/cgroup/cgroup.controllers ]]; then wa_row cgroups ok "v2"
   else wa_row cgroups FAIL "rootless Podman needs cgroup v2. Remove systemd.unified_cgroup_hierarchy=0 from the kernel command line."; fi
 
-  # WinBoat gives Windows 4 GB RAM and 4 threads by default, and wants 32 GB free for
-  # its disk image. Warnings only: it still runs on less.
+  # Windows gets 4 GB RAM and 4 threads, and its disk image wants room to grow (WinPodX's
+  # default disk is 64 GB, plus a ~7.5 GB ISO). Warnings only: it still runs on less.
   v=$(ram_mb)
   if ((v >= 14336)); then wa_row memory ok "$((v / 1024)) GiB"
   else wa_row memory warn "$((v / 1024)) GiB. Windows takes 4 GB of it, so Linux apps will feel tight."; fi
   v=$(cpu_threads)
-  if ((v >= 4)); then wa_row threads ok "$v"; else wa_row threads warn "$v. WinBoat wants 4 or more."; fi
+  if ((v >= 4)); then wa_row threads ok "$v"; else wa_row threads warn "$v. Windows wants 4 or more."; fi
   gib=$(df -Pk "$HOME" | awk 'NR==2{print int($4/1048576)}')
   if ((gib >= 32)); then wa_row disk ok "$gib GiB free in $HOME"
   else wa_row disk warn "$gib GiB free in $HOME. Windows needs at least 32 GiB."; fi
@@ -729,8 +730,24 @@ winapps_check() {
   ((WA_BAD == 0))
 }
 
+# What WinPodX does to Windows that the user should know before saying yes. Their choice
+# (2026-11-25): keep WinPodX's defaults and say so plainly.
+winapps_disclose() {
+  cat <<'EOF'
+Before you go on, what WinPodX changes in Windows:
+  - Windows normally allows one remote session per user, so a second app would take over
+    the first one's window. WinPodX patches Windows (rdprrap, based on RDP Wrapper) so each
+    app gets its own window. Microsoft's licence terms do not allow working around Windows'
+    limits like this; the choice is yours. Turn it off any time:
+      winpodx guest multi-session off
+  - It hides from Windows that it is running in a virtual machine ("disguise", balanced).
+    Turn it off with: winpodx config set pod.disguise_level off
+  - Windows itself (about 7.5 GB) is downloaded from Microsoft.
+EOF
+}
+
 cmd_winapps_setup() {
-  ((EUID != 0)) || die "run 'kriss winapps setup' as yourself, not root: WinBoat runs Podman as your user."
+  ((EUID != 0)) || die "run 'kriss winapps setup' as yourself, not root: WinPodX runs Podman as your user."
   local f a relogin=0
   if ! winapps_check; then
     printf '\nSome pieces are missing. Each fix runs only if you answer y.\n'
@@ -748,127 +765,26 @@ cmd_winapps_setup() {
     winapps_check || die "not ready yet. Fix the FAIL lines above, then run 'kriss winapps setup' again."
   fi
   echo
-  echo "kriss: ready. WinBoat opens now. In its setup, pick Podman as the container runtime."
-  setsid -f winboat >/dev/null 2>&1
+  winapps_disclose
+  read -rp "Set up Windows apps with WinPodX now? [y/N] " a || a=n
+  [[ $a == [yY]* ]] || return 0
+  winpodx setup
 }
 
-# kriss winapps office|run: Microsoft Office in WinBoat's Windows, downloaded from Microsoft
+# kriss winapps office: Microsoft Office in WinPodX's Windows, downloaded from Microsoft
 # when the user asks. KrissOS ships no Office files; the user signs in with their own
-# Microsoft account or product key. Apps open over RDP RemoteApp the same way WinBoat opens
-# them (its launchApp), so Word, Excel and PowerPoint get Start entries and file types here.
+# Microsoft account or product key. WinPodX runs the installer as an app of our own and
+# then finds Word, Excel and PowerPoint itself, with Start entries and file types.
 # ponytail: Bottles/Wine is not offered; Microsoft 365 there still crashes and shows black
 # windows (bottlesdevs/programs#500). Revisit when that issue is closed.
-# WinBoat 0.9 keeps its files in ~/.winboat; its next release moves them to
-# $XDG_DATA_HOME/winboat-app (upstream e42fcbf). Use whichever holds the compose file.
-WB_DIR=${XDG_DATA_HOME:-${HOME:-}/.local/share}/winboat-app
-[[ -f $WB_DIR/podman-compose.yml ]] || WB_DIR=${HOME:-}/.winboat
-WB_DIR=${KRISS_WINBOAT_DIR:-$WB_DIR}
-WB_COMPOSE=$WB_DIR/podman-compose.yml
 OFFICE_DIR=${HOME:-}/.local/share/kriss/office
-APPS_DIR=${XDG_DATA_HOME:-${HOME:-}/.local/share}/applications
+WPX_APPS=${XDG_DATA_HOME:-${HOME:-}/.local/share}/winpodx/apps
 # Microsoft's own Office Deployment Tool (setup.exe), on Microsoft's CDN.
 OFFICE_ODT=https://officecdn.microsoft.com/pr/wsus/setup.exe
 
-wb_die() { # die, and say it on the desktop too when there is no terminal (a Start entry)
-  [[ -t 2 ]] || notify-send -a KrissOS -i dialog-error "Microsoft Office" "$*" 2>/dev/null || true
-  die "$*"
-}
-
-# A value from WinBoat's compose file, such as USERNAME or PASSWORD.
-wb_env() { sed -n "s/^ *$1: *//p" "$WB_COMPOSE" | head -1 | tr -d "\"'"; }
-
-# Start WinBoat's Windows if it is not running and wait until its guest server answers.
-wb_up() {
-  [[ -f $WB_COMPOSE ]] || wb_die "WinBoat is not set up yet. Run 'kriss winapps setup' and let WinBoat install Windows first."
-  grep -q ':/shared' "$WB_COMPOSE" ||
-    wb_die "WinBoat is not sharing your home folder. Turn on the shared folder in WinBoat's settings."
-  if [[ $(podman inspect -f '{{.State.Running}}' WinBoat 2>/dev/null) != true ]]; then
-    printf 'kriss: starting Windows (WinBoat)...\n' >&2
-    (cd "$WB_DIR" && PODMAN_COMPOSE_PROVIDER=podman-compose podman compose -f "$WB_COMPOSE" up -d >/dev/null 2>&1) ||
-      wb_die "Windows did not start. Open WinBoat to see why."
-  fi
-  local api i
-  api=$(podman port WinBoat 7148/tcp | head -1)
-  for ((i = 0; i < ${KRISS_WB_WAIT:-90}; i++)); do
-    curl -fsS -m 2 "http://$api/health" >/dev/null 2>&1 && return 0
-    sleep 2
-  done
-  wb_die "Windows did not answer within 3 minutes. Open WinBoat to see what it is doing."
-}
-
-# Run one Windows program as a window of its own: wb_rdp CLASS PROGRAM NAME [ARGS].
-wb_rdp() {
-  local rdp port
-  rdp=$(command -v xfreerdp3 || command -v xfreerdp) || wb_die "FreeRDP 3 is missing. Run 'kriss winapps setup'."
-  port=$(podman port WinBoat 3389/tcp | head -1)
-  # ponytail: the password is on FreeRDP's command line, as WinBoat itself does; it is the
-  # local VM's own password, already in plain text in WinBoat's compose file. A comma in a
-  # file name breaks FreeRDP's /app list; rename the file if that ever bites.
-  "$rdp" "/u:$(wb_env USERNAME)" "/p:$(wb_env PASSWORD)" /v:127.0.0.1 "/port:${port##*:}" /cert:ignore \
-    +clipboard /sound:sys:pulse /floatbar /compression -wallpaper "/wm-class:$1" \
-    "/app:program:$2,name:$3${4:+,cmd:$4}" >/dev/null 2>&1
-}
-
-# A path in the home folder as Windows sees it: WinBoat shares $HOME as \\host.lan\Data.
-wb_path() {
-  local f
-  f=$(realpath -- "$1") && [[ $f == "$HOME"/* ]] || return 1
-  f=${f#"$HOME"/}
-  printf '\\\\host.lan\\Data\\%s' "${f//\//\\}"
-}
-
-office_exe() {
-  case "$1" in
-    word) echo WINWORD ;; excel) echo EXCEL ;; powerpoint) echo POWERPNT ;;
-    *) die "unknown Office app '$1'. Use word, excel or powerpoint." ;;
-  esac
-}
-
-# kriss winapps run word|excel|powerpoint [FILE]: what the Start entries run.
-cmd_winapps_run() {
-  local app=${1:-} exe arg=""
-  exe=$(office_exe "$app")
-  if [[ -n ${2:-} ]]; then
-    arg=$(wb_path "$2") || wb_die "Windows can only open files in your home folder. Move $(basename -- "$2") there first."
-    arg="\"$arg\""
-  fi
-  wb_up
-  wb_rdp "kriss-$app" "C:\\Program Files\\Microsoft Office\\root\\Office16\\$exe.EXE" "${app^}" "$arg"
-}
-
-# The Start entries: Word, Excel and PowerPoint, the default apps for their Office files.
-office_launchers() {
-  local app name generic generic_ms cat icon mime
-  mkdir -p "$APPS_DIR"
-  while IFS='|' read -r app name generic generic_ms cat icon mime; do
-    cat >"$APPS_DIR/kriss-office-$app.desktop" <<EOF
-[Desktop Entry]
-Type=Application
-Name=$name
-GenericName=$generic
-GenericName[ms]=$generic_ms
-Comment=Microsoft $name, running in Windows (WinBoat)
-Comment[ms]=Microsoft $name, berjalan dalam Windows (WinBoat)
-Exec=kriss winapps run $app %f
-Icon=$icon
-Categories=Office;$cat;
-MimeType=$mime
-StartupWMClass=kriss-$app
-Keywords=microsoft;office;365;
-EOF
-    # ponytail: only the Office Open XML types become Office's; older formats stay where they were.
-    xdg-mime default "kriss-office-$app.desktop" "${mime%%;*}" 2>/dev/null || true
-  done <<'EOF'
-word|Word|Word processor|Pemproses kata|WordProcessor|x-office-document|application/vnd.openxmlformats-officedocument.wordprocessingml.document;application/msword;application/rtf;
-excel|Excel|Spreadsheet|Hamparan elektronik|Spreadsheet|x-office-spreadsheet|application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;application/vnd.ms-excel;text/csv;
-powerpoint|PowerPoint|Presentation|Persembahan|Presentation|x-office-presentation|application/vnd.openxmlformats-officedocument.presentationml.presentation;application/vnd.ms-powerpoint;
-EOF
-  update-desktop-database "$APPS_DIR" 2>/dev/null || true
-}
-
 # kriss winapps office [--business] [--yes]: install Word, Excel and PowerPoint in Windows.
 cmd_winapps_office() {
-  ((EUID != 0)) || die "run 'kriss winapps office' as yourself, not root: WinBoat runs as your user."
+  ((EUID != 0)) || die "run 'kriss winapps office' as yourself, not root: WinPodX runs as your user."
   local a yes=0 product=O365HomePremRetail
   for a; do
     case "$a" in
@@ -877,8 +793,9 @@ cmd_winapps_office() {
       *) die "unknown option '$a'. Use --business or --yes." ;;
     esac
   done
+  command -v winpodx >/dev/null || die "WinPodX is not installed. Run 'kriss winapps setup' first."
   cat <<'EOF'
-Microsoft Office (Word, Excel, PowerPoint) in WinBoat's Windows
+Microsoft Office (Word, Excel, PowerPoint) in WinPodX's Windows
 
   download  about 3 GB, straight from Microsoft. KrissOS includes no Office files.
   internet  needed for the whole install, and now and then for Office to stay activated.
@@ -891,9 +808,10 @@ EOF
     [[ $a == [yY]* ]] || return 0
   fi
   curl -fsSI -m 10 "$OFFICE_ODT" >/dev/null 2>&1 ||
-    wb_die "Microsoft's download server cannot be reached. Connect to the internet and try again."
-  wb_up
-  mkdir -p "$OFFICE_DIR"
+    die "Microsoft's download server cannot be reached. Connect to the internet and try again."
+  winpodx pod start --wait >/dev/null 2>&1 ||
+    die "Windows did not start. Run 'kriss winapps setup' first, or 'winpodx doctor' to see why."
+  mkdir -p "$OFFICE_DIR" "$WPX_APPS/kriss-office-setup"
   rm -f "$OFFICE_DIR/installed"
   # Word, Excel and PowerPoint only. AcceptEULA stays off: Office asks the user to accept
   # Microsoft's licence terms itself.
@@ -937,23 +855,33 @@ try {
   exit 1
 }
 EOF
+  # The installer as a WinPodX app of our own; WinPodX shares the home folder with Windows
+  # as \\tsclient\home once the session is up, so the script waits for it (WinPodX's own
+  # file opens poll the same way). No commas: FreeRDP splits its /app value on them.
+  # Not installed into Start, and removed again below.
+  cat >"$WPX_APPS/kriss-office-setup/app.toml" <<'EOF'
+name = "kriss-office-setup"
+full_name = "Microsoft Office setup"
+executable = 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
+args = '''-NoProfile -ExecutionPolicy Bypass -Command "$f = '\\tsclient\home\.local\share\kriss\office\install.ps1'; for ($i = 0; $i -lt 60 -and -not (Test-Path $f); $i++) { Start-Sleep 1 }; & $f"'''
+EOF
   printf 'kriss: Office setup is running in Windows. Leave this open until it finishes.\n'
-  wb_rdp kriss-office-setup 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe' 'Office setup' \
-    "-NoProfile -ExecutionPolicy Bypass -File \"$(wb_path "$OFFICE_DIR/install.ps1")\"" || true
-  [[ -f $OFFICE_DIR/installed ]] || wb_die "Office was not installed. Run 'kriss winapps office' to try again."
-  office_launchers
+  winpodx app run kriss-office-setup --wait || true
+  rm -r "$WPX_APPS/kriss-office-setup"
+  [[ -f $OFFICE_DIR/installed ]] || die "Office was not installed. Run 'kriss winapps office' to try again."
+  # WinPodX finds Word, Excel and PowerPoint and gives each a Start entry and its file types.
+  winpodx app refresh || die "Office is installed, but WinPodX could not list it. Run 'winpodx app refresh'."
   printf 'kriss: done. Word, Excel and PowerPoint are in Start. Sign in or enter your key when Word first opens.\n'
 }
 
 cmd_winapps() {
-  # WinBoat runs x86 Windows in a KVM VM; ARCHITECTURE §13 leaves it off Apple Silicon.
-  [[ $(uname -m) == x86_64 ]] || die "Windows apps through WinBoat need an x86_64 PC; this is $(uname -m)."
+  # x86 Windows in a KVM VM; ARCHITECTURE §13 leaves it off Apple Silicon.
+  [[ $(uname -m) == x86_64 ]] || die "Windows apps through WinPodX need an x86_64 PC; this is $(uname -m)."
   case "${1:-check}" in
     check) winapps_check ;;
     setup) cmd_winapps_setup ;;
     office) cmd_winapps_office "${@:2}" ;;
-    run) cmd_winapps_run "${@:2}" ;;
-    *) die "unknown winapps command '$1'. Use check, setup, office or run." ;;
+    *) die "unknown winapps command '$1'. Use check, setup or office." ;;
   esac
 }
 
@@ -1340,11 +1268,10 @@ Commands:
   channel testing   Get updates from [kriss-testing] before they reach everyone
   channel stable    Go back to [kriss] (downgrades what came from testing, after a snapshot)
   migrate    Turn this Arch or CachyOS install into KrissOS (try --dry-run first)
-  winapps check   Check this PC is ready for Windows apps in WinBoat (read-only)
-  winapps setup   Fix what is missing (asks first), then open WinBoat
-  winapps office  Install Microsoft Office in WinBoat, downloaded from Microsoft (your own
+  winapps check   Check this PC is ready for Windows apps in WinPodX (read-only)
+  winapps setup   Fix what is missing (asks first), then set up Windows with WinPodX
+  winapps office  Install Microsoft Office in WinPodX, downloaded from Microsoft (your own
                   licence; --business for Microsoft 365 Business plans)
-  winapps run word|excel|powerpoint [FILE]   Open an Office app, or a file in it
   nvidia check    Say whether this PC's NVIDIA GPU can use the NVIDIA 580 driver
   nvidia setup    Install that driver (root, needs internet); nouveau stays otherwise
   help       Show this help

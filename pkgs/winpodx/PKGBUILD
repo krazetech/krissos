@@ -1,0 +1,34 @@
+# Maintainer: Kraze Tech
+# WinPodX is only in the AUR. Built from upstream's tagged source, pinned by checksum, so
+# kriss-meta-winapps can depend on it from [kriss] without an AUR helper. Follows upstream's
+# own AUR PKGBUILD (packaging/aur), minus its install banner: `kriss winapps setup` says
+# what to do next.
+# Bump: set pkgver, then the sha256 of the tag's source tarball.
+pkgname=winpodx
+pkgver=0.12.1
+pkgrel=1
+pkgdesc='Windows apps as native Linux windows: Windows in Podman, apps over FreeRDP RemoteApp'
+arch=('any')
+url='https://github.com/kernalix7/winpodx'
+license=('MIT' 'Apache-2.0' 'OFL-1.1')
+# pyside6: its desktop app and tray, which KrissOS keeps (kriss-welcome already pulls PySide6).
+depends=('python' 'freerdp' 'pyside6')
+makedepends=('python-build' 'python-installer' 'python-hatchling' 'python-wheel')
+source=("$pkgname-$pkgver.tar.gz::https://github.com/kernalix7/winpodx/archive/v$pkgver.tar.gz")
+sha256sums=('fb6f5b8a4bdd4aa56120ed9a8643aa7f3af4227e798cf36e0b8acd8085981032')
+
+build() {
+  cd "$pkgname-$pkgver"
+  python -m build --wheel --no-isolation
+}
+
+package() {
+  cd "$pkgname-$pkgver"
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -Dm644 LICENSE THIRD_PARTY_LICENSES.md src/winpodx/gui/fonts/LICENSE-Selawik.txt \
+    -t "$pkgdir/usr/share/licenses/$pkgname"
+  install -Dm644 data/winpodx.desktop -t "$pkgdir/usr/share/applications"
+  install -Dm644 data/winpodx-icon.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/winpodx.svg"
+  install -Dm644 data/org.winpodx.WinPodX.metainfo.xml -t "$pkgdir/usr/share/metainfo"
+  install -Dm644 data/winpodx.toml.example -t "$pkgdir/usr/share/winpodx"
+}
