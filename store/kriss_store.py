@@ -204,7 +204,10 @@ class Backend(QObject):
     @Slot(str)
     def open(self, app_id):
         if self._by_id.get(app_id, {}).get("kind") == "winapps":
-            QProcess.startDetached("winpodx", ["app", "run", "word"])
+            # WinPodX's name for Word (e.g. microsoft-word), recorded by `kriss winapps office`.
+            f = OFFICE.parent / "apps"
+            apps = dict(w.split("=", 1) for w in f.read_text().split() if "=" in w) if f.exists() else {}
+            QProcess.startDetached("winpodx", ["app", "run", apps.get("WINWORD", "microsoft-word")])
         elif self.canOpen(app_id):
             QProcess.startDetached("flatpak", ["run", app_id])
 

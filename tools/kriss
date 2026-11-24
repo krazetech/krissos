@@ -794,9 +794,47 @@ cmd_winapps_setup() {
 # ponytail: Bottles/Wine is not offered; Microsoft 365 there still crashes and shows black
 # windows (bottlesdevs/programs#500). Revisit when that issue is closed.
 OFFICE_DIR=${HOME:-}/.local/share/kriss/office
-WPX_APPS=${XDG_DATA_HOME:-${HOME:-}/.local/share}/winpodx/apps
+WPX_DIR=${XDG_DATA_HOME:-${HOME:-}/.local/share}/winpodx
+WPX_APPS=$WPX_DIR/apps
 # Microsoft's own Office Deployment Tool (setup.exe), on Microsoft's CDN.
 OFFICE_ODT=https://officecdn.microsoft.com/pr/wsus/setup.exe
+
+# Word, Excel and PowerPoint open their own Office formats and nothing else. WinPodX (with
+# KrissOS's patch) gives discovered apps no file types, so this adds them as user-defined
+# apps of WinPodX's, which survive its refreshes. Each becomes the default only for a type
+# that has no explicit default yet. Records app=slug lines for the Store's Open button.
+OFFICE_TYPES='WINWORD.EXE|application/msword;application/vnd.openxmlformats-officedocument.wordprocessingml.document;application/vnd.openxmlformats-officedocument.wordprocessingml.template;application/vnd.ms-word.document.macroEnabled.12;application/vnd.ms-word.template.macroEnabled.12
+EXCEL.EXE|application/vnd.ms-excel;application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;application/vnd.openxmlformats-officedocument.spreadsheetml.template;application/vnd.ms-excel.sheet.macroEnabled.12;application/vnd.ms-excel.template.macroEnabled.12;application/vnd.ms-excel.sheet.binary.macroEnabled.12
+POWERPNT.EXE|application/vnd.ms-powerpoint;application/vnd.openxmlformats-officedocument.presentationml.presentation;application/vnd.openxmlformats-officedocument.presentationml.slideshow;application/vnd.openxmlformats-officedocument.presentationml.template;application/vnd.ms-powerpoint.presentation.macroEnabled.12;application/vnd.ms-powerpoint.slideshow.macroEnabled.12'
+
+# Whether MIME has an explicit default in the user's or the system's mimeapps.list.
+has_default() {
+  local f files=()
+  for f in "${XDG_CONFIG_HOME:-$HOME/.config}/mimeapps.list" "$ETC/xdg/mimeapps.list"; do
+    [[ -r $f ]] && files+=("$f")
+  done
+  ((${#files[@]})) || return 1
+  awk -v m="$1=" '/^\[/ { d = ($0 == "[Default Applications]") } d && index($0, m) == 1 { f = 1 } END { exit !f }' "${files[@]}"
+}
+
+office_types() {
+  local exe mimes f slug m
+  : >"$OFFICE_DIR/apps"
+  while IFS='|' read -r exe mimes; do
+    f=$(grep -lis "^executable = .*${exe}[\"']\$" "$WPX_DIR"/discovered/*/app.toml | sed -n 1p || true)
+    [[ -n $f ]] || continue
+    slug=${f%/app.toml} slug=${slug##*/}
+    mkdir -p "$WPX_DIR/apps/$slug"
+    { grep -E '^(name|full_name|executable|description|wm_class_hint|start_menu_folder) = ' "$f"
+      printf 'mime_types = ["%s"]\n' "${mimes//;/\", \"}"; } >"$WPX_DIR/apps/$slug/app.toml"
+    winpodx app install "$slug" >/dev/null
+    for m in ${mimes//;/ }; do
+      has_default "$m" || xdg-mime default "winpodx-$slug.desktop" "$m"
+    done
+    printf '%s=%s\n' "${exe%.EXE}" "$slug" >>"$OFFICE_DIR/apps"
+  done <<<"$OFFICE_TYPES"
+  [[ -s $OFFICE_DIR/apps ]] || die "Office is installed, but WinPodX did not find Word, Excel or PowerPoint. Run 'winpodx app refresh', then 'kriss winapps office' again."
+}
 
 # kriss winapps office [--business] [--yes]: install Word, Excel and PowerPoint in Windows.
 cmd_winapps_office() {
@@ -823,6 +861,9 @@ EOF
     read -rp "Install Microsoft Office now? [y/N] " a || a=n
     [[ $a == [yY]* ]] || return 0
   fi
+  # FreeRDP shows Windows apps as X windows (XWayland on the desktop); an ssh shell has none.
+  [[ -n ${DISPLAY:-} ]] ||
+    die "run this from a terminal on the desktop: Office setup opens a window, and this shell has no display (DISPLAY is not set)."
   curl -fsSI -m 10 "$OFFICE_ODT" >/dev/null 2>&1 ||
     die "Microsoft's download server cannot be reached. Connect to the internet and try again."
   winpodx pod start --wait >/dev/null 2>&1 ||
@@ -887,6 +928,7 @@ EOF
   [[ -f $OFFICE_DIR/installed ]] || die "Office was not installed. Run 'kriss winapps office' to try again."
   # WinPodX finds Word, Excel and PowerPoint and gives each a Start entry and its file types.
   winpodx app refresh || die "Office is installed, but WinPodX could not list it. Run 'winpodx app refresh'."
+  office_types
   printf 'kriss: done. Word, Excel and PowerPoint are in Start. Sign in or enter your key when Word first opens.\n'
 }
 

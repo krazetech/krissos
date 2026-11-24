@@ -99,14 +99,31 @@ fi
 # office: a set-up WinPodX whose run of our installer app "installs" Office by leaving the
 # marker the Windows script writes.
 if ((EUID != 0)); then
-  for c in mkdir rm cp; do ln -sf "$(command -v "$c")" "$t/bin/$c"; done
-  h=$t/home; mkdir -p "$h"
-  apps=$h/.local/share/winpodx/apps
-  # shellcheck disable=SC2016 # the stub expands $* itself
-  printf '#!/bin/sh\necho "winpodx $*" >> "%s/log"\ncase "$*" in "app run kriss-office-setup --wait") cp "%s/kriss-office-setup/app.toml" "%s/app.toml" && [ -z "$FAIL" ] && echo ok > "%s/.local/share/kriss/office/installed";; esac\nexit 0\n' \
-    "$t" "$apps" "$t" "$h" > "$t/bin/winpodx"
-  chmod +x "$t/bin/winpodx"; stub curl ''
-  orun() { rc=0; out=$(HOME=$h PATH="$t/bin" "$kriss" winapps "$@" 2>&1 < "${input:-/dev/null}") || rc=$?; }
+  for c in mkdir rm cp sed; do ln -sf "$(command -v "$c")" "$t/bin/$c"; done
+  h=$t/home; mkdir -p "$h/.config" "$t/etc/xdg"
+  wpx=$h/.local/share/winpodx apps=$h/.local/share/winpodx/apps
+  # A set-up WinPodX: running our installer app "installs" Office (the marker the Windows
+  # script writes); refresh discovers Word, Excel and Edge as WinPodX stores them.
+  cat > "$t/bin/winpodx" <<EOF
+#!/bin/sh
+echo "winpodx \$*" >> "$t/log"
+case "\$*" in
+  "app run kriss-office-setup --wait")
+    cp "$apps/kriss-office-setup/app.toml" "$t/app.toml"
+    [ -n "\$FAIL" ] || echo ok > "$h/.local/share/kriss/office/installed" ;;
+  "app refresh")
+    for a in microsoft-word:WINWORD microsoft-excel:EXCEL microsoft-edge:msedge; do
+      mkdir -p "$wpx/discovered/\${a%%:*}"
+      printf 'name = "%s"\\nfull_name = "%s"\\nexecutable = "C:\\\\\\\\Program Files\\\\\\\\X\\\\\\\\%s.EXE"\\nmime_types = ["text/plain"]\\nurl_schemes = ["https"]\\nsource = "win32"\\n' \\
+        "\${a%%:*}" "\${a%%:*}" "\${a#*:}" > "$wpx/discovered/\${a%%:*}/app.toml"
+    done ;;
+esac
+exit 0
+EOF
+  chmod +x "$t/bin/winpodx"; stub curl ''; stub xdg-mime ''
+  # .docx already has the user's explicit default: Office must leave it alone.
+  printf '[Default Applications]\napplication/vnd.openxmlformats-officedocument.wordprocessingml.document=writer.desktop\n' > "$h/.config/mimeapps.list"
+  orun() { rc=0; out=$(HOME=$h DISPLAY=${NODISPLAY-:0} KRISS_ETC="$t/etc" PATH="$t/bin" "$kriss" winapps "$@" 2>&1 < "${input:-/dev/null}") || rc=$?; }
 
   : > "$t/log"; echo n > "$t/in"; input=$t/in orun office; want_rc 0 office-no; has 'about 3 GB' office-no
   [[ ! -s $t/log ]] || { echo "FAIL office did something after n: $(cat "$t/log")"; exit 1; }
@@ -116,7 +133,7 @@ if ((EUID != 0)); then
   grep -q 'AcceptEULA="FALSE"' "$h/.local/share/kriss/office/configuration.xml" || { echo 'FAIL office accepted the EULA'; exit 1; }
   grep -q 'officecdn.microsoft.com' "$h/.local/share/kriss/office/install.ps1" || { echo 'FAIL office source'; exit 1; }
   # WinPodX starts Windows, runs our installer app, then finds Word, Excel and PowerPoint.
-  [[ $(grep winpodx "$t/log") == $'winpodx pod start --wait\nwinpodx app run kriss-office-setup --wait\nwinpodx app refresh' ]] ||
+  [[ $(grep "^winpodx " "$t/log") == $'winpodx pod start --wait\nwinpodx app run kriss-office-setup --wait\nwinpodx app refresh\nwinpodx app install microsoft-word\nwinpodx app install microsoft-excel' ]] ||
     { echo "FAIL office steps: $(cat "$t/log")"; exit 1; }
   grep -qF '\\tsclient\home\.local\share\kriss\office\install.ps1' "$t/app.toml" || { echo "FAIL office path: $(cat "$t/app.toml")"; exit 1; }
   [[ ! -e $apps/kriss-office-setup ]] || { echo 'FAIL installer app left behind'; exit 1; }
@@ -124,6 +141,25 @@ if ((EUID != 0)); then
     python3 -c 'import sys, tomllib; d = tomllib.load(open(sys.argv[1], "rb")); assert d["name"] == "kriss-office-setup" and "," not in d["args"], d' "$t/app.toml" ||
       { echo 'FAIL app.toml'; exit 1; }
   fi
+
+  # File types: Word and Excel get their own Office formats only, as user apps of WinPodX's;
+  # Edge gets nothing. A type with an explicit default (.docx here) is left alone.
+  w=$apps/microsoft-word/app.toml
+  grep -q '^executable = .*WINWORD.EXE"$' "$w" && grep -q '^mime_types = \["application/msword", ' "$w" || { echo "FAIL word types: $(cat "$w")"; exit 1; }
+  ! grep -q 'text/plain\|url_schemes\|source' "$w" || { echo "FAIL word claims more: $(cat "$w")"; exit 1; }
+  grep -q 'spreadsheetml.sheet' "$apps/microsoft-excel/app.toml" || { echo 'FAIL excel types'; exit 1; }
+  [[ ! -e $apps/microsoft-edge ]] || { echo 'FAIL edge got file types'; exit 1; }
+  grep -q '^xdg-mime default winpodx-microsoft-word.desktop application/msword$' "$t/log" || { echo "FAIL doc default: $(cat "$t/log")"; exit 1; }
+  ! grep -q 'xdg-mime default .*wordprocessingml.document$' "$t/log" || { echo 'FAIL overrode the .docx default'; exit 1; }
+  ! grep -q 'xdg-mime default .*text/plain' "$t/log" || { echo 'FAIL took text/plain'; exit 1; }
+  [[ $(cat "$h/.local/share/kriss/office/apps") == $'WINWORD=microsoft-word\nEXCEL=microsoft-excel' ]] || { echo 'FAIL apps record'; exit 1; }
+  if command -v python3 >/dev/null; then
+    python3 -c 'import sys, tomllib; d = tomllib.load(open(sys.argv[1], "rb")); assert len(d["mime_types"]) == 5 and d["name"] == "microsoft-word", d' "$w" || { echo 'FAIL word toml'; exit 1; }
+  fi
+
+  # No display (an ssh shell): say so, start nothing.
+  : > "$t/log"; NODISPLAY='' orun office --yes; want_rc 2 office-nodisplay; has 'no display' office-nodisplay
+  [[ ! -s $t/log ]] || { echo "FAIL office ran without a display: $(cat "$t/log")"; exit 1; }
 
   orun office --business --yes; grep -q 'O365BusinessRetail' "$h/.local/share/kriss/office/configuration.xml" || { echo 'FAIL business'; exit 1; }
 

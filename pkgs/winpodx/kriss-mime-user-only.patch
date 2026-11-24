@@ -1,0 +1,16 @@
+--- a/src/winpodx/desktop/entry.py
++++ b/src/winpodx/desktop/entry.py
+@@ -212,6 +212,13 @@
+     mime_entries = list(app.mime_types) + [
+         f"x-scheme-handler/{s}" for s in (getattr(app, "url_schemes", None) or [])
+     ]
++    # KrissOS: only apps defined under ~/.local/share/winpodx/apps (by the user, or by
++    # `kriss winapps office` for Word, Excel and PowerPoint) claim file types and URL
++    # schemes. Discovered entries live in ~/.local/share/applications, which wins over
++    # /usr/share when no default is set, so their MimeType= quietly took over Linux
++    # defaults (text/plain to Word, PDF to Edge, PNG to Paint).
++    if app.source != "user":
++        mime_entries = []
+ 
+     content = DESKTOP_TEMPLATE.format(
+         winpodx_exe=_winpodx_exe(),

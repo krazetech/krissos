@@ -6,7 +6,7 @@
 # Bump: set pkgver, then the sha256 of the tag's source tarball.
 pkgname=winpodx
 pkgver=0.12.1
-pkgrel=1
+pkgrel=2
 pkgdesc='Windows apps as native Linux windows: Windows in Podman, apps over FreeRDP RemoteApp'
 arch=('any')
 url='https://github.com/kernalix7/winpodx'
@@ -14,8 +14,18 @@ license=('MIT' 'Apache-2.0' 'OFL-1.1')
 # pyside6: its desktop app and tray, which KrissOS keeps (kriss-welcome already pulls PySide6).
 depends=('python' 'freerdp' 'pyside6')
 makedepends=('python-build' 'python-installer' 'python-hatchling' 'python-wheel')
-source=("$pkgname-$pkgver.tar.gz::https://github.com/kernalix7/winpodx/archive/v$pkgver.tar.gz")
-sha256sums=('fb6f5b8a4bdd4aa56120ed9a8643aa7f3af4227e798cf36e0b8acd8085981032')
+# kriss-mime-user-only.patch: discovered Windows apps no longer claim Linux file types
+# (they became the defaults for text, PDF and images); only apps defined in the user apps
+# dir do, which is where `kriss winapps office` puts Word, Excel and PowerPoint.
+source=("$pkgname-$pkgver.tar.gz::https://github.com/kernalix7/winpodx/archive/v$pkgver.tar.gz"
+        'kriss-mime-user-only.patch')
+sha256sums=('fb6f5b8a4bdd4aa56120ed9a8643aa7f3af4227e798cf36e0b8acd8085981032'
+            'd4468ad55125e8436166f29193dd4b8ef899d4af21d6703cf2faa17cee1af15e')
+
+prepare() {
+  cd "$pkgname-$pkgver"
+  patch -Np1 -i ../kriss-mime-user-only.patch
+}
 
 build() {
   cd "$pkgname-$pkgver"
