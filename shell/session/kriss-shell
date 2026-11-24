@@ -192,6 +192,16 @@ greeter)
     sed -i 's|"brightnessctl -q -c backlight set \(5%[-+]\)"|"kriss-shell brightness \1"|' \
         "$cfg/$sc/system_actions" 2>/dev/null || true
 
+    # The language and formats chosen in Settings > Time and language. /etc/profile.d/locale.sh
+    # reads this file only when LANG is unset, and the login has set it from /etc/locale.conf.
+    loc=${XDG_CONFIG_HOME:-$HOME/.config}/locale.conf
+    if [ -r "$loc" ]; then
+        set -a
+        . "$loc"
+        set +a
+        systemctl --user import-environment LANG LANGUAGE LC_TIME LC_NUMERIC LC_MONETARY LC_PAPER LC_MEASUREMENT 2>/dev/null || true
+    fi
+
     # Not `cosmic-comp COMMAND`: that is cosmic-comp's kiosk mode, which turns off every
     # keyboard shortcut. Start it on its own; once it is ready it publishes
     # WAYLAND_DISPLAY and DISPLAY to the systemd user environment, so wait for that.
