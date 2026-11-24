@@ -18,7 +18,9 @@ Singleton {
         ["personalise", "image", Tr.t("Personalise")],
         ["apps", "apps", Tr.t("Apps")],
         ["accounts", "user", Tr.t("Accounts")],
-        ["time", "clock", Tr.t("Time and language")]
+        ["time", "clock", Tr.t("Time and language")],
+        ["privacy", "shield", Tr.t("Privacy")],
+        ["update", "update", Tr.t("Updates")]
     ]
 
     // Each page: id, its section, glyph, name, a line saying what is on it, the words people
@@ -99,13 +101,24 @@ Singleton {
         { id: "startup", group: "apps", glyph: "restart", name: Tr.t("Startup"), detail: Tr.t("Apps that start when you sign in"),
           words: "startup apps;autostart;run at login;aplikasi permulaan;mula automatik" },
 
-        { id: "users", group: "accounts", glyph: "user", name: Tr.t("Your info and sign-in"), detail: Tr.t("Your name, picture and password; other people"), cosmic: "users",
-          words: "account;users;password;sign-in options;picture;akaun;pengguna;kata laluan" },
+        { id: "users", group: "accounts", glyph: "user", name: Tr.t("Your info and sign-in"), detail: Tr.t("Your name, picture and password; other people"),
+          words: "account;users;password;sign-in options;picture;name;akaun;pengguna;kata laluan;gambar;nama",
+          keys: [Tr.t("Your name"), Tr.t("Choose a picture"), Tr.t("Change your password"), Tr.t("Other people")] },
 
-        { id: "datetime", group: "time", glyph: "clock", name: Tr.t("Date and time"), detail: Tr.t("Time zone, 24-hour clock"), cosmic: "date-time",
-          words: "date;time;clock;time zone;24-hour;tarikh;masa;jam;zon waktu" },
-        { id: "language", group: "time", glyph: "globe", name: Tr.t("Language and region"), detail: Tr.t("English or Bahasa Melayu, formats"), cosmic: "region-language",
-          words: "language;region;formats;english;malay;bahasa melayu;bahasa;rantau" }
+        { id: "datetime", group: "time", glyph: "clock", name: Tr.t("Date and time"), detail: Tr.t("Time zone, setting the time automatically"),
+          words: "date;time;clock;time zone;ntp;tarikh;masa;jam;zon waktu",
+          keys: [Tr.t("Set the time automatically"), Tr.t("Time zone")] },
+        { id: "language", group: "time", glyph: "globe", name: Tr.t("Language and region"), detail: Tr.t("English or Bahasa Melayu, formats"),
+          words: "language;region;formats;english;malay;bahasa melayu;bahasa;rantau",
+          keys: [Tr.t("Language"), Tr.t("Regional format")] },
+
+        { id: "privacy", group: "privacy", glyph: "shield", name: Tr.t("Privacy"), detail: Tr.t("What KrissOS keeps, the microphone, history"),
+          words: "privacy;telemetry;tracking;microphone;recent files;clipboard history;history;privasi;mikrofon;sejarah",
+          keys: [Tr.t("Microphone"), Tr.t("History"), Tr.t("Clear recent files"), Tr.t("Clear clipboard history")] },
+
+        { id: "updates", group: "update", glyph: "update", name: Tr.t("Updates"), detail: Tr.t("Update now, update channel, going back"),
+          words: "update;updates;upgrade;windows update;channel;testing;snapshot;rollback;kemas kini;naik taraf;saluran;petikan",
+          keys: [Tr.t("Update now"), Tr.t("Update channel"), Tr.t("Go back to before an update")] }
     ]
 
     function find(id) { return pages.find(p => p.id === id) ?? null; }
