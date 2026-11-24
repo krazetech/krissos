@@ -32,6 +32,7 @@ Item {
         mouse: "M7 9a5 5 0 0 1 10 0v6a5 5 0 0 1-10 0zM12 4v5",
         user: "M8 7a4 4 0 1 0 8 0a4 4 0 1 0-8 0M4 21a8 8 0 0 1 16 0",
         clock: "M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0M12 7v5l3 2",
+        drive: "M3 13h18v6H3zM5 13l3-8h8l3 8M7 16h.01",
         info: "M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0M12 11v5M12 8h.01",
         settings: "M4 6h10M18 6h2M14 4v4M4 12h4M12 12h8M8 10v4M4 18h12M16 16v4",
         external: "M14 4h6v6M20 4l-9 9M18 14v6H4V6h6",
