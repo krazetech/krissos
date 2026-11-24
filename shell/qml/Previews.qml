@@ -83,7 +83,7 @@ PanelWindow {
         target: "previews"
         enabled: win.screen === Quickshell.screens[0]
         function open(appId: string, x: int): void {
-            win.pending = { app: { appId: appId, entry: DesktopEntries.heuristicLookup(appId) }, x: x };
+            win.pending = { app: { appId: appId, entry: Windows.entryFor(appId) }, x: x };
             win.take();
         }
         function close(): void { win.hide(); }
@@ -175,7 +175,7 @@ PanelWindow {
                 id: card
                 required property int index
                 readonly property var w: win.wins[index]
-                readonly property var entry: win.app?.entry ?? DesktopEntries.heuristicLookup(w?.appId ?? "")
+                readonly property var entry: win.app?.entry ?? Windows.entryFor(w?.appId ?? "")
                 readonly property bool lit: win.current === index
 
                 width: win.cardW
