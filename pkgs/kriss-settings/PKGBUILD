@@ -54,4 +54,11 @@ package() {
   # up once pkgs.yml installs sibling packages before building.
   depends+=('kriss-theme')
   cp -r --no-preserve=ownership "$srcdir/root/." "$pkgdir/"
+  # Printing on for everyone, new installs and updates alike: CUPS on demand through its
+  # socket (never cups.service at boot), Avahi for DNS-SD, and cups-browsed (see its drop-in).
+  local units="$pkgdir/usr/lib/systemd/system"
+  install -d "$units/sockets.target.wants" "$units/multi-user.target.wants"
+  ln -s ../cups.socket "$units/sockets.target.wants/cups.socket"
+  ln -s ../avahi-daemon.socket "$units/sockets.target.wants/avahi-daemon.socket"
+  ln -s ../cups-browsed.service "$units/multi-user.target.wants/cups-browsed.service"
 }
