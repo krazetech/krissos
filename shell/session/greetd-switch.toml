@@ -1,4 +1,4 @@
-# kriss-switch-user.service: the same login screen as /etc/greetd/config.toml, on the next
+# kriss-switch-user@.service: the same login screen as /etc/greetd/config.toml, on the next
 # free VT, switched to straight away.
 [terminal]
 vt = "next"

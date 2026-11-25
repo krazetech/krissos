@@ -134,7 +134,7 @@ screenshot)
     ;;
 switch-user)
     # Start > account menu > Switch user: lock this session, then a login screen on another
-    # VT (kriss-switch-user.service, a second greetd; polkit lets the person at the PC start
+    # VT (kriss-switch-user@.service, a second greetd; polkit lets the person at the PC start
     # it), or back to that one if it is up already. The login screen's "Back to" buttons and
     # this session's lock screen bring them back here.
     qs -p "$qml" ipc call lock lock 2>/dev/null || loginctl lock-session
@@ -143,7 +143,9 @@ switch-user)
     if [ -n "$greeter" ]; then
         exec loginctl activate "$greeter"
     fi
-    exec systemctl start kriss-switch-user.service
+    # A new instance each time: one that someone signed in through is that person's session now,
+    # and starting it again would do nothing.
+    exec systemctl start "kriss-switch-user@$(date +%s).service"
     ;;
 greeter)
     # greetd's greeter user has no home, and cosmic-comp keeps running after its command
