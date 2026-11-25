@@ -104,7 +104,7 @@ Column {
         SettingsUi.Label { text: Tr.t("System sounds") }
         SettingsUi.Toggle {
             text: Tr.t("Play system sounds")
-            detail: Tr.t("A chime with notifications, a tick when the volume changes, and a sound when you plug something in")
+            detail: Tr.t("A chime with notifications, a tick when the volume changes, and sounds when you sign in, plug something in or the battery runs low")
             checked: Desktop.sounds
             onToggled: Desktop.sounds = !checked
         }
