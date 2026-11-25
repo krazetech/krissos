@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Dialogs
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.SystemTray
@@ -441,11 +440,9 @@ FloatingWindow {
                     }
                 }
             }
-            FileDialog {
+            PicturePicker {
                 id: picker
-                title: Tr.t("Choose a picture")
-                nameFilters: [Tr.t("Pictures") + " (*.jpg *.jpeg *.png *.webp *.svg)"]
-                onAccepted: Desktop.wallpaper = decodeURIComponent(String(selectedFile).replace(/^file:\/\//, ""))
+                onChosen: path => Desktop.wallpaper = path
             }
         }
     }
@@ -706,11 +703,9 @@ FloatingWindow {
                         onPicked: lockPicker.open()
                     }
                 }
-                FileDialog {
+                PicturePicker {
                     id: lockPicker
-                    title: Tr.t("Choose a picture")
-                    nameFilters: [Tr.t("Pictures") + " (*.jpg *.jpeg *.png *.webp *.svg)"]
-                    onAccepted: Desktop.setLockClock("wallpaper", decodeURIComponent(String(selectedFile).replace(/^file:\/\//, "")))
+                    onChosen: path => Desktop.setLockClock("wallpaper", path)
                 }
             }
             SettingsUi.Card {

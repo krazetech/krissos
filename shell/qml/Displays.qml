@@ -161,7 +161,13 @@ Singleton {
     }
 
     function setPrimary(name, done) { run(["xwayland", "--primary", name], done); }
-    function setPosition(name, x, y, done) { run(["position", name, String(Math.round(x)), String(Math.round(y))], done); }
+    // Places displays ([{name, x, y}]) one after another. cosmic-randr takes no negative
+    // positions, so the caller moves the layout to start at 0,0.
+    function setPositions(list, done) {
+        const steps = list.map(p => ["position", p.name, String(Math.round(p.x)), String(Math.round(p.y))]);
+        const next = ok => { if (ok && steps.length) run(steps.shift(), next); else if (done) done(ok); };
+        next(true);
+    }
     function setEnabled(name, on, done) { run([on ? "enable" : "disable", name], done); }
     // mode: {w, h, r}; any of scale, transform and vrr ("automatic" or "false") may be left out.
     function setMode(name, mode, extra, done) {
