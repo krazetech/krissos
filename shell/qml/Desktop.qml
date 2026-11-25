@@ -185,6 +185,8 @@ Singleton {
     property alias taskbarTaskView: config.taskbarTaskView
     property alias taskbarSearch: config.taskbarSearch
     property alias taskbarTransparency: config.taskbarTransparency
+    property alias startLayout: config.startLayout
+    property alias startRecommended: config.startRecommended
     property alias desktopNames: config.desktopNames
     property alias accent: config.accent
     property alias theme: config.theme
@@ -298,6 +300,10 @@ Singleton {
             // How much shows through the taskbar and top bar: "none", "normal" or "more".
             // Only with transparency effects on (Colours).
             property string taskbarTransparency: "normal"
+            // Start: "pins" (more rows of pins), "default" or "recommended" (more recent
+            // files), and whether Recommended shows at all.
+            property string startLayout: "default"
+            property bool startRecommended: true
             // Desktop names given in Task View, by position ("" keeps "Desktop N").
             property list<string> desktopNames: []
             // Theme.qml: the accent ("#RRGGBB", empty for Sky Cyan), "dark", "light",
@@ -517,7 +523,7 @@ Singleton {
 
     // An app's recent files, for its jump list: those it opened, by command or app name.
     function recentFor(entry, limit) {
-        if (!entry) return [];
+        if (!entry || !startRecommended) return [];
         const names = [entry.command[0]?.split("/").pop().toLowerCase(), entry.id.toLowerCase(), entry.name.toLowerCase()];
         return withFolders(recentShown.filter(f => f.apps.some(a => a && names.indexOf(a) >= 0)), limit);
     }
