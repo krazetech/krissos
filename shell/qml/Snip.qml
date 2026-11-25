@@ -4,7 +4,8 @@ import Quickshell.Wayland
 
 // Windows+Shift+S: the snipping bar, as on Windows. Draw a box for a screenshot, take the
 // whole screen, or record the screen (Desktop.record). At the top of the main display;
-// Esc or a click outside closes it. While a recording runs, its button stops it.
+// Esc or a click outside closes it. While a recording runs (or its picker is open), its
+// button stops it.
 PanelWindow {
     id: win
 
@@ -13,7 +14,7 @@ PanelWindow {
     readonly property var choices: [
         ["region", "region", Tr.t("Rectangle")],
         ["screen", "display", Tr.t("Full screen")],
-        ["record", Desktop.recording ? "stop" : "record", Desktop.recording ? Tr.t("Stop recording") : Tr.t("Record the screen")]
+        ["record", Desktop.recorderBusy ? "stop" : "record", Desktop.recorderBusy ? Tr.t("Stop recording") : Tr.t("Record the screen")]
     ]
     function toggle() {
         open = !open;

@@ -71,30 +71,61 @@ Singleton {
     // Screen recording (Windows+Alt+R, the snipping bar, the taskbar's stop button): the
     // screen, or a window, through the COSMIC portal (it asks which the first time and
     // remembers), with the sound the PC plays, into Videos/Screen Recordings as MP4, encoded
-    // on the graphics card. Stopping (SIGINT) finishes the file.
+    // on the graphics card. It runs in an app-org.krissos.ScreenRecording scope, so the
+    // portal's picker names it (org.krissos.ScreenRecording.desktop).
+    // `recorderBusy` from the start, `recording` only once the file has something in it, so
+    // the timer does not run while the picker is open. Asking again while the picker is open
+    // cancels (SIGKILL: gpu-screen-recorder ignores SIGINT while it waits for the portal);
+    // once recording, SIGINT finishes the file, and SIGKILL follows if it hangs.
     // ponytail: a shell restart ends a recording; gpu-screen-recorder still closes the file.
-    readonly property bool recording: recorder.running
+    readonly property bool recorderBusy: recorder.running
+    readonly property bool recording: recorder.running && recordingSince > 0
     property string recordingFile: ""
     property real recordingSince: 0
     function record() {
-        if (recorder.running) { recorder.signal(2); return; }
-        recordingFile = "";
-        recorder.running = true;
+        if (!recorder.running) {
+            recordingFile = "";
+            recordingSince = 0;
+            recorder.running = true;
+        } else if (recordingSince > 0) {
+            recorder.signal(2);
+            stopKill.restart();
+        } else {
+            recorder.signal(9);
+        }
     }
+    Timer { id: stopKill; interval: 10000; onTriggered: if (recorder.running) recorder.signal(9) }
     Process {
         id: recorder
         command: ["sh", "-c", `d="$(xdg-user-dir VIDEOS 2>/dev/null || echo "$HOME/Videos")/$1"
             mkdir -p "$d" && f="$d/Recording_$(date +%Y%m%d_%H%M%S).mp4" && printf '%s\n' "$f" || exit 1
-            exec gpu-screen-recorder -w portal -restore-portal-session yes -f 60 -a default_output -c mp4 -o "$f"`,
+            exec systemd-run --user --scope --quiet --collect --unit="app-org.krissos.ScreenRecording-$$" \
+                gpu-screen-recorder -w portal -restore-portal-session yes -f 60 -a default_output -c mp4 -o "$f"`,
             "sh", Tr.t("Screen Recordings")]
-        stdout: SplitParser { onRead: line => { if (!root.recordingFile) { root.recordingFile = line; root.recordingSince = Date.now(); } } }
+        stdout: SplitParser { onRead: line => { if (!root.recordingFile) root.recordingFile = line; } }
         onExited: code => {
+            stopKill.stop();
             const f = root.recordingFile;
-            // Not a file if the portal was cancelled before anything was recorded.
-            if (f) Quickshell.execDetached(["sh", "-c", '[ -s "$1" ] && notify-send -a "$2" -i video-x-generic "$3" "$4"',
-                "sh", f, Tr.t("Screen recording"), Tr.t("Recording saved"), Tr.t("%1 is in Videos > Screen Recordings.", f.split("/").pop())]);
+            const recorded = root.recordingSince > 0;
             root.recordingFile = "";
+            root.recordingSince = 0;
+            if (!f) return;
+            // Cancelled, or nothing was recorded: no empty file left behind.
+            Quickshell.execDetached(["sh", "-c", '[ -s "$1" ] || { rm -f "$1"; exit; }; [ "$5" = yes ] && notify-send -a "$2" -i video-x-generic "$3" "$4"',
+                "sh", f, Tr.t("Screen recording"), Tr.t("Recording saved"), Tr.t("%1 is in Videos > Screen Recordings.", f.split("/").pop()), recorded ? "yes" : "no"]);
         }
+    }
+    // The recording has really started once the file has data (after the picker).
+    Timer {
+        running: recorder.running && root.recordingFile !== "" && root.recordingSince === 0
+        interval: 500
+        repeat: true
+        onTriggered: if (!started.running) started.running = true
+    }
+    Process {
+        id: started
+        command: ["test", "-s", root.recordingFile]
+        onExited: code => { if (code === 0 && recorder.running && root.recordingSince === 0) root.recordingSince = Date.now(); }
     }
 
     // Esc in a panel: the bar that opened it from the keyboard takes the focus back (see
