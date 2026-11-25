@@ -19,7 +19,8 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
   volume, a chime with notifications, sounds when you plug in a charger or a USB device,
   and a warning when the battery drops to 15% and to 5%. KrissOS has its own set of
   sounds; pick another (or No sounds) in Settings > Sound, which plays a sample. Sound
-  themes made for Linux desktops work too: copy one into `~/.local/share/sounds`.
+  themes made for Linux desktops work too: copy one into `~/.local/share/sounds`, or
+  pick *Get more sound themes* to install Oxygen, Deepin or elementary's in one click.
   Notification chimes stay quiet in do not disturb and over full-screen games.
 - Task View and desktops like Windows 11: Windows+Tab shows your windows and desktops, and
   three fingers on a touchpad swipe between desktops.
