@@ -75,26 +75,33 @@ Singleton {
     // portal's picker names it (org.krissos.ScreenRecording.desktop).
     // `recorderBusy` from the start, `recording` only once the file has something in it, so
     // the timer does not run while the picker is open. Asking again while the picker is open
-    // cancels (SIGKILL: gpu-screen-recorder ignores SIGINT while it waits for the portal);
-    // once recording, SIGINT finishes the file, and SIGKILL follows if it hangs.
+    // cancels (SIGKILL: gpu-screen-recorder ignores SIGINT while it waits for the portal).
+    // Stopping a recording: the timer goes at once, SIGINT finishes the file, then SIGTERM
+    // and SIGKILL if it has not quit (it can hang on its way out after the file is written).
     // ponytail: a shell restart ends a recording; gpu-screen-recorder still closes the file.
-    readonly property bool recorderBusy: recorder.running
-    readonly property bool recording: recorder.running && recordingSince > 0
+    readonly property bool recorderBusy: recorder.running && !recordingStopping
+    readonly property bool recording: recorder.running && recordingSince > 0 && !recordingStopping
     property string recordingFile: ""
     property real recordingSince: 0
+    property bool recordingStopping: false
     function record() {
         if (!recorder.running) {
             recordingFile = "";
             recordingSince = 0;
+            recordingStopping = false;
             recorder.running = true;
+        } else if (recordingStopping) {
+            return;
         } else if (recordingSince > 0) {
+            recordingStopping = true;
             recorder.signal(2);
-            stopKill.restart();
+            stopTerm.restart();
         } else {
             recorder.signal(9);
         }
     }
-    Timer { id: stopKill; interval: 10000; onTriggered: if (recorder.running) recorder.signal(9) }
+    Timer { id: stopTerm; interval: 5000; onTriggered: if (recorder.running) { recorder.signal(15); stopKill.restart(); } }
+    Timer { id: stopKill; interval: 3000; onTriggered: if (recorder.running) recorder.signal(9) }
     Process {
         id: recorder
         command: ["sh", "-c", `d="$(xdg-user-dir VIDEOS 2>/dev/null || echo "$HOME/Videos")/$1"
@@ -104,7 +111,9 @@ Singleton {
             "sh", Tr.t("Screen Recordings")]
         stdout: SplitParser { onRead: line => { if (!root.recordingFile) root.recordingFile = line; } }
         onExited: code => {
+            stopTerm.stop();
             stopKill.stop();
+            root.recordingStopping = false;
             const f = root.recordingFile;
             const recorded = root.recordingSince > 0;
             root.recordingFile = "";
