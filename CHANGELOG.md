@@ -18,6 +18,10 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 - More taskbar choices in Settings > Personalise > Taskbar: show search as a box, an icon
   or not at all, hide the Widgets button, make the taskbar more or less see-through, and
   show button labels by turning off "Combine taskbar buttons and hide labels".
+- Settings > Personalise > Start: more pins, more recommended files or the default mix, and
+  a switch to stop showing recently opened files in Start and the taskbar's jump lists.
+- Settings > Personalise > Icons: pick an icon pack (Papirus, its light and dark versions,
+  or any other you install) for the taskbar, Start and your apps.
 - Switch user: click your picture in Start, then Switch user. Your apps stay open behind
   your lock screen while someone else signs in; "Back to" on the login screen returns to you.
 - A guest account you can turn on from the same menu: no password, can't change the PC, and
@@ -125,6 +129,8 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 
 ### Changed
 
+- Settings > Display names the main display at the top (its model, its connector and which
+  side it sits on), says when KrissOS picked it by itself, and lets you choose another there.
 - KrissOS Welcome looks like the rest of KrissOS: the shell's cards, round buttons and side
   panel, your accent colour, and light or dark as your desktop is set.
 - The installer looks like the rest of KrissOS: a step list with ticks, round buttons,

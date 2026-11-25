@@ -277,7 +277,7 @@ FloatingWindow {
                     visible: !win.query
                     active: win.visible
                     sourceComponent: !win.current ? sectionPage
-                        : ({ users: accountPage, datetime: timePage, language: languagePage, privacy: privacyPage, updates: updatesPage, installed: installedPage, defaultapps: defaultAppsPage, startup: startupPage, wifi: wifiPage, ethernet: ethernetPage, bluetooth: bluetoothPage, mouse: mousePage, keyboard: keyboardPage, touchpad: touchpadPage, display: displayPage, sound: soundPage, notifications: notificationsPage, power: powerPage, about: aboutPage, storage: storagePage, printers: printersPage, recovery: recoveryPage, report: reportPage, colours: colours, background: background, taskbar: taskbar, pins: pins, lock: lockPage, text: textPage })[win.current.id] ?? null
+                        : ({ users: accountPage, datetime: timePage, language: languagePage, privacy: privacyPage, updates: updatesPage, installed: installedPage, defaultapps: defaultAppsPage, startup: startupPage, wifi: wifiPage, ethernet: ethernetPage, bluetooth: bluetoothPage, mouse: mousePage, keyboard: keyboardPage, touchpad: touchpadPage, display: displayPage, sound: soundPage, notifications: notificationsPage, power: powerPage, about: aboutPage, storage: storagePage, printers: printersPage, recovery: recoveryPage, report: reportPage, colours: colours, background: background, taskbar: taskbar, pins: pins, icons: iconsPage, lock: lockPage, text: textPage })[win.current.id] ?? null
                     onLoaded: if (SettingsPages.key) pointLater.restart()
                 }
             }
@@ -329,6 +329,7 @@ FloatingWindow {
 
     Component { id: recoveryPage; SettingsRecovery {} }
     Component { id: reportPage; SettingsReport {} }
+    Component { id: iconsPage; SettingsIcons {} }
 
     // Colours: the accent and light or dark.
     Component {
@@ -551,6 +552,21 @@ FloatingWindow {
         id: pins
         Column {
             spacing: Theme.s3
+            SettingsUi.Card {
+                SettingsUi.Choice {
+                    text: Tr.t("Start layout")
+                    detail: Desktop.startRecommended ? "" : Tr.t("Recommended is off, so Start shows the most pins.")
+                    value: Desktop.startLayout
+                    options: [["pins", Tr.t("More pins")], ["default", Tr.t("Default")], ["recommended", Tr.t("More recommendations")]]
+                    onPicked: v => Desktop.startLayout = v
+                }
+                SettingsUi.Toggle {
+                    text: Tr.t("Show recently opened files in Start")
+                    detail: Tr.t("Under Recommended, and in the jump lists on the taskbar.")
+                    checked: Desktop.startRecommended
+                    onToggled: Desktop.startRecommended = !Desktop.startRecommended
+                }
+            }
             SettingsUi.Card {
                 SettingsUi.Note { text: Tr.t("These apps are pinned to Start and the taskbar, in this order. Pin more from Start: right-click an app.") }
                 SettingsUi.Note { visible: Desktop.pinned.length === 0; text: Tr.t("Nothing is pinned.") }

@@ -258,7 +258,9 @@ PanelWindow {
     onResultsChanged: current = 0
 
     readonly property var recentAll: Desktop.recentShown
-    readonly property var recent: Desktop.withFolders(recentAll, 4)
+    // Start's layout (Settings > Personalise > Start): rows of pins against recent files.
+    readonly property int pinRows: !Desktop.startRecommended ? 4 : ({ pins: 4, recommended: 2 })[Desktop.startLayout] ?? 3
+    readonly property var recent: Desktop.startRecommended ? Desktop.withFolders(recentAll, ({ pins: 2, recommended: 8 })[Desktop.startLayout] ?? 4) : []
 
     MouseArea {
         Accessible.ignored: true  // pointer only; the keyboard has its own way
@@ -397,7 +399,7 @@ PanelWindow {
                 readonly property int columns: 6
                 Layout.fillWidth: true
                 visible: !win.query && !Desktop.launcherSearch && win.shown.length > 0
-                Layout.preferredHeight: Math.min(win.allApps ? 4 : 3, Math.ceil(win.shown.length / columns)) * cellHeight
+                Layout.preferredHeight: Math.min(win.allApps ? 4 : win.pinRows, Math.ceil(win.shown.length / columns)) * cellHeight
                 cellWidth: width / columns
                 cellHeight: 66 + Theme.sp(12) * 2.7  // room for a name on two lines
                 highlightMoveDuration: Theme.ms(150)
@@ -500,7 +502,7 @@ PanelWindow {
 
             // Recommended files.
             RowLayout {
-                visible: !win.query && !win.allApps
+                visible: !win.query && !win.allApps && Desktop.startRecommended
                 Layout.fillWidth: true
                 Layout.topMargin: Theme.s1
                 Text {
@@ -512,7 +514,7 @@ PanelWindow {
             }
 
             GridLayout {
-                visible: !win.query && !win.allApps
+                visible: !win.query && !win.allApps && Desktop.startRecommended
                 Layout.fillWidth: true
                 columns: 2
                 columnSpacing: Theme.s2

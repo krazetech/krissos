@@ -156,6 +156,10 @@ greeter)
     # python-pywayland.
     nothp='import ctypes, os, sys; ctypes.CDLL(None).prctl(41, 1, 0, 0, 0); os.execvp(sys.argv[1], sys.argv[1:])'
     while :; do
+        # The icon pack: COSMIC's setting, which Settings > Personalise > Icons changes (and
+        # then restarts the shell, since Quickshell reads it only at start).
+        QS_ICON_THEME=$(tr -d '"' < "${XDG_CONFIG_HOME:-$HOME/.config}/cosmic/com.system76.CosmicTk/v1/icon_theme" 2>/dev/null)
+        export QS_ICON_THEME="${QS_ICON_THEME:-Papirus-Dark}"
         python3 -c "$nothp" qs -p "$qml" && exit 0
         sleep 1
     done
