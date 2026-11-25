@@ -11,18 +11,22 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="alternate" hreflang="en" href="https://krazetech.github.io/krissos/">
 <link rel="alternate" hreflang="ms" href="https://krazetech.github.io/krissos/ms/">
+<link rel="alternate" hreflang="x-default" href="https://krazetech.github.io/krissos/">
+<link rel="canonical" href="https://krazetech.github.io/krissos/">
 <meta property="og:title" content="KrissOS Sungai Petani: the first major release">
 <meta property="og:description" content="KrissOS, made ready for everyday people. Offline install, Windows-familiar, built for work, gaming and local AI.">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://krazetech.github.io/krissos/">
 <meta property="og:site_name" content="KrissOS">
 <meta property="og:locale" content="en_MY">
-<meta property="og:image" content="https://krazetech.github.io/krissos/og.jpg">
-<meta property="og:image:alt" content="The KrissOS logo, a keris hilt on a Sky Cyan disc, over the KrissOS wallpaper.">
+<meta property="og:image" content="https://krazetech.github.io/krissos/og-sp.jpg">
+<meta property="og:image:alt" content="The Sungai Petani clock tower against a darkening Kedah sky, the KrissOS Sungai Petani wallpaper.">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
-<link rel="preload" as="image" href="sp/tower-dim.webp">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="preload" as="image" href="sp/tower-dim.webp" fetchpriority="high">
+<link rel="preload" as="image" href="sp/tower-dim-cut.webp" fetchpriority="high">
 <link rel="stylesheet" href="style.css">
 <script src="reveal.js"></script>
 </head>
@@ -30,15 +34,16 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="nav">
   <div class="wrap">
-    <a class="brand" href="./"><img src="logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
+    <a class="brand" href="./" aria-label="KrissOS home"><img src="logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
     <nav aria-label="Main">
       <ul>
         <li><a href="shell.html">Shell</a></li>
         <li><a href="download.html">Download</a></li>
         <li><a href="install.html">Kriss repo</a></li>
         <li><a href="roadmap.html">Roadmap</a></li>
+        <li><a href="help.html">Help</a></li>
         <li class="gh"><a href="https://github.com/krazetech/krissos">GitHub</a></li>
-        <li class="kofi"><a href="https://ko-fi.com/razmanzaidi"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.5 1.1 5.3 3 1.8-1.9 3.2-3 5.3-3 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21Z"/></svg><span>Support</span></a></li>
+        <li class="kofi"><a href="https://ko-fi.com/razmanzaidi" aria-label="Support KrissOS on Ko-fi"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.5 1.1 5.3 3 1.8-1.9 3.2-3 5.3-3 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21Z"/></svg><span>Support</span></a></li>
         <li><a class="lang" href="ms/" hreflang="ms" lang="ms">BM</a></li>
       </ul>
     </nav>
@@ -52,7 +57,7 @@
     <h1 id="sp-title" class="sp-title"><small>KrissOS</small> Sungai Petani</h1>
     <img class="sp-cut" src="sp/tower-dim-cut.webp" width="2400" height="1350" alt="">
     <div class="sp-foot wrap">
-      <p class="eyebrow">Introducing the first major release</p>
+      <p class="eyebrow">Introducing release 110</p>
       <p class="lede">Made ready for everyday people. Install it without internet, find your way like on Windows, then work, game and run your own AI. Senang je.</p>
       <div class="actions">
         <a class="btn" href="download.html">Download the preview</a>
@@ -64,7 +69,7 @@
   <section class="statement">
     <div class="wrap">
       <p class="label">The name</p>
-      <p class="say" data-words>Every KrissOS release is named after a place in Malaysia. The first one is named after home: Sungai Petani, Kedah, and the clock tower in the middle of town.</p>
+      <p class="say" data-words>Every KrissOS release is named after a place in Malaysia. The first one, release 110, is named after home: Sungai Petani, Kedah, and the clock tower in the middle of town.</p>
     </div>
   </section>
 
@@ -79,7 +84,7 @@
       </figure>
       <div class="duo">
         <figure class="frame plus shot-frame reveal">
-          <img src="sp/lock.webp" width="1920" height="788" loading="lazy" alt="The lock screen: a large clock and the date in Malay, set behind the clock tower so the tower stands in front of the numbers.">
+          <img src="sp/lock.webp" width="1920" height="1080" loading="lazy" alt="The lock screen: a large clock and the date in Malay, set behind the clock tower so the tower stands in front of the numbers.">
           <figcaption>The lock clock tucks behind the tower. <kbd>Windows + L</kbd></figcaption>
         </figure>
         <figure class="frame plus shot-frame reveal">
@@ -105,8 +110,8 @@
       </div>
       <div class="sun-view frame plus dots">
         <div class="sun-pic">
-          <img src="sp/tower-day.webp" width="2400" height="1350" loading="lazy" alt="The clock tower by day.">
-          <img data-night src="sp/tower-dim.webp" width="2400" height="1350" loading="lazy" alt="The same photo with a darker evening sky.">
+          <img src="sp/tower-day.webp" srcset="sp/tower-day-1200.webp 1200w, sp/tower-day.webp 2400w" sizes="(max-width: 860px) 100vw, 680px" width="2400" height="1350" loading="lazy" alt="The clock tower by day.">
+          <img data-night src="sp/tower-dim.webp" srcset="sp/tower-dim-1200.webp 1200w, sp/tower-dim.webp 2400w" sizes="(max-width: 860px) 100vw, 680px" width="2400" height="1350" loading="lazy" alt="The same photo with a darker evening sky.">
         </div>
       </div>
     </div>
@@ -123,7 +128,7 @@
         <ul class="list cell reveal">
           <li><span>Start-style launcher<small>Type to find an app, a file or a setting</small></span><kbd>Windows</kbd></li>
           <li><span>A taskbar at the bottom<small>Pinned apps, open windows, tray and clock</small></span></li>
-          <li><span>Close at the top right<small>Minimize, maximize and close where you expect them</small></span></li>
+          <li><span>Close at the top right<small>Minimise, maximise and close where you expect them</small></span></li>
           <li><span>Open your files<small>The file manager, one key away</small></span><kbd>Windows + E</kbd></li>
           <li><span>Lock the screen<small>Going for teh tarik? Lock it first</small></span><kbd>Windows + L</kbd></li>
         </ul>
@@ -142,7 +147,7 @@
         </article>
         <article class="cell reveal">
           <h3>Your apps</h3>
-          <p>Most of what you use has a Linux version or runs in the browser. For the rest, WinBoat runs Windows apps in their own windows.</p>
+          <p>Most of what you use has a Linux version or runs in the browser. For the rest, WinPodX runs Windows apps in their own windows.</p>
         </article>
       </div>
     </div>
@@ -168,7 +173,7 @@
         <article class="cell pillar reveal">
           <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="3"/><path d="M8 21h8M12 17v4"/></svg></div>
           <h3>Work</h3>
-          <p>A calm desktop where things are where you expect them. If an update goes wrong, pick an earlier snapshot when you start the computer. Windows-only apps run through WinBoat.</p>
+          <p>A calm desktop where things are where you expect them. If an update goes wrong, pick an earlier snapshot when you start the computer. Windows-only apps run through WinPodX.</p>
         </article>
         <article class="cell pillar reveal">
           <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 11h4M8 9v4M15 12h.01M18 10h.01"/><path d="M17.3 5H6.7a4 4 0 0 0-4 3.6L2 15a3 3 0 0 0 5.3 2.2L9 15h6l1.7 2.2A3 3 0 0 0 22 15l-.7-6.4a4 4 0 0 0-4-3.6Z"/></svg></div>
@@ -213,7 +218,7 @@
         <article class="cell"><span class="tag live">Live</span><h3>Live USB</h3><p>Try KrissOS before you install. A new build comes out every night, and only after it boots in our tests.</p></article>
         <article class="cell"><span class="tag live">Live</span><h3>Welcome app</h3><p>Opens on first start: the game checker, your usual apps, Copy from Windows, drivers and extras.</p></article>
         <article class="cell"><span class="tag live">Live</span><h3>Gaming</h3><p>Steam, GameMode, Gamescope and MangoHud in one install, plus power modes that switch with a click.</p></article>
-        <article class="cell"><span class="tag live">Live</span><h3>Windows apps</h3><p>WinBoat runs Windows apps in their own windows. <code>kriss winapps</code> checks your computer first and sets it up.</p></article>
+        <article class="cell"><span class="tag live">Live</span><h3>Windows apps</h3><p>WinPodX runs Windows apps in their own windows. <code>kriss winapps</code> checks your computer first and sets it up.</p></article>
         <article class="cell"><span class="tag live">Live</span><h3>Local AI, set up</h3><p>Ollama from the welcome app, tuned for your graphics card, and an optional step to install the coding agents you already use.</p></article>
         <article class="cell"><span class="tag live">Live</span><h3>Windows in a VM</h3><p><code>kriss-vm</code> gives a Windows VM your graphics card, on desktops. It checks your hardware first and undoes everything in one command.</p></article>
         <article class="cell"><span class="tag live">Live</span><h3><code>kriss migrate</code></h3><p>Already running a compatible Linux? One command turns it into KrissOS in place, with your files and apps kept.</p></article>
@@ -226,11 +231,11 @@
   </section>
 
   <section class="finale">
-    <img src="sp/tower-day.webp" width="2400" height="1350" loading="lazy" alt="">
+    <img src="sp/tower-dim.webp" width="2400" height="1350" loading="lazy" alt="">
     <div class="wrap">
       <p class="label">Try it</p>
       <h2>Try Sungai Petani tonight.</h2>
-      <p class="lede">Boot the live USB or a VM. Nothing gets installed until you say so.</p>
+      <p class="lede">The nightly preview of 110 runs from a USB stick or a VM. Nothing gets installed until you say so.</p>
       <div class="actions">
         <a class="btn" href="download.html">Download the preview</a>
         <a class="btn ghost" href="roadmap.html">See the roadmap</a>
@@ -242,12 +247,12 @@
 <footer>
   <div class="wrap">
     <div class="foot-brand">
-      <a class="brand" href="./"><img src="logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
+      <a class="brand" href="./" aria-label="KrissOS home"><img src="logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
       <p>Made ready for everyday people, in Malaysia, with a lot of kopi.</p>
       <a class="btn kofi" href="https://ko-fi.com/razmanzaidi"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.5 1.1 5.3 3 1.8-1.9 3.2-3 5.3-3 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21Z"/></svg>Support KrissOS on Ko-fi</a>
     </div>
     <nav class="foot-cols" aria-label="Footer">
-      <div><p>KrissOS</p><a href="shell.html">Shell</a><a href="download.html">Download</a><a href="roadmap.html">Roadmap</a></div>
+      <div><p>KrissOS</p><a href="shell.html">Shell</a><a href="download.html">Download</a><a href="roadmap.html">Roadmap</a><a href="help.html">Help</a><a href="hardware.html">Hardware</a></div>
       <div><p>Project</p><a href="install.html">Kriss repo</a><a href="https://github.com/krazetech/krissos">GitHub</a><a href="https://github.com/krazetech/krissos/blob/main/LICENSE">License</a></div>
     </nav>
     <div class="foot-base">

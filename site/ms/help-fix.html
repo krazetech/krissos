@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kemas kini dan pembaikan · Bantuan KrissOS</title>
+<meta name="description" content="Kemas kini KrissOS, kembali dari kemas kini bermasalah, set semula PC ini dan laporkan masalah.">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="../logo.svg" type="image/svg+xml">
+<link rel="icon" href="../favicon.ico" sizes="32x32">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="alternate" hreflang="en" href="https://krazetech.github.io/krissos/help-fix.html">
+<link rel="alternate" hreflang="ms" href="https://krazetech.github.io/krissos/ms/help-fix.html">
+<link rel="alternate" hreflang="x-default" href="https://krazetech.github.io/krissos/help-fix.html">
+<link rel="canonical" href="https://krazetech.github.io/krissos/ms/help-fix.html">
+<meta property="og:title" content="Kemas kini dan pembaikan · Bantuan KrissOS">
+<meta property="og:description" content="Kemas kini KrissOS, kembali dari kemas kini bermasalah, set semula PC ini dan laporkan masalah.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://krazetech.github.io/krissos/ms/help-fix.html">
+<meta property="og:site_name" content="KrissOS">
+<meta property="og:locale" content="ms_MY">
+<meta property="og:image" content="https://krazetech.github.io/krissos/og-sp.jpg">
+<meta property="og:image:alt" content="The Sungai Petani clock tower against a darkening Kedah sky, the KrissOS Sungai Petani wallpaper.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../style.css">
+<script src="../reveal.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Langkau ke kandungan</a>
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="Laman utama KrissOS"><img src="../logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
+    <nav aria-label="Main">
+      <ul>
+        <li><a href="shell.html">Shell</a></li>
+        <li><a href="download.html">Muat turun</a></li>
+        <li><a href="install.html">Repo Kriss</a></li>
+        <li><a href="roadmap.html">Hala tuju</a></li>
+        <li><a href="help.html" aria-current="page">Bantuan</a></li>
+        <li class="gh"><a href="https://github.com/krazetech/krissos">GitHub</a></li>
+        <li class="kofi"><a href="https://ko-fi.com/razmanzaidi" aria-label="Sokong KrissOS di Ko-fi"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.5 1.1 5.3 3 1.8-1.9 3.2-3 5.3-3 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21Z"/></svg><span>Sokong</span></a></li>
+        <li><a class="lang" href="../help-fix.html" hreflang="en" lang="en">EN</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+<section>
+  <div class="wrap">
+    <div class="head">
+      <nav class="crumb rise d1" aria-label="Breadcrumb"><a href="help.html">← Semua bantuan</a></nav>
+      <h1 class="rise d1">Kemas kini dan pembaikan.</h1>
+      <p class="lede rise d2">Setiap kemas kini bermula dengan petikan, jadi kebanyakan kesilapan boleh dibatalkan dengan sekali mula semula.</p>
+    </div>
+    <ul class="toc"><li><a href="#update">Kemas kini</a></li><li><a href="#rollback">Kembali dari kemas kini bermasalah</a></li><li><a href="#reset">Set semula PC ini</a></li><li><a href="#report">Laporkan masalah</a></li></ul>
+    <article class="task" id="update">
+<h2>Kemas kini KrissOS</h2>
+
+<p>Apabila ada kemas kini, pemberitahuan <b>Kemas kini tersedia</b> akan muncul: tekan <b>Kemas kini</b> dan taip kata laluan anda. Atau buka Kedai &gt; <b>Kemas kini</b> &gt; <b>Kemas kini semua</b>. Atau, dalam terminal:</p>
+<div class="code"><pre><code>sudo kriss update</code></pre></div>
+<p>Ia mengambil petikan dahulu, kemudian mengemas kini KrissOS, Arch, aplikasi Flatpak dan pakej AUR sekali gus. Jika kemas kini bermasalah, <a href="#rollback">kembali ke petikan itu</a>.</p>
+<p>Mahu kemas kini beberapa hari lebih awal untuk membantu mengesan masalah? <code>kriss channel testing</code>. <code>kriss channel stable</code> untuk kembali.</p>
+
+</article>
+<article class="task" id="rollback">
+<h2>Kembali dari kemas kini yang bermasalah</h2>
+
+<ol class="steps"><li><h3>Mulakan petikan</h3><p>Mulakan semula PC. Dalam menu but, pilih <b>KrissOS &gt; Snapshots</b> dan pilih petikan dari sebelum kemas kini. 15 yang terbaharu ada di situ.</p></li><li><h3>Cuba dahulu</h3><p>Satu notis memberitahu anda sedang menjalankan petikan: perubahan akan hilang apabila PC dimulakan semula, jadi selamat untuk mencuba.</p></li><li><h3>Kekalkan</h3><p>Jika ia berfungsi, buka terminal, jalankan arahan ini, jawab <b>y</b> dan mulakan semula:</p><div class="code"><pre><code>kriss rollback</code></pre></div><p>Sistem sebelumnya disimpan sebagai sandaran. Arahan itu memaparkan cara mengosongkan ruangnya apabila anda sudah berpuas hati.</p></li></ol>
+
+</article>
+<article class="task" id="reset">
+<h2>Set semula PC ini</h2>
+
+<p><b>Tetapan &gt; Sistem &gt; Pemulihan &gt; Set semula PC ini</b>, sama seperti Windows:</p>
+<ul>
+<li><b>Simpan fail saya</b>: aplikasi yang anda tambah dan tetapan anda dibuang. Fail anda dalam folder Rumah kekal.</li>
+<li><b>Buang semua</b>: aplikasi yang anda tambah, tetapan anda, setiap fail dalam folder Rumah dan Wi-Fi yang disimpan dibuang.</li>
+</ul>
+<p>Ia memaparkan rancangannya, meminta anda menaip <b>RESET</b>, mengambil petikan (supaya anda masih boleh kembali dari menu but) dan selesai apabila PC dimulakan semula. Akaun dan kata laluan kekal, dan tiada apa-apa yang dimuat turun. Sama juga dalam terminal:</p>
+<div class="code"><pre><code>kriss reset --keep-files</code></pre></div>
+<div class="code"><pre><code>kriss reset --everything</code></pre></div>
+<p><code>--dry-run</code> hanya memaparkan rancangan, dan <code>kriss reset --cancel</code> membatalkan set semula yang sedang menunggu.</p>
+
+</article>
+<article class="task" id="report">
+<h2>Laporkan masalah</h2>
+
+<p><b>Tetapan &gt; Sistem &gt; Laporkan masalah</b> mengumpulkan log dan ringkasan PC ini. Nama anda, nama Wi-Fi dan nombor siri dibuang, dan anda dapat melihat semuanya terlebih dahulu.</p>
+<ol class="steps"><li><h3>Nyatakan apa yang tidak kena</h3><p>Pilihan sahaja, tetapi ia membantu.</p></li><li><h3>Tunjukkan laporan</h3><p>Baca apa yang akan dihantar.</p></li><li><h3>Hantar atau simpan</h3><p><b>Buka sebagai isu GitHub</b> mengisi isu untuk anda; tiada apa-apa dihantar sehingga anda menekan <b>Submit</b> di GitHub. Atau <b>Simpan ke fail</b>.</p></li></ol>
+<p>Dalam terminal: <code>kriss report "apa yang tidak kena"</code>. Jika PC tiada internet, laporan disimpan ke fail dalam folder Rumah anda, supaya anda boleh menghantarnya kemudian.</p>
+
+</article>
+
+  </div>
+</section>
+<script>
+// Copy buttons for code blocks, as on the other pages.
+for (const box of document.querySelectorAll('.code')) {
+  const b = document.createElement('button');
+  b.className = 'copy';
+  b.type = 'button';
+  b.textContent = 'Salin';
+  b.onclick = () => navigator.clipboard.writeText(box.querySelector('pre').textContent)
+    .then(() => { b.textContent = 'Disalin'; setTimeout(() => b.textContent = 'Salin', 1500); });
+  box.append(b);
+}
+</script>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-brand">
+      <a class="brand" href="./" aria-label="Laman utama KrissOS"><img src="../logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
+      <p>Sedia untuk semua orang. Dibuat di Malaysia dengan banyak kopi.</p>
+      <a class="btn kofi" href="https://ko-fi.com/razmanzaidi"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.5 1.1 5.3 3 1.8-1.9 3.2-3 5.3-3 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21Z"/></svg>Sokong KrissOS di Ko-fi</a>
+    </div>
+    <nav class="foot-cols" aria-label="Footer">
+      <div><p>KrissOS</p><a href="shell.html">Shell</a><a href="download.html">Muat turun</a><a href="roadmap.html">Hala tuju</a><a href="help.html">Bantuan</a><a href="hardware.html">Perkakasan</a></div>
+      <div><p>Projek</p><a href="install.html">Repo Kriss</a><a href="https://github.com/krazetech/krissos">GitHub</a><a href="https://github.com/krazetech/krissos/blob/main/LICENSE">Lesen</a></div>
+    </nav>
+    <div class="foot-base">
+      <p>Perisian bebas di bawah <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>. Tiada kaitan dengan Arch Linux.</p>
+      <a class="sponsor" href="https://ruck-fi.com"><span>Dengan bangga disokong oleh</span><img src="../ruckfi-white.png" alt="RUCK-Fi" width="360" height="81"></a>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

@@ -15,7 +15,7 @@
   --accent: #24B1E6;      /* fills: buttons, dots, rings */
   --link: #24B1E6;        /* accent as text */
   --fg: #E6EDF2;
-  --muted: #6B7680;
+  --muted: #7C8790;      /* AA on bg and surface */
   --soft: #A3AEB8;        /* body copy, AA on bg */
   --line: rgba(230, 237, 242, .09);
   --edge: rgba(230, 237, 242, .16);
@@ -65,7 +65,7 @@ code, pre { font-family: var(--mono); font-size: .9em; }
 
 .wrap { width: min(var(--wrap), 100% - 32px); margin-inline: auto; }
 .skip { position: absolute; left: -999px; }
-.skip:focus { left: 16px; top: 12px; z-index: 10; background: var(--surface); padding: 8px 14px; }
+.skip:focus { position: fixed; left: 16px; top: 12px; z-index: 30; background: var(--surface); padding: 8px 14px; }
 
 /* Nav: the KrissOS taskbar, docked at the top: the logo is the
    Start button, pages sit like pinned apps with a Sky Cyan indicator, Ko-fi and the
@@ -79,6 +79,7 @@ body { padding-top: 76px; }
   border: 1px solid rgba(230, 237, 242, .12); border-radius: 16px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, .45);
 }
+@media (prefers-color-scheme: light) { .nav { box-shadow: 0 8px 24px rgba(11, 13, 15, .14); } }
 .nav .wrap { display: flex; align-items: center; gap: 8px; height: 54px; width: auto; padding: 0 7px; }
 .brand { display: flex; align-items: center; gap: 10px; color: var(--fg); font-weight: 700; letter-spacing: -.01em; }
 .brand:hover { text-decoration: none; }
@@ -96,7 +97,7 @@ body { padding-top: 76px; }
   .nav .wrap { gap: 2px; }
   .nav ul a { padding: 0 9px; font-size: .84rem; }
   .nav li.kofi span { display: none; }
-  .brand span { display: none; }
+  .nav .brand span { display: none; } /* the link keeps its aria-label */
   .nav li.gh { display: none; } /* GitHub stays in the footer */
   .nav li:has(> a[href="install.html"]) { display: none; } /* so is the Arch repo page */
 }
@@ -227,7 +228,7 @@ h2 kbd { font-size: .5em; vertical-align: middle; }
 .phases ul li { display: list-item; padding: 2px 0; border: 0; }
 
 /* Footer: brand and Ko-fi on the left, two link columns, a base row with the sponsor */
-footer { padding: 80px 0 120px; font-size: .95rem; color: var(--soft); background: var(--bg); border-top: 1px solid var(--line); }
+footer { padding: 80px 0 64px; font-size: .95rem; color: var(--soft); background: var(--bg); border-top: 1px solid var(--line); }
 footer .wrap { display: grid; grid-template-columns: 1.4fr 1fr; gap: 48px; }
 footer p { margin: 0; }
 footer a { color: var(--fg); }
@@ -237,6 +238,7 @@ footer a { color: var(--fg); }
 .foot-cols p { font: 500 .75rem/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
 .foot-base { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 20px 40px; justify-content: space-between; align-items: center; padding-top: 28px; border-top: 1px solid var(--line); font-size: .88rem; color: var(--muted); }
 .foot-base a { color: var(--soft); }
+.foot-base p a { display: inline-block; padding-block: 4px; } /* 24px tap target */
 .btn.kofi { background: var(--fg); color: #000; }
 .btn.kofi:hover { background: #fff; }
 .btn.kofi svg, .nav .kofi svg { width: 16px; height: 16px; color: #FF5E5B; }
@@ -280,7 +282,7 @@ footer .sponsor:hover img, footer .sponsor:focus-visible img { filter: none; opa
 
 /* ---------- Home: KrissOS Sungai Petani ---------- */
 .label { font: 500 .78rem/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--link); margin-bottom: 20px; }
-.eyebrow { font: 500 .8rem/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--fg); margin-bottom: 18px; }
+.eyebrow { font: 500 .8rem/1.5 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--fg); margin-bottom: 18px; }
 .row-head { max-width: 780px; margin-bottom: 48px; }
 .row-head .lede { margin-top: 12px; }
 
@@ -320,7 +322,7 @@ footer .sponsor:hover img, footer .sponsor:focus-visible img { filter: none; opa
 /* The name, said big; words light up as you scroll (home.js) */
 .statement { padding-block: clamp(96px, 16vw, 200px); }
 .say { font-size: clamp(1.9rem, 4.6vw, 4rem); font-weight: 700; line-height: 1.08; letter-spacing: -.035em; max-width: 22ch; margin: 0; }
-.say .w { opacity: .18; transition: opacity .25s linear; }
+.say .w { opacity: .35; transition: opacity .25s linear; }
 .say .w.on { opacity: 1; }
 
 /* Desktop screenshots in frames */
@@ -342,7 +344,7 @@ footer .sponsor:hover img, footer .sponsor:focus-visible img { filter: none; opa
 .sun-time { font: 600 clamp(3.5rem, 9vw, 8rem)/1 var(--mono); letter-spacing: -.06em; margin: auto 0 12px; font-variant-numeric: tabular-nums; }
 .sun-text h2 { font-size: clamp(1.6rem, 3vw, 2.6rem); margin-bottom: 24px; }
 .sun-steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; font-size: .98rem; }
-.sun-steps li { opacity: .45; transition: opacity .3s; padding-left: 14px; border-left: 2px solid transparent; }
+.sun-steps li { opacity: .7; transition: opacity .3s; padding-left: 14px; border-left: 2px solid transparent; }
 .sun-steps li.on { opacity: 1; border-color: #000; }
 .sun-steps b { font-family: var(--mono); font-weight: 600; margin-right: 8px; }
 .sun-view { border-left: 0; display: grid; place-items: center; padding: clamp(20px, 5vw, 64px); }
@@ -352,6 +354,8 @@ footer .sponsor:hover img, footer .sponsor:focus-visible img { filter: none; opa
 @media (max-width: 860px) {
   .sun-stage { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
   .sun-view { border-left: 1px solid var(--line); border-top: 0; }
+  .sun-view { padding: 12px; background: none; } /* the photo fills the panel on phones */
+  .sun-pic { aspect-ratio: auto; height: 100%; }
   .sun-time { margin-top: 16px; font-size: clamp(3rem, 16vw, 5rem); }
   .sun-text h2 { margin-bottom: 14px; }
   .sun-steps { font-size: .88rem; }
@@ -367,7 +371,7 @@ footer .sponsor:hover img, footer .sponsor:focus-visible img { filter: none; opa
 .cell h3 { margin-bottom: 10px; }
 .cell p { color: var(--soft); margin: 0; }
 .cell .tag { margin-bottom: 22px; }
-.cell.list { padding-block: 8px; }
+.cell.list { padding-block: 16px; }
 .cell.list li:last-child { border-bottom: 0; }
 .cell.list li:first-child { border-top: 0; }
 .shot-cell { display: grid; place-items: center; }
@@ -386,8 +390,8 @@ footer .sponsor:hover img, footer .sponsor:focus-visible img { filter: none; opa
 .qs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 .qt { border-radius: 18px; background: #1A1E22; padding: 18px; display: flex; flex-direction: column; gap: 10px; min-height: 190px; }
 .qt svg { width: 22px; height: 22px; color: var(--soft); }
-.qt b { font: 700 clamp(3rem, 6vw, 4.5rem)/1 var(--sans); letter-spacing: -.04em; margin-top: auto; }
-.qt span { font-size: .9rem; color: var(--soft); line-height: 1.4; }
+.qt b { font: 700 clamp(3rem, 6vw, 4.5rem)/1 var(--sans); letter-spacing: -.04em; margin-top: 12px; }
+.qt span { font-size: .9rem; color: var(--soft); line-height: 1.4; margin-top: auto; } /* numbers line up, captions sit on the floor */
 .qt.on { background: var(--accent); color: #000; }
 .qt.on svg, .qt.on span { color: #000; }
 @media (max-width: 760px) { .qs-grid { grid-template-columns: 1fr 1fr; } .qt { min-height: 160px; } }
@@ -397,10 +401,12 @@ footer .sponsor:hover img, footer .sponsor:focus-visible img { filter: none; opa
 .promises li { counter-increment: p; justify-content: flex-start; }
 .promises li::before { content: "0" counter(p); font: 500 .8rem/1.9 var(--mono); color: var(--link); min-width: 2.5em; }
 
-/* Finale: the tower by day, faded into the black */
+/* Finale: the tower at dusk ("tonight"), faded into the black above */
 .finale { position: relative; overflow: hidden; isolation: isolate; text-align: center; padding-block: clamp(140px, 22vw, 280px); }
-.finale > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 30% 35%; z-index: -1; opacity: .55; }
-.finale::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(#000, transparent 35%, transparent 60%, rgba(0,0,0,.6)); }
+.finale > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 30% 35%; z-index: -1; }
+/* The photo shows at full strength; the shade sits only where the words are, and fades the top edge into the black above. */
+.finale::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(#000, transparent 22%), radial-gradient(ellipse 50% 45% at 50% 55%, rgba(0,0,0,.5), transparent 75%); }
+.finale .label { color: #fff; }
 .finale h2 { font-size: clamp(2.6rem, 8vw, 6.5rem); }
 .finale .lede { margin-inline: auto; color: #DCE4EA; }
 .finale .actions { justify-content: center; }
@@ -426,3 +432,46 @@ footer .sponsor:hover img, footer .sponsor:focus-visible img { filter: none; opa
     transition-delay: var(--delay, 0s), var(--delay, 0s), 0s;
   }
 }
+
+/* Roadmap on phones: the number column only takes what it needs; package names don't break */
+@media (max-width: 560px) {
+  .phases li { grid-template-columns: auto 1fr; gap: 8px 16px; }
+  .phases .n { font-size: 1.75rem; min-width: 1.4em; }
+}
+.phases code { white-space: nowrap; }
+
+/* Hero on phones: the tower moves right and the title sits left, so the tower
+   only clips the end of the words instead of covering them */
+@media (max-width: 560px) {
+  .sp-hero > img { object-position: 14% 35%; }
+  .sp-title { top: 14%; left: 16px; right: 16px; text-align: left; font-size: clamp(3.6rem, 19vw, 5rem); line-height: .9; }
+  .sp-title small { margin-bottom: 1.2em; }
+}
+
+/* Inline links in small muted notes get a 24px tap target */
+.muted a { display: inline-block; padding-block: 2px; }
+
+
+/* Help pages and the hardware list */
+.find { display: block; width: 100%; max-width: 640px; font: inherit; font-size: 1.1rem; color: var(--fg); background: var(--surface); border: 1px solid var(--edge); border-radius: 999px; padding: 14px 22px; margin-top: 8px; }
+.find::placeholder { color: var(--muted); }
+.help-group { margin-top: 56px; }
+.help-group h2 { font-size: clamp(1.5rem, 3vw, 2rem); }
+.list a { font-weight: 600; }
+.task { max-width: 820px; padding: 48px 0 8px; border-top: 1px solid var(--line); scroll-margin-top: 90px; }
+.task > h2 { font-size: clamp(1.75rem, 4vw, 2.5rem); }
+.task > .tag { margin-bottom: 16px; }
+.task p, .task li { color: var(--soft); }
+.task .steps { margin-top: 24px; }
+.task .steps > li { margin-bottom: 24px; }
+.task .steps h3 { font-size: 1.1rem; }
+.task ul:not(.steps) { padding-left: 1.2em; }
+.toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.toc a { display: inline-block; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--edge); color: var(--fg); font-size: .9rem; }
+.toc a:hover { background: var(--hover); text-decoration: none; }
+.hw li { flex-wrap: wrap; align-items: flex-start; }
+.hw li > span:first-child { flex: 1 1 18rem; }
+.tag.no { color: var(--muted); }
+.help-group li[hidden], .help-group[hidden] { display: none; }
+@media (max-width: 560px) { .nav li:has(> a[href="roadmap.html"]) { display: none; } } /* Help took its place on phones; Roadmap stays in the footer */
+.crumb { font-size: .95rem; margin-bottom: 16px; }

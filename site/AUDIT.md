@@ -1,5 +1,7 @@
 # KrissOS site audit (Sungai Petani rework)
 
+> **Status 2026-11-20:** all findings fixed on the English pages except L9 (manual check of ko-fi.com and sourceforge.net) and the self-hosted-fonts part of L5. Naming decision for H5: Sungai Petani is the name of release `110`, and today's download is its nightly preview. `kriss migrate` is marked Done on the roadmap, since it is merged (#42). The Malay pages still need the same copy and markup fixes.
+
 Date: 2026-11-20 · Branch `kz/site-sungai-petani` (uncommitted working tree) · Scope: `site/*.html` (EN), `site/style.css`, `site/home.js`. `site/ms/*` was not reviewed.
 
 How this was checked: every EN page was rendered in headless Chrome over CDP at 1440×900 and 390×844 (mobile emulation), in dark and light colour schemes, with screenshots at several scroll points (including three points through the sticky "Your desktop follows the sun" section). An in-page script checked for horizontal overflow, heading order, image load and alt text, link names and loaded fonts. Contrast ratios were calculated from the CSS tokens (WCAG 2.x formula). All local and external links were fetched with curl. LunariaOS's `script.js` and `style.css` were read to compare its motion.

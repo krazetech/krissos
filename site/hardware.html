@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hardware KrissOS runs on</title>
+<meta name="description" content="Which PCs and machines KrissOS has been tested on, and how: works, works with notes, or not yet tested.">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="alternate" hreflang="en" href="https://krazetech.github.io/krissos/hardware.html">
+<link rel="alternate" hreflang="ms" href="https://krazetech.github.io/krissos/ms/hardware.html">
+<link rel="alternate" hreflang="x-default" href="https://krazetech.github.io/krissos/hardware.html">
+<link rel="canonical" href="https://krazetech.github.io/krissos/hardware.html">
+<meta property="og:title" content="Hardware KrissOS runs on">
+<meta property="og:description" content="Which PCs and machines KrissOS has been tested on, and how: works, works with notes, or not yet tested.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://krazetech.github.io/krissos/hardware.html">
+<meta property="og:site_name" content="KrissOS">
+<meta property="og:locale" content="en_MY">
+<meta property="og:image" content="https://krazetech.github.io/krissos/og-sp.jpg">
+<meta property="og:image:alt" content="The Sungai Petani clock tower against a darkening Kedah sky, the KrissOS Sungai Petani wallpaper.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+<script src="reveal.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="KrissOS home"><img src="logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
+    <nav aria-label="Main">
+      <ul>
+        <li><a href="shell.html">Shell</a></li>
+        <li><a href="download.html">Download</a></li>
+        <li><a href="install.html">Kriss repo</a></li>
+        <li><a href="roadmap.html">Roadmap</a></li>
+        <li><a href="help.html">Help</a></li>
+        <li class="gh"><a href="https://github.com/krazetech/krissos">GitHub</a></li>
+        <li class="kofi"><a href="https://ko-fi.com/razmanzaidi" aria-label="Support KrissOS on Ko-fi"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.5 1.1 5.3 3 1.8-1.9 3.2-3 5.3-3 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21Z"/></svg><span>Support</span></a></li>
+        <li><a class="lang" href="ms/hardware.html" hreflang="ms" lang="ms">BM</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+<section>
+  <div class="wrap">
+    <div class="head">
+      <h1 class="rise d1">Works on.</h1>
+      <p class="lede rise d2">Only what we have actually checked. Everything else says not yet tested, until someone tries it.</p>
+      <p class="muted rise d2">Status as of 25 November 2026, from the KrissOS CI and our own notes.</p>
+    </div>
+    <div class="help-group"><h2>Virtual machines, every build</h2><p class="muted">Each KrissOS ISO is started and installed by <a href="https://github.com/krazetech/krissos/actions/workflows/iso.yml">CI</a> before it is published.</p><ul class="list hw"><li><span>PC with UEFI (QEMU, OVMF)<small>Boots, installs and starts to the login screen.</small></span><span class="tag live">Works</span></li><li><span>PC with legacy BIOS (QEMU, SeaBIOS)<small>Installs with Limine in BIOS mode, and starts.</small></span><span class="tag live">Works</span></li><li><span>UEFI with Secure Boot on and Microsoft's keys (OVMF)<small>The USB is refused until its key is trusted; installs with Secure Boot on, enrolls the key in MokManager, reaches the login screen.</small></span><span class="tag live">Works</span></li><li><span>ARM64 virtual machine (QEMU, generic image)<small>The aarch64 image boots in <a href="https://github.com/krazetech/krissos/actions/workflows/image-aarch64.yml">CI</a>. Preview only, not offered for download.</small></span><span class="tag live">Works</span></li></ul></div><div class="help-group"><h2>Graphics</h2><p class="muted">Drivers KrissOS sets up. Tested only where noted.</p><ul class="list hw"><li><span>AMD Radeon<small>amdgpu, in the kernel and Mesa.</small></span><span class="tag plan">In the kernel, not tested by us</span></li><li><span>Intel graphics<small>i915 and xe, in the kernel and Mesa.</small></span><span class="tag plan">In the kernel, not tested by us</span></li><li><span>NVIDIA GeForce 16 series and newer<small>The installer adds NVIDIA's open driver (nvidia-open).</small></span><span class="tag plan">In the kernel, not tested by us</span></li><li><span>NVIDIA cards older than the GeForce 16 series<small>nouveau by default; the NVIDIA 580 driver from Welcome or <code>kriss nvidia setup</code>. On our test laptop, idle power went from about 4.7 W to 6.8 W with it, so the battery lasts about a third less when idle.</small></span><span class="tag wip">Works with notes</span></li></ul></div><div class="help-group"><h2>Macs</h2><ul class="list hw"><li><span>Intel Macs with the T2 chip<small>The KrissOS kernel carries the T2 patches (keyboard, trackpad, Touch Bar, SMC).</small></span><span class="tag plan">In the kernel, not tested by us</span></li><li><span>Apple Silicon Macs<small>An Asahi image is built in CI, but nobody has run it on a Mac yet. See <a href="https://github.com/krazetech/krissos/blob/main/docs/apple-silicon.md">the plan</a>.</small></span><span class="tag no">Not yet tested</span></li></ul></div><div class="help-group"><h2>Other laptops</h2><ul class="list hw"><li><span>Microsoft Surface<small>The Surface Aggregator driver is in the kernel.</small></span><span class="tag plan">In the kernel, not tested by us</span></li><li><span>ASUS laptops<small>asus-wmi and the ASUS keyboard driver are in the kernel.</small></span><span class="tag plan">In the kernel, not tested by us</span></li></ul></div><div class="help-group"><h2>Our own PCs</h2><p class="muted">Filled in after the 110 hardware passes.</p><ul class="list hw"><li><span>Desktop PC, two monitors<small>To fill in.</small></span><span class="tag no">Not yet tested</span></li><li><span>Laptop<small>To fill in.</small></span><span class="tag no">Not yet tested</span></li><li><span>Touch-screen PC (on-screen keyboard)<small>To fill in.</small></span><span class="tag no">Not yet tested</span></li></ul></div>
+  </div>
+</section>
+<section>
+  <div class="wrap">
+    <div class="card note">
+      <h2>Add your PC.</h2>
+      <p>Tried KrissOS on your PC? Open a <a href="https://github.com/krazetech/krissos/issues/new?template=bug_report.yml">bug report on GitHub</a> and pick <b>Drivers and hardware</b>, or run <code>kriss report</code> (or <b>Settings &gt; System &gt; Report a problem</b>) and say <i>works</i> or what didn't. It adds this PC's parts with your name, Wi-Fi names and serial numbers taken out. We list a PC once we can read the report.</p>
+    </div>
+  </div>
+</section>
+<script>
+// Copy buttons for code blocks, as on the other pages.
+for (const box of document.querySelectorAll('.code')) {
+  const b = document.createElement('button');
+  b.className = 'copy';
+  b.type = 'button';
+  b.textContent = 'Copy';
+  b.onclick = () => navigator.clipboard.writeText(box.querySelector('pre').textContent)
+    .then(() => { b.textContent = 'Copied'; setTimeout(() => b.textContent = 'Copy', 1500); });
+  box.append(b);
+}
+</script>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-brand">
+      <a class="brand" href="./" aria-label="KrissOS home"><img src="logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
+      <p>Made ready for everyday people, in Malaysia, with a lot of kopi.</p>
+      <a class="btn kofi" href="https://ko-fi.com/razmanzaidi"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.5 1.1 5.3 3 1.8-1.9 3.2-3 5.3-3 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21Z"/></svg>Support KrissOS on Ko-fi</a>
+    </div>
+    <nav class="foot-cols" aria-label="Footer">
+      <div><p>KrissOS</p><a href="shell.html">Shell</a><a href="download.html">Download</a><a href="roadmap.html">Roadmap</a><a href="help.html">Help</a><a href="hardware.html">Hardware</a></div>
+      <div><p>Project</p><a href="install.html">Kriss repo</a><a href="https://github.com/krazetech/krissos">GitHub</a><a href="https://github.com/krazetech/krissos/blob/main/LICENSE">License</a></div>
+    </nav>
+    <div class="foot-base">
+      <p>Free software under the <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>. Not affiliated with Arch Linux.</p>
+      <a class="sponsor" href="https://ruck-fi.com"><span>Proudly supported by</span><img src="ruckfi-white.png" alt="RUCK-Fi" width="360" height="81"></a>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

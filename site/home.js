@@ -2,7 +2,10 @@
 // wallpaper story runs the Sungai Petani clock from 07:30 to 19:30.
 // ponytail: one scroll listener, rAF-throttled; no library.
 const say = document.querySelector('[data-words]');
-if (say) say.innerHTML = say.textContent.trim().split(/\s+/).map(w => `<span class="w">${w}</span>`).join(' ');
+if (say) say.replaceChildren(...say.textContent.trim().split(/\s+/).flatMap((w, i) => {
+  const s = document.createElement('span'); s.className = 'w'; s.textContent = w;
+  return i ? [' ', s] : [s];
+}));
 const words = say ? [...say.querySelectorAll('.w')] : [];
 const sun = document.querySelector('[data-sun]');
 const night = sun?.querySelector('[data-night]');
@@ -12,7 +15,8 @@ const clamp = x => Math.min(1, Math.max(0, x));
 
 function frame() {
   const vh = innerHeight;
-  if (say) {
+  if (say && matchMedia('(prefers-reduced-motion: reduce)').matches) words.forEach(w => w.classList.add('on'));
+  else if (say) {
     const r = say.getBoundingClientRect();
     const p = clamp((vh * .85 - r.top) / (r.height + vh * .35));
     words.forEach((w, i) => w.classList.toggle('on', i < p * words.length));

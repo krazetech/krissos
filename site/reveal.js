@@ -23,3 +23,4 @@ addEventListener('DOMContentLoaded', () => {
   });
   blocks.forEach(el => { show.observe(el); hide.observe(el); });
 });
+
