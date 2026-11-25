@@ -307,10 +307,20 @@ PanelWindow {
                         readonly property int headH: groupHead ? Math.max(36, Theme.sp(12) + 22) : 0
                         readonly property real naturalHeight: content.implicitHeight + 28 + headH
                         onNaturalHeightChanged: win.setHeight(n.id, naturalHeight)
+                        // Each item in the window costs the window's first frame, hidden or not, and the
+                        // history keeps up to 100 cards: a card's contents are taken out of the window
+                        // (kept, not destroyed) unless it is on show, and in the open list only if it could
+                        // reach the visible part (none is shorter than its 40 px icon and 28 px of padding).
+                        // They stay in while the card fades out.
+                        readonly property bool wanted: shown && (!win.open || depth * (68 + win.gap) < scroller.contentY + scroller.height)
+                        property bool live: false
+                        onWantedChanged: if (wanted) live = true; else if (opacity === 0) live = false
+                        onOpacityChanged: if (opacity === 0 && !wanted) live = false
 
                         // Slides up into place when it arrives.
                         property bool arrived: false
                         Component.onCompleted: {
+                            live = wanted;
                             win.setHeight(n.id, naturalHeight);
                             arrived = true;
                             win.cardBlurs = win.cardBlurs.concat([blur]);
@@ -384,8 +394,8 @@ PanelWindow {
 
                         // The group's header, above its first card; it stays put while a card swipes.
                         RowLayout {
-                            visible: card.groupHead
-                            x: Theme.s4; width: parent.width - Theme.s4 - Theme.s3
+                            parent: card.groupHead && card.live ? card : null
+                            x: Theme.s4; width: card.width - Theme.s4 - Theme.s3
                             height: card.headH
                             spacing: Theme.s2
                             IconImage {
@@ -437,9 +447,10 @@ PanelWindow {
 
                         Item {
                             id: face
+                            parent: card.live ? card : null
                             y: card.headH
-                            width: parent.width
-                            height: parent.height - card.headH
+                            width: card.width
+                            height: card.height - card.headH
                             opacity: 1 - Math.max(0, x) / card.width
                             Behavior on x {
                                 enabled: !swipe.drag.active && !away.running
