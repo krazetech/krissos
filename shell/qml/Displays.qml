@@ -26,6 +26,26 @@ Singleton {
         const m = (o.model || "").trim();
         return m && m !== "0x0000" ? m : o.name;
     }
+    // Its maker and model, e.g. "Samsung Odyssey G50SF" (the maker's first word only:
+    // EDIDs say "Samsung Electric Company").
+    function fullName(o) {
+        const make = (o.make || "").trim().split(/\s+/)[0], name = label(o);
+        return make && name !== o.name && !name.toLowerCase().includes(make.toLowerCase()) ? make + " " + name : name;
+    }
+    // Where a display sits next to the others that are on: "left", "right", "above", "below",
+    // "middle" (others on both sides), or "" for a single display.
+    function side(o) {
+        const others = enabledOutputs.filter(x => x.name !== o.name && !x.mirroring);
+        if (!others.length) return "";
+        const c = x => { const l = logical(x); return { x: x.x + l.w / 2, y: x.y + l.h / 2 }; };
+        const me = c(o), cs = others.map(c);
+        const dx = cs.map(p => me.x - p.x), dy = cs.map(p => me.y - p.y);
+        if (dx.some(d => d > 0) && dx.some(d => d < 0)) return "middle";
+        const sx = dx.reduce((a, b) => a + b, 0), sy = dy.reduce((a, b) => a + b, 0);
+        if (Math.abs(sx) >= Math.abs(sy)) return sx > 0 ? "right" : "left";
+        return sy > 0 ? "below" : "above";
+    }
+
     // Its size on the desktop, in logical pixels (scale and turning applied).
     function logical(o) {
         const turned = /90|270/.test(o.transform);

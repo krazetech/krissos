@@ -135,6 +135,7 @@ Singleton {
     // ~/.config/kriss/shell.json. Missing keys keep the defaults below.
     property alias pinned: config.pinned
     property alias dnd: config.dnd
+    property alias mainChosen: config.mainChosen
     property alias sounds: config.sounds
     property alias soundTheme: config.soundTheme
 
@@ -184,6 +185,8 @@ Singleton {
     property alias taskbarTaskView: config.taskbarTaskView
     property alias taskbarSearch: config.taskbarSearch
     property alias taskbarTransparency: config.taskbarTransparency
+    property alias startLayout: config.startLayout
+    property alias startRecommended: config.startRecommended
     property alias windowCorners: config.windowCorners
     property alias windowBorder: config.windowBorder
     property alias windowShadow: config.windowShadow
@@ -271,6 +274,8 @@ Singleton {
             ]
             // Do not disturb: no toasts, notifications still collect behind the bell.
             property bool dnd: false
+            // The user picked the main display in Settings (else cosmic-comp picked it).
+            property bool mainChosen: false
             // System sounds (Desktop.sound): on or off, and the freedesktop sound theme
             // (/usr/share/sounds/NAME) they come from. KDE's Ocean by default.
             property bool sounds: true
@@ -299,6 +304,10 @@ Singleton {
             // How much shows through the taskbar and top bar: "none", "normal" or "more".
             // Only with transparency effects on (Colours).
             property string taskbarTransparency: "normal"
+            // Start: "pins" (more rows of pins), "default" or "recommended" (more recent
+            // files), and whether Recommended shows at all.
+            property string startLayout: "default"
+            property bool startRecommended: true
             // App windows (Settings > Personalise > Windows, applied in Theme.qml): corners
             // "square", "small" or "round"; the focused window's border "off", "thin" or
             // "thick"; shadows "off", "soft", "normal" or "strong"; and how fast windows and
@@ -526,7 +535,7 @@ Singleton {
 
     // An app's recent files, for its jump list: those it opened, by command or app name.
     function recentFor(entry, limit) {
-        if (!entry) return [];
+        if (!entry || !startRecommended) return [];
         const names = [entry.command[0]?.split("/").pop().toLowerCase(), entry.id.toLowerCase(), entry.name.toLowerCase()];
         return withFolders(recentShown.filter(f => f.apps.some(a => a && names.indexOf(a) >= 0)), limit);
     }
