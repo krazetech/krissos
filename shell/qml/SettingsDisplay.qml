@@ -124,7 +124,7 @@ Column {
             // few pixels here of them, as Windows does. Never on top of a third screen.
             function snap(name, x, y) {
                 const me = Displays.logical(page.outs.find(o => o.name === name));
-                const near = 12 / k;
+                const near = 24 / k;  // 24 px here: about 170-340 desktop px with two 1440p screens
                 const others = page.outs.filter(o => o.name !== name).map(o => Object.assign({ name: o.name, x: o.x, y: o.y }, Displays.logical(o)));
                 const along = (v, lo, len, mine) => {
                     v = Math.max(lo - mine + 1, Math.min(v, lo + len - 1));
