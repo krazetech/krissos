@@ -1,0 +1,32 @@
+[
+ {
+  "id": "oxygen",
+  "name": "Oxygen",
+  "by": "KDE",
+  "licence": "CC0, CC-BY 3.0, LGPL-3.0",
+  "size": "1.8 MB",
+  "url": "https://download.kde.org/stable/plasma/6.8.3/oxygen-sounds-6.8.3.tar.xz",
+  "sha256": "faab8fda3e37cd609f51703c9279d7e238f032e9c0df83de227c65bcf19b60d5",
+  "path": "oxygen-sounds-6.8.3/sounds/oxygen"
+ },
+ {
+  "id": "deepin",
+  "name": "Deepin",
+  "by": "Deepin",
+  "licence": "GPL-3.0",
+  "size": "4.1 MB",
+  "url": "https://github.com/linuxdeepin/deepin-sound-theme/archive/refs/tags/15.10.6.tar.gz",
+  "sha256": "73206d000fe0e33597d33e05572d8e09aae7896d2640d114a0f19f8f1a44582b",
+  "path": "deepin-sound-theme-15.10.6"
+ },
+ {
+  "id": "elementary",
+  "name": "elementary",
+  "by": "elementary",
+  "licence": "Unlicense",
+  "size": "68 KB",
+  "url": "https://github.com/elementary/sound-theme/archive/refs/tags/1.1.0.tar.gz",
+  "sha256": "ef1989edb2fa0a0db12392242bea0678018b9070f3f202bc1c915f80f0abf982",
+  "path": "sound-theme-1.1.0/elementary"
+ }
+]
