@@ -22,6 +22,10 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
   a switch to stop showing recently opened files in Start and the taskbar's jump lists.
 - Settings > Personalise > Icons: pick an icon pack (Papirus, its light and dark versions,
   or any other you install) for the taskbar, Start and your apps.
+- Record your screen: Windows+Alt+R starts and stops, or press Windows+Shift+S for the
+  new snipping bar (a box, the whole screen, or a recording). The first time, you pick the
+  screen or a window to record. The taskbar shows how long it has been recording; click it
+  to stop. Recordings are saved as MP4 in Videos > Screen Recordings, with the PC's sound.
 - Secure Boot can stay on, so a PC that dual-boots Windows 11 needs no BIOS change. The
   USB starts through Microsoft-signed shim: the first time, a blue screen (MokManager) asks
   you to pick *Enroll key from disk* and the `KRISSOS.cer` file on the USB. After installing,

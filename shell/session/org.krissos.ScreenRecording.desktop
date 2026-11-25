@@ -1,0 +1,9 @@
+[Desktop Entry]
+# The name the screen-sharing portal shows when the shell records the screen (Desktop.record
+# runs gpu-screen-recorder in an app-org.krissos.ScreenRecording scope). Not in Start.
+Type=Application
+Name=Screen recording
+Name[ms]=Rakaman skrin
+Icon=media-record
+Exec=kriss-shell record
+NoDisplay=true
