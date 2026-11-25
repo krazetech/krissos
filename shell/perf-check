@@ -66,7 +66,9 @@ def shell_processes():
         if p.isdigit() and (s := stat(p)):
             parents[int(p)] = s[0]
     roots = [p for p in parents if name(p) in ("qs", "quickshell") and name(parents[p]) != name(p)]
-    roots = [p for p in roots if "kriss-shell" in open(f"/proc/{p}/cmdline").read()]
+    # ours only: the switch-user greeter runs a kriss-shell qs too, as the greeter user
+    roots = [p for p in roots if os.stat(f"/proc/{p}").st_uid == os.getuid()
+             and "kriss-shell" in open(f"/proc/{p}/cmdline").read()]
     if not roots:
         sys.exit("perf-check: no running KrissOS Shell (qs) found")
     pids = [min(roots)]  # ponytail: the oldest shell if several run
