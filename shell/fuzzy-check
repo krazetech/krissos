@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Kraze Tech
 // Checks the launcher's fuzzy ranking in qml/fuzzy.js: node shell/fuzzy-check
 const fs = require("fs"), path = require("path"), assert = require("assert");
 const src = fs.readFileSync(path.join(__dirname, "qml/fuzzy.js"), "utf8").replace(".pragma library", "");

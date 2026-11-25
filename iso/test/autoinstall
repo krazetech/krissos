@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 # Scripted install for CI: what Calamares does for "Erase disk" with the KrissOS Shell,
 # without the pages. It partitions /dev/vda like partition.conf and mount.conf, copies the
 # live system like unpackfs.conf, runs the installer's own unlive, online and configure

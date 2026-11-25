@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 """Run: python welcome/test_welcome.py (needs bash; no Qt)."""
 import json
 import os

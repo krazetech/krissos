@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 # Checks kriss migrate's detection and rewrites on fixtures shaped like a CachyOS install.
 set -euo pipefail
 t=$(mktemp -d)

@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 # Turn the live system that unpackfs copied to the target into an installed one: drop the
 # live user and the archiso-only config, put the kernel back in /boot, set up the pacman
 # keyring and remove what this PC does not need. Works offline. Calamares runs this on the

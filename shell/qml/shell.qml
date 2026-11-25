@@ -1,4 +1,6 @@
 //@ pragma UseQApplication
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Kraze Tech
 import QtQuick
 import Quickshell
 import Quickshell.Io

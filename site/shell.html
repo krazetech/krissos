@@ -12,31 +12,37 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="alternate" hreflang="en" href="https://krazetech.github.io/krissos/shell.html">
 <link rel="alternate" hreflang="ms" href="https://krazetech.github.io/krissos/ms/shell.html">
+<link rel="alternate" hreflang="x-default" href="https://krazetech.github.io/krissos/shell.html">
+<link rel="canonical" href="https://krazetech.github.io/krissos/shell.html">
 <meta property="og:title" content="The KrissOS Shell">
 <meta property="og:description" content="The KrissOS desktop: Windows habits in its own calm look. A taskbar, a launcher on the Windows key, notifications, quick settings and a lock screen.">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://krazetech.github.io/krissos/shell.html">
 <meta property="og:site_name" content="KrissOS">
 <meta property="og:locale" content="en_MY">
-<meta property="og:image" content="https://krazetech.github.io/krissos/og.jpg">
-<meta property="og:image:alt" content="The KrissOS logo, a keris hilt on a Sky Cyan disc, over the KrissOS wallpaper.">
+<meta property="og:image" content="https://krazetech.github.io/krissos/og-sp.jpg">
+<meta property="og:image:alt" content="The Sungai Petani clock tower against a darkening Kedah sky, the KrissOS Sungai Petani wallpaper.">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="style.css">
+<script src="reveal.js"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <header class="nav">
   <div class="wrap">
-    <a class="brand" href="./"><img src="logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
+    <a class="brand" href="./" aria-label="KrissOS home"><img src="logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
     <nav aria-label="Main">
       <ul>
         <li><a href="shell.html" aria-current="page">Shell</a></li>
         <li><a href="download.html">Download</a></li>
-        <li><a href="install.html">Arch repo</a></li>
+        <li><a href="install.html">Kriss repo</a></li>
         <li><a href="roadmap.html">Roadmap</a></li>
+        <li><a href="help.html">Help</a></li>
         <li class="gh"><a href="https://github.com/krazetech/krissos">GitHub</a></li>
+        <li class="kofi"><a href="https://ko-fi.com/razmanzaidi" aria-label="Support KrissOS on Ko-fi"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.5 1.1 5.3 3 1.8-1.9 3.2-3 5.3-3 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21Z"/></svg><span>Support</span></a></li>
         <li><a class="lang" href="ms/shell.html" hreflang="ms" lang="ms">BM</a></li>
       </ul>
     </nav>
@@ -74,7 +80,7 @@
         <p class="lede">Apps and actions are ranked as you type. Arrow keys move, Enter opens. The Menu key or Shift+F10 opens the selected app's menu.</p>
       </div>
       <figure class="shot reveal">
-        <img src="shots/launcher.webp" width="680" height="440" loading="lazy" alt="The launcher with "fi" typed into the search field. Firefox is selected under Apps with an Enter hint, then COSMIC Files, Advanced Network Configuration, and Notifications under Actions.">
+        <img src="shots/launcher.webp" width="680" height="440" loading="lazy" alt="The launcher with &quot;fi&quot; typed into the search field. Firefox is selected under Apps with an Enter hint, then COSMIC Files, Advanced Network Configuration, and Notifications under Actions.">
       </figure>
     </div>
   </section>
@@ -163,7 +169,7 @@
         <li><span class="k"><span class="combo"><kbd>Windows</kbd>+<kbd>D</kbd></span></span><span>Show the desktop; again to bring the windows back</span></li>
         <li><span class="k"><span class="combo"><kbd>Windows</kbd>+<kbd>E</kbd></span></span><span>Files</span></li>
         <li><span class="k"><span class="combo"><kbd>Windows</kbd>+<kbd>←</kbd></span> / <span class="combo"><kbd>Windows</kbd>+<kbd>→</kbd></span></span><span>Snap the window to that half</span></li>
-        <li><span class="k"><span class="combo"><kbd>Windows</kbd>+<kbd>↑</kbd></span> / <span class="combo"><kbd>Windows</kbd>+<kbd>↓</kbd></span></span><span>Maximize or minimize</span></li>
+        <li><span class="k"><span class="combo"><kbd>Windows</kbd>+<kbd>↑</kbd></span> / <span class="combo"><kbd>Windows</kbd>+<kbd>↓</kbd></span></span><span>Maximise or minimise</span></li>
         <li><span class="k"><span class="combo"><kbd>Windows</kbd>+<kbd>1…9</kbd></span></span><span>Go to that workspace</span></li>
         <li><span class="k"><span class="combo"><kbd>Print Screen</kbd></span></span><span>Screenshot of everything, to Pictures and the clipboard</span></li>
         <li><span class="k"><span class="combo"><kbd>Windows</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd></span></span><span>Screenshot of a dragged region</span></li>
@@ -186,14 +192,19 @@
 
 <footer>
   <div class="wrap">
-    <p>KrissOS by Kraze Tech, made in Malaysia with a lot of kopi. Free software under the <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>.<br>Not affiliated with Arch Linux.</p>
-    <nav aria-label="Footer">
-      <a href="shell.html">Shell</a>
-      <a href="download.html">Download</a>
-      <a href="install.html">Arch repo</a>
-      <a href="roadmap.html">Roadmap</a>
-      <a href="https://github.com/krazetech/krissos">GitHub</a>
+    <div class="foot-brand">
+      <a class="brand" href="./" aria-label="KrissOS home"><img src="logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
+      <p>Made ready for everyday people, in Malaysia, with a lot of kopi.</p>
+      <a class="btn kofi" href="https://ko-fi.com/razmanzaidi"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.5 1.1 5.3 3 1.8-1.9 3.2-3 5.3-3 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21Z"/></svg>Support KrissOS on Ko-fi</a>
+    </div>
+    <nav class="foot-cols" aria-label="Footer">
+      <div><p>KrissOS</p><a href="shell.html">Shell</a><a href="download.html">Download</a><a href="roadmap.html">Roadmap</a><a href="help.html">Help</a><a href="hardware.html">Hardware</a></div>
+      <div><p>Project</p><a href="install.html">Kriss repo</a><a href="https://github.com/krazetech/krissos">GitHub</a><a href="https://github.com/krazetech/krissos/blob/main/LICENSE">License</a></div>
     </nav>
+    <div class="foot-base">
+      <p>Free software under the <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>. Not affiliated with Arch Linux.</p>
+      <a class="sponsor" href="https://ruck-fi.com"><span>Proudly supported by</span><img src="ruckfi-white.png" alt="RUCK-Fi" width="360" height="81"></a>
+    </div>
   </div>
 </footer>
 </body>

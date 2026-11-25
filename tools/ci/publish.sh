@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 # Merge packages into a published pacman repo (a GitHub release).
 # usage: publish.sh <dir with *.pkg.tar.zst>
 # env: KRISS_GPG_KEY (armored secret key), GH_TOKEN, GH_REPO,

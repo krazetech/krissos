@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Muat turun KrissOS</title>
-<meta name="description" content="Dapatkan ISO preview KrissOS, cuba dalam VM, dan semak imejnya.">
+<meta name="description" content="Dapatkan ISO pratonton KrissOS, cuba dalam VM dan sahkan imejnya.">
 <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="../logo.svg" type="image/svg+xml">
@@ -12,31 +12,37 @@
 <link rel="apple-touch-icon" href="../apple-touch-icon.png">
 <link rel="alternate" hreflang="en" href="https://krazetech.github.io/krissos/download.html">
 <link rel="alternate" hreflang="ms" href="https://krazetech.github.io/krissos/ms/download.html">
+<link rel="alternate" hreflang="x-default" href="https://krazetech.github.io/krissos/download.html">
+<link rel="canonical" href="https://krazetech.github.io/krissos/ms/download.html">
 <meta property="og:title" content="Muat turun KrissOS">
-<meta property="og:description" content="Dapatkan ISO preview KrissOS, cuba dalam VM, dan semak imejnya.">
+<meta property="og:description" content="Dapatkan ISO pratonton KrissOS, cuba dalam VM dan sahkan imejnya.">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://krazetech.github.io/krissos/ms/download.html">
 <meta property="og:site_name" content="KrissOS">
 <meta property="og:locale" content="ms_MY">
-<meta property="og:image" content="https://krazetech.github.io/krissos/og.jpg">
-<meta property="og:image:alt" content="The KrissOS logo, a keris hilt on a Sky Cyan disc, over the KrissOS wallpaper.">
+<meta property="og:image" content="https://krazetech.github.io/krissos/og-sp.jpg">
+<meta property="og:image:alt" content="Menara jam Sungai Petani dengan langit Kedah yang semakin gelap. Kertas dinding KrissOS Sungai Petani.">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="../style.css">
+<script src="../reveal.js"></script>
 </head>
 <body>
 <a class="skip" href="#main">Langkau ke kandungan</a>
 <header class="nav">
   <div class="wrap">
-    <a class="brand" href="./"><img src="../logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
+    <a class="brand" href="./" aria-label="Laman utama KrissOS"><img src="../logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
     <nav aria-label="Main">
       <ul>
         <li><a href="shell.html">Shell</a></li>
         <li><a href="download.html" aria-current="page">Muat turun</a></li>
-        <li><a href="install.html">Repo Arch</a></li>
+        <li><a href="install.html">Repo Kriss</a></li>
         <li><a href="roadmap.html">Hala tuju</a></li>
+        <li><a href="help.html">Bantuan</a></li>
         <li class="gh"><a href="https://github.com/krazetech/krissos">GitHub</a></li>
+        <li class="kofi"><a href="https://ko-fi.com/razmanzaidi" aria-label="Sokong KrissOS di Ko-fi"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.5 1.1 5.3 3 1.8-1.9 3.2-3 5.3-3 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21Z"/></svg><span>Sokong</span></a></li>
         <li><a class="lang" href="../download.html" hreflang="en" lang="en">EN</a></li>
       </ul>
     </nav>
@@ -46,12 +52,12 @@
 <main id="main">
 <section class="center">
     <div class="wrap">
-      <h1 class="rise d1">Jom, ambik KrissOS.</h1>
+      <h1 class="rise d1">Jom, dapatkan KrissOS.</h1>
       <div id="release" class="rise d2">
-        <p class="lede">ISO preview masak baru tiap-tiap malam dari <code>main</code>, dan keluar kalau lulus test boot dalam CI ja. Boot terus masuk KrissOS Shell, tak payah login.</p>
+        <p class="lede">ISO pratonton dibina baharu setiap malam daripada <code>main</code>, dan hanya dikeluarkan selepas lulus ujian but dalam CI. Ia terus masuk ke KrissOS Shell tanpa perlu log masuk.</p>
         <div class="actions">
-          <a class="btn" href="https://sourceforge.net/projects/krissos/files/preview/">Download ISO preview</a>
-          <a class="btn ghost" href="install.html">Dah ada Arch? Guna repo</a>
+          <a class="btn" href="https://sourceforge.net/projects/krissos/files/preview/">Muat turun ISO pratonton</a>
+          <a class="btn ghost" href="install.html">Sudah guna Arch? Guna repo</a>
         </div>
       </div>
     </div>
@@ -60,14 +66,14 @@
   <section>
     <div class="wrap split">
       <div class="reveal">
-        <h2>Sebelum install, baca ni.</h2>
-        <p class="lede">KrissOS masih baby lagi. Cuba dulu dalam VM atau PC spare, jangan terus hentam PC utama anda. Belum masa lagi, sabar.</p>
+        <h2>Baca ini sebelum memasang.</h2>
+        <p class="lede">KrissOS masih baharu. Cuba dahulu dalam VM atau PC simpanan, jangan terus pasang pada PC utama anda. Belum tiba masanya, sabar ya.</p>
       </div>
       <ul class="list reveal">
-        <li><span>PC anda<small>PC Intel dan AMD 64-bit, UEFI ka BIOS lama pun boleh. Geng Mac Apple Silicon, tunggu sat, nanti ada imej sendiri.</small></span></li>
-        <li><span>Desktop<small>KrissOS Shell by default. Nak KDE Plasma? Pilih ja dalam installer.</small></span></li>
-        <li><span>Update<small>Update kecik-kecik selalu, terus mai dari Arch, campur pakej signed kami. Setiap update ambil snapshot dulu, jadi kalau buat hal, patah balik ja.</small></span></li>
-        <li><span>Keluaran<small>Build tiap malam masuk <code>preview</code>. Keluaran rasmi pakai nama motor Kriss: <code>110</code>, <code>115</code>, dan seterusnya.</small></span></li>
+        <li><span>PC anda<small>PC Intel dan AMD 64-bit, dengan UEFI atau BIOS lama. Pengguna Mac Apple Silicon, tunggu sekejap, imej khas akan menyusul.</small></span></li>
+        <li><span>Desktop<small>KrissOS Shell secara lalai. Mahu KDE Plasma? Pilih sahaja dalam pemasang.</small></span></li>
+        <li><span>Kemas kini<small>Kemas kini kecil yang kerap, terus daripada Arch, bersama pakej kami yang ditandatangani. Setiap kemas kini mengambil <i>snapshot</i> dahulu, jadi kalau ada masalah, undur sahaja.</small></span></li>
+        <li><span>Keluaran<small>Binaan setiap malam masuk ke <code>preview</code>. Keluaran rasmi bernombor mengikut barisan Kriss, <code>110</code>, <code>115</code> dan seterusnya, dan dinamakan sempena satu tempat di Malaysia. <code>110</code> ialah Sungai Petani.</small></span></li>
       </ul>
     </div>
   </section>
@@ -75,11 +81,11 @@
   <section>
     <div class="wrap">
       <div class="card note reveal">
-        <h2>Dua setting ja, lepas tu boot.</h2>
+        <h2>Sebelum anda but.</h2>
         <ul class="list">
-          <li><span>UEFI kalau ada<small>Legacy BIOS (CSM) pun jalan, jadi PC lama boleh install, dan CI test dua-dua hari-hari. Tapi kalau PC atau VM bagi pilih UEFI (OVMF dalam virt-manager, GNOME Boxes, VirtualBox atau VMware), pilih UEFI: Windows 10 dan 11 guna tu, so dual-boot kongsi satu menu boot.</small></span></li>
-          <li><span>RAM 4 GB atau lebih<small>Sesi live jalan dari RAM. Bagi dua core CPU dan on 3D acceleration, baru smooth. Kedekut RAM, lembab la.</small></span></li>
-          <li><span>Tak payah login<small>Sesi live terus masuk KrissOS Shell. Tekan kekunci Windows, launcher terus keluar.</small></span></li>
+          <li><span>UEFI jika ada<small>BIOS lama (CSM) juga berfungsi, jadi PC lama boleh dipasang, dan CI menguji kedua-duanya setiap hari. Tetapi jika PC atau VM membenarkan, pilih UEFI (OVMF dalam virt-manager, GNOME Boxes, VirtualBox atau VMware): Windows 10 dan 11 menggunakannya, jadi <i>dual boot</i> berkongsi satu menu but.</small></span></li>
+          <li><span>RAM 4 GB atau lebih<small>Sesi live berjalan daripada RAM. Berikan dua teras CPU dan hidupkan pecutan 3D supaya lancar. Kedekut RAM, lembablah jadinya.</small></span></li>
+          <li><span>Tidak perlu log masuk<small>Sesi live terus masuk ke KrissOS Shell. Tekan kekunci Windows, dan pelancar terus muncul.</small></span></li>
         </ul>
       </div>
     </div>
@@ -88,23 +94,23 @@
   <section>
     <div class="wrap">
       <div class="head reveal">
-        <h2>Check dulu, jangan main hentam.</h2>
-        <p class="lede">Download ISO, <code>sha256sums.txt</code> dan <code>sha256sums.txt.sig</code> dalam satu folder, lepas tu check dua-dua sebelum burn ISO ke USB. Lima minit ja, tapi selamat.</p>
+        <h2>Semak dahulu, jangan main hentam.</h2>
+        <p class="lede">Muat turun ISO, <code>sha256sums.txt</code> dan <code>sha256sums.txt.sig</code> ke dalam satu folder, kemudian sahkan kedua-duanya sebelum menulis ISO ke USB. Lima minit sahaja, tetapi selamat.</p>
       </div>
       <ol class="steps">
         <li class="reveal">
-          <h3>Check checksum</h3>
-          <p>Kena keluar <code>OK</code> sebelah nama ISO. Kalau tak, download semula.</p>
+          <h3>Semak checksum</h3>
+          <p>Perkataan <code>OK</code> mesti muncul di sebelah nama ISO. Jika tidak, muat turun semula.</p>
           <div class="code"><pre><code>sha256sum -c sha256sums.txt</code></pre></div>
         </li>
         <li class="reveal">
           <h3>Import kunci</h3>
-          <p>Kunci yang sama sign semua pakej kami.</p>
+          <p>Kunci yang sama menandatangani semua pakej kami.</p>
           <div class="code"><pre><code>curl -fsSL https://raw.githubusercontent.com/krazetech/krissos/main/pkgs/kriss-keyring/krissos.gpg | gpg --import</code></pre></div>
         </li>
         <li class="reveal">
-          <h3>Check tandatangan</h3>
-          <p>Cari <b>Good signature from "KrissOS Packages"</b> dan cap jari ni. Sama? Settle. Setiap ISO pun ada <code>.sig</code> sendiri kalau nak check terus.</p>
+          <h3>Semak tandatangan</h3>
+          <p>Cari <b>Good signature from "KrissOS Packages"</b> dan cap jari ini. Sepadan? Selesai. Setiap ISO juga ada fail <code>.sig</code> sendiri jika anda mahu menyemaknya terus.</p>
           <div class="code"><pre><code>gpg --verify sha256sums.txt.sig sha256sums.txt</code></pre></div>
           <div class="code"><pre><code>7C92 AE8B 599A F813 2166  6CA3 1317 AA31 B21C 5F87</code></pre></div>
         </li>
@@ -126,15 +132,16 @@ fetch('https://api.github.com/repos/krazetech/krissos/releases?per_page=20')
       const href = `https://sourceforge.net/projects/krissos/files/${dir}/${name}/download`;
       const iso = rel.assets.find(a => a.name === name);
       const when = new Date(sums.updated_at).toLocaleDateString('ms-MY', { day: 'numeric', month: 'long', year: 'numeric' });
-      const size = iso ? ` ${(iso.size / 1e9).toFixed(1)} GB,` : '';
+      const size = iso ? ` ${(iso.size / 1e9).toFixed(1)}\u00a0GB,` : '';
       const box = document.getElementById('release');
       const p = document.createElement('p');
       p.className = 'lede';
-      p.textContent = `${rel.prerelease ? 'Build preview' : rel.name || rel.tag_name} dari ${when}.${size} live ISO untuk PC 64-bit.`;
+      p.textContent = `${rel.prerelease ? 'Binaan pratonton' : rel.name || rel.tag_name} bertarikh ${when}.${size} ISO live untuk PC 64-bit.`;
       const link = (cls, href, text) => Object.assign(document.createElement('a'), { className: cls, href, textContent: text });
       const actions = document.createElement('div');
       actions.className = 'actions';
-      actions.append(link('btn', href, 'Download ISO'));
+      actions.append(link('btn', href, 'Muat turun ISO'
+));
       actions.append(link('btn ghost', sums.browser_download_url, 'sha256sums.txt'));
       actions.append(link('btn ghost', rel.html_url, 'Checksum dan tandatangan'));
       box.replaceChildren(p, actions);
@@ -147,14 +154,19 @@ fetch('https://api.github.com/repos/krazetech/krissos/releases?per_page=20')
 
 <footer>
   <div class="wrap">
-    <p>KrissOS oleh Kraze Tech, dibuat di Malaysia dengan banyak kopi. Perisian bebas di bawah <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>.<br>Tiada kaitan dengan Arch Linux.</p>
-    <nav aria-label="Footer">
-      <a href="shell.html">Shell</a>
-      <a href="download.html">Muat turun</a>
-      <a href="install.html">Repo Arch</a>
-      <a href="roadmap.html">Hala tuju</a>
-      <a href="https://github.com/krazetech/krissos">GitHub</a>
+    <div class="foot-brand">
+      <a class="brand" href="./" aria-label="Laman utama KrissOS"><img src="../logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
+      <p>Sedia untuk semua orang. Dibuat di Malaysia dengan banyak kopi.</p>
+      <a class="btn kofi" href="https://ko-fi.com/razmanzaidi"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.5 1.1 5.3 3 1.8-1.9 3.2-3 5.3-3 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21Z"/></svg>Sokong KrissOS di Ko-fi</a>
+    </div>
+    <nav class="foot-cols" aria-label="Footer">
+      <div><p>KrissOS</p><a href="shell.html">Shell</a><a href="download.html">Muat turun</a><a href="roadmap.html">Hala tuju</a><a href="help.html">Bantuan</a><a href="hardware.html">Perkakasan</a></div>
+      <div><p>Projek</p><a href="install.html">Repo Kriss</a><a href="https://github.com/krazetech/krissos">GitHub</a><a href="https://github.com/krazetech/krissos/blob/main/LICENSE">Lesen</a></div>
     </nav>
+    <div class="foot-base">
+      <p>Perisian bebas di bawah <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>. Tiada kaitan dengan Arch Linux.</p>
+      <a class="sponsor" href="https://ruck-fi.com"><span>Dengan bangga disokong oleh</span><img src="../ruckfi-white.png" alt="RUCK-Fi" width="360" height="81"></a>
+    </div>
   </div>
 </footer>
 </body>

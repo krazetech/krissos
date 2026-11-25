@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 # Extras for an online install, all optional: linux-kriss on x86-64-v3 CPUs, the latest
 # updates, and KDE Plasma (not on the ISO). Offline, or when a download fails, the system
 # from the USB stays as it is and updates come later. Never fails the install.

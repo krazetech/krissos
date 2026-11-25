@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 """Pure logic for kriss-welcome, kept free of Qt so it can be tested anywhere."""
 import html
 import json

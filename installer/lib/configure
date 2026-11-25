@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 # Finish the installed system: pacman config, initramfs, snapper, Limine (with Windows
 # and the snapshots in its menu), zram and services. Calamares runs this on the live
 # system after its own users, locale and network steps.

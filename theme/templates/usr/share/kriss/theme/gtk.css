@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+/* Copyright (C) 2026 Kraze Tech */
 /* KrissOS colours for libadwaita (GTK4) and adw-gtk3 (GTK3).
    Generated from theme/tokens.json; do not edit. */
 @define-color accent_color {{accent}};

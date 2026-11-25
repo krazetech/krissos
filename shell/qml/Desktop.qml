@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Kraze Tech
 pragma Singleton
 
 import QtQuick
@@ -208,11 +210,42 @@ Singleton {
     property alias sounds: config.sounds
     property alias soundTheme: config.soundTheme
 
-    // Plays a freedesktop sound by its name (message-new-instant, audio-volume-change, ...)
-    // from the sound theme, through libcanberra, which looks it up in the theme set below and
-    // falls back to freedesktop's. Quiet when sounds are off.
-    function sound(id) {
-        if (sounds) Quickshell.execDetached(["canberra-gtk-play", "-i", id]);
+    // Plays a freedesktop sound by its name (message-new-instant, audio-volume-change, ...):
+    // the first of the names given found in the sound theme (Ocean unless the user picked
+    // another), then in freedesktop's, played with PipeWire's pw-play. libcanberra only if
+    // neither has it or pw-play is missing. Quiet when sounds are off.
+    function sound(...ids) {
+        if (sounds) Quickshell.execDetached(["sh", "-c", `
+            theme=$1; shift
+            dirs="\${XDG_DATA_HOME:-$HOME/.local/share}:\${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+            for id; do for t in "$theme" freedesktop; do
+                IFS=:; for d in $dirs; do unset IFS
+                    for f in "$d/sounds/$t/stereo/$id.oga" "$d/sounds/$t/stereo/$id.ogg" "$d/sounds/$t/stereo/$id.wav"; do
+                        [ -f "$f" ] || continue
+                        # To the default output, as Windows does: WirePlumber otherwise sends every
+                        # Notification-role stream where one was last moved (on cachyos-pc, a
+                        # headset), which is why canberra was silent in the session.
+                        out=$(wpctl inspect @DEFAULT_AUDIO_SINK@ 2>/dev/null | awk -F'"' '/node.name =/ { print $2; exit }')
+                        command -v pw-play >/dev/null && exec pw-play --media-role=Notification --target="\${out:-auto}" "$f"
+                        exec canberra-gtk-play -f "$f"
+                    done
+                done
+            done; done
+            exec canberra-gtk-play -i "$1"`, "sh", soundTheme || "ocean", ...ids]);
+    }
+    // Signing in: once a session, not when the shell comes back after a crash.
+    Process {
+        id: loginCheck
+        command: ["sh", "-c", 'f="${XDG_RUNTIME_DIR:-/tmp}/kriss-shell-signed-in"; [ -e "$f" ] && exit 1; : > "$f"']
+        onExited: code => { if (code === 0) root.sound("desktop-login", "service-login"); }
+    }
+    // Low battery, as Windows warns: at 15% and again at 5%, once each until it is charged.
+    property int batteryWarned: 0
+    readonly property real batteryLevel: UPower.displayDevice?.percentage ?? 1
+    onBatteryLevelChanged: {
+        if (!UPower.onBattery || !UPower.displayDevice?.isLaptopBattery) batteryWarned = 0;
+        else if (batteryLevel <= 0.05 && batteryWarned < 2) { batteryWarned = 2; sound("battery-caution", "battery-low", "dialog-warning"); }
+        else if (batteryLevel <= 0.15 && batteryWarned < 1) { batteryWarned = 1; sound("battery-low", "dialog-warning"); }
     }
     // The theme for every app too: GTK and canberra read the GNOME setting, KDE apps
     // kdeglobals.
@@ -229,7 +262,10 @@ Singleton {
     // Plug and unplug: the charger (UPower) and USB devices (udev, one line per device).
     Connections {
         target: UPower
-        function onOnBatteryChanged() { root.sound(UPower.onBattery ? "power-unplug" : "power-plug"); }
+        function onOnBatteryChanged() {
+            root.sound(UPower.onBattery ? "power-unplug" : "power-plug");
+            if (!UPower.onBattery) root.batteryWarned = 0;
+        }
     }
     Process {
         running: true
@@ -256,6 +292,10 @@ Singleton {
     property alias taskbarTransparency: config.taskbarTransparency
     property alias startLayout: config.startLayout
     property alias startRecommended: config.startRecommended
+    property alias windowCorners: config.windowCorners
+    property alias windowBorder: config.windowBorder
+    property alias windowShadow: config.windowShadow
+    property alias animationSpeed: config.animationSpeed
     property alias desktopNames: config.desktopNames
     property alias accent: config.accent
     property alias theme: config.theme
@@ -373,6 +413,14 @@ Singleton {
             // files), and whether Recommended shows at all.
             property string startLayout: "default"
             property bool startRecommended: true
+            // App windows (Settings > Personalise > Windows, applied in Theme.qml): corners
+            // "square", "small" or "round"; the focused window's border "off", "thin" or
+            // "thick"; shadows "off", "soft", "normal" or "strong"; and how fast windows and
+            // the shell animate, "slow", "normal" or "fast".
+            property string windowCorners: "round"
+            property string windowBorder: "off"
+            property string windowShadow: "normal"
+            property string animationSpeed: "normal"
             // Desktop names given in Task View, by position ("" keeps "Desktop N").
             property list<string> desktopNames: []
             // Theme.qml: the accent ("#RRGGBB", empty for Sky Cyan), "dark", "light",
@@ -464,7 +512,7 @@ Singleton {
     property string pictureMask: ""
     readonly property string wallpaperMask: stockMask(lockPicture) || pictureMask
     onLockPictureChanged: findMask()
-    Component.onCompleted: { findMask(); syncSound(); }
+    Component.onCompleted: { findMask(); syncSound(); loginCheck.running = true; }
     function findMask() {
         pictureMask = "";
         if (stockMask(lockPicture) !== "") return;

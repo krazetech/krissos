@@ -15,6 +15,10 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 
 ### Added
 
+- System sounds like Windows has: a sound when you sign in, a tick when you change the
+  volume, a chime with notifications, sounds when you plug in a charger or a USB device,
+  and a warning when the battery drops to 15% and to 5%. KDE's Ocean sounds unless you
+  pick another set in Settings > Sound.
 - More taskbar choices in Settings > Personalise > Taskbar: show search as a box, an icon
   or not at all, hide the Widgets button, make the taskbar more or less see-through, and
   show button labels by turning off "Combine taskbar buttons and hide labels".
@@ -22,6 +26,9 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
   a switch to stop showing recently opened files in Start and the taskbar's jump lists.
 - Settings > Personalise > Icons: pick an icon pack (Papirus, its light and dark versions,
   or any other you install) for the taskbar, Start and your apps.
+- Settings > Personalise > Windows: square, slightly round or round window corners, a
+  border in your accent colour around the window you are using, softer or stronger
+  shadows, and relaxed, normal or quick animations for windows and the whole shell.
 - Record your screen: Windows+Alt+R starts and stops, or press Windows+Shift+S for the
   new snipping bar (a box, the whole screen, or a recording). The first time, you pick the
   screen or a window to record. The taskbar shows how long it has been recording; click it
