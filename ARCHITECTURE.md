@@ -81,7 +81,7 @@ comes from Arch or a pinned AUR build, and the AUR builds are kept to a minimum.
 - All CachyOS names, logos and branding are removed.
 - We **never** fetch CachyOS's prebuilt binaries or point at their mirrors. Every kernel is
   built from source in our CI.
-- KrissOS tooling is licensed GPL-3.0-or-later (subject to the open decision in §11).
+- KrissOS tooling is licensed GPL-3.0-or-later (decided 2026-11-26).
 
 ### The installer
 
@@ -341,7 +341,7 @@ kriss-vm revert         # restore every file `kriss-vm` changed from its backups
 ## 11. Open decisions
 
 1. Font: Inter (decided 2026-11-19).
-2. License for the tooling: GPL-3.0-or-later (assumed) or MIT.
+2. ~~License for the tooling.~~ GPL-3.0-or-later (decided 2026-11-26), as `LICENSE` and the SPDX headers already say.
 3. ~~Results of the cosmic-comp layer-shell test.~~ Passed; see §5.
 
 ## 12. Roadmap to `110`
