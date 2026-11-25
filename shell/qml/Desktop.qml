@@ -256,6 +256,10 @@ Singleton {
     property alias taskbarTransparency: config.taskbarTransparency
     property alias startLayout: config.startLayout
     property alias startRecommended: config.startRecommended
+    property alias windowCorners: config.windowCorners
+    property alias windowBorder: config.windowBorder
+    property alias windowShadow: config.windowShadow
+    property alias animationSpeed: config.animationSpeed
     property alias desktopNames: config.desktopNames
     property alias accent: config.accent
     property alias theme: config.theme
@@ -373,6 +377,14 @@ Singleton {
             // files), and whether Recommended shows at all.
             property string startLayout: "default"
             property bool startRecommended: true
+            // App windows (Settings > Personalise > Windows, applied in Theme.qml): corners
+            // "square", "small" or "round"; the focused window's border "off", "thin" or
+            // "thick"; shadows "off", "soft", "normal" or "strong"; and how fast windows and
+            // the shell animate, "slow", "normal" or "fast".
+            property string windowCorners: "round"
+            property string windowBorder: "off"
+            property string windowShadow: "normal"
+            property string animationSpeed: "normal"
             // Desktop names given in Task View, by position ("" keeps "Desktop N").
             property list<string> desktopNames: []
             // Theme.qml: the accent ("#RRGGBB", empty for Sky Cyan), "dark", "light",
