@@ -63,8 +63,9 @@ Singleton {
     Process {
         id: lister
         command: ["cosmic-randr", "list", "--kdl"]
-        stdout: StdioCollector { onStreamFinished: root.outputs = root.parse(text) }
+        stdout: StdioCollector { onStreamFinished: { root.kdl = text; root.outputs = root.parse(text); } }
     }
+    property string kdl: ""  // that listing as it came, for setPositions
 
     // ponytail: a line parser for the KDL cosmic-randr prints, not a KDL parser; it knows the
     // nodes that listing has.
@@ -106,9 +107,9 @@ Singleton {
         return out;
     }
 
-    // Run a cosmic-randr change, then list again. `done(ok)` is called after.
-    function run(args, done) {
-        const p = changer.createObject(root, { command: ["cosmic-randr"].concat(args) });
+    // Run a cosmic-randr change (or `command`), then list again. `done(ok)` is called after.
+    function run(args, done, command) {
+        const p = changer.createObject(root, { command: command ?? ["cosmic-randr"].concat(args) });
         p.exited.connect(code => {
             refresh();
             if (done) done(code === 0);
@@ -161,7 +162,19 @@ Singleton {
     }
 
     function setPrimary(name, done) { run(["xwayland", "--primary", name], done); }
-    function setPosition(name, x, y, done) { run(["position", name, String(Math.round(x)), String(Math.round(y))], done); }
+    // Places displays ([{name, x, y}]) all at once: the last listing with their positions
+    // changed, applied whole with `cosmic-randr kdl`. One `position` at a time would let two
+    // screens overlap on the way, and cosmic-comp then stacks them itself. It takes no negative
+    // positions, so the caller moves the layout to start at 0,0.
+    function setPositions(list, done) {
+        let name = "";
+        const text = kdl.split("\n").map(line => {
+            name = line.match(/^output "([^"]+)"/)?.[1] ?? name;
+            const p = list.find(x => x.name === name);
+            return p && /^\s*position /.test(line) ? "  position " + Math.round(p.x) + " " + Math.round(p.y) : line;
+        }).join("\n");
+        run(["kdl"], done, ["sh", "-c", 'printf "%s\n" "$1" | cosmic-randr kdl', "sh", text]);
+    }
     function setEnabled(name, on, done) { run([on ? "enable" : "disable", name], done); }
     // mode: {w, h, r}; any of scale, transform and vrr ("automatic" or "false") may be left out.
     function setMode(name, mode, extra, done) {

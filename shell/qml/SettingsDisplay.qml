@@ -98,7 +98,7 @@ Column {
     SettingsUi.Card {
         SettingsUi.Label { text: Tr.t("Rearrange your displays") }
         SettingsUi.Note {
-            text: page.outs.length > 1 ? Tr.t("Drag a display to where it sits on your desk. Pick one to change it below.")
+            text: page.outs.length > 1 ? Tr.t("Drag a display to where it sits on your desk; its edges snap to the others. Pick one to change it below.")
                                        : Tr.t("Only one display is on.")
         }
         Item {
@@ -120,21 +120,48 @@ Column {
             readonly property real oy: (height - box.h * k) / 2
 
             // Where a dropped screen goes: against the nearest side of the nearest other screen,
-            // overlapping it, so there is never a gap between screens.
+            // sharing some of that side, and lined up with its edges or middle when it is within a
+            // few pixels here of them, as Windows does. Never on top of a third screen.
             function snap(name, x, y) {
                 const me = Displays.logical(page.outs.find(o => o.name === name));
+                const near = 24 / k;  // 24 px here: about 170-340 desktop px with two 1440p screens
+                const others = page.outs.filter(o => o.name !== name).map(o => Object.assign({ name: o.name, x: o.x, y: o.y }, Displays.logical(o)));
+                const along = (v, lo, len, mine) => {
+                    v = Math.max(lo - mine + 1, Math.min(v, lo + len - 1));
+                    for (const a of [lo, lo + len - mine, lo + (len - mine) / 2])
+                        if (Math.abs(v - a) < near) return Math.round(a);
+                    return Math.round(v);
+                };
+                const hits = c => others.some(o => c[0] < o.x + o.w && c[0] + me.w > o.x && c[1] < o.y + o.h && c[1] + me.h > o.y);
                 let best = null;
-                for (const o of page.outs) {
-                    if (o.name === name) continue;
-                    const l = Displays.logical(o);
-                    const cy = Math.max(o.y - me.h + 1, Math.min(y, o.y + l.h - 1));
-                    const cx = Math.max(o.x - me.w + 1, Math.min(x, o.x + l.w - 1));
-                    for (const c of [[o.x - me.w, cy], [o.x + l.w, cy], [cx, o.y - me.h], [cx, o.y + l.h]]) {
+                for (const o of others) {
+                    const cy = along(y, o.y, o.h, me.h), cx = along(x, o.x, o.w, me.w);
+                    for (const c of [[o.x - me.w, cy], [o.x + o.w, cy], [cx, o.y - me.h], [cx, o.y + o.h]]) {
                         const d = Math.hypot(c[0] - x, c[1] - y);
-                        if (!best || d < best.d) best = { x: c[0], y: c[1], d: d };
+                        if (!hits(c) && (!best || d < best.d)) best = { x: c[0], y: c[1], d: d };
                     }
                 }
                 return best;
+            }
+            // Puts a screen there, and moves the whole layout so its top-left corner is 0,0.
+            function place(name, p) {
+                const at = page.outs.map(o => o.name === name ? { name: name, x: p.x, y: p.y, was: o } : { name: o.name, x: o.x, y: o.y, was: o });
+                const x0 = Math.min(...at.map(a => a.x)), y0 = Math.min(...at.map(a => a.y));
+                for (const a of at) { a.x -= x0; a.y -= y0; }
+                Displays.setPositions(at.filter(a => a.x !== a.was.x || a.y !== a.was.y));
+            }
+            // The arrow keys: a tenth of the screen that way, or, stuck against a side, round to
+            // the far side of the others.
+            function nudge(name, dx, dy) {
+                const o = page.outs.find(x => x.name === name), l = Displays.logical(o);
+                let p = snap(name, o.x + dx * l.w / 10, o.y + dy * l.h / 10);
+                if (!p || p.x === o.x && p.y === o.y) {
+                    const others = page.outs.filter(x => x.name !== name);
+                    const x0 = Math.min(...others.map(x => x.x)), y0 = Math.min(...others.map(x => x.y));
+                    const x1 = Math.max(...others.map(x => x.x + Displays.logical(x).w)), y1 = Math.max(...others.map(x => x.y + Displays.logical(x).h));
+                    p = snap(name, dx < 0 ? x0 - l.w : dx > 0 ? x1 : o.x, dy < 0 ? y0 - l.h : dy > 0 ? y1 : o.y);
+                }
+                if (p && (p.x !== o.x || p.y !== o.y)) place(name, p);
             }
 
             Repeater {
@@ -152,6 +179,7 @@ Column {
                     cursorShape: page.outs.length > 1 ? Qt.OpenHandCursor : Qt.PointingHandCursor
                     activeFocusOnTab: true
                     drag.target: page.outs.length > 1 ? tile : null
+                    drag.smoothed: false  // the tile stays under the pointer, so it lands where it is let go
                     onPressed: page.sel = modelData.name
                     onReleased: {
                         if (!drag.active && Math.abs(x - (map.ox + (modelData.x - map.box.x) * map.k)) < 2) return;
@@ -159,14 +187,21 @@ Column {
                         // Put back where it was until cosmic-randr says where it is now.
                         x = Qt.binding(() => map.ox + (modelData.x - map.box.x) * map.k);
                         y = Qt.binding(() => map.oy + (modelData.y - map.box.y) * map.k);
-                        if (p) Displays.setPosition(modelData.name, p.x, p.y);
+                        if (p) map.place(modelData.name, p);
                     }
                     Keys.onSpacePressed: page.sel = modelData.name
                     Keys.onReturnPressed: page.sel = modelData.name
+                    Keys.onPressed: e => {
+                        const d = { [Qt.Key_Left]: [-1, 0], [Qt.Key_Right]: [1, 0], [Qt.Key_Up]: [0, -1], [Qt.Key_Down]: [0, 1] }[e.key];
+                        if (!d || page.outs.length < 2) return;
+                        page.sel = modelData.name;
+                        map.nudge(modelData.name, d[0], d[1]);
+                        e.accepted = true;
+                    }
                     onActiveFocusChanged: if (activeFocus) Reveal.show(map)
                     Accessible.role: Accessible.RadioButton
                     Accessible.name: Tr.t("Display %1: %2", page.number(modelData.name), Displays.label(modelData))
-                    Accessible.description: modelData.primary ? Tr.t("Main display") : ""
+                    Accessible.description: [modelData.primary ? Tr.t("Main display") : "", page.where(modelData), page.outs.length > 1 ? Tr.t("The arrow keys move it") : ""].filter(t => t).join(". ")
                     Accessible.checkable: true
                     Accessible.checked: on
                     Accessible.onPressAction: page.sel = modelData.name

@@ -38,6 +38,7 @@ Rectangle {
         source: avatar.path ? "file://" + avatar.path : ""
         sourceSize: Qt.size(avatar.size * 2, avatar.size * 2)
         fillMode: Image.PreserveAspectCrop
+        cache: false  // the same path holds a new picture after Settings changes it
         visible: false
     }
     Rectangle { id: round; anchors.fill: pic; radius: width / 2; visible: false; layer.enabled: true }

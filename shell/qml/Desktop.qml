@@ -664,7 +664,9 @@ Singleton {
     // (GECOS, which kriss-welcome fills in), else the login name; and their picture.
     property string fullName: ""
     readonly property string personName: fullName || (Quickshell.env("USER") ?? "")
-    readonly property var faces: [Quickshell.env("HOME") + "/.face", "/var/lib/AccountsService/icons/" + (Quickshell.env("USER") ?? "")]
+    // Bumped when Settings changes the picture, so every Avatar looks again.
+    property int faceVersion: 0
+    readonly property var faces: (faceVersion, [Quickshell.env("HOME") + "/.face", "/var/lib/AccountsService/icons/" + (Quickshell.env("USER") ?? "")])
     Process {
         running: true
         command: ["sh", "-c", 'getent passwd "$(id -un)" | cut -d: -f5 | cut -d, -f1']
