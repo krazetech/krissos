@@ -121,6 +121,8 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 
 ### Changed
 
+- Settings > Display names the main display at the top (its model, its connector and which
+  side it sits on), says when KrissOS picked it by itself, and lets you choose another there.
 - KrissOS Welcome looks like the rest of KrissOS: the shell's cards, round buttons and side
   panel, your accent colour, and light or dark as your desktop is set.
 - The installer looks like the rest of KrissOS: a step list with ticks, round buttons,

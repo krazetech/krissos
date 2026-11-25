@@ -57,6 +57,43 @@ Column {
         }
     }
 
+    // Which display is the main one, said plainly, and choosing it.
+    readonly property var main: Displays.outputs.find(x => x.primary) ?? null
+    // cosmic-comp picks the display at the top-left corner by itself; any other main display,
+    // or one picked here, was the user's choice.
+    readonly property bool picked: Desktop.mainChosen || (main !== null && (main.x !== 0 || main.y !== 0))
+    function where(o) {
+        const s = Displays.side(o);
+        return s === "left" ? Tr.t("on the left") : s === "right" ? Tr.t("on the right") : s === "above" ? Tr.t("on top")
+            : s === "below" ? Tr.t("at the bottom") : s === "middle" ? Tr.t("in the middle") : "";
+    }
+    function makeMain(name) { Desktop.mainChosen = true; Displays.setPrimary(name); }
+    SettingsUi.Card {
+        visible: page.main !== null
+        SettingsUi.Label { text: Tr.t("Main display") }
+        Text {
+            width: parent.width
+            wrapMode: Text.Wrap
+            text: page.main ? [Displays.fullName(page.main), page.main.name, page.where(page.main)].filter(t => t).join(" · ") : ""
+            color: Theme.fg
+            font { family: Theme.sans; pixelSize: Theme.sp(16); weight: Font.DemiBold }
+            Accessible.role: Accessible.StaticText
+            Accessible.name: Tr.t("Main display") + ": " + text
+        }
+        SettingsUi.Note {
+            text: page.outs.length > 1 && !page.picked
+                ? Tr.t("Chosen automatically, because it sits at the top left. The full taskbar, Start, notifications, new windows, the sign-in screen and fullscreen games go here.")
+                : Tr.t("The full taskbar, Start, notifications, new windows, the sign-in screen and fullscreen games go here.")
+        }
+        SettingsUi.Choice {
+            visible: page.outs.length > 1
+            text: Tr.t("Choose the main display")
+            value: page.main?.name ?? ""
+            options: page.outs.map(x => [x.name, Tr.t("Display %1: %2", page.number(x.name), Displays.fullName(x))])
+            onPicked: v => page.makeMain(v)
+        }
+    }
+
     // The screens, to scale; drag one next to another to move it there.
     SettingsUi.Card {
         SettingsUi.Label { text: Tr.t("Rearrange your displays") }
@@ -156,7 +193,7 @@ Column {
                             width: parent.width
                             horizontalAlignment: Text.AlignHCenter
                             elide: Text.ElideRight
-                            text: tile.modelData.primary ? Tr.t("Main") : Displays.label(tile.modelData)
+                            text: tile.modelData.primary ? "★ " + Tr.t("Main display") : Displays.label(tile.modelData)
                             color: tile.on ? Theme.accentInk : Theme.soft
                             font { family: Theme.sans; pixelSize: Theme.sp(11) }
                         }
@@ -200,12 +237,15 @@ Column {
 
     SettingsUi.Card {
         visible: page.o !== null
-        SettingsUi.Label { text: Tr.t("Display %1: %2", page.number(page.o?.name ?? ""), page.o ? Displays.label(page.o) : "") }
+        SettingsUi.Label {
+            text: Tr.t("Display %1: %2", page.number(page.o?.name ?? ""), page.o ? Displays.fullName(page.o) : "")
+                + (page.o?.primary ? " · " + Tr.t("Main display") : "")
+        }
         SettingsUi.Toggle {
             text: Tr.t("Make this my main display")
             detail: Tr.t("The full taskbar, Start, notifications, new windows, the sign-in screen and fullscreen games go here.")
             checked: page.o?.primary ?? false
-            onToggled: if (!checked && page.o) Displays.setPrimary(page.o.name)
+            onToggled: if (!checked && page.o) page.makeMain(page.o.name)
         }
         SettingsUi.Toggle {
             visible: Displays.outputs.length > 1
