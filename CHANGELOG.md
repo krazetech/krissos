@@ -20,6 +20,29 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
   and a warning when the battery drops to 15% and to 5%. KrissOS has its own set of
   sounds; pick another (or No sounds) in Settings > Sound, which plays a sample. Sound
   themes made for Linux desktops work too: copy one into `~/.local/share/sounds`.
+  Notification chimes stay quiet in do not disturb and over full-screen games.
+- Task View and desktops like Windows 11: Windows+Tab shows your windows and desktops, and
+  three fingers on a touchpad swipe between desktops.
+- Snap layouts: rest the pointer on a window's maximise button or press Windows+Z to snap it
+  into half, a third or a quarter of the screen, or drag it to an edge or a corner; then pick
+  which window fills the rest.
+- Start search finds apps, settings, files, sums, commands and the web.
+- Clipboard history on Windows+V, and emoji and symbols on Windows+. (full stop).
+- Widgets on Windows+W, or the button at the far left of the taskbar: your calendar, world
+  clocks, how busy the PC is, what's playing, the weather and a local AI helper.
+- Personalise: pick your accent colour and light or dark (or by time of day), and COSMIC and
+  GTK apps follow it.
+- A Mac layout, if you prefer it: a top bar and a centred dock, picked in Personalise.
+- The lock and login screens: a big glass clock over a wallpaper that follows the time of
+  day, with a depth effect and a picture of your own if you like.
+- The default wallpaper is the clock tower of Sungai Petani, as a day and a night photo.
+- A notification center like Windows 11's: one panel with your notifications and the
+  calendar, a badge for the ones you haven't seen, and see-through, blurred pop-ups.
+- Accessibility: the Orca screen reader can read the whole shell, everything works from the
+  keyboard, shell text follows your text size, and there is a high-contrast mode.
+- Settings > Accounts: choose your picture from your own photos or the KrissOS ones.
+- The installer can encrypt the whole disk (off by default: a lost passphrase means lost
+  files), and passwords need at least 8 characters.
 - More taskbar choices in Settings > Personalise > Taskbar: show search as a box, an icon
   or not at all, hide the Widgets button, make the taskbar more or less see-through, and
   show button labels by turning off "Combine taskbar buttons and hide labels".
@@ -62,10 +85,6 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 - Windows+P switches between PC screen only, Duplicate, Extend and Second screen only.
 - Right-click the clock, network, sound, battery or bell on the taskbar for their settings.
   Start has a Settings button next to power.
-- System sounds, from KDE's Ocean set: a chime with notifications (quiet in do not disturb
-  and over full-screen games), a tick when you change the volume, and a sound when you plug
-  in or unplug the charger or a USB device. Sounds can be turned off, or another sound theme
-  picked, in the settings.
 - On-screen keyboard for 2-in-1 laptops and tablets. On a PC with a touch screen, the
   keyboard button in the taskbar brings it up; after that it comes up by itself whenever
   you tap into a text box, until you type on a real keyboard. Chinese, Tamil and Jawi work
@@ -141,6 +160,7 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 
 ### Changed
 
+- Inter is the font everywhere, from the boot screen to the apps, rendered like on a Mac.
 - Settings > Display names the main display at the top (its model, its connector and which
   side it sits on), says when KrissOS picked it by itself, and lets you choose another there.
 - KrissOS Welcome looks like the rest of KrissOS: the shell's cards, round buttons and side
@@ -158,6 +178,10 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 
 ### Fixed
 
+- Alt+Tab in full-screen games stays on the game's screen, keeps the keyboard, waits for
+  you to let go of Alt, and also works in games that grab the keyboard (Wine and Proton).
+- The lock screen's glass clock shows the right time on every screen, also after sleep,
+  instead of "00 00" on a screen nobody touched.
 - Steam games (World of Tanks and the like) show their own icon and name on the taskbar, in
   Alt+Tab and in Task View, instead of a blank one, and line up with the game you pinned.
 - `kriss update` now swaps in the KrissOS builds of COSMIC Settings and the compositor on
