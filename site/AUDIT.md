@@ -1,6 +1,13 @@
 # KrissOS site audit (Sungai Petani rework)
 
-> **Status 2026-11-20:** all findings fixed on the English pages except L9 (manual check of ko-fi.com and sourceforge.net) and the self-hosted-fonts part of L5. Naming decision for H5: Sungai Petani is the name of release `110`, and today's download is its nightly preview. `kriss migrate` is marked Done on the roadmap, since it is merged (#42). The Malay pages still need the same copy and markup fixes.
+> **Status 2026-11-25:** every finding is fixed on both the English and Malay pages, including the design-hook ones (M2 contrast, M3 finale wash, L2 and L3 were checked and dismissed or fixed). The Malay pages now carry the same H5 story as English: release `110` is Sungai Petani, today's download is its nightly preview, and `kriss migrate` is Done on the roadmap (it was still "Akan datang" in `ms/roadmap.html`). Also ported to Malay: `og:url` on index, download, install, roadmap and shell; the "Before you boot" heading (L8); the `&nbsp;` before "GB" (L8); and `og-sp.jpg` with a Malay `og:image:alt` on every Malay page (L4). `sitemap.xml` already lists the help and hardware pages in both languages.
+>
+> Checked on 2026-11-25: all 22 pages (11 EN, 11 MS) at 1440px and 390px with an in-page script: no sideways scroll, no unnamed links or buttons, no broken images, and all 45 local URLs return 200. Screenshots checked for the Malay home, roadmap, hardware and help pages.
+>
+> **Still open:**
+> - L9: check ko-fi.com and sourceforge.net by hand (they block curl).
+> - L5: self-hosting the two font files (optional).
+> - The help and hardware pages are new since this audit. They passed the checks above but have not had a full design review.
 
 Date: 2026-11-20 · Branch `kz/site-sungai-petani` (uncommitted working tree) · Scope: `site/*.html` (EN), `site/style.css`, `site/home.js`. `site/ms/*` was not reviewed.
 

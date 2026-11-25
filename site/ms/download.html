@@ -17,10 +17,11 @@
 <meta property="og:title" content="Muat turun KrissOS">
 <meta property="og:description" content="Dapatkan ISO pratonton KrissOS, cuba dalam VM dan sahkan imejnya.">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://krazetech.github.io/krissos/ms/download.html">
 <meta property="og:site_name" content="KrissOS">
 <meta property="og:locale" content="ms_MY">
-<meta property="og:image" content="https://krazetech.github.io/krissos/og.jpg">
-<meta property="og:image:alt" content="The KrissOS logo, a keris hilt on a Sky Cyan disc, over the KrissOS wallpaper.">
+<meta property="og:image" content="https://krazetech.github.io/krissos/og-sp.jpg">
+<meta property="og:image:alt" content="Menara jam Sungai Petani dengan langit Kedah yang semakin gelap. Kertas dinding KrissOS Sungai Petani.">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -72,7 +73,7 @@
         <li><span>PC anda<small>PC Intel dan AMD 64-bit. Pengguna Mac Apple Silicon, tunggu sekejap, imej khas akan menyusul.</small></span></li>
         <li><span>Desktop<small>KrissOS Shell secara lalai. Mahu KDE Plasma? Pilih sahaja dalam pemasang.</small></span></li>
         <li><span>Kemas kini<small>Kemas kini kecil yang kerap, terus daripada Arch, bersama pakej kami yang ditandatangani. Setiap kemas kini mengambil <i>snapshot</i> dahulu, jadi kalau ada masalah, undur sahaja.</small></span></li>
-        <li><span>Keluaran<small>Binaan setiap malam masuk ke <code>preview</code>. Keluaran rasmi menggunakan nama motosikal Kriss: <code>110</code>, <code>115</code> dan seterusnya.</small></span></li>
+        <li><span>Keluaran<small>Binaan setiap malam masuk ke <code>preview</code>. Keluaran rasmi bernombor mengikut barisan Kriss, <code>110</code>, <code>115</code> dan seterusnya, dan dinamakan sempena satu tempat di Malaysia. <code>110</code> ialah Sungai Petani.</small></span></li>
       </ul>
     </div>
   </section>
@@ -80,7 +81,7 @@
   <section>
     <div class="wrap">
       <div class="card note reveal">
-        <h2>Dua tetapan sahaja, kemudian but.</h2>
+        <h2>Sebelum anda but.</h2>
         <ul class="list">
           <li><span>Hidupkan UEFI dahulu<small>Dalam virt-manager, GNOME Boxes, VirtualBox atau VMware, pilih UEFI (OVMF) sebelum but pertama. Pemasang memerlukan UEFI, dan itulah yang diuji oleh CI setiap hari.</small></span></li>
           <li><span>RAM 4 GB atau lebih<small>Sesi live berjalan daripada RAM. Berikan dua teras CPU dan hidupkan pecutan 3D supaya lancar. Kedekut RAM, lembablah jadinya.</small></span></li>
@@ -131,7 +132,7 @@ fetch('https://api.github.com/repos/krazetech/krissos/releases?per_page=20')
       const href = `https://sourceforge.net/projects/krissos/files/${dir}/${name}/download`;
       const iso = rel.assets.find(a => a.name === name);
       const when = new Date(sums.updated_at).toLocaleDateString('ms-MY', { day: 'numeric', month: 'long', year: 'numeric' });
-      const size = iso ? ` ${(iso.size / 1e9).toFixed(1)} GB,` : '';
+      const size = iso ? ` ${(iso.size / 1e9).toFixed(1)}\u00a0GB,` : '';
       const box = document.getElementById('release');
       const p = document.createElement('p');
       p.className = 'lede';
