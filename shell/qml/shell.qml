@@ -127,6 +127,7 @@ ShellRoot {
     Osd {}
     Settings {}
     DisplaySwitch { id: project }
+    Snip { id: snip }
 
     // KRISS_SHELL_FPS=1: for a second after a panel opens or closes, counts the frames and
     // logs the rate and the slowest frame (read it with `qs log`), to check motion on real hardware.
@@ -271,6 +272,12 @@ ShellRoot {
     IpcHandler {
         target: "project"
         function toggle(): void { project.toggle(); }
+    }
+    // `kriss-shell screenshot region` (Windows+Shift+S) and `kriss-shell record` (Windows+Alt+R).
+    IpcHandler {
+        target: "snip"
+        function toggle(): void { snip.toggle(); }
+        function record(): void { Desktop.record(); }
     }
     IpcHandler {
         target: "personalise"

@@ -12,6 +12,11 @@
 //! What the shell runs when the accent changes. In both builders it sets `accent`, and
 //! `window_hint` when that was following the old accent, rebuilds both themes and writes
 //! only the theme keys whose value changed, so COSMIC apps repaint and nothing else moves.
+//!
+//! usage: kriss-cosmic-theme --rebuild
+//! What the shell runs after it writes builder keys itself (the corners and the focused
+//! window's border, from Settings > Personalise > Windows): rebuilds both themes from the
+//! builders and writes only the theme keys that changed.
 use cosmic_config::{Config, CosmicConfigEntry};
 use cosmic_theme::{
     DARK_THEME_BUILDER_ID, DARK_THEME_ID, LIGHT_THEME_BUILDER_ID, LIGHT_THEME_ID, Theme,
@@ -76,8 +81,22 @@ fn set_accent(accent: Srgb) {
     }
 }
 
+fn rebuild() {
+    for (mut builder, builder_id, theme_id) in [
+        (ThemeBuilder::dark(), DARK_THEME_BUILDER_ID, DARK_THEME_ID),
+        (ThemeBuilder::light(), LIGHT_THEME_BUILDER_ID, LIGHT_THEME_ID),
+    ] {
+        let config = Config::new(builder_id, ThemeBuilder::VERSION).unwrap();
+        builder.update_keys(&config, &user_keys(&config));
+        write_changed(&builder.build(), theme_id);
+    }
+}
+
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
+    if args == ["--rebuild"] {
+        return rebuild();
+    }
     if let [flag, hex] = &args[..] {
         if flag == "--accent" {
             match parse_hex(hex) {

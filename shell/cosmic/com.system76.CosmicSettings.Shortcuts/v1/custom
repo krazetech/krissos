@@ -28,7 +28,9 @@
     (modifiers: [Super], key: "Right"): Move(Right),
     (modifiers: [Super], key: "Up"): Maximize,
     (modifiers: [Super], key: "Down"): Minimize,
+    // The snipping bar: a box, the whole screen or a recording, as on Windows.
     (modifiers: [Super, Shift], key: "s"): Spawn("kriss-shell screenshot region"),
+    (modifiers: [Super, Alt], key: "r"): Spawn("kriss-shell record"),
     // Snap layouts for the window in front, as on Windows.
     (modifiers: [Super], key: "z"): Spawn("kriss-shell snap"),
     // The taskbar, as on Windows: Windows+T steps through the app buttons, Windows+B puts the
