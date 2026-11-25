@@ -7,34 +7,48 @@ import QtQuick 2.15
 import calamares.slideshow 1.0
 
 Slide {
+    id: slide
     property string heading
     property string body
     property string headingMs
     property string bodyMs
 
-    Column {
-        anchors.verticalCenter: parent.verticalCenter
-        x: parent.width * 0.1
-        width: parent.width * 0.8
-        spacing: 14
+    // Arrives like a shell toast (Sonner): up a little and in, with a touch of settle.
+    onVisibleChanged: if (visible) enter.restart()
+    ParallelAnimation {
+        id: enter
+        NumberAnimation { target: text; property: "opacity"; from: 0; to: 1; duration: 220; easing.type: Easing.OutCubic }
+        NumberAnimation { target: text; property: "shift"; from: 16; to: 0; duration: 500
+                          easing.type: Easing.BezierSpline; easing.bezierCurve: [0.21, 1.02, 0.73, 1, 1, 1] }
+    }
 
-        Rectangle { width: 48; height: 4; radius: 2; color: "{{accent}}" }
+    Column {
+        id: text
+        property real shift: 0
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.verticalCenterOffset: shift - 16
+        x: 48
+        width: Math.min(parent.width - 96, 620)
+        spacing: 12
+
         Text {
             text: heading; width: parent.width; wrapMode: Text.WordWrap
-            color: "{{fg}}"; font.family: "{{font_sans}}"; font.pixelSize: 34; font.weight: Font.DemiBold
+            color: "{{fg}}"; font.family: "{{font_sans}}"; font.pixelSize: 32; font.weight: Font.DemiBold
         }
         Text {
-            text: body; width: parent.width; wrapMode: Text.WordWrap; lineHeight: 1.2
-            color: "{{fg}}"; font.family: "{{font_sans}}"; font.pixelSize: 18
+            text: body; width: parent.width; wrapMode: Text.WordWrap; lineHeight: 1.25
+            color: "{{fg}}"; opacity: 0.86; font.family: "{{font_sans}}"; font.pixelSize: 17
         }
-        Item { width: 1; height: 18 }
+        Item { width: 1; height: 10 }
+        Rectangle { width: parent.width; height: 1; color: "{{ui_line}}" }
+        Item { width: 1; height: 4 }
         Text {
             text: headingMs; width: parent.width; wrapMode: Text.WordWrap
-            color: "{{accent}}"; font.family: "{{font_sans}}"; font.pixelSize: 18; font.weight: Font.DemiBold
+            color: "{{ui_accent_text}}"; font.family: "{{font_sans}}"; font.pixelSize: 16; font.weight: Font.DemiBold
         }
         Text {
-            text: bodyMs; width: parent.width; wrapMode: Text.WordWrap; lineHeight: 1.2
-            color: "{{color7}}"; font.family: "{{font_sans}}"; font.pixelSize: 15
+            text: bodyMs; width: parent.width; wrapMode: Text.WordWrap; lineHeight: 1.25
+            color: "{{ui_soft}}"; font.family: "{{font_sans}}"; font.pixelSize: 14
         }
     }
 }

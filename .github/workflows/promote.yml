@@ -1,0 +1,63 @@
+name: promote
+
+# Move packages from [kriss-testing] to [kriss], the repo every KrissOS install updates
+# from. Merges to main only ever publish to [kriss-testing]; this is the one way into
+# [kriss]. It copies the files that were tested (signatures checked), it never rebuilds.
+# Run it from the Actions tab once the nightly ISO's boot and install tests pass, and
+# before tagging a release, since tagged ISOs are built from [kriss].
+on:
+  workflow_dispatch:
+    inputs:
+      arch:
+        description: Architecture
+        type: choice
+        options: [both, x86_64, aarch64]
+        default: both
+      packages:
+        description: Package names, space separated. Empty promotes everything newer in testing.
+        type: string
+        default: ''
+      dry_run:
+        description: Only list what would be promoted
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  promote:
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86_64, aarch64]
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    # The same group as every other writer to [kriss] for this architecture.
+    concurrency:
+      group: repo-${{ matrix.arch }}
+      cancel-in-progress: false
+    steps:
+      - name: Skip ${{ matrix.arch }}
+        if: inputs.arch != 'both' && inputs.arch != matrix.arch
+        run: echo "Only ${{ inputs.arch }} was asked for."
+
+      - name: Install tools
+        if: inputs.arch == 'both' || inputs.arch == matrix.arch
+        run: pacman -Syu --noconfirm --needed github-cli
+
+      - uses: actions/checkout@v4
+        if: inputs.arch == 'both' || inputs.arch == matrix.arch
+
+      # repo-add and the package files are architecture-neutral, so x86_64 runs both.
+      - name: Promote
+        if: inputs.arch == 'both' || inputs.arch == matrix.arch
+        env:
+          KRISS_GPG_KEY: ${{ secrets.KRISS_GPG_KEY }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          ARCH: ${{ matrix.arch }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
+          PACKAGES: ${{ inputs.packages }}
+        # PACKAGES is split into names on purpose.
+        run: tools/ci/promote.sh $PACKAGES

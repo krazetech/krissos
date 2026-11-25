@@ -9,3 +9,7 @@ alias ls='ls --color=auto'
 alias grep='grep --color=auto'
 # you@computer in the KrissOS accent, then the folder you are in.
 PS1='\[\e[1;{{accent.ansi}}m\]\u@\h\[\e[0m\] \[\e[1m\]\w\[\e[0m\] \$ '
+
+# A new terminal opens with the KrissOS emblem and a summary of this PC
+# (fastfetch, configured in /etc/xdg/fastfetch/config.jsonc). Delete this line to turn it off.
+command -v fastfetch >/dev/null && fastfetch

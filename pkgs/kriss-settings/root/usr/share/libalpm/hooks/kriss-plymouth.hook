@@ -1,0 +1,18 @@
+# The KrissOS boot splash: Theme=kriss in /etc/plymouth/plymouthd.conf (unless the admin
+# picked another installed theme) and an initramfs with the current theme files in it.
+# Sorts after 90-mkinitcpio-install.hook and before zz-kriss-limine.hook, so with Secure
+# Boot the menu hashes the final initramfs. The script's own path is a target so the
+# kriss-settings upgrade that brings this hook also fixes systems that had it before.
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Path
+Target = usr/share/plymouth/plymouthd.defaults
+Target = usr/share/plymouth/themes/kriss/*
+Target = usr/share/libalpm/scripts/kriss-plymouth
+
+[Action]
+Description = Setting the KrissOS boot splash...
+When = PostTransaction
+Exec = /usr/share/libalpm/scripts/kriss-plymouth --hook
+NeedsTargets

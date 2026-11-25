@@ -10,21 +10,31 @@ set -euo pipefail
 out=$(realpath -m "$1")
 shift
 id builder >/dev/null 2>&1 || useradd -m builder
-echo 'builder ALL=(ALL) NOPASSWD: /usr/bin/pacman' >/etc/sudoers.d/builder
+# makepkg --syncdeps uses this pacman: tools/ci/pacman-retry in the aarch64 container.
+pacman=$(command -v pacman)
+echo "builder ALL=(ALL) NOPASSWD: $pacman" >/etc/sudoers.d/builder
 chown -R builder .
 mkdir -p "$out" && chown builder "$out"
+# Sources over https fall back to KrissOS's copy when upstream is down.
+# makepkg uses the first agent that matches, so swap the https one rather than add one.
+# shellcheck disable=SC2016 # expanded by makepkg, not here
+printf 'DLAGENTS=("${DLAGENTS[@]/#https::*/https::%s/tools/ci/fetch-fallback %%o %%u}")\n' "$PWD" \
+  >~builder/.makepkg.conf
 published=""
 for dir; do
   echo "::group::$dir"
   # Pinned builds of other people's packages are large (the NVIDIA driver is ~400 MB) and
-  # change only on a bump, so skip one whose exact version is already published.
-  case ${dir%/} in pkgs/winboat | pkgs/nvidia-580xx-utils | pkgs/lib32-nvidia-580xx-utils)
-    : "${published:=$(curl -fsSL "https://github.com/${GITHUB_REPOSITORY:-krazetech/krissos}/releases/download/repo-$(uname -m)/kriss.db" \
-      | bsdtar -tf - 2>/dev/null | cut -d/ -f1 | sort -u || true)}"
+  # change only on a bump, so skip one whose exact version is already published, in
+  # [kriss-testing] or (once promoted) [kriss].
+  case ${dir%/} in pkgs/nvidia-580xx-utils | pkgs/lib32-nvidia-580xx-utils)
+    : "${published:=$(for r in testing-$(uname -m)/kriss-testing repo-$(uname -m)/kriss; do
+        curl -fsSL "https://github.com/${GITHUB_REPOSITORY:-krazetech/krissos}/releases/download/$r.db" \
+          | bsdtar -tf - 2>/dev/null | cut -d/ -f1 || true
+      done | sort -u)}"
     # shellcheck disable=SC1091,SC2154 # pkgname, pkgver and pkgrel come from the PKGBUILD
     v=$(. "$dir/PKGBUILD" && echo "${pkgname[0]}-$pkgver-$pkgrel")
     if grep -qxF "$v" <<<"$published"; then
-      echo "$v is already in [kriss]; skipped"
+      echo "$v is already published; skipped"
       echo "::endgroup::"
       continue
     fi ;;
@@ -38,7 +48,7 @@ for dir; do
     deps=--nodeps ;;
   esac
   # Arch Linux ARM's makepkg.conf defaults to .pkg.tar.xz; the repo tooling expects zst.
-  su builder -c "cd '$dir' && PKGDEST='$out' PKGEXT=.pkg.tar.zst makepkg $deps --noconfirm --cleanbuild"
+  su builder -c "cd '$dir' && PKGDEST='$out' PKGEXT=.pkg.tar.zst PACMAN='$pacman' makepkg $deps --noconfirm --cleanbuild"
   echo "::endgroup::"
 done
 ls -l "$out"

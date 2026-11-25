@@ -11,6 +11,8 @@ you start an earlier snapshot from the boot menu.
 Under the hood it is a thin, signed overlay on Arch Linux by Kraze Tech. See
 [ARCHITECTURE.md](ARCHITECTURE.md) for the design, starting with §0, and
 [krazetech.github.io/krissos](https://krazetech.github.io/krissos/) for the site.
+What changed in each release is in [CHANGELOG.md](CHANGELOG.md), and how releases are
+cut is in [docs/releasing.md](docs/releasing.md).
 
 ## Layout
 
@@ -31,9 +33,28 @@ cd pkgs/kriss-tools && makepkg -si
 
 ## Package repo
 
-CI builds every package on each push to `main` and publishes the signed repo to the
-`repo-x86_64` GitHub release. KrissOS installs come with the keyring already set up. To use
-the repo on plain Arch, trust the signing key first:
+There are two signed pacman repos, each a GitHub release:
+
+| Repo | Release | What lands there |
+|---|---|---|
+| `[kriss]` (stable) | `repo-x86_64`, `repo-aarch64` | Packages promoted from testing. Every KrissOS install updates from here. |
+| `[kriss-testing]` | `testing-x86_64`, `testing-aarch64` | Every package CI builds on a push to `main`. |
+
+Nightly and PR ISOs are built from `[kriss-testing]`, so their boot and install tests run on
+what is about to ship. Tagged release ISOs are built from `[kriss]`.
+
+**Promoting to stable.** Run the **promote** workflow from the Actions tab. It defaults to a
+dry run that lists what would move; untick *dry run* to do it. Leave *packages* empty to
+promote everything newer in testing, or name packages to move only those (a split package
+such as `linux-kriss` moves with its headers). It copies the exact files that were tested and
+checks their signatures; nothing is rebuilt. Promote before tagging a release.
+
+**Trying testing on your PC.** `kriss channel testing` adds `[kriss-testing]` above `[kriss]`
+and `kriss update` then pulls it in. `kriss channel stable` takes it out again and, after a
+snapshot, downgrades anything that came from testing.
+
+KrissOS installs come with the keyring already set up. To use the repo on plain Arch, trust
+the signing key first:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/krazetech/krissos/main/pkgs/kriss-keyring/krissos.gpg | sudo pacman-key --add -
@@ -48,6 +69,13 @@ Then add this to `/etc/pacman.conf`:
 ```ini
 [kriss]
 Server = https://github.com/krazetech/krissos/releases/download/repo-x86_64
+```
+
+For testing as well, put this above `[kriss]`:
+
+```ini
+[kriss-testing]
+Server = https://github.com/krazetech/krissos/releases/download/testing-x86_64
 ```
 
 ## Verify your download
@@ -82,10 +110,11 @@ Packages are signed by `KrissOS Packages`, fingerprint
 - **Where the private key lives:** in the `KRISS_GPG_KEY` repository secret, and in the
   maintainer's local GnuPG keyring, with an offline backup.
 - **Where the public key lives:** it ships in the `kriss-keyring` package.
-- **Rotating the key:**
-  1. Add the new key to `pkgs/kriss-keyring/`.
-  2. Move the old fingerprint to `krissos-revoked`.
-  3. Bump the package version and replace the secret.
+- **Rotating or revoking the key:** follow [docs/signing-key.md](docs/signing-key.md). A
+  rotation takes two keyring releases a couple of weeks apart, so installs that update rarely
+  are not locked out.
+- **CI without the key:** publishing packages and tagged ISO releases fail instead of shipping
+  unsigned. Only the nightly `preview` ISO and forks carry on with a warning.
 
 ## License
 

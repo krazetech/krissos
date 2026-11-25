@@ -1,54 +1,186 @@
 # KrissOS boot splash. Generated from theme/tokens.json; do not edit.
-# logo.png is rendered from /usr/share/pixmaps/krissos.svg by the kriss-theme build.
-# ponytail: the spinner dots are text glyphs, so the theme needs no other images.
+# The PNGs next to it are rendered from the emblem vector by theme/generate.py and the
+# kriss-theme build: logo-N (the disc with the keris hilt), glow-N (a soft halo, 2.6
+# logos wide), field and bullet.
+#
+#   0.0-0.7 s    the keris fades in on Obsidian black, growing from 94 % (ease out)
+#   then         a soft pulse until boot ends, 1.6 s each: the logo swells to 105 % and
+#                its glow brightens, then both settle back
+#   at the end   plymouth-quit (its kriss.conf drop-in) sends the status "kriss-fade":
+#                logo and glow fade to black over 0.3 s, and Plymouth quits keeping that
+#                frame. The login screen (shell/qml/greeter.qml) brings the keris back in
+#                the same place and size and opens it out over the whole screen.
+#                Plymouth stops refreshing once quit arrives, so the fade comes first.
+# Reduced motion: if reduced-motion.png exists in this folder the logo is shown still.
+# Plymouth's script plugin cannot read the kernel command line or files outside the
+# theme, so a file in the theme (which the initramfs carries) is the switch:
+#   cp logo-256.png reduced-motion.png && mkinitcpio -P     (as root, in this folder)
+# Delete it and rebuild the initramfs to bring the animation back.
+# HiDPI: the logo is 18 % of the screen's short side. Where Plymouth picks a device
+# scale of 2 it upscales every sprite, so the logo is slightly soft there.
 Window.SetBackgroundTopColor({{bg.rgbf}});
 Window.SetBackgroundBottomColor({{bg.rgbf}});
 
-cx = Window.GetX() + Window.GetWidth() / 2;
-cy = Window.GetY() + Window.GetHeight() / 2;
+fps = 30;  # the refresh rate; slow GPUs are fine at 30
+Plymouth.SetRefreshRate(fps);
 
-logo = Image("logo.png");
-logo_sprite = Sprite(logo);
-logo_sprite.SetPosition(cx - logo.GetWidth() / 2, cy - logo.GetHeight() - 16, 1);
+sw = Window.GetWidth();
+sh = Window.GetHeight();
+cx = Window.GetX() + sw / 2;
+cy = Window.GetY() + sh / 2;
 
-n = 8;
-for (i = 0; i < n; i++) {
-  dot_image = Image.Text("●", {{accent.rgbf}}, 1, "Sans 12");
-  dot[i] = Sprite(dot_image);
-  a = i * 2 * Math.Pi / n;
-  dot[i].SetPosition(cx + 20 * Math.Sin(a) - dot_image.GetWidth() / 2,
-                     cy + 48 - 20 * Math.Cos(a) - dot_image.GetHeight() / 2, 2);
+# Logo: 18 % of the short side, an even number of pixels so it stays centred. The
+# login screen computes the same size, so the keris does not jump at the hand-off.
+size = Math.Int(Math.Min(sw, sh) * 0.09) * 2;
+src = 512;
+if (size * 1.05 <= 256) src = 256;
+
+fun load(name, px) {
+  return Image(name + "-" + global.src + ".png").Scale(px, px);
 }
 
-tick = 0;
+fun place(sprite, image, z) {
+  sprite.SetImage(image);
+  sprite.SetPosition(global.cx - image.GetWidth() / 2, global.cy - image.GetHeight() / 2, z);
+}
+
+# Pre-scaled once, so no frame scales an image. Steps of 2 px keep the centre still:
+# from 94 % (the fade in starts there) to 105 % (the top of a pulse).
+small = Math.Int(size * 0.06 / 2);
+big = Math.Int(size * 0.05 / 2);
+for (i = 0; i <= small + big; i++) logo_img[i] = load("logo", size - 2 * small + 2 * i);
+glow_size = Math.Int(size * 2.6 / 2) * 2;
+glow_img = Image("glow-" + src + ".png").Scale(glow_size, glow_size);
+glow_rest = 0.35;  # the glow between pulses, as the login screen starts it
+
+logo = Sprite();
+glow = Sprite();
+place(glow, glow_img, 1);
+glow.SetOpacity(0);
+
+fun ease_out(t) {
+  t = Math.Clamp(t, 0, 1);
+  return 1 - (1 - t) * (1 - t) * (1 - t);
+}
+
+reduced = Image("reduced-motion.png");
+frame = 0;
+if (reduced) {
+  frame = -1;  # never animates
+  place(logo, logo_img[small], 2);
+  glow.SetOpacity(glow_rest);
+} else {
+  place(logo, logo_img[0], 2);
+  logo.SetOpacity(0);
+}
+
+asking = 0;   # the password prompt holds the logo still
+fading = -1;  # frames since "kriss-fade", -1 before it
 fun refresh_callback() {
-  global.tick++;
-  head = Math.Int(global.tick / 6) % global.n;
-  for (i = 0; i < global.n; i++) {
-    behind = (head - i + global.n) % global.n;
-    global.dot[i].SetOpacity(1 - 0.85 * behind / (global.n - 1));
+  out = 1;
+  if (global.fading >= 0) {
+    global.fading++;
+    out = 1 - ease_out(global.fading / (0.3 * global.fps));
+  }
+  if (global.frame < 0 || global.asking) {
+    if (global.fading >= 0) {
+      global.logo.SetOpacity(out);
+      global.glow.SetOpacity(global.glow_rest * out);
+    }
+    return;
+  }
+  t = global.frame / global.fps;
+  global.frame++;
+  if (t < 0.7) {
+    p = ease_out(t / 0.7);
+    place(global.logo, global.logo_img[Math.Int(p * global.small + 0.5)], 2);
+    global.logo.SetOpacity(p * out);
+    global.glow.SetOpacity(global.glow_rest * p * out);
+  } else {
+    # The pulse: 0 at rest, 1 at its fullest, 1.6 s each.
+    b = (1 - Math.Cos((t - 0.7) * 2 * Math.Pi / 1.6)) / 2;
+    place(global.logo, global.logo_img[global.small + Math.Int(b * global.big + 0.5)], 2);
+    global.logo.SetOpacity(out);
+    global.glow.SetOpacity((global.glow_rest + (1 - global.glow_rest) * b) * out);
   }
 }
 Plymouth.SetRefreshFunction(refresh_callback);
 
-# Disk-encryption passphrase prompt.
-prompt_sprite = Sprite();
-bullet_sprite = Sprite();
-fun display_password_callback(prompt, bullets) {
-  text = Image.Text(prompt, {{fg.rgbf}}, 1, "{{font_sans}} 12");
-  global.prompt_sprite.SetImage(text);
-  global.prompt_sprite.SetPosition(global.cx - text.GetWidth() / 2, global.cy + 96, 3);
-  global.prompt_sprite.SetOpacity(1);
-  s = "";
-  for (i = 0; i < bullets; i++) s += "●";
-  mask = Image.Text(s, {{accent.rgbf}}, 1, "Sans 12");
-  global.bullet_sprite.SetImage(mask);
-  global.bullet_sprite.SetPosition(global.cx - mask.GetWidth() / 2, global.cy + 124, 3);
-  global.bullet_sprite.SetOpacity(1);
+fun update_status_callback(status) {
+  if (status == "kriss-fade" && global.fading < 0) global.fading = 0;
 }
+Plymouth.SetUpdateStatusFunction(update_status_callback);
+
+# Disk-encryption passphrase prompt. Plymouth does not tell the theme the system
+# language, so it asks in English and Bahasa Melayu.
+font_px = Math.Max(12, Math.Int(size / 13));
+field_w = Math.Int(size * 1.6);
+field_h = Math.Int(size * 0.22);
+field_img = Image("field.png").Scale(field_w, field_h);
+dot = Math.Max(6, Math.Int(field_h * 0.2));
+dot_img = Image("bullet.png").Scale(dot, dot);
+max_dots = Math.Int((field_w - field_h) / (dot * 2));
+
+ask_en = Sprite(Image.Text("Enter the passphrase to unlock this disk", {{fg.rgbf}}, 1, "{{font_sans}} " + font_px));
+ask_ms = Sprite(Image.Text("Masukkan frasa laluan untuk membuka kunci cakera ini", {{muted.rgbf}}, 1, "{{font_sans}} " + font_px));
+field = Sprite(field_img);
+detail = Sprite();
+ask_en.SetPosition(cx - ask_en.GetImage().GetWidth() / 2, cy + size / 2 + size * 0.14, 3);
+ask_ms.SetPosition(cx - ask_ms.GetImage().GetWidth() / 2, ask_en.GetY() + font_px * 1.5, 3);
+field.SetPosition(cx - field_w / 2, ask_ms.GetY() + font_px * 2.4, 3);
+for (i = 0; i < max_dots; i++) {
+  dots[i] = Sprite(dot_img);
+  dots[i].SetOpacity(0);
+}
+
+fun show_prompt(on) {
+  global.ask_en.SetOpacity(on);
+  global.ask_ms.SetOpacity(on);
+  global.field.SetOpacity(on);
+  global.detail.SetOpacity(on);
+  if (!on) for (i = 0; i < global.max_dots; i++) global.dots[i].SetOpacity(0);
+}
+show_prompt(0);
+
+fun display_password_callback(prompt, bullets) {
+  if (!global.asking && global.frame >= 0) {
+    # Settle on the logo at rest, whatever point of the pulse it was at.
+    place(global.logo, global.logo_img[global.small], 2);
+    global.logo.SetOpacity(1);
+    global.glow.SetOpacity(global.glow_rest);
+  }
+  global.asking = 1;
+  show_prompt(1);
+  # systemd's own line names the disk, so it stays, small and quiet, under the field.
+  text = Image.Text(prompt, {{muted.rgbf}}, 1, "{{font_sans}} " + Math.Int(global.font_px * 0.8));
+  global.detail.SetImage(text);
+  global.detail.SetPosition(global.cx - text.GetWidth() / 2,
+                            global.field.GetY() + global.field_h + global.font_px, 3);
+  n = Math.Min(bullets, global.max_dots);
+  x = global.cx - (n * 2 - 1) * global.dot / 2;
+  for (i = 0; i < global.max_dots; i++) {
+    if (i < n) {
+      global.dots[i].SetPosition(x + i * 2 * global.dot,
+                                 global.field.GetY() + (global.field_h - global.dot) / 2, 4);
+      global.dots[i].SetOpacity(1);
+    } else {
+      global.dots[i].SetOpacity(0);
+    }
+  }
+}
+
 fun display_normal_callback() {
-  global.prompt_sprite.SetOpacity(0);
-  global.bullet_sprite.SetOpacity(0);
+  show_prompt(0);
+  global.asking = 0;
 }
 Plymouth.SetDisplayPasswordFunction(display_password_callback);
 Plymouth.SetDisplayNormalFunction(display_normal_callback);
+
+# Whatever happens, hand over on black: the login screen starts on the same black.
+fun quit_callback() {
+  global.frame = -1;
+  global.logo.SetOpacity(0);
+  global.glow.SetOpacity(0);
+  show_prompt(0);
+}
+Plymouth.SetQuitFunction(quit_callback);

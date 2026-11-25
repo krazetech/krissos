@@ -1,0 +1,104 @@
+name: Bug report
+description: Something in KrissOS is broken or does not work the way it should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this. You can write in English or Bahasa Melayu.
+
+        **Is it a security problem?** Please do not file it here. Report it privately from the
+        [Security tab](https://github.com/krazetech/krissos/security/advisories/new) instead.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part of KrissOS?
+      options:
+        - Installing (USB stick, installer, partitioning, dual boot with Windows)
+        - Starting up (boot menu, login screen, Secure Boot)
+        - Desktop (taskbar, launcher, windows, settings)
+        - Welcome app
+        - Updates or rollback (kriss update, snapshots, kriss rollback)
+        - Drivers and hardware (graphics, NVIDIA, Wi-Fi, sound, sleep, battery)
+        - Gaming
+        - Local AI
+        - Moving from Windows (kriss migrate, Windows apps)
+        - The kriss command
+        - Website or documentation
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the problem. Screenshots or a photo of the screen help a lot.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How can we make it happen?
+      description: The steps that lead to the problem, one per line.
+      placeholder: |
+        1. Open ...
+        2. Click ...
+        3. See ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: How often does it happen?
+      options:
+        - Every time
+        - Sometimes
+        - It happened once
+    validations:
+      required: true
+  - type: textarea
+    id: version
+    attributes:
+      label: KrissOS version
+      description: |
+        On an installed system, open a terminal and paste what `kriss version` and `kriss info`
+        print. If you could not install, tell us which ISO you used, for example
+        `krissos-2026.11.16-x86_64.iso`, and whether it came from a release or the rolling preview.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: hardware
+    attributes:
+      label: Your computer
+      description: |
+        The make and model, and the graphics card if you know it. For hardware problems,
+        `kriss hwcheck` prints the details we need, so paste its output here.
+      placeholder: Lenovo ThinkPad T14 Gen 3, AMD Ryzen 7 PRO 6850U, Radeon 680M
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        Optional, but often the fastest way to a fix. For the installer, attach
+        `~/.cache/calamares/session.log` from the live USB. For anything else,
+        `journalctl -b -p warning` shows the warnings and errors from this boot. Please remove
+        anything private first.
+      render: text
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you send
+      options:
+        - label: I searched the existing issues and this has not been reported yet.
+          required: true
+        - label: This is not a security vulnerability.
+          required: true

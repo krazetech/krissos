@@ -1,0 +1,224 @@
+#!/usr/bin/env python3
+"""Clipboard history for the KrissOS Shell (Windows+V).
+
+  kriss-shell-clipboard watch       store each new clipboard item; prints "changed" after each.
+                                    The shell runs this for as long as it runs
+  kriss-shell-clipboard list        the history as one JSON array, newest first
+  kriss-shell-clipboard copy ID     put an item back on the clipboard
+  kriss-shell-clipboard pin ID | unpin ID | delete ID
+  kriss-shell-clipboard clear       remove every item but the pinned ones (also at login and logout)
+  kriss-shell-clipboard paste [terminal]
+                                    press Ctrl+V (Ctrl+Shift+V for a terminal) in the focused window
+
+`watch` is `wl-paste --watch`: it sleeps in poll() until the clipboard changes, so it costs
+nothing in between. Each change runs `kriss-shell-clipboard store`.
+
+Items live in $XDG_STATE_HOME/kriss/clipboard (0700), one 0600 file each, named by a hash
+of the content, newest by mtime; pinned ones in pinned/ inside it. Items a password manager
+marks as sensitive are never read or written (see SENSITIVE).
+"""
+import fcntl
+import hashlib
+import json
+import mimetypes
+import os
+import subprocess
+import sys
+import time
+
+KEEP = 50                 # unpinned items
+MAX_BYTES = 4 << 20       # larger items are not kept, as on Windows
+PREVIEW = 300             # characters of text the panel shows
+TEXT = ["text/plain;charset=utf-8", "text/plain", "UTF8_STRING", "STRING", "TEXT"]
+
+# MIME types that mark a selection as a secret. wl-paste also sets CLIPBOARD_STATE=sensitive
+# for the first one (and `wl-copy --sensitive` offers it).
+SENSITIVE = {
+    "x-kde-passwordManagerHint",                   # KeePassXC, KDE apps, wl-copy --sensitive
+    "application/x-nspasteboard-concealed-type",   # the macOS convention, used by 1Password and others
+    "ExcludeClipboardContentFromMonitorProcessing",  # Windows apps under Wine
+}
+
+state = os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state")
+DIR = os.path.join(state, "kriss", "clipboard")
+PINNED = os.path.join(DIR, "pinned")
+
+
+def setup():
+    os.umask(0o077)
+    os.makedirs(PINNED, mode=0o700, exist_ok=True)
+    os.chmod(DIR, 0o700)
+    os.chmod(PINNED, 0o700)
+
+
+def files():
+    """(path, pinned) for every item."""
+    for d, pinned in ((DIR, False), (PINNED, True)):
+        for name in os.listdir(d):
+            if not name.startswith(".") and os.path.isfile(os.path.join(d, name)):
+                yield os.path.join(d, name), pinned
+
+
+def find(item_id):
+    for path, pinned in files():
+        if os.path.basename(path).split(".")[0] == item_id:
+            return path, pinned
+    sys.exit(f"no item {item_id}")
+
+
+def paste_types():
+    out = subprocess.run(["wl-paste", "--list-types"], capture_output=True, text=True)
+    return out.stdout.split("\n") if out.returncode == 0 else []
+
+
+def read(mime):
+    out = subprocess.run(["wl-paste", "--no-newline", "--type", mime], capture_output=True)
+    return out.stdout if out.returncode == 0 else b""
+
+
+def sensitive(types):
+    if os.environ.get("CLIPBOARD_STATE") not in (None, "data"):
+        return True  # sensitive, or empty
+    if SENSITIVE & set(types):
+        return True
+    # Windows' own opt-out: a DWORD that is 0 when the item must stay out of the history.
+    if "CanIncludeInClipboardHistory" in types:
+        return read("CanIncludeInClipboardHistory")[:1] != b"\x01"
+    return False
+
+
+def store():
+    sys.stdin.close()  # wl-paste offers the content here; it is read below only if wanted
+    types = paste_types()
+    if not types or sensitive(types):
+        return
+    text = next((t for t in TEXT if t in types), None)
+    image = next((t for t in types if t == "image/png"), None) or next((t for t in types if t.startswith("image/")), None)
+    # Text wins: an office app offers a picture of copied cells next to their text.
+    mime = text or image
+    if not mime:
+        return
+    data = read(mime)
+    # A new selection (maybe a password) may have replaced the one whose types were checked.
+    if paste_types() != types:
+        return
+    if not data or len(data) > MAX_BYTES or (text and not data.strip()):
+        return
+    ext = ".txt" if text else (mimetypes.guess_extension(mime) or ".img")
+    item_id = hashlib.sha256(data).hexdigest()[:16]
+
+    setup()
+    with open(os.path.join(DIR, ".lock"), "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        old = [p for p, _ in files() if os.path.basename(p).split(".")[0] == item_id]
+        if old:
+            os.utime(old[0])  # copied again: to the top
+        else:
+            fd = os.open(os.path.join(DIR, item_id + ext), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            with os.fdopen(fd, "wb") as f:
+                f.write(data)
+        loose = sorted((p for p, pinned in files() if not pinned), key=os.path.getmtime, reverse=True)
+        for p in loose[KEEP:]:
+            os.unlink(p)
+    print("changed", flush=True)
+
+
+def listing():
+    items = []
+    for path, pinned in files():
+        name = os.path.basename(path)
+        item = {"id": name.split(".")[0], "pinned": pinned, "time": int(os.path.getmtime(path) * 1000)}
+        if name.endswith(".txt"):
+            with open(path, "rb") as f:
+                head = f.read(PREVIEW * 4).decode("utf-8", "ignore")
+            item["text"] = head[:PREVIEW] + ("…" if os.path.getsize(path) > len(head[:PREVIEW].encode()) else "")
+        else:
+            item["image"] = path
+        items.append(item)
+    items.sort(key=lambda i: i["time"], reverse=True)
+    print(json.dumps(items, ensure_ascii=False))
+
+
+def copy(item_id):
+    path, _ = find(item_id)
+    mime = "text/plain;charset=utf-8" if path.endswith(".txt") else mimetypes.guess_type(path)[0] or "image/png"
+    with open(path, "rb") as f:
+        subprocess.run(["wl-copy", "--type", mime], stdin=f, check=True)
+
+
+def paste(terminal):
+    """Ctrl+V through zwp_virtual_keyboard_v1, with a keymap of its own that has only V."""
+    sys.path.insert(0, os.environ.get("KRISS_SHELL_LIB", "/usr/lib/kriss-shell"))
+    from pywayland.client import Display
+    from kriss_protocols.virtual_keyboard_unstable_v1 import ZwpVirtualKeyboardManagerV1
+    from kriss_protocols.wayland import WlSeat
+
+    display = Display()
+    display.connect()
+    found = {}
+
+    def on_global(registry, name, interface, version):
+        if interface == "wl_seat" and "seat" not in found:
+            found["seat"] = registry.bind(name, WlSeat, 1)
+        elif interface == "zwp_virtual_keyboard_manager_v1":
+            found["vk"] = registry.bind(name, ZwpVirtualKeyboardManagerV1, 1)
+
+    registry = display.get_registry()
+    registry.dispatcher["global"] = on_global
+    display.roundtrip()
+    if "vk" not in found or "seat" not in found:
+        sys.exit("the compositor offers no virtual keyboard")
+    kb = found["vk"].create_virtual_keyboard(found["seat"])
+    # Evdev codes 1, 2, 3 (XKB keycodes 9, 10, 11). cosmic-comp ignores the modifiers
+    # request, so the modifier keys are pressed like real ones.
+    keymap = (b'xkb_keymap { xkb_keycodes "k" { minimum = 8; maximum = 255; <CT> = 9; <SH> = 10; <V> = 11; };'
+              b' xkb_types "k" { include "complete" }; xkb_compatibility "k" { include "complete" };'
+              b' xkb_symbols "k" { key <CT> { [ Control_L ] }; key <SH> { [ Shift_L ] }; key <V> { [ v ] };'
+              b' modifier_map Control { <CT> }; modifier_map Shift { <SH> }; }; };\0')
+    fd = os.memfd_create("kriss-keymap")
+    os.write(fd, keymap)
+    kb.keymap(1, fd, len(keymap))  # WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1
+    os.close(fd)
+    keys = [1, 2, 3] if terminal else [1, 3]
+    ms = int(time.monotonic() * 1000) & 0xFFFFFFFF
+    for state, order in ((1, keys), (0, keys[::-1])):
+        for k in order:
+            ms += 1
+            kb.key(ms & 0xFFFFFFFF, k, state)
+            display.roundtrip()
+    kb.destroy()
+    display.roundtrip()
+    display.disconnect()
+
+
+def main():
+    cmd, args = (sys.argv[1:2] or [""])[0], sys.argv[2:]
+    if cmd == "watch":
+        setup()
+        os.execvp("wl-paste", ["wl-paste", "--watch", os.path.abspath(sys.argv[0]), "store"])
+    elif cmd == "store":
+        store()
+    elif cmd == "list":
+        setup()
+        listing()
+    elif cmd == "copy" and args:
+        copy(args[0])
+    elif cmd in ("pin", "unpin") and args:
+        path, pinned = find(args[0])
+        if pinned != (cmd == "pin"):
+            os.rename(path, os.path.join(PINNED if cmd == "pin" else DIR, os.path.basename(path)))
+    elif cmd == "delete" and args:
+        os.unlink(find(args[0])[0])
+    elif cmd == "clear":
+        setup()
+        for path, pinned in list(files()):
+            if not pinned:
+                os.unlink(path)
+    elif cmd == "paste":
+        paste(args[:1] == ["terminal"])
+    else:
+        sys.exit(__doc__)
+
+
+if __name__ == "__main__":
+    main()

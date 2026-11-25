@@ -1,0 +1,40 @@
+#!/bin/bash
+# Secure Boot with the PC's stock keys: firmware -> shim (signed by Microsoft) -> Limine
+# (EFI/limine/grubx64.efi), signed with this PC's own key. shim trusts what the firmware
+# trusts plus its MOK list, and MokManager adds a key to that list once someone at the
+# screen says yes. kriss-limine-update signs Limine with the key after every change.
+#   kriss-secureboot            with Secure Boot on: make this PC's key (sbctl, offline)
+#                               if there is none, and when shim does not trust it yet, ask
+#                               MokManager to enroll it at the next start (password krissos).
+#                               With Secure Boot off: nothing.
+#   kriss-secureboot --enroll   the same with Secure Boot off, before turning it on: restart,
+#                               enroll the key in the blue MokManager screen, then turn
+#                               Secure Boot on in the firmware settings.
+# The installer and kriss migrate run it.
+# ponytail: the MOK password only proves someone is at the screen (root can queue any
+# password), so it is a fixed word that types the same on any keyboard layout MokManager
+# might assume, instead of one more thing to make up.
+set -euo pipefail
+[ -d /sys/firmware/efi ] || exit 0  # legacy BIOS has no Secure Boot
+if [ "${1:-}" != --enroll ] && ! mokutil --sb-state 2>/dev/null | grep -q 'SecureBoot enabled'; then
+  exit 0
+fi
+
+keys=/var/lib/sbctl/keys
+new=0
+if [ ! -f "$keys/db/db.pem" ]; then
+  sbctl create-keys >/dev/null
+  new=1
+fi
+der=$keys/db/db.der
+[ -f "$der" ] || openssl x509 -in "$keys/db/db.pem" -outform der -out "$der"
+# A new key: sign Limine with it now (the installer's later run does this anyway).
+if (( new )) && [ "${1:-}" = --enroll ]; then kriss-limine-update; fi
+
+# "is already enrolled" when it is in the MOK list or db; nothing to do when a request
+# for it is already waiting.
+mokutil --test-key "$der" 2>/dev/null | grep -q 'is not enrolled' || exit 0
+fpr=$(openssl x509 -in "$der" -inform der -noout -fingerprint -sha1 | sed 's/.*=//; s/://g')
+if mokutil --list-new 2>/dev/null | tr -d ':' | grep -qi "$fpr"; then exit 0; fi
+mokutil --import "$der" --hash-file <(mokutil --generate-hash=krissos)
+echo "kriss: after the restart, MokManager asks once to enroll this PC's key: Enroll MOK, Continue, Yes, password krissos, Reboot."

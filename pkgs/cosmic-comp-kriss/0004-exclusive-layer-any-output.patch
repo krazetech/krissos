@@ -1,0 +1,32 @@
+diff --git a/src/shell/focus/mod.rs b/src/shell/focus/mod.rs
+index 27a7ed2..28160ae 100644
+--- a/src/shell/focus/mod.rs
++++ b/src/shell/focus/mod.rs
+@@ -838,14 +838,20 @@ fn update_focus_target(
+             .cloned()
+             .map(KeyboardFocusTarget::from)
+     } else if let Some(layer) = exclusive_layer_surface_layer(shell) {
+-        layer_map_for_output(output)
+-            .layers()
+-            .find(|layer_surface| {
+-                let data = layer_surface.cached_state();
+-                (data.keyboard_interactivity, data.layer)
+-                    == (KeyboardInteractivity::Exclusive, layer)
++        // The focused output's first, then any other's: focus_target_is_valid accepts an
++        // exclusive surface on any output, so one on another output must not lose the keyboard.
++        std::iter::once(output)
++            .chain(shell.outputs())
++            .find_map(|o| {
++                layer_map_for_output(o)
++                    .layers()
++                    .find(|layer_surface| {
++                        let data = layer_surface.cached_state();
++                        (data.keyboard_interactivity, data.layer)
++                            == (KeyboardInteractivity::Exclusive, layer)
++                    })
++                    .cloned()
+             })
+-            .cloned()
+             .map(KeyboardFocusTarget::from)
+     } else {
+         let workspace = shell.active_space(output).unwrap();

@@ -1,20 +1,27 @@
 # KrissOS Shell
 
-The KrissOS desktop: one floating bottom bar with a system tray, a Windows-style launcher,
-quick settings, notifications and a lock screen, written in QML for [Quickshell](https://quickshell.org) and running on
-`cosmic-comp`. Packaged as `pkgs/kriss-shell`; SDDM lists it as **KrissOS Shell**.
+The KrissOS desktop: a full-width taskbar along the bottom edge of each screen with a system tray, a
+Windows-style launcher, quick settings, notifications and a lock screen, written in QML for
+[Quickshell](https://quickshell.org) and running on `cosmic-comp`. Packaged as `pkgs/kriss-shell`;
+SDDM lists it as **KrissOS Shell**.
 
 | Path | What it is |
 |---|---|
 | `qml/` | The shell. `shell.qml` is the entry point. Colours and fonts are `{{token}}` placeholders filled from `theme/tokens.json` at build time |
 | `qml/i18n/` | Translations, one `<lang>.json` per language (`ms` is Bahasa Melayu). See below |
 | `fuzzy-check` | Tests the launcher's fuzzy ranking and the menus' type-ahead: `node shell/fuzzy-check` |
+| `theme-check` | Tests the light/dark schedule, that every curated accent and its shades pass contrast, and that no QML radius is off the scale in `Theme.qml`: `node shell/theme-check` |
 | `i18n-check` | Checks every shell string has a translation; `--list` prints them all |
-| `kriss-shell-toplevels` | Python helper that lists open windows (and the screen each is on) and focuses, minimizes or closes them. Quickshell can't read windows from cosmic-comp directly |
-| `protocols/` | COSMIC protocol files the helper's bindings are generated from |
+| `clipboard-check` | Tests the clipboard history with a fake `wl-paste`: sensitive items are never stored, pinned ones survive `clear` (runs in the package build) |
+| `a11y-check` | Checks every clickable item has a name for screen readers (or says it is pointer only), names go through `Tr.t`, and every animation length goes through `Theme.ms()`; `--test` checks the checker |
+| `kriss-shell-toplevels` | Python helper that lists open windows (the screen and desktop each is on, and whether it is fullscreen) and the desktops, focuses, minimizes, closes or moves windows, switches desktops, and captures window pictures while the taskbar previews or Task View show them. Quickshell can't read or capture windows from cosmic-comp directly |
+| `toplevels-check` | Run inside a cosmic-comp session: checks `kriss-shell-toplevels` still sees a new window after Python's garbage collector runs (`shell/toplevels-check alacritty`; cosmic-term by default) |
+| `kriss-shell-clipboard` | Python helper for the clipboard history: watches the clipboard through `wl-paste --watch`, stores, lists, pins and deletes items, and pastes with a virtual keyboard |
+| `emoji/` | `generate` builds `qml/emoji.json` (emoji, symbols and their English and Malay search words) from gemoji and `ms.tsv`; run it again only when those change |
+| `protocols/` | COSMIC protocol files and the virtual keyboard protocol the helpers' bindings are generated from |
 | `session/kriss-shell` | Starts the session and the login screen, and handles the commands the shortcuts below run |
 | `cosmic/` | Defaults copied key by key into `~/.config/cosmic` (same layout) on first start: the shortcuts below, the KrissOS theme builder keys (accent, backgrounds, corners), no coloured ring around the focused window, Papirus icons and the COSMIC Terminal colours. Existing user values are left alone |
-| `cosmic-theme/` | Builds the full COSMIC dark and light themes from those builder keys with libcosmic's own ThemeBuilder, at package build time |
+| `cosmic-theme/` | `kriss-cosmic-theme`: builds the full COSMIC dark and light themes from those builder keys with libcosmic's own ThemeBuilder, at package build time, and again with `--accent` when the user picks an accent |
 | `mockup/index.html` | The approved concept |
 
 ## Run it nested for development
@@ -27,16 +34,20 @@ dev=/tmp/kriss-shell-dev
 python theme/generate.py shell/qml "$dev/qml"
 python theme/generate.py shell/cosmic "$dev/config/cosmic"
 XDG_CONFIG_HOME=$dev/config cargo run --release --manifest-path shell/cosmic-theme/Cargo.toml
+mkdir -p "$dev/bin" && ln -sf "$PWD/shell/cosmic-theme/target/release/kriss-cosmic-theme" "$dev/bin/"
 ln -sfn config/cosmic "$dev/cosmic"
 python -m pywayland.scanner -o "$dev/lib/kriss_protocols" -i /usr/share/wayland/wayland.xml \
   /usr/share/wayland-protocols/staging/ext-foreign-toplevel-list/ext-foreign-toplevel-list-v1.xml \
-  /usr/share/wayland-protocols/staging/ext-workspace/ext-workspace-v1.xml shell/protocols/*.xml
+  /usr/share/wayland-protocols/staging/ext-workspace/ext-workspace-v1.xml \
+  /usr/share/wayland-protocols/staging/ext-image-capture-source/ext-image-capture-source-v1.xml \
+  /usr/share/wayland-protocols/staging/ext-image-copy-capture/ext-image-copy-capture-v1.xml shell/protocols/*.xml
 touch "$dev/lib/kriss_protocols/__init__.py"
-KRISS_SHELL_DATA=$dev KRISS_SHELL_LIB=$dev/lib PATH="$PWD/shell:$PWD/shell/session:$PATH" \
-  cosmic-comp shell/session/kriss-shell --inside
+XDG_CONFIG_HOME=$dev/config GSETTINGS_BACKEND=memory KRISS_SHELL_DATA=$dev KRISS_SHELL_LIB=$dev/lib \
+  PATH="$dev/bin:$PWD/shell:$PWD/shell/session:$PATH" cosmic-comp shell/session/kriss-shell --inside
 ```
 
-Nested like this, cosmic-comp runs in kiosk mode, which turns its keyboard shortcuts off, so the
+`XDG_CONFIG_HOME` and `GSETTINGS_BACKEND=memory` keep the nested shell's settings, theme and
+colour scheme apart from your own desktop's. Nested like this, cosmic-comp runs in kiosk mode, which turns its keyboard shortcuts off, so the
 Windows key does nothing there. A real session (`kriss-shell` with no arguments, which SDDM runs)
 starts cosmic-comp normally and copies the `cosmic/` defaults into `~/.config/cosmic`.
 
@@ -53,18 +64,65 @@ kriss-shell launcher
 kriss-shell lock
 ```
 ```bash
+qs -p "$dev/qml" ipc call previews open Alacritty 400
+```
+```bash
 notify-send -A ok=Update "14 updates ready" "A snapshot is taken first."
 ```
 ```bash
-gsettings set org.gnome.desktop.interface color-scheme default
+qs ipc -p "$dev/qml" call theme set mode light
+```
+```bash
+qs ipc -p "$dev/qml" call theme set accent "#E8B04B"
 ```
 
-The last one switches to the light variant; `prefer-dark` switches back.
+The `previews` line shows the window previews of an app (by its app id) as if its taskbar
+button were 400 px from the left; `ipc call previews close` hides them. The nested session has no
+way to move a pointer there otherwise.
+
+## Performance check
+
+`shell/perf-check` measures the running shell against the budget: idle CPU over 10 seconds and
+memory (RSS and PSS) for `qs` and every process it started, then frame pacing for each surface.
+For the frames it opens a nested cosmic-comp window running the same QML with Qt's render timing,
+opens and closes the launcher, quick settings, notifications, the calendar and Show desktop
+through their IPC commands, and sends a toast. A frame fails if it arrives a refresh late in the
+nested window (60 Hz), or takes longer to build than one refresh of your fastest monitor.
+
+```bash
+shell/perf-check
+```
+
+It prints one line per check and exits 1 on any FAIL. `--json` prints the numbers for a pull
+request, and `--no-frames` skips the nested window. A surface that drew nothing (Show desktop
+with no windows open) is SKIP.
+
+## Lock screen
+
+`qml/Lock.qml` with `qml/LockFace.qml`: the date and a big light clock high up over the blurred
+time-of-day wallpaper, the user's picture and name low down. Any key or click brings up the
+password field (the key is typed into it), Esc puts it away. A wrong password shakes the field, or
+gives it a red rim with reduced motion. Caps lock and the keyboard layout show by the field,
+battery and network top right, and what's playing (with its controls) under the clock. Every
+control is reached with Tab and has an accessible name. Unlocking fades and grows the lock away
+over the desktop.
+
+## Time-of-day wallpaper
+
+kriss-theme ships the Sungai Petani clock tower as a photo pair,
+`/usr/share/backgrounds/kriss/sungai-petani-day.jpg` and `-night.jpg` (the same photo with a
+darker sky). `qml/DynamicWallpaper.qml` blends them by the clock (night until 6:00, day by 7:30,
+day until 17:30, night by 19:30), one small step a minute, and draws nothing in between. The
+lock and login screens always use it; the desktop does while `"wallpaper": "dynamic"` (the
+default, shown as Sungai Petani in Personalise) is in `shell.json`, and shows the plain KrissOS
+light or dark wallpaper with any other value. To try a build of the wallpapers that is not
+installed, point `KRISS_WALLPAPERS` at its `usr/share/backgrounds/kriss`.
 
 ## Login screen
 
-`qml/greeter.qml` is the login screen. It looks like the lock screen, lists other users at the
-bottom left and the desktop to start at the bottom right. [greetd](https://sr.ht/~kennylevinsen/greetd/)
+`qml/greeter.qml` is the login screen. It looks like the lock screen, lists the users (picture
+and name) at the bottom left and the desktop to start at the bottom right. It opens on the boot
+splash's last frame, the emblem on black, and fades into the login screen over 400 ms. [greetd](https://sr.ht/~kennylevinsen/greetd/)
 runs it on cosmic-comp. To use it, put this in `/etc/greetd/config.toml` and enable `greetd`
 in place of SDDM:
 
@@ -86,11 +144,186 @@ volume digits roll like [NumberFlow](https://number-flow.barvian.me). Menus foll
 keyboard rules. Every animation goes through `Theme.ms()`, which is 0 when
 `org.gnome.desktop.interface enable-animations` is off.
 
+A fullscreen window in front on a screen (a game, a video) hides that screen's bar and holds
+toasts, as on Windows. What arrives meanwhile goes straight to the list behind the bell; critical
+ones still show. The bar comes back when the window leaves fullscreen or another window there
+takes focus.
+
 ## Settings
 
-Pinned apps (in taskbar order) and Do not disturb are kept in `~/.config/kriss/shell.json`.
+Pinned apps (in taskbar order), the tray icons hidden in the overflow (`trayHidden`), Do not
+disturb, the Task View button, desktop names, the theme and the wallpaper (`"dynamic"` or
+`"static"`) are kept in `~/.config/kriss/shell.json`.
 Right-click an app on the bar or in the launcher to pin or unpin it; drag a pinned app along the
-bar to move it. Without the file, the defaults in `qml/Desktop.qml` apply.
+bar to move it. Without the file, the defaults in `qml/Desktop.qml` apply. **Taskbar settings**
+(right-click an empty part of the bar) opens the Personalise window on its Taskbar page.
+
+| Key | Default | Does |
+|---|---|---|
+| `pinned` | Firefox, Files, Terminal… | Pinned apps, as desktop file ids, in taskbar order |
+| `dnd` | `false` | Do not disturb |
+| `taskbarAlignment` | `"centre"` | Start, search and the apps in the middle, and Start opens above them, as on Windows 11; `"left"` puts them at the left |
+| `taskbarAutoHide` | `false` | The bar slides off the bottom edge and comes back when the pointer reaches it |
+| `taskbarCombine` | `"always"` | `"always"`: one button per app. `"never"`: one button per window, with its title. `"full"`: per window until the bar runs out of room |
+| `taskbarAllScreens` | `true` | A bar on every screen, each with the windows on that screen; `false`: one bar, on the first screen, with every window |
+| `contrast` | `"normal"` | `"high"`: pure black and white, a brighter accent, solid panels with no see-through, thicker rims (the `hc_` tokens) |
+| `transparency` | `true` | `false`: solid shell surfaces, no blur or see-through (Personalise, Colours, Transparency effects) |
+| `layout` | `"windows"` | `"mac"`: the top bar and dock (below). Switches live |
+
+The widgets panel keeps its card order (`widgets`), hidden cards (`widgetsHidden`), world
+clocks (`worldClocks`, tz names), weather city (`weatherCity`) and AI model (`aiModel`) there
+too; `"taskbarWidgets": false` hides its taskbar button (Windows+W still opens it).
+
+### Theme
+
+| Key | Values | Default |
+|---|---|---|
+| `accent` | Any `#RRGGBB` colour; `Theme.accents` lists eight KrissOS ones that pass contrast | `""`, Sky Cyan from `theme/tokens.json` |
+| `theme` | `dark`, `light`, `system` (follows `org.gnome.desktop.interface color-scheme`) or `auto` | `system` |
+| `themeLight`, `themeDark` | `HH:MM`: in `auto`, light from `themeLight` until `themeDark`, by the clock only (no location, so it works offline) | `07:00`, `19:00` |
+
+Every colour in the shell comes from `Theme`, so a change shows at once, with no reload. The
+accent is lightened on dark windows or deepened on light ones only as far as a 3:1 contrast
+needs, text on it is black or white (whichever reads better), and `Theme.accentHover` and
+`Theme.accentPressed` are derived from it (`qml/theme.js`). To change them from a script or the
+settings page:
+
+```bash
+qs ipc call theme set accent "#24B1E6"
+```
+```bash
+qs ipc call theme set mode auto
+```
+
+Both write `shell.json` and print `ok`, or an error for anything that isn't a colour or one of
+the four modes. The shell also keeps apps in step. Outside `shell.json` it writes only these:
+
+| Where | Key | When |
+|---|---|---|
+| dconf | `org.gnome.desktop.interface color-scheme` (`prefer-dark` / `default`), which GTK, Qt and Flatpak apps (through the portal) follow | light or dark changes and `theme` is not `system` |
+| `~/.config/cosmic/com.system76.CosmicTheme.Mode/v1/` | `is_dark`, `auto_switch` | light or dark changes and differs from the file (one write once both settle; `auto_switch` is set false so COSMIC's sunrise switch does not fight the shell's "auto") |
+| `~/.config/cosmic/com.system76.CosmicTheme.Dark.Builder/v2/`, `…Light.Builder/v2/` | `accent`; `window_hint` only while it equals the old accent | the accent changes |
+| `~/.config/cosmic/com.system76.CosmicTheme.Dark/v2/`, `…Light/v2/` | the theme keys libcosmic's ThemeBuilder derives from the accent and whose value changed (`accent`, `accent_button`, `accent_text`, the buttons, `background`, `primary`, `secondary`, `success`, `warning`, `destructive`, `window_hint`, …); keys that come out the same are not rewritten | the accent changes |
+
+The last two come from `kriss-cosmic-theme --accent`, the same ThemeBuilder COSMIC Settings uses,
+so Files, Terminal and Settings repaint with the shades COSMIC itself would pick.
+
+## Notification center
+
+The bell, or Windows+N, opens it: every notification not yet dismissed, grouped by app, newest
+app first, with Clear all, a Clear for each app with several and a cross on each card; a Do not
+disturb toggle (toasts stop, critical ones aside); and the month with today marked. The list is
+kept in `~/.local/state/kriss/notifications.json` (`$XDG_STATE_HOME/kriss/`), newest 100, so it
+survives a restart; notifications from before one come back without their buttons.
+
+## Widgets
+
+Windows+W, or the button at the far left of the taskbar, slides the panel in from the left.
+Each card reads its data only while the panel is open, and says so or stays out of the way
+when the source is missing:
+
+| Card | Source | Without it |
+|------|--------|------------|
+| Calendar | the month; events from Evolution Data Server's local calendars (`~/.local/share/evolution/calendar/*/calendar.ics`), one-off events for the next 7 days | the month only |
+| Clocks | the system clock; world clocks from tzdata (`/usr/share/zoneinfo/zone1970.tab`, offsets from `date`) | local time only |
+| System | `/proc/stat`, `/proc/meminfo`, hwmon (`k10temp`, `coretemp`, `zenpower`, `cpu_thermal`, `amdgpu`), `gpu_busy_percent`, `nvidia-smi` if installed, `df /`; once a second | a missing reading is left out; no GPU line without a GPU source |
+| Now playing | MPRIS | "Nothing is playing." |
+| Local AI | Ollama at `http://127.0.0.1:11434` (`/api/tags`, `/api/generate`); nothing else | "Ollama isn't running on this computer." |
+| Weather | Open-Meteo (no key), only while NetworkManager reports full connectivity; cached in `~/.cache/kriss-weather.json`, fetched at most every 30 minutes | the card is hidden offline |
+
+Drag a card by its title to move it; its ⋯ menu (or the Menu key) hides it, and **Add
+widgets** brings it back. Tab or the arrows move between cards, Enter goes into a card's text
+field, Alt+Up / Alt+Down move a card, Esc closes.
+
+## Taskbar
+
+It behaves like Windows 11's. Each app has one button, pinned or not, with all its windows on it.
+
+| Do | Does |
+|---|---|
+| Click | Opens the app; with one window, brings it up, or minimizes it when it is in front; with several, brings up the last one used, then steps through the others |
+| Ctrl+click | Steps through the app's windows (never minimizes) |
+| Shift+click, middle click | A new window |
+| Right-click an app | Jump list: recent files for the app, its own tasks (desktop file actions), the app, pin or unpin, close window or close all windows |
+| Right-click Start, Windows+X | Installed apps, power options, system, network, Terminal, Task Manager, Settings, Files, Search, Shut down or sign out, Desktop |
+| The search box | Start, ready to search: the search field and Recommended files |
+| Right-click the bar | Task Manager (the first system monitor installed) and Taskbar settings |
+| Tray icon | Click opens the app, middle click its second action, scroll scrolls; hover for its tooltip; right-click for its menu, drawn like ours |
+| ^ left of the tray | The overflow flyout with the hidden tray icons; arrows, Enter, Menu key or Shift+F10, Esc work in it |
+| Drag a tray icon | Onto the ^ or up off the bar hides it in the overflow; out of the flyout onto the bar shows it again |
+| The strip right of the clock | Show the desktop; again to bring the windows back |
+
+Under each button: a short mark for a running app and a longer accent pill for the app in front.
+Apps that send Unity launcher entries over D-Bus (the way Ubuntu's dock reads them) also get a
+badge count, a progress bar and a red flash when they want attention. Menus work from the
+keyboard the way Radix menus do (arrows, Home, End, Enter, Esc, Right and Left for submenus,
+type a letter to jump). `Bar.previewFor` is the app button under the pointer, for hover previews.
+
+## Mac layout
+
+An optional second layout for people coming from a Mac, in the KrissOS look. The taskbar becomes
+two pieces: a slim **top bar** with the KrissOS emblem (the Windows+X menu), the name of the app
+in front (click for its jump list), and the tray, quick settings, notifications and the date and
+time at the right; and a floating **dock**, centred along the bottom, with the apps button and the
+pinned and running apps (a dot under each running one, accent for the app in front). Quick
+settings, the calendar, notifications and the tray flyout drop down from the top bar instead of
+rising from the taskbar. Window buttons move to the left for GTK apps and Qt apps with the Adwaita
+decorations (`org.gnome.desktop.wm.preferences button-layout` and `gtk-decoration-layout` in the
+GTK 3 and 4 `settings.ini`); COSMIC apps have no such setting yet and keep theirs on the right.
+Your own button layout is kept in `~/.local/state/kriss/window-buttons` while the Mac layout is
+on, and comes back when you switch back.
+
+The Windows layout stays the default. Switch with `kriss-shell layout mac` or `windows`, the
+first page of `kriss-welcome`, or right-click the taskbar or dock: **Switch to the top bar and
+dock** / **Switch to the taskbar**. `Desktop.setLayout(name)` is the one call for a settings page.
+
+## Task View and desktops
+
+Windows+Tab or the button after Start opens Task View on every screen: that screen's windows as
+live pictures over the blurred desktop, and its desktops along the bottom, as on Windows 11.
+
+| Do | Does |
+|---|---|
+| Click a window, or arrows then Enter | Switch to it; Esc or a click on the background leaves |
+| × on a window, middle click, Delete | Close it |
+| Point at a desktop | Show its windows |
+| Click a desktop | Switch to it |
+| Drag a window onto a desktop | Move it there |
+| New desktop | Add one (Windows+Ctrl+D adds one and switches to it) |
+| Right-click a desktop | Rename or close it; closing moves its windows to the desktop before it |
+| Tab | Move between the windows and the desktops; on a desktop, Enter switches, F2 renames, Delete closes, the Menu key opens its menu |
+
+Desktops are cosmic-comp's workspaces, which it creates and removes by itself: there is always
+one empty desktop at the end, and an empty desktop goes away once you leave it. "New desktop"
+shows that spare one, so a new desktop you leave empty disappears. cosmic-comp ignores requests to
+create, remove or rename a workspace, so desktop names live in `desktopNames` in `shell.json`,
+by position. A three- or four-finger swipe left or right switches desktops, and three fingers up
+opens Task View (cosmic-comp-kriss's `0002-three-finger-swipe.patch`; upstream cosmic-comp keeps
+three-finger swipes and does nothing with them). The `cosmic/` defaults lay workspaces out side
+by side for the sideways swipe.
+`taskbarTaskView: false` in `shell.json` hides the button.
+
+```bash
+qs -p "$dev/qml" ipc call taskview toggle
+```
+
+## Search
+
+Typing in Start searches everything, as on Windows 11. `qml/Search.qml` holds the providers;
+`qml/fuzzy.js` ranks them (checked by `node shell/fuzzy-check`). Nothing runs while Start is
+closed, and lookups wait for 120 ms of no typing.
+
+| Group | Finds | Needs |
+|---|---|---|
+| Calculator | `2*(3+4)`, `15% of 80`, `5 km in miles`, `30 c in f`, `1 usd in myr`. Enter copies the answer | `qalc` (libqalculate) for units and currencies, with its own offline rate table; without it, plain sums only. `wl-copy` |
+| Apps | Installed apps by name, generic name and keywords | |
+| Settings | Each COSMIC Settings page, and each KDE System Settings module if installed, by name and words in English and Malay | Their desktop files, read once |
+| Commands | Lock, Sleep, Restart, Shut down, Sign out, Do not disturb, Take a screenshot, Quick settings, Notifications. `kriss` actions: About this PC (`kriss info`), Check this PC can run Windows apps (`kriss winapps check`, x86_64 only), and online only Update KrissOS and `install NAME` / `pasang NAME` (`kriss install`). `>` and a command runs it in a terminal | `cosmic-term` (or `xdg-terminal-exec`, `konsole`); `grim` when no screenshot tool is installed |
+| Files | Recent files first, then every file and folder in home, by name. Ctrl+Enter, the Open folder button or the menu key opens its folder | `plocate` (its `updatedb` writes `~/.cache/kriss/files.db`, no root), else `fd` or `find` into `files.txt`. Rebuilt when Start opens and the index is over an hour old, at the lowest CPU and disk priority. Hidden folders are left out |
+| Web | “Search the web for …”, last | `nmcli` reporting full connectivity; hidden offline |
+
+The calculator comes first when it has an answer and the web last; the other groups follow
+their best match.
 
 ## Windows shortcuts
 
@@ -98,22 +331,116 @@ bar to move it. Without the file, the defaults in `qml/Desktop.qml` apply.
 |---|---|
 | Windows | Launcher |
 | Windows+A | Quick settings |
-| Windows+N | Notifications |
+| Windows+N | Notification center |
 | Windows+Alt+D | Calendar |
+| Windows+W | Widgets |
 | Windows+D | Show the desktop; again to bring the windows back |
 | Windows+E | COSMIC Files |
 | Windows+L | Lock |
-| Menu key, Shift+F10 | In the launcher, the selected app's menu |
+| Windows+V | Clipboard history |
+| Windows+. or Windows+; | Emoji and symbols |
+| Menu key, Shift+F10 | In the launcher or on a taskbar button, its menu |
+| Windows+T | Put the keyboard on the taskbar's app buttons, again to step to the next; Tab, Shift+Tab and the arrows walk every control on the bar, Enter opens, Shift+Enter opens a new window, Up shows an app's window previews, Esc leaves |
+| Windows+B | Put the keyboard on the tray (the ^ first), as on Windows |
+| Windows+X | The Start button's menu |
 | Windows+Left / Right | Snap the window to that half (Windows+Shift+Up / Down then makes it a quarter) |
 | Windows+Up / Down | Maximize / minimize |
-| Windows+1…9 | Go to that workspace |
-| Windows+Shift+1…9 | Move the window to that workspace |
+| Windows+Z | Snap layouts for the window in front: arrows pick a zone, Enter snaps it there, Esc leaves |
+| Windows+1…9 | Open the app on that taskbar button, or switch to it; again to step through its windows |
+| Windows+Shift+1…9 | A new window of the app on that taskbar button |
+| Windows+Alt+1…9 | That taskbar button's jump list |
+| Windows+Tab | Task View |
+| Windows+Ctrl+Left / Right | Previous / next desktop (Windows+Ctrl+Shift+Left / Right takes the window along) |
+| Windows+Ctrl+D | A new desktop |
+| Windows+Ctrl+F4 | Close the current desktop; its windows move to the one before it |
 | Print Screen | Screenshot of everything, to `~/Pictures/Screenshots` and the clipboard |
 | Windows+Shift+S | Screenshot of a dragged region |
 | Alt+Tab, Alt+Shift+Tab | Switch windows, most recent first; let go of Alt to switch, Esc to cancel |
 | Play/Pause, Next, Previous | The media player that is playing; quick settings shows it too |
 | Power button | Sleep (hold it to shut down), from `/usr/lib/systemd/logind.conf.d/50-kriss-shell.conf` |
 | Alt+F4 | cosmic-comp's own |
+
+## Snap layouts
+
+Drag a window to a side for a half, a corner for a quarter, or the top to maximize: cosmic-comp
+shows where it will go and puts it there. Windows+Z, or resting the pointer on a window's
+maximize button, offers layouts by the window (halves, thirds, quarters); pick a zone and the
+window snaps there. Snap Assist then shows the screen's other windows as live pictures in each
+empty zone of the layout, and after a drag or Windows+Left / Right in the rest of the screen;
+click one, or use the arrows and Enter, to fill the zone, or Esc to leave.
+
+The zones and the maximize button need `cosmic-comp-kriss` (its `kriss_snap_v1`); without it
+Windows+Z does nothing. The maximize button works only on title bars cosmic-comp draws
+(server-side); apps that draw their own (GTK, Firefox, COSMIC apps) have Windows+Z.
+
+## Clipboard history, emoji and symbols
+
+Windows+V and Windows+. open one panel near the pointer, as on Windows 11, with three tabs:
+emoji, symbols and the clipboard history. Picking an item puts it on the clipboard and pastes
+it into the window that had the keyboard: `kriss-shell-clipboard paste` presses Ctrl+V (Ctrl+Shift+V
+in a terminal) through cosmic-comp's virtual keyboard. With no window focused, it only copies.
+
+| Do | Does |
+|---|---|
+| Up / Down, arrows in emoji | Move |
+| Enter, click | Paste |
+| Delete | Remove the item from the history |
+| P, the pin | Pin the item: pinned items stay after signing out and restarting, and Clear all keeps them |
+| Shift+Enter, Menu key, long press, right-click | Skin tones for that emoji; the tone picked stays for every emoji |
+| Tab, Shift+Tab | The next or previous tab |
+| Esc | Clears the search, then closes |
+
+The history keeps the last 50 text and picture items, newest first; copying one again moves it to
+the top. They live in `~/.local/state/kriss/clipboard` (a folder only you can read), one file
+each, pinned ones in `pinned/`; the rest are removed when you sign in and out. Items over 4 MB
+are skipped. Nothing a password manager marks as secret is ever read or stored: `CLIPBOARD_STATE`
+from `wl-paste` (sensitive, or empty), and the MIME types `x-kde-passwordManagerHint` (KeePassXC,
+KDE, `wl-copy --sensitive`), `application/x-nspasteboard-concealed-type`,
+`ExcludeClipboardContentFromMonitorProcessing` and `CanIncludeInClipboardHistory` (unless it
+is 1), the last two from Windows apps.
+
+Emoji are searchable in English and Malay. The emoji, groups and English words come from
+GitHub's [gemoji](https://github.com/github/gemoji) (MIT), the Malay words from `emoji/ms.tsv`;
+`emoji/generate` merges them, with the symbols, into `qml/emoji.json`. Recent emoji and the skin
+tone are kept in `~/.local/state/kriss/emoji.json`.
+
+## Accessibility
+
+- **Screen readers.** Every control has an accessible role, name and description (in Malay
+  too), so Orca reads the bar, Start, menus, quick settings, the notification center and the
+  rest. Lists the keyboard moves through without moving the focus (Start's results, Alt+Tab,
+  Task View, emoji) say the item picked; toggles say on or off; a new notification is read
+  out (critical ones cut in; none during Do not disturb); Start says how many results once
+  typing pauses.
+- **Keyboard.** Every surface opens from a key and works without a pointer. The control with
+  the keyboard has a soft accent rim (`FocusRim.qml`). Esc backs out; a panel opened from the
+  bar by keyboard gives the focus back to the button that opened it (`Desktop.back()`). The
+  desktop's right-click menu is pointer only; its entries are in Start's search and
+  Windows+X.
+- **Text size.** Shell text follows `org.gnome.desktop.interface text-scaling-factor` (COSMIC
+  has no setting of its own yet), live: every font size goes through `Theme.sp()`, and the
+  bar, menus and quick settings grow half as fast as the text.
+- **High contrast.** `"contrast": "high"` in `shell.json` (above).
+- **Reduced transparency.** `"transparency": false` in `shell.json` (above): every surface
+  goes solid. High contrast does too.
+- **Reduced motion.** Every animation length goes through `Theme.ms()`; `shell/a11y-check`
+  fails on one that doesn't.
+
+cosmic-comp gives the keyboard to a layer surface only as it appears. The bar, the notification
+center (often on screen already with toasts) and the window previews therefore take the keyboard
+through `Desktop.keysTo()`: a 1 px surface appears, takes it and passes each key to them.
+
+To check what a screen reader sees, run the nested session on its own D-Bus with Qt's
+accessibility on, then read the tree with `gi.repository.Atspi` (or Accerciser) on that bus:
+
+```bash
+export QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1
+dbus-run-session -- sh -c '/usr/lib/at-spi-bus-launcher --launch-immediately & sleep 1
+  /usr/lib/at-spi2-registryd --use-gnome-session=false & exec cosmic-comp shell/session/kriss-shell --inside'
+```
+
+with the variables from "Run it nested" above, plus `XDG_CONFIG_HOME`, so text size and
+contrast changes stay in the nested session's own dconf.
 
 ## Translations
 

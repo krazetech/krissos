@@ -17,16 +17,21 @@ trap 'rm -rf "$tmp"' EXIT
 # Same rendering as pkgs/kriss-shell/PKGBUILD's build().
 python3 "$here/theme/generate.py" "$here/shell/qml" "$tmp/qml"
 python3 "$here/theme/generate.py" "$here/shell/cosmic" "$tmp/cosmic"
+# Shaders are compiled where they run (qsb comes with qt6-shadertools), as the package does.
+qsb='for f in "$d"/qml/shaders/*.frag; do [ -x /usr/lib/qt6/bin/qsb ] && /usr/lib/qt6/bin/qsb --qt6 -o "$f.qsb" "$f"; done; true'
 if [ "$host" = local ]; then
     d=$HOME/.local/share/kriss-shell-dev
     mkdir -p "$d"
     cp -R "$tmp/qml" "$tmp/cosmic" "$d/"
+    d=$d sh -c "$qsb"
     echo "kriss: pushed to $d"
     exit 0
 fi
 # ponytail: extracts over the old copy so the file watches survive; a file deleted from the
 # checkout lingers there until the dev dir is wiped.
 # --no-xattrs/COPYFILE_DISABLE: macOS tar otherwise adds xattr headers GNU tar warns about.
+# Run through sh: ssh hands the command to the login shell, which may be fish.
+remote='d=$HOME/.local/share/kriss-shell-dev; mkdir -p "$d" && tar -C "$d" -xf - && { '"$qsb"'; } && echo "$d"'
 COPYFILE_DISABLE=1 tar --no-xattrs -C "$tmp" -cf - qml cosmic |
-    ssh "$host" 'd=$HOME/.local/share/kriss-shell-dev; mkdir -p "$d" && tar -C "$d" -xf - && echo "$d"' |
+    ssh "$host" "sh -c '$remote'" |
     sed "s|^|kriss: pushed to $host:|"

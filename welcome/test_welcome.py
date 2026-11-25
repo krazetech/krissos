@@ -154,6 +154,7 @@ assert cmd[3].endswith("systemctl enable --now ollama.service") and cmd[-2:] == 
 assert logic.extra_command("claude-code", [])[0] == "sh"  # per-user install, no root
 assert logic.extra_command("nvidia-legacy", ["intel", "nvidia"]) == ["pkexec", "kriss", "nvidia", "setup"]
 assert all(logic.extra_command(e, ["amd"]) for e in logic.EXTRAS)
+assert logic.extra_command("office", []) == ["sh", "-c", "kriss winapps office --yes"]  # as the user, never root
 
 # Local AI models: graphics memory when there is a card, else RAM less 4 GB for the rest.
 def fits(hw):
@@ -170,7 +171,7 @@ assert logic.ollama_names("NAME ID SIZE MODIFIED\nllama3.2:3b a80c4f17acd5 2.0 G
 assert logic.ollama_names("") == []
 
 qml = (ROOT / "qml/ExtrasPage.qml").read_text()
-assert set(re.findall(r'\{ id: "([a-z-]+)"', qml)) - {"antigravity"} == set(logic.EXTRAS)
+assert set(re.findall(r'\{ id: "([a-z-]+)"', qml)) - {"antigravity"} == set(logic.EXTRAS) - {"office"}
 
 # kriss update refuses to run without root (it needs pkexec).
 if os.geteuid():
@@ -211,4 +212,31 @@ have = {(c.findtext("name"), m.findtext("source")) for c in ts.iter("context") f
 for f in (ROOT / "qml").glob("*.qml"):
     for m in re.finditer(r'qsTr\("((?:[^"\\]|\\.)*)"\)', f.read_text()):
         assert (f.stem, json.loads(f'"{m.group(1)}"')) in have, (f.name, m.group(1))
+
+# The desktop layout in shell.json: other settings survive, nonsense reads as the default.
+with tempfile.TemporaryDirectory() as t:
+    cfg = pathlib.Path(t) / "kriss/shell.json"
+    assert logic.read_layout(cfg) == "windows"
+    logic.write_layout(cfg, "mac")
+    assert logic.read_layout(cfg) == "mac"
+    cfg.write_text('{"pinned": ["steam"], "layout": "windows"}')
+    logic.write_layout(cfg, "mac")
+    assert json.loads(cfg.read_text()) == {"pinned": ["steam"], "layout": "mac"}
+    cfg.write_text('{"layout": "amiga"}')
+    assert logic.read_layout(cfg) == "windows"
+    cfg.write_text("[1]")
+    assert logic.read_layout(cfg) == "windows"
+    logic.write_layout(cfg, "mac")
+    assert logic.read_layout(cfg) == "mac"
+
+# The look follows the shell: its tokens, light or dark, and the user's accent.
+tokens = json.loads((ROOT.parent / "theme/tokens.json").read_text())
+d, l = logic.palette(tokens, True), logic.palette(tokens, False)
+assert d["win"] == tokens["surface"] and l["win"] == tokens["light_bg"] and l["card"] == tokens["light_surface"]
+assert d["accent"] == tokens["accent"] and d["accentInk"] == "#000000"
+assert logic.palette(tokens, True, "#5A1E9B")["accentInk"] == "#FFFFFF"
+assert logic.palette(tokens, True, "nonsense")["accent"] == tokens["accent"]
+assert logic.palette(tokens, True, "#GGGGGG")["accent"] == tokens["accent"]
+assert logic.mix("#000000", "#FF8000", 0.5) == "#804000"
+
 print("ok")

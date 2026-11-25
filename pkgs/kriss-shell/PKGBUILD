@@ -1,14 +1,16 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-shell
-pkgver=0.2.8
+pkgver=0.2.17
 pkgrel=1
 pkgdesc='KrissOS Shell: bar, launcher, quick settings, notifications and lock screen on cosmic-comp'
 arch=('any')
 url='https://github.com/krazetech/krissos'
-license=('GPL-3.0-or-later')
+license=('GPL-3.0-or-later' 'MIT')
 depends=('cosmic-comp' 'cosmic-settings-daemon' 'xorg-xwayland' 'quickshell' 'python-pywayland' 'glib2' 'dbus'
-         'grim' 'slurp' 'wl-clipboard' 'xdg-user-dirs' 'brightnessctl')
-makedepends=('python' 'python-pywayland' 'wayland' 'wayland-protocols' 'cargo')
+         'grim' 'slurp' 'wl-clipboard' 'noto-fonts-emoji' 'xdg-user-dirs' 'brightnessctl'
+         'libcanberra' 'cosmic-idle')
+makedepends=('python' 'python-pywayland' 'wayland' 'wayland-protocols' 'cargo' 'qt6-shadertools')
+checkdepends=('nodejs')
 optdepends=('greetd: the KrissOS login screen'
             'networkmanager: network status and Wi-Fi in quick settings'
             'bluez: Bluetooth in quick settings'
@@ -18,6 +20,7 @@ optdepends=('greetd: the KrissOS login screen'
             'cosmic-settings: the settings app pinned to the bar'
             'pipewire: volume, microphone and sound output'
             'upower: battery in the bar'
+            'fcitx5-osk: the on-screen keyboard button on touch screens'
             'power-profiles-daemon: power profile switch in the bar and quick settings')
 
 # Sources live in this monorepo. Colours and fonts in the QML and the COSMIC defaults
@@ -27,18 +30,26 @@ _theme="$startdir/../../theme"
 
 build() {
   python "$_theme/generate.py" "$_shell/qml" "$srcdir/qml"
+  # The lock clock's glass shader, compiled for every graphics API Qt may use.
+  local frag
+  for frag in "$srcdir/qml/shaders/"*.frag; do
+    /usr/lib/qt6/bin/qsb --qt6 -o "$frag.qsb" "$frag"
+  done
   # COSMIC defaults, laid out as ~/.config/cosmic. The theme builder keys come from the
   # tokens; kriss-cosmic-theme turns them into the full COSMIC dark and light themes.
   python "$_theme/generate.py" "$_shell/cosmic" "$srcdir/config/cosmic"
   XDG_CONFIG_HOME="$srcdir/config" cargo run --release --locked \
     --manifest-path "$_shell/cosmic-theme/Cargo.toml" --target-dir "$srcdir/target"
 
-  # Python bindings for the window-list protocols kriss-shell-toplevels speaks.
+  # Python bindings for the window-list and window-capture protocols kriss-shell-toplevels
+  # speaks, and the virtual keyboard kriss-shell-clipboard pastes with.
   local wp=/usr/share/wayland-protocols/staging
   python -m pywayland.scanner -o "$srcdir/kriss_protocols" -i \
     /usr/share/wayland/wayland.xml \
     "$wp/ext-foreign-toplevel-list/ext-foreign-toplevel-list-v1.xml" \
     "$wp/ext-workspace/ext-workspace-v1.xml" \
+    "$wp/ext-image-capture-source/ext-image-capture-source-v1.xml" \
+    "$wp/ext-image-copy-capture/ext-image-copy-capture-v1.xml" \
     "$_shell"/protocols/*.xml
   touch "$srcdir/kriss_protocols/__init__.py"
 }
@@ -47,25 +58,42 @@ check() {
   sh -n "$_shell/session/kriss-shell"
   # Every shell string has a Bahasa Melayu translation.
   python "$_shell/i18n-check"
+  # The clipboard history never stores a password, and keeps pinned items.
+  bash "$_shell/clipboard-check"
+  # Every clickable item has a screen reader name; every animation honours reduced motion.
+  python "$_shell/a11y-check"
+  # Accent contrast, the light/dark schedule, and no radius off the scale in Theme.qml.
+  node "$_shell/theme-check"
   KRISS_SHELL_LIB="$srcdir" python -c '
 import os, sys
 sys.path.insert(0, os.environ["KRISS_SHELL_LIB"])
 import kriss_protocols.cosmic_toplevel_info_unstable_v1
 import kriss_protocols.cosmic_toplevel_management_unstable_v1
-import kriss_protocols.ext_foreign_toplevel_list_v1'
+import kriss_protocols.ext_foreign_toplevel_list_v1
+import kriss_protocols.ext_image_capture_source_v1
+import kriss_protocols.ext_image_copy_capture_v1
+import kriss_protocols.ext_workspace_v1
+import kriss_protocols.kriss_snap_v1
+import kriss_protocols.virtual_keyboard_unstable_v1'
   ! grep -rn '{{' "$srcdir/qml" "$srcdir/config/cosmic"
 }
 
 package() {
   # ponytail: added here, not in the global array, for the same reason as kriss-settings:
   # CI builds each package alone and --syncdeps cannot resolve [kriss] packages yet.
-  depends+=('kriss-theme>=0.3.1' 'kriss-settings>=0.3.1')
+  depends+=('kriss-theme>=0.5.0' 'kriss-settings>=0.5.0')
 
   install -Dm755 "$_shell/session/kriss-shell" "$pkgdir/usr/bin/kriss-shell"
   install -Dm755 "$_shell/kriss-shell-toplevels" "$pkgdir/usr/bin/kriss-shell-toplevels"
+  install -Dm755 "$_shell/kriss-shell-clipboard" "$pkgdir/usr/bin/kriss-shell-clipboard"
+  install -Dm644 "$_shell/emoji/gemoji-LICENSE" "$pkgdir/usr/share/licenses/kriss-shell/gemoji"
+  # The shell runs it when the accent changes, so COSMIC apps rebuild their shades.
+  install -Dm755 "$srcdir/target/release/kriss-cosmic-theme" "$pkgdir/usr/bin/kriss-cosmic-theme"
   install -Dm644 "$_shell/session/kriss-shell.desktop" "$pkgdir/usr/share/wayland-sessions/kriss-shell.desktop"
+  install -Dm644 "$_shell/session/org.krissos.Settings.desktop" "$pkgdir/usr/share/applications/org.krissos.Settings.desktop"
   install -Dm644 -t "$pkgdir/usr/lib/systemd/user" "$_shell/session/kriss-shell-session.target"
   install -Dm644 "$_shell/session/logind.conf" "$pkgdir/usr/lib/systemd/logind.conf.d/50-kriss-shell.conf"
+  install -Dm644 "$_shell/session/greetd.conf" "$pkgdir/usr/lib/systemd/system/greetd.service.d/kriss-shell.conf"
   install -d "$pkgdir/usr/share/kriss-shell" "$pkgdir/usr/lib/kriss-shell"
   cp -r --no-preserve=ownership "$srcdir/qml" "$srcdir/config/cosmic" "$pkgdir/usr/share/kriss-shell/"
   cp -r --no-preserve=ownership "$srcdir/kriss_protocols" "$pkgdir/usr/lib/kriss-shell/"

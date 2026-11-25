@@ -6,6 +6,7 @@
 #   kriss-install --boot              the same, only when the boot menu's "Install KrissOS"
 #                                     entry asked for it (kriss.install on the kernel line)
 #   kriss-install --ignore-bitlocker  skip the BitLocker stop, to erase the whole disk
+#   kriss-install --legacy            install in legacy BIOS mode next to a UEFI Windows
 set -u
 share=/usr/share/kriss-installer
 
@@ -18,10 +19,20 @@ notice() {
     KRISS_NOTICE=$1 exec qs -p "$share/notice.qml"
 }
 
-[ -d /sys/firmware/efi ] || notice bios
+has() { case " $args " in *" $1 "*) return 0 ;; esac; return 1; }
+args="$*"
+
+# Legacy BIOS installs work (Limine BIOS on GPT). But when Windows here starts in UEFI
+# mode (an EFI system partition next to NTFS), the USB most likely started the wrong way,
+# and a BIOS-mode KrissOS could not share Windows' boot menu.
+if [ ! -d /sys/firmware/efi ] && ! has --legacy &&
+    lsblk -lno PARTTYPE | grep -qix c12a7328-f81f-11d2-ba4b-00a0c93ec93b &&
+    lsblk -lno FSTYPE | grep -qix ntfs; then
+    notice bios
+fi
 # Windows' BitLocker volumes cannot be resized, so dual-boot cannot make room. Stop
 # before anything is touched and say how to turn it off.
-if [ "${1:-}" != --ignore-bitlocker ] && lsblk -lno FSTYPE | grep -qix bitlocker; then
+if ! has --ignore-bitlocker && lsblk -lno FSTYPE | grep -qix bitlocker; then
     notice bitlocker
 fi
 
@@ -31,5 +42,13 @@ case ${WAYLAND_DISPLAY:-} in
 '' | /*) ;;
 *) WAYLAND_DISPLAY=$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY; export WAYLAND_DISPLAY ;;
 esac
+# Light or dark, as the shell is (it follows the GNOME colour scheme). Calamares loads one
+# stylesheet, so a light session gets kriss-theme's light copy of the branding, found first
+# through XDG_DATA_DIRS (-X).
+light=/usr/share/kriss-theme/calamares-light
+case $(gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null) in
+*dark*) ;;
+*) [ -d "$light" ] && XDG_DATA_DIRS=$light:${XDG_DATA_DIRS:-/usr/local/share:/usr/share} && export XDG_DATA_DIRS ;;
+esac
 # The log goes to the journal too (tag calamares); the ISO boot test reads it there.
-exec systemd-cat -t calamares sudo -E calamares -d
+exec systemd-cat -t calamares sudo -E calamares -d -X

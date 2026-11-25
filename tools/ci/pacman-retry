@@ -1,0 +1,21 @@
+#!/bin/bash
+# pacman, run again when it failed on the network. tools/ci/alarm.sh installs this as
+# /usr/local/bin/pacman in the CI container, ahead of /usr/bin on PATH, so every pacman
+# call there (build scripts, makepkg --syncdeps, pacstrap) goes through it. Arch Linux ARM
+# mirrors stall now and then ("Operation too slow"); the mirrorlist already moves each file
+# on to the next mirror, and this covers the case where they all fail at once.
+# Any other failure (a missing package, a bad signature, a 404) returns at once, unchanged.
+# Nothing is installed until every download is done, so a run again is safe.
+set -uo pipefail
+
+net='Operation too slow|timed out|Timeout was reached|Could not resolve host|Failed to connect|Connection reset|Recv failure|transfer closed|returned error: 5[0-9][0-9]'
+log=$(mktemp)
+trap 'rm -f "$log"' EXIT
+for wait in 15 45 0; do
+  # stderr only: callers read pacman's stdout (makepkg runs pacman -T and -Qq).
+  { /usr/bin/pacman "$@" 2>&1 1>&3 3>&- | tee "$log" >&2; } 3>&1
+  rc=${PIPESTATUS[0]}
+  if [ "$rc" = 0 ] || [ "$wait" = 0 ] || ! grep -qE "$net" "$log"; then exit "$rc"; fi
+  echo "pacman-retry: network error, trying again in ${wait}s" >&2
+  sleep "$wait"
+done

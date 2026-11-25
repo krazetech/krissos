@@ -1,0 +1,67 @@
+#!/usr/bin/env python3
+"""Build qml/emoji.json, the Windows+. picker's data. Run once when the sources change;
+the output is kept in the repo, so building KrissOS needs neither source nor the internet.
+
+    shell/emoji/generate [gemoji_db.json]
+
+Emoji, groups, English names and tags: GitHub's gemoji database (MIT licence, copyright
+GitHub, Inc.), here the copy oh-my-zsh ships. Unicode CLDR has no copy available offline on
+the build machine, so the Malay words are this folder's ms.tsv, written for KrissOS.
+Symbols: the sets below, named from Python's Unicode database.
+
+emoji.json: [[group, [[character, English name, " word word ...", skin tones 0 or 1], ...]], ...]
+"""
+import json
+import pathlib
+import re
+import sys
+import unicodedata
+
+here = pathlib.Path(__file__).resolve().parent
+src = sys.argv[1] if len(sys.argv) > 1 else "/usr/share/oh-my-zsh/plugins/emoji/gemoji_db.json"
+
+
+def bare(s):
+    return s.replace("️", "")
+
+
+def search_words(s):
+    """Words split on anything but letters and digits, each once, with a space before each,
+    so the picker can match the start of a word: "bulan" finds the moon, not the ambulance."""
+    return " " + " ".join(dict.fromkeys(re.sub(r"[\W_]+", " ", s.lower()).split()))
+
+
+ms = {}
+for line in (here / "ms.tsv").read_text().splitlines():
+    if line and not line.startswith("#"):
+        ch, words = line.split("\t")
+        ms[bare(ch)] = words
+
+groups, seen = {}, set()
+for e in json.load(open(src)):
+    ch = e["emoji"]
+    en = [e["description"]] + [a.replace("_", " ") for a in e.get("aliases", [])] + e.get("tags", [])
+    # Every flag is a "bendera", whether or not ms.tsv names its country.
+    malay = ms.get(bare(ch), "") + (" bendera" if e["category"] == "Flags" else "")
+    words = search_words(" ".join(en + [malay]))
+    groups.setdefault(e["category"], []).append([ch, e["description"], words, int(bool(e.get("skin_tones")))])
+    seen.add(bare(ch))
+for ch in ms.keys() - seen:
+    print("ms.tsv: not in gemoji:", ch, file=sys.stderr)
+
+SYMBOLS = [
+    ("Arrows", "anak panah arah", "←↑→↓↔↕↖↗↘↙⇐⇑⇒⇓⇔⇕↩↪↺↻⇄⇆⟵⟶⟷➔➜"),
+    ("Currency", "mata wang duit wang", "$¢£¥€₹₩₽₺₫₱฿₦₪₴₸₿¤"),
+    ("Maths", "matematik nombor", "±×÷=≠≈≡<>≤≥∞√∛∑∏∫∂∆∇∈∉∩∪⊂⊃⊆⊇∀∃¬∧∨°′″%‰πµ∅∝∠⊥∥½⅓⅔¼¾⅛¹²³⁴ⁿ₀₁₂₃"),
+    ("Latin", "huruf aksen",
+     "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÑÒÓÔÕÖØÙÚÛÜÝßàáâãäåæçèéêëìíîïñòóôõöøùúûüýÿŒœŠšŽžŁłŞşĞğİı"),
+    ("Punctuation", "tanda baca simbol", "“”‘’«»‹›„…–—•·§¶©®™†‡¡¿※№℃℉✓✗★☆♠♣♥♦♪♫"),
+]
+# A symbol that is also an emoji gets U+FE0E, so it shows (and pastes) as text, not a picture.
+for name, malay, chars in SYMBOLS:
+    groups[name] = [[c + ("\ufe0e" if c in seen else ""), unicodedata.name(c).lower(),
+                     search_words(unicodedata.name(c) + " " + malay), 0] for c in chars]
+
+out = here.parent / "qml" / "emoji.json"
+out.write_text(json.dumps(list(groups.items()), ensure_ascii=False, separators=(",", ":")) + "\n")
+print(out, sum(len(v) for v in groups.values()), "entries")

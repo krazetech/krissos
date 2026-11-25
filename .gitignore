@@ -14,3 +14,4 @@ NOTES.md
 # private signing key backups: never commit
 *-signing-key.asc
 shell/cosmic-theme/target/
+__pycache__/

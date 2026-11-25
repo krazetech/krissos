@@ -1,0 +1,246 @@
+#!/usr/bin/env python3
+"""Measure the running KrissOS Shell against the performance budget.
+
+  shell/perf-check            idle CPU, memory and frame pacing, as a table
+  shell/perf-check --json     the same as JSON, for pull requests
+  shell/perf-check --no-frames
+                              skip the frame test, which opens a nested cosmic-comp window
+
+Idle CPU and memory are read from /proc for the running `qs` and every process it started.
+Frames are measured in a nested cosmic-comp (so the open desktop is left alone) running the
+same QML with Qt's own render timing (QSG_RENDER_TIMING): each surface is opened and closed
+through its IPC command, and the gaps between rendered frames are compared with the nested
+output's refresh interval. The time each frame takes to build (sync + render) is compared
+with the fastest real output's interval, since the nested window only runs at 60 Hz.
+Exits 1 when any line fails; a surface that drew no frame is SKIP.
+"""
+import argparse
+import json
+import os
+import re
+import signal
+import subprocess
+import sys
+import tempfile
+import time
+
+IDLE_SECONDS = 10
+IDLE_CPU = 1.0  # %, of one core, all shell processes together
+MEMORY_MB = 150
+TICK = os.sysconf("SC_CLK_TCK")
+SURFACES = [  # name, IPC calls to open and close it, seconds each animation is given
+    ("launcher", [["launcher", "toggle"], ["launcher", "toggle"]], 1.5),
+    ("quick", [["quick", "toggle"], ["quick", "toggle"]], 1.5),
+    ("notifications", [["notifications", "toggle"], ["notifications", "toggle"]], 1.5),
+    ("calendar", [["calendar", "toggle"], ["calendar", "toggle"]], 1.5),
+    ("desktop", [["desktop", "toggle"], ["desktop", "toggle"]], 1.5),
+    ("toast", [None], 9),  # notify-send; the toast leaves on its own
+]
+
+
+def stat(pid):
+    """(ppid, cpu ticks) from /proc/PID/stat, or None once the process is gone."""
+    try:
+        with open(f"/proc/{pid}/stat") as f:
+            rest = f.read().rsplit(")", 1)[1].split()
+    except OSError:
+        return None
+    return int(rest[1]), int(rest[11]) + int(rest[12])
+
+
+def name(pid):
+    try:
+        with open(f"/proc/{pid}/cmdline", "rb") as f:
+            argv = f.read().decode(errors="replace").split("\0")
+    except OSError:
+        return "?"
+    # python3 /usr/bin/kriss-shell-toplevels reads better as the script's name
+    exe = argv[1] if os.path.basename(argv[0]).startswith("python") and len(argv) > 1 else argv[0]
+    return os.path.basename(exe)
+
+
+def shell_processes():
+    """The running shell's qs and all its descendants, root first."""
+    parents = {}
+    for p in os.listdir("/proc"):
+        if p.isdigit() and (s := stat(p)):
+            parents[int(p)] = s[0]
+    roots = [p for p in parents if name(p) in ("qs", "quickshell") and name(parents[p]) != name(p)]
+    roots = [p for p in roots if "kriss-shell" in open(f"/proc/{p}/cmdline").read()]
+    if not roots:
+        sys.exit("perf-check: no running KrissOS Shell (qs) found")
+    pids = [min(roots)]  # ponytail: the oldest shell if several run
+    for p in pids:
+        pids += sorted(c for c, pp in parents.items() if pp == p)
+    return pids
+
+
+def idle_cpu(pids):
+    first = {p: stat(p) for p in pids}
+    last, peak = dict(first), {p: 0.0 for p in pids}
+    start = prev = time.monotonic()
+    for _ in range(IDLE_SECONDS):
+        time.sleep(1)
+        now = time.monotonic()
+        for p in pids:
+            if (s := stat(p)) and last[p]:
+                peak[p] = max(peak[p], (s[1] - last[p][1]) / TICK / (now - prev) * 100)
+                last[p] = s
+        prev = now
+    span = prev - start
+    return {p: ((last[p][1] - first[p][1]) / TICK / span * 100 if first[p] else 0.0, peak[p]) for p in pids}
+
+
+def memory(pid):
+    """(RSS, PSS) in MB; PSS is None when smaps_rollup can't be read."""
+    rss = pss = None
+    try:
+        with open(f"/proc/{pid}/smaps_rollup") as f:
+            for line in f:
+                key, value = line.split()[:2]
+                if key == "Rss:":
+                    rss = int(value) / 1024
+                elif key == "Pss:":
+                    pss = int(value) / 1024
+    except OSError:
+        with open(f"/proc/{pid}/status") as f:
+            rss = next(int(l.split()[1]) / 1024 for l in f if l.startswith("VmRSS:"))
+    return rss, pss
+
+
+def refresh(display):
+    """The fastest current refresh rate (Hz) of the outputs on a Wayland display."""
+    out = subprocess.run(["wayland-info", "-i", "wl_output"], capture_output=True, text=True,
+                         env=dict(os.environ, WAYLAND_DISPLAY=display)).stdout
+    rates = [float(r) for r in re.findall(r"refresh: ([\d.]+) Hz,\s*flags: current", out)]
+    return max(rates, default=60.0)
+
+
+FRAME = re.compile(r"^\S+ (\d+):(\d+):([\d.]+) .*\[window (\w+)\]\[render thread.*"
+                   r"frame rendered in \d+ms, sync=(\d+), render=(\d+), swap=\d+")
+
+
+def frame_stats(lines, interval, live_interval):
+    windows = {}
+    for line in lines:
+        if m := FRAME.match(line):
+            h, mi, s, win, sync, render = m.groups()
+            windows.setdefault(win, []).append((int(h) * 3600 + int(mi) * 60 + float(s), int(sync) + int(render)))
+    frames = [f for w in windows.values() for f in w]
+    # ponytail: a gap over 250 ms counts as the shell idling between animations, so a longer
+    # stall inside one would hide; lower it if surfaces animate with pauses that long.
+    gaps = [(b[0] - a[0]) * 1000 for w in windows.values() for a, b in zip(w, w[1:]) if b[0] - a[0] < 0.25]
+    return {
+        "frames": len(frames),
+        "avg_ms": round(sum(gaps) / len(gaps), 1) if gaps else 0.0,
+        "worst_ms": round(max(gaps), 1) if gaps else 0.0,
+        "missed": sum(g > interval * 1.5 for g in gaps),
+        "worst_build_ms": max((f[1] for f in frames), default=0),
+        "slow": sum(f[1] > live_interval for f in frames),
+    }
+
+
+def env_of(pid):
+    with open(f"/proc/{pid}/environ", "rb") as f:
+        return dict(e.split("=", 1) for e in f.read().decode().split("\0") if "=" in e)
+
+
+def frames(qml, live_hz):
+    log = tempfile.NamedTemporaryFile("w+", prefix="kriss-perf-", suffix=".log")
+    # A private session bus, so the nested shell owns notifications there and not the live one.
+    comp = subprocess.Popen(
+        ["dbus-run-session", "--", "cosmic-comp", "sh", "-c",
+         'QSG_RENDER_TIMING=1 exec qs -p "$1" --no-color --log-times', "sh", qml],
+        stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True)
+    try:
+        qs = None
+        for _ in range(300):  # 30 s
+            time.sleep(0.1)
+            if comp.poll() is not None:
+                raise RuntimeError("nested cosmic-comp exited; see the log above")
+            kids = subprocess.run(["pgrep", "-g", str(comp.pid), "-x", "qs"], capture_output=True, text=True).stdout.split()
+            log.seek(0)
+            if kids and "frame rendered" in log.read():
+                qs = kids[0]
+                break
+        if not qs:
+            raise RuntimeError("the nested shell drew no frame in 30 s")
+        time.sleep(3)  # let the bar settle
+        env = env_of(qs)
+        nested_hz = refresh(env["WAYLAND_DISPLAY"])
+        interval, live_interval = 1000 / nested_hz, 1000 / live_hz
+        results = {}
+        for surface, calls, wait in SURFACES:
+            log.seek(0, os.SEEK_END)
+            mark = log.tell()
+            for call in calls:
+                if call:
+                    subprocess.run(["qs", "ipc", "--pid", qs, "call", *call], capture_output=True)
+                else:
+                    subprocess.run(["notify-send", "-a", "perf-check", "Performance check", "A test toast."],
+                                   env=dict(os.environ, DBUS_SESSION_BUS_ADDRESS=env["DBUS_SESSION_BUS_ADDRESS"]))
+                time.sleep(wait)
+            log.seek(mark)
+            results[surface] = frame_stats(log.read().splitlines(), interval, live_interval)
+        return nested_hz, results
+    finally:
+        os.killpg(comp.pid, signal.SIGTERM)
+        comp.wait()
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("--json", action="store_true", help="print JSON instead of the table")
+    ap.add_argument("--no-frames", action="store_true", help="skip the nested frame test")
+    ap.add_argument("--qml", help="QML to run nested (default: the running shell's)")
+    args = ap.parse_args()
+
+    pids = shell_processes()
+    argv = open(f"/proc/{pids[0]}/cmdline").read().split("\0")
+    qml = args.qml or argv[argv.index("-p") + 1]
+    cpu = idle_cpu(pids)
+    procs = [{"pid": p, "name": name(p), "cpu_avg": round(cpu[p][0], 2), "cpu_peak": round(cpu[p][1], 2),
+              **dict(zip(("rss_mb", "pss_mb"), (round(m, 1) if m is not None else None for m in memory(p))))}
+             for p in pids if stat(p)]
+    cpu_avg = sum(p["cpu_avg"] for p in procs)
+    rss = sum(p["rss_mb"] for p in procs)
+    pss = sum(p["pss_mb"] for p in procs) if all(p["pss_mb"] is not None for p in procs) else None
+    checks = [
+        {"check": "idle cpu", "result": f"avg {cpu_avg:.2f}%, peak {max(p['cpu_peak'] for p in procs):.1f}%",
+         "budget": f"avg <= {IDLE_CPU:g}%", "pass": cpu_avg <= IDLE_CPU},
+        {"check": "memory", "result": f"RSS {rss:.0f} MB" + (f", PSS {pss:.0f} MB" if pss is not None else ""),
+         "budget": f"RSS < {MEMORY_MB} MB", "pass": rss < MEMORY_MB},
+    ]
+    report = {"qml": qml, "processes": procs, "checks": checks}
+
+    if not args.no_frames:
+        live_hz = refresh(os.environ.get("WAYLAND_DISPLAY", "wayland-0"))
+        nested_hz, surfaces = frames(qml, live_hz)
+        report.update(display_hz=live_hz, nested_hz=nested_hz, surfaces=surfaces)
+        for surface, s in surfaces.items():
+            checks.append({
+                "check": f"frames {surface}",
+                "result": f"{s['frames']} fr, avg {s['avg_ms']} ms, worst {s['worst_ms']} ms, "
+                          f"{s['missed']} missed, build worst {s['worst_build_ms']} ms",
+                "budget": f"0 missed @ {nested_hz:.0f} Hz, build <= {1000 / live_hz:.1f} ms",
+                # None (SKIP): nothing animated, e.g. Show desktop with no windows open
+                "pass": (s["missed"] == 0 and s["slow"] == 0) if s["frames"] else None,
+            })
+
+    ok = all(c["pass"] is not False for c in checks)
+    if args.json:
+        print(json.dumps(report, indent=2))
+    else:
+        print(f"{'PROCESS':<26}{'PID':>8}{'CPU avg':>9}{'peak':>7}{'RSS MB':>8}{'PSS MB':>8}")
+        for p in procs:
+            pss_s = f"{p['pss_mb']:.1f}" if p["pss_mb"] is not None else "-"
+            print(f"{p['name']:<26}{p['pid']:>8}{p['cpu_avg']:>8.2f}%{p['cpu_peak']:>6.1f}%{p['rss_mb']:>8.1f}{pss_s:>8}")
+        print()
+        for c in checks:
+            verdict = {True: "PASS", False: "FAIL", None: "SKIP"}[c["pass"]]
+            print(f"{c['check']:<23}{c['result']:<71}{c['budget']:<36}{verdict}")
+    sys.exit(0 if ok else 1)
+
+
+if __name__ == "__main__":
+    main()

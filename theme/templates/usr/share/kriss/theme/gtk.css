@@ -19,3 +19,37 @@
 @define-color dialog_fg_color {{fg}};
 @define-color popover_bg_color {{surface}};
 @define-color popover_fg_color {{fg}};
+
+/* The KrissOS round window buttons, as cosmic-comp-kriss draws them on title bars: a soft
+   circle in a 46 px wide target, the accent under the pointer, close red. */
+windowcontrols > button,
+headerbar button.titlebutton {
+  min-width: 34px;
+  padding: 0 6px;
+  background: none;
+  box-shadow: none;
+}
+windowcontrols > button > image,
+headerbar button.titlebutton > image {
+  border-radius: 9999px;
+  padding: 6px;
+  background-color: alpha(currentColor, 0.08);
+}
+windowcontrols > button:hover > image,
+headerbar button.titlebutton:hover > image {
+  background-color: alpha(@accent_color, 0.24);
+}
+windowcontrols > button:active > image,
+headerbar button.titlebutton:active > image {
+  background-color: alpha(@accent_color, 0.38);
+}
+windowcontrols > button.close:hover > image,
+headerbar button.titlebutton.close:hover > image {
+  background-color: #C42B1C;
+  color: #FFFFFF;
+}
+windowcontrols > button.close:active > image,
+headerbar button.titlebutton.close:active > image {
+  background-color: #B22719;
+  color: #FFFFFF;
+}

@@ -7,7 +7,32 @@ import calamares.slideshow 1.0
 Presentation {
     id: presentation
 
-    Rectangle { anchors.fill: parent; color: "{{surface}}" }
+    // A raised card on the window, with a soft accent glow in its corner, like the shell's
+    // panels over the wallpaper.
+    Rectangle { anchors.fill: parent; color: "{{ui_win}}" }
+    Rectangle {
+        id: card
+        anchors.fill: parent
+        anchors.margins: 4
+        radius: 22
+        color: "{{ui_card}}"
+        border.width: 1
+        border.color: "{{ui_line}}"
+        clip: true
+        Repeater {
+            model: 4
+            Rectangle {
+                width: 520 - index * 110; height: width; radius: width / 2
+                x: card.width - width / 2 - 60; y: -width / 2 + 40
+                color: "{{accent}}"; opacity: 0.05
+            }
+        }
+        Text {
+            x: 48; y: 32
+            text: (presentation.currentSlide + 1 < 10 ? "0" : "") + (presentation.currentSlide + 1) + " / 0" + presentation.slides.length
+            color: "{{ui_soft}}"; font.family: "{{font_mono}}"; font.pixelSize: 13
+        }
+    }
 
     Timer {
         interval: 7000
@@ -48,15 +73,17 @@ Presentation {
     }
 
     Row {
-        anchors.horizontalCenter: parent.horizontalCenter
+        x: 52
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: 24
+        anchors.bottomMargin: 32
         spacing: 8
         Repeater {
             model: presentation.slides.length
             Rectangle {
-                width: index === presentation.currentSlide ? 20 : 8; height: 8; radius: 4
-                color: index === presentation.currentSlide ? "{{accent}}" : "{{muted}}"
+                width: index === presentation.currentSlide ? 24 : 8; height: 8; radius: 4
+                color: index === presentation.currentSlide ? "{{accent}}" : "{{ui_line}}"
+                Behavior on width { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+                Behavior on color { ColorAnimation { duration: 220 } }
             }
         }
     }

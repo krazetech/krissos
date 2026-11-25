@@ -21,13 +21,18 @@ PanelWindow {
             wins = Windows.byRecent.slice();
             if (wins.length === 0) return;
             current = 0;
-            Desktop.launcherOpen = Desktop.notificationsOpen = Desktop.quickOpen = Desktop.calendarOpen = false;
-            Desktop.screen = Desktop.focusedScreen();
+            Desktop.launcherOpen = Desktop.notificationsOpen = Desktop.quickOpen = Desktop.calendarOpen = Desktop.taskViewOpen = Desktop.widgetsOpen = false;
+            // Its own screen, set once: a notification or a bar click moving Desktop.screen
+            // must not move the switcher while it is up.
+            screen = Desktop.focusedScreen();
             open = true;
-            settle.restart();
         }
+        // cosmic-comp keeps Alt+Tab for itself, so each Tab comes here, never as a key: Alt is still held.
+        if (!panel.activeFocus) settle.restart();
         current = (current + by + wins.length) % wins.length;
     }
+    // A screen reader stays on the panel; it hears each window as the selection moves.
+    onCurrentChanged: if (open && wins[current]) panel.Accessible.announce(wins[current].title || wins[current].appId)
     function finish(switchTo) {
         if (!open) return;
         open = false;
@@ -35,13 +40,15 @@ PanelWindow {
         if (switchTo && wins[current]) Windows.activate(wins[current].id);
     }
 
-    // A quick Alt+Tab can be over before this surface gets the keyboard, and then no Alt
-    // release ever reaches it. With no key at all by now, the keys are already up: switch.
-    // ponytail: a fixed wait; someone holding Alt still has let go of Tab by then, which counts.
+    // Once this surface has the keyboard (about 50 ms after Tab), letting go of Alt reaches it,
+    // however long Alt is held. Until then a quick Alt+Tab can be over unseen: with no keyboard
+    // by now, the keys are already up, so switch.
+    // ponytail: Alt let go in the ~50 ms before the keyboard arrives leaves it open until the
+    // next key or click (Qt only learns modifiers from key events, so a pointer move can't tell);
+    // reading the key state at keyboard enter would close that gap.
     Timer { id: settle; interval: 600; onTriggered: win.finish(true) }
 
     visible: open
-    screen: Desktop.screen
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "kriss-switcher"
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
@@ -50,24 +57,28 @@ PanelWindow {
     color: "transparent"
     BackgroundEffect.blurRegion: Region { item: panel; radius: panel.radius }
 
-    MouseArea { anchors.fill: parent; onClicked: win.finish(false) }
+    MouseArea { anchors.fill: parent; onClicked: win.finish(false); Accessible.ignored: true }
 
     Rectangle {
         id: panel
         anchors.centerIn: parent
         width: Math.min(row.implicitWidth + 32, parent.width - Theme.gap * 4)
         height: row.implicitHeight + 32
-        radius: Theme.radius + 4
+        radius: Theme.rPanel
         color: Theme.bar
-        border.width: 1
+        border.width: Theme.rimWidth
         border.color: Theme.rim
         clip: true
         focus: true
+        // The keyboard taken away while open (another surface grabbed it): no Alt release will come.
+        onActiveFocusChanged: if (activeFocus) settle.stop(); else if (win.open) settle.restart()
+        Accessible.role: Accessible.Dialog
+        Accessible.name: Tr.t("Switch windows")
 
         opacity: win.open ? 1 : 0
         scale: win.open || Theme.reduceMotion ? 1 : 0.96
-        Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
-        Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+        Behavior on opacity { NumberAnimation { duration: Theme.ms(win.open ? Theme.fast : Theme.fastExit); easing.type: win.open ? Theme.ease : Theme.easeExit } }
+        Behavior on scale { NumberAnimation { duration: Theme.ms(win.open ? Theme.fast : Theme.fastExit); easing.type: win.open ? Theme.ease : Theme.easeExit } }
 
         Keys.onPressed: event => {
             settle.stop();
@@ -90,10 +101,10 @@ PanelWindow {
             anchors.centerIn: parent
             width: parent.width - 32
             implicitWidth: count * 136 + (count - 1) * spacing
-            implicitHeight: 132
+            implicitHeight: Math.max(132, 86 + Theme.sp(12) * 2.6)
             height: implicitHeight
             orientation: ListView.Horizontal
-            spacing: 8
+            spacing: Theme.s2
             interactive: false
             model: win.wins
             currentIndex: win.current
@@ -102,26 +113,31 @@ PanelWindow {
             preferredHighlightEnd: width / 2 + 68
             highlightRangeMode: ListView.ApplyRange
             highlight: Rectangle {
-                radius: Theme.radiusSmall + 2
+                radius: Theme.rCard
                 color: Theme.card
-                border.width: 2
-                border.color: Theme.accent
+                border.width: Theme.focusWidth
+                border.color: Theme.accentText
             }
 
             delegate: MouseArea {
                 id: cell
                 required property var modelData
                 required property int index
-                width: 136
-                height: 132
+                width: Theme.dp(136)
+                height: row.height
                 hoverEnabled: true
                 onClicked: { win.current = index; win.finish(true); }
-                readonly property var entry: DesktopEntries.heuristicLookup(modelData.appId)
+                readonly property var entry: Windows.entryFor(modelData.appId)
+                Accessible.role: Accessible.ListItem
+                Accessible.name: modelData.title || entry?.name || modelData.appId
+                Accessible.description: entry?.name ?? ""
+                Accessible.selected: index === win.current
+                Accessible.onPressAction: { win.current = index; win.finish(true); }
 
                 Column {
                     anchors.centerIn: parent
                     width: parent.width - 20
-                    spacing: 10
+                    spacing: Theme.s2
                     IconImage {
                         anchors.horizontalCenter: parent.horizontalCenter
                         implicitSize: 56
@@ -136,7 +152,7 @@ PanelWindow {
                         wrapMode: Text.Wrap
                         text: cell.modelData.title || cell.entry?.name || cell.modelData.appId
                         color: Theme.fg
-                        font { family: Theme.sans; pixelSize: 12; weight: cell.index === win.current ? Font.DemiBold : Font.Medium }
+                        font { family: Theme.sans; pixelSize: Theme.sp(12); weight: cell.index === win.current ? Font.DemiBold : Font.Medium }
                     }
                 }
             }

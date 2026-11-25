@@ -6,6 +6,22 @@
     (modifiers: [Super], key: "a"): Spawn("kriss-shell quick"),
     (modifiers: [Super], key: "n"): Spawn("kriss-shell notifications"),
     (modifiers: [Super, Alt], key: "d"): Spawn("kriss-shell calendar"),
+    // Task View and desktops, as on Windows. COSMIC has Windows+Tab as a window switcher.
+    (modifiers: [Super], key: "Tab"): Spawn("kriss-shell taskview"),
+    (modifiers: [Super, Ctrl], key: "Left"): PreviousWorkspace,
+    (modifiers: [Super, Ctrl], key: "Right"): NextWorkspace,
+    (modifiers: [Super, Ctrl], key: "d"): Spawn("kriss-shell desktops add"),
+    (modifiers: [Super, Ctrl], key: "F4"): Spawn("kriss-shell desktops close"),
+    // Clipboard history, and emoji and symbols (Windows+; works too, as on Windows).
+    (modifiers: [Super], key: "v"): Spawn("kriss-shell clipboard"),
+    (modifiers: [Super], key: "period"): Spawn("kriss-shell emoji"),
+    (modifiers: [Super], key: "semicolon"): Spawn("kriss-shell emoji"),
+    (modifiers: [Super], key: "w"): Spawn("kriss-shell widgets"),
+    // The next input method (EN, 拼, த, ج), as on Windows.
+    (modifiers: [Super], key: "space"): Spawn("kriss-shell input next"),
+    (modifiers: [Super, Shift], key: "space"): Spawn("kriss-shell input previous"),
+    // Windows+P: PC screen only, Duplicate, Extend, Second screen only.
+    (modifiers: [Super], key: "p"): Spawn("kriss-shell project"),
     // Snap the window to a half (cosmic-comp's Move on a floating window). Up maximizes and
     // Down minimizes, as on Windows; COSMIC's Windows+Shift+arrows still snap to quarters.
     (modifiers: [Super], key: "Left"): Move(Left),
@@ -13,4 +29,41 @@
     (modifiers: [Super], key: "Up"): Maximize,
     (modifiers: [Super], key: "Down"): Minimize,
     (modifiers: [Super, Shift], key: "s"): Spawn("kriss-shell screenshot region"),
+    // Snap layouts for the window in front, as on Windows.
+    (modifiers: [Super], key: "z"): Spawn("kriss-shell snap"),
+    // The taskbar, as on Windows: Windows+T steps through the app buttons, Windows+B puts the
+    // keyboard on the tray (COSMIC opens the browser there), Windows+X opens
+    // the Start button's menu, Windows+1…9 opens or switches to that app (COSMIC puts
+    // workspaces there; they stay on Windows+Ctrl+Left / Right), Windows+Shift+1…9 opens a
+    // new window of it and Windows+Alt+1…9 its jump list.
+    (modifiers: [Super], key: "t"): Spawn("kriss-shell taskbar focus"),
+    (modifiers: [Super], key: "b"): Spawn("kriss-shell taskbar tray"),
+    (modifiers: [Super], key: "x"): Spawn("kriss-shell taskbar startMenu"),
+    (modifiers: [Super], key: "1"): Spawn("kriss-shell taskbar open 1"),
+    (modifiers: [Super], key: "2"): Spawn("kriss-shell taskbar open 2"),
+    (modifiers: [Super], key: "3"): Spawn("kriss-shell taskbar open 3"),
+    (modifiers: [Super], key: "4"): Spawn("kriss-shell taskbar open 4"),
+    (modifiers: [Super], key: "5"): Spawn("kriss-shell taskbar open 5"),
+    (modifiers: [Super], key: "6"): Spawn("kriss-shell taskbar open 6"),
+    (modifiers: [Super], key: "7"): Spawn("kriss-shell taskbar open 7"),
+    (modifiers: [Super], key: "8"): Spawn("kriss-shell taskbar open 8"),
+    (modifiers: [Super], key: "9"): Spawn("kriss-shell taskbar open 9"),
+    (modifiers: [Super, Shift], key: "1"): Spawn("kriss-shell taskbar newWindow 1"),
+    (modifiers: [Super, Shift], key: "2"): Spawn("kriss-shell taskbar newWindow 2"),
+    (modifiers: [Super, Shift], key: "3"): Spawn("kriss-shell taskbar newWindow 3"),
+    (modifiers: [Super, Shift], key: "4"): Spawn("kriss-shell taskbar newWindow 4"),
+    (modifiers: [Super, Shift], key: "5"): Spawn("kriss-shell taskbar newWindow 5"),
+    (modifiers: [Super, Shift], key: "6"): Spawn("kriss-shell taskbar newWindow 6"),
+    (modifiers: [Super, Shift], key: "7"): Spawn("kriss-shell taskbar newWindow 7"),
+    (modifiers: [Super, Shift], key: "8"): Spawn("kriss-shell taskbar newWindow 8"),
+    (modifiers: [Super, Shift], key: "9"): Spawn("kriss-shell taskbar newWindow 9"),
+    (modifiers: [Super, Alt], key: "1"): Spawn("kriss-shell taskbar jumpList 1"),
+    (modifiers: [Super, Alt], key: "2"): Spawn("kriss-shell taskbar jumpList 2"),
+    (modifiers: [Super, Alt], key: "3"): Spawn("kriss-shell taskbar jumpList 3"),
+    (modifiers: [Super, Alt], key: "4"): Spawn("kriss-shell taskbar jumpList 4"),
+    (modifiers: [Super, Alt], key: "5"): Spawn("kriss-shell taskbar jumpList 5"),
+    (modifiers: [Super, Alt], key: "6"): Spawn("kriss-shell taskbar jumpList 6"),
+    (modifiers: [Super, Alt], key: "7"): Spawn("kriss-shell taskbar jumpList 7"),
+    (modifiers: [Super, Alt], key: "8"): Spawn("kriss-shell taskbar jumpList 8"),
+    (modifiers: [Super, Alt], key: "9"): Spawn("kriss-shell taskbar jumpList 9"),
 }

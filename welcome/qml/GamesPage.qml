@@ -1,19 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Kraze Tech
 import QtQuick
-import QtQuick.Controls as QQC2
 import QtQuick.Layouts
-import org.kde.kirigami as Kirigami
 
-Kirigami.ScrollablePage {
+Page {
     id: page
     property var results: []
     property string query: ""
 
     function statusColor(s) {
-        if (s === "Supported" || s === "Running") return Kirigami.Theme.positiveTextColor
-        if (s === "Planned") return Kirigami.Theme.neutralTextColor
-        return Kirigami.Theme.negativeTextColor
+        if (s === "Supported" || s === "Running") return backend.theme.green
+        if (s === "Planned") return backend.theme.amber
+        return backend.theme.red
     }
     function statusLabel(s) {
         return { Supported: qsTr("Supported"), Running: qsTr("Runs"), Planned: qsTr("Planned"),
@@ -29,95 +27,93 @@ Kirigami.ScrollablePage {
         }[s] || ""
     }
 
-    header: QQC2.ToolBar {
-        Kirigami.SearchField {
-            id: search
-            anchors.fill: parent
-            placeholderText: qsTr("Search a game, e.g. Valorant")
-            onTextChanged: { page.query = text; page.results = backend.searchGames(text) }
-        }
+    Field {
+        id: search
+        Layout.fillWidth: true
+        glyph: "search"
+        placeholderText: qsTr("Search a game, e.g. Valorant")
+        onTextChanged: { page.query = text; page.results = backend.searchGames(text) }
     }
 
-    ListView {
-        id: list
+    Empty {
+        visible: page.results.length === 0
+        Layout.fillWidth: true
+        Layout.topMargin: 32
+        Layout.leftMargin: 48
+        Layout.rightMargin: 48
+        glyph: "games"
+        text: page.query ? qsTr("Not in the anti-cheat list") : qsTr("Will my games run?")
+        explanation: qsTr("This list covers games with anti-cheat, the usual reason a game will not run on Linux. Most other games run through Steam's Proton; ProtonDB has player reports.")
+        action: qsTr("Search ProtonDB")
+        onTriggered: Qt.openUrlExternally("https://www.protondb.com/search?q=" + encodeURIComponent(page.query))
+    }
+
+    Repeater {
         model: page.results
-        spacing: Kirigami.Units.smallSpacing
-
-        Kirigami.PlaceholderMessage {
-            anchors.centerIn: parent
-            width: parent.width - Kirigami.Units.gridUnit * 4
-            visible: list.count === 0
-            icon.name: "input-gaming"
-            text: page.query ? qsTr("Not in the anti-cheat list") : qsTr("Will my games run?")
-            explanation: qsTr("This list covers games with anti-cheat, the usual reason a game will not run on Linux. Most other games run through Steam's Proton; ProtonDB has player reports.")
-            helpfulAction: Kirigami.Action {
-                text: qsTr("Search ProtonDB")
-                icon.name: "internet-services"
-                onTriggered: Qt.openUrlExternally("https://www.protondb.com/search?q=" + encodeURIComponent(page.query))
-            }
-        }
-
-        delegate: Kirigami.AbstractCard {
+        delegate: Card {
             required property var modelData
-            width: ListView.view.width
-            contentItem: ColumnLayout {
-                spacing: Kirigami.Units.smallSpacing
-                RowLayout {
-                    Kirigami.Heading {
-                        level: 3
-                        text: modelData.name
-                        Layout.fillWidth: true
-                        elide: Text.ElideRight
-                    }
-                    Rectangle {
-                        radius: height / 2
-                        color: Qt.alpha(page.statusColor(modelData.status), 0.18)
-                        implicitWidth: badge.implicitWidth + Kirigami.Units.largeSpacing * 2
-                        implicitHeight: badge.implicitHeight + Kirigami.Units.smallSpacing * 2
-                        QQC2.Label {
-                            id: badge
-                            anchors.centerIn: parent
-                            text: page.statusLabel(modelData.status)
-                            color: page.statusColor(modelData.status)
-                            font.bold: true
-                        }
-                    }
-                }
-                QQC2.Label {
+            Layout.fillWidth: true
+            RowLayout {
+                Layout.fillWidth: true
+                Txt {
+                    text: modelData.name
                     Layout.fillWidth: true
-                    wrapMode: Text.WordWrap
-                    text: page.statusText(modelData.status)
+                    size: 17
+                    bold: true
+                    elide: Text.ElideRight
+                    wrapMode: Text.NoWrap
                 }
-                QQC2.Label {
-                    Layout.fillWidth: true
-                    wrapMode: Text.WordWrap
-                    opacity: 0.7
-                    text: qsTr("Anti-cheat: %1").arg(modelData.anticheats.join(", ") || qsTr("none listed"))
-                        + (modelData.note ? " · " + modelData.note : "")
+                // The verdict, as a tinted chip.
+                Rectangle {
+                    radius: height / 2
+                    color: Qt.alpha(page.statusColor(modelData.status), 0.18)
+                    implicitWidth: badge.implicitWidth + 24
+                    implicitHeight: badge.implicitHeight + 10
+                    Txt {
+                        id: badge
+                        anchors.centerIn: parent
+                        text: page.statusLabel(modelData.status)
+                        color: page.statusColor(modelData.status)
+                        bold: true
+                        size: 13
+                        wrapMode: Text.NoWrap
+                    }
                 }
-                RowLayout {
-                    QQC2.Button {
-                        flat: true
-                        text: qsTr("Details")
-                        icon.name: "internet-services"
-                        onClicked: Qt.openUrlExternally("https://areweanticheatyet.com/game/" + modelData.slug)
-                    }
-                    QQC2.Button {
-                        flat: true
-                        visible: !!modelData.steam
-                        text: qsTr("ProtonDB reports")
-                        icon.name: "internet-services"
-                        onClicked: Qt.openUrlExternally("https://www.protondb.com/app/" + modelData.steam)
-                    }
+            }
+            Txt {
+                Layout.fillWidth: true
+                text: page.statusText(modelData.status)
+            }
+            Txt {
+                Layout.fillWidth: true
+                soft: true
+                text: qsTr("Anti-cheat: %1").arg(modelData.anticheats.join(", ") || qsTr("none listed"))
+                    + (modelData.note ? " · " + modelData.note : "")
+            }
+            Flow {
+                Layout.fillWidth: true
+                spacing: 6
+                Pill {
+                    flat: true
+                    text: qsTr("Details")
+                    glyph: "globe"
+                    onClicked: Qt.openUrlExternally("https://areweanticheatyet.com/game/" + modelData.slug)
+                }
+                Pill {
+                    flat: true
+                    visible: !!modelData.steam
+                    text: qsTr("ProtonDB reports")
+                    glyph: "globe"
+                    onClicked: Qt.openUrlExternally("https://www.protondb.com/app/" + modelData.steam)
                 }
             }
         }
     }
 
-    footer: QQC2.Label {
-        padding: Kirigami.Units.smallSpacing
-        opacity: 0.6
-        font: Kirigami.Theme.smallFont
+    Txt {
+        Layout.fillWidth: true
+        soft: true
+        size: 12
         text: qsTr("Anti-cheat data: AreWeAntiCheatYet (MIT). Game ratings: ProtonDB.")
     }
 }

@@ -8,7 +8,7 @@ import pathlib
 import shutil
 import subprocess
 
-# Shown when `kriss hwcheck` is missing or fails: assume the PC cannot run WinBoat.
+# Shown when `kriss hwcheck` is missing or fails: assume the PC cannot run WinPodX.
 NO_HW = {"ram_mb": 0, "cores": 0, "virt": "", "kvm": False, "gpus": [], "winboat_ok": False,
          "reasons": ["unknown"]}
 
@@ -62,7 +62,7 @@ def answer(app, winboat_ok):
         "kind": kind,
         "alts": app["alts"],
         "wine": app["wine"] if kind != "native" else "no",
-        # WinBoat would help, but this PC cannot run it well.
+        # WinPodX would help, but this PC cannot run it well.
         "winboat_blocked": app["winboat"] and not winboat_ok and not app["native"],
         "web": app.get("web", ""),
     }
@@ -198,6 +198,9 @@ EXTRAS = {
     "claude-code": {"user": "curl -fsSL https://claude.ai/install.sh | bash", "binary": "claude"},
     # Pre-Turing NVIDIA GPUs (hwcheck's nvidia_legacy). kriss nvidia setup also adds the kernel
     # headers, the initramfs and command line changes and, on hybrid laptops, prime-run.
+    # Microsoft Office in WinPodX, downloaded from Microsoft as the user; offered on the Apps
+    # page's Office row, not on the Extras page. Installed means its Start entry exists.
+    "office": {"user": "kriss winapps office --yes", "file": ".local/share/kriss/office/installed"},
     "nvidia-legacy": {"root": ["kriss", "nvidia", "setup"], "packages": ["nvidia-580xx-dkms", "nvidia-580xx-utils"]},
 }
 
@@ -229,6 +232,8 @@ def extra_command(extra_id, gpus):
 
 def extra_installed(extra_id, gpus):
     e = EXTRAS[extra_id]
+    if "file" in e:
+        return (pathlib.Path.home() / e["file"]).exists()
     if "binary" in e:
         return bool(shutil.which(e["binary"]) or (pathlib.Path.home() / ".local/bin" / e["binary"]).exists())
     try:  # pacman -T prints what is missing and exits 127; 0 means all installed
@@ -271,3 +276,80 @@ def model_fits(hw):
 def ollama_names(ollama_list):
     """Model names from `ollama list` (a header row, then one model per line)."""
     return [line.split()[0] for line in ollama_list.splitlines()[1:] if line.strip()]
+
+
+# --- Desktop layout ------------------------------------------------------------------------
+# The shell's two layouts (see shell/qml/Desktop.qml): the taskbar, or the top bar and dock.
+LAYOUTS = ("windows", "mac")
+
+
+def shell_config():
+    return pathlib.Path(os.environ.get("XDG_CONFIG_HOME") or pathlib.Path.home() / ".config") / "kriss/shell.json"
+
+
+def read_layout(path):
+    try:
+        layout = json.loads(pathlib.Path(path).read_text()).get("layout")
+    except (OSError, ValueError, AttributeError):
+        layout = None
+    return layout if layout in LAYOUTS else "windows"
+
+
+def write_layout(path, layout):
+    """Set "layout" in shell.json and keep the rest, for when the shell is not running."""
+    path = pathlib.Path(path)
+    try:
+        config = json.loads(path.read_text())
+    except (OSError, ValueError):
+        config = {}
+    if not isinstance(config, dict):
+        config = {}
+    config["layout"] = layout
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(config, indent=4) + "\n")
+
+
+# The look: the KrissOS Shell's colours (shell/qml/Theme.qml), made from theme/tokens.json.
+def _rgb(c):
+    return tuple(int(c[i:i + 2], 16) for i in (1, 3, 5))
+
+
+def mix(a, b, t):
+    """Colour a moved t of the way to colour b, as #RRGGBB (theme/generate.py's mix)."""
+    return "#" + "".join(f"{round(x + (y - x) * t):02X}" for x, y in zip(_rgb(a), _rgb(b)))
+
+
+def palette(tokens, dark, accent=None):
+    """The shell's surfaces as plain colours: the window, a raised card, the card under the
+    pointer, hairlines, softened text, and the accent with the ink on it and as text
+    (deepened on light so it keeps 4.5:1 on white). accent is the user's pick from shell.json."""
+    t = tokens if dark else {**tokens, **{k[6:]: v for k, v in tokens.items() if k.startswith("light_")}}
+    accent = accent if isinstance(accent, str) and len(accent) == 7 and accent.startswith("#") else t["accent"]
+    try:
+        r, g, b = _rgb(accent)
+    except ValueError:
+        accent = t["accent"]
+        r, g, b = _rgb(accent)
+    card = mix(t["surface"], t["fg"], 0.06) if dark else t["surface"]
+    return {
+        "dark": dark,
+        "win": t["surface"] if dark else t["bg"],
+        "card": card,
+        "cardHover": mix(card, t["fg"], 0.12),
+        "fg": t["fg"],
+        "soft": mix(card, t["fg"], 0.66),
+        "line": mix(card, t["fg"], 0.14),
+        "accent": accent,
+        "accentHover": mix(accent, "#FFFFFF", 0.15) if dark else mix(accent, "#000000", 0.1),
+        "accentInk": "#000000" if 0.299 * r + 0.587 * g + 0.114 * b > 140 else "#FFFFFF",
+        "accentText": accent if dark else mix(accent, t["fg"], 0.35),
+        "red": t["color1"], "green": t["color2"], "amber": t["color3"],
+        "sans": t["font_sans"], "mono": t["font_mono"],
+    }
+
+
+def read_accent(path):
+    try:
+        return json.loads(pathlib.Path(path).read_text()).get("accent")
+    except (OSError, ValueError, AttributeError):
+        return None

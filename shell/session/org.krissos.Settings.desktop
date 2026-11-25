@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Settings
+Name[ms]=Tetapan
+Comment=Display, sound, network, personalise and more
+Comment[ms]=Paparan, bunyi, rangkaian, peribadikan dan banyak lagi
+Keywords=settings;control panel;preferences;system;tetapan;panel kawalan;
+Keywords[ms]=tetapan;panel kawalan;sistem;settings;control panel;
+Icon=preferences-system
+Exec=kriss-shell settings
+OnlyShowIn=KrissOS;
+Categories=Settings;

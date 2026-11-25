@@ -16,6 +16,8 @@ Scope {
     property string glyph: "volume"
     property real level: 0
     property bool shown: false
+    readonly property string what: glyph === "sun" ? Tr.t("Brightness") : glyph === "mute" ? Tr.t("Sound muted")
+        : glyph === "micOff" ? Tr.t("Microphone muted") : glyph === "mic" ? Tr.t("Microphone") : Tr.t("Volume")
 
     function show(g, l) {
         // Quick settings has its own sliders; no pill over the top of them.
@@ -23,9 +25,12 @@ Scope {
         glyph = g;
         level = Math.max(0, Math.min(1, l));
         shown = true;
+        pill.Accessible.announce(what + " " + Math.round(level * 100) + "%");
         hide.restart();
     }
     Timer { id: hide; interval: 1500; onTriggered: root.shown = false }
+    // The volume tick, as Windows plays it: once a key press or drag settles.
+    Timer { id: tick; interval: 120; onTriggered: Desktop.sound("audio-volume-change") }
 
     readonly property var sink: Pipewire.defaultAudioSink
     readonly property var source: Pipewire.defaultAudioSource
@@ -42,7 +47,7 @@ Scope {
     }
     Connections {
         target: root.sink?.audio ?? null
-        function onVolumeChanged() { root.showSink(); }
+        function onVolumeChanged() { root.showSink(); if (root.settled) tick.restart(); }
         function onMutedChanged() { root.showSink(); }
     }
     Connections {
@@ -74,11 +79,12 @@ Scope {
         WlrLayershell.namespace: "kriss-osd"
         exclusionMode: ExclusionMode.Ignore
         anchors.bottom: true
-        margins.bottom: Theme.gap * 2 + Theme.barHeight
-        implicitWidth: 260
-        implicitHeight: 56
+        margins.bottom: Desktop.bottomRoom + Theme.gap * 2
+        implicitWidth: Math.max(260, Theme.sp(14) * 4 + 200)
+        implicitHeight: Math.max(56, Theme.sp(14) + 36)
         color: "transparent"
         mask: Region {}
+        BackgroundEffect.blurRegion: Region { item: pill.opacity > 0 ? pill : null; radius: pill.radius }
 
         Rectangle {
             id: pill
@@ -87,48 +93,51 @@ Scope {
             radius: height / 2
             color: Theme.bar
             border.color: Theme.rim
+            border.width: Theme.rimWidth
             opacity: root.shown ? 1 : 0
+            // Read out by a screen reader, as the level changes.
+            Accessible.role: Accessible.ProgressBar
+            Accessible.name: root.what
             y: root.shown || Theme.reduceMotion ? 0 : 8
-            Behavior on opacity { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
-            Behavior on y { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
+            Behavior on opacity { NumberAnimation { duration: Theme.ms(root.shown ? Theme.fast : Theme.fastExit); easing.type: root.shown ? Theme.ease : Theme.easeExit } }
+            Behavior on y { NumberAnimation { duration: Theme.ms(root.shown ? Theme.fast : Theme.fastExit); easing.type: root.shown ? Theme.ease : Theme.easeExit } }
 
             Glyph {
                 id: icon
                 name: root.glyph
                 anchors.left: parent.left
-                anchors.leftMargin: 20
+                anchors.leftMargin: Theme.s5
                 anchors.verticalCenter: parent.verticalCenter
             }
             Rectangle {
                 id: track
                 anchors.left: icon.right
                 anchors.right: value.left
-                anchors.leftMargin: 14
-                anchors.rightMargin: 14
+                anchors.leftMargin: Theme.s3
+                anchors.rightMargin: Theme.s3
                 anchors.verticalCenter: parent.verticalCenter
                 height: 6
-                radius: 3
-                color: Theme.line
+                radius: height / 2
+                color: Theme.track
                 Rectangle {
                     width: track.width * root.level
                     height: parent.height
                     radius: parent.radius
-                    color: Theme.accent
+                    color: Theme.accentText
                     Behavior on width { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
                 }
             }
             Text {
                 id: value
                 anchors.right: parent.right
-                anchors.rightMargin: 20
+                anchors.rightMargin: Theme.s5
                 anchors.verticalCenter: parent.verticalCenter
-                width: 34
+                width: Math.max(34, implicitWidth)
                 horizontalAlignment: Text.AlignRight
                 text: Math.round(root.level * 100)
                 color: Theme.fg
                 font.family: Theme.sans
-                font.pixelSize: 14
-                font.features: { "tnum": 1 }
+                font.pixelSize: Theme.sp(14)
             }
         }
     }

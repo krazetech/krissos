@@ -5,7 +5,8 @@ import QtQuick.Layouts
 import Quickshell
 
 // What to do before KrissOS can be installed, shown by kriss-install instead of the
-// installer. KRISS_NOTICE picks the page: bitlocker or bios. Colours come from
+// installer, and the one step left after it (lib/restart). KRISS_NOTICE picks the page:
+// bitlocker, bios or secureboot. Colours come from
 // theme/tokens.json (rendered by kriss-installer's PKGBUILD).
 ShellRoot {
     id: root
@@ -49,23 +50,50 @@ ShellRoot {
         bios: {
             en: {
                 title: "Start this USB in UEFI mode",
-                body: "This PC started the USB in legacy BIOS mode. KrissOS installs only in UEFI mode, the mode Windows 10 and 11 use.",
+                body: "Windows on this PC starts in UEFI mode, but the PC started this USB in legacy BIOS mode. Start the USB in UEFI mode too, so KrissOS and Windows share one boot menu. Nothing has been changed.",
                 steps: [
                     "Restart and open the boot menu (often F12, F11, F8 or Esc while the PC starts).",
                     "Pick the USB entry whose name starts with UEFI.",
                     "Choose Install KrissOS."
                 ],
-                footer: ""
+                footer: "To install in legacy BIOS mode anyway, run  kriss-install --legacy  in a terminal. Windows will then not be in the KrissOS boot menu."
             },
             ms: {
                 title: "Mulakan USB ini dalam mod UEFI",
-                body: "PC ini memulakan USB dalam mod BIOS lama. KrissOS hanya boleh dipasang dalam mod UEFI, mod yang digunakan oleh Windows 10 dan 11.",
+                body: "Windows pada PC ini bermula dalam mod UEFI, tetapi PC ini memulakan USB dalam mod BIOS lama. Mulakan USB dalam mod UEFI juga, supaya KrissOS dan Windows berkongsi satu menu but. Tiada apa-apa yang diubah.",
                 steps: [
                     "Mulakan semula dan buka menu but (selalunya F12, F11, F8 atau Esc semasa PC dimulakan).",
                     "Pilih entri USB yang namanya bermula dengan UEFI.",
                     "Pilih Pasang KrissOS."
                 ],
-                footer: ""
+                footer: "Untuk memasang dalam mod BIOS lama juga, jalankan  kriss-install --legacy  dalam terminal. Windows tidak akan ada dalam menu but KrissOS."
+            }
+        },
+        // MokManager's own words are English only, so they stay in English in both.
+        secureboot: {
+            en: {
+                title: "One blue screen after the restart",
+                body: "Secure Boot is on, so this PC must learn KrissOS's key once. Right after the restart a blue screen appears (MokManager). It shows only this time.",
+                steps: [
+                    "Press any key when it says \"Press any key to perform MOK management\". It waits 10 seconds; if you miss it, KrissOS asks again at the next start.",
+                    "Choose Enroll MOK, then Continue, then Yes.",
+                    "Type the password  krissos  and press Enter. It is not your own password.",
+                    "Choose Reboot. KrissOS starts."
+                ],
+                footer: "Nothing in the BIOS needs changing. Windows keeps starting as before.",
+                button: "Restart now"
+            },
+            ms: {
+                title: "Satu skrin biru selepas dimulakan semula",
+                body: "Secure Boot dihidupkan, jadi PC ini perlu mengenali kunci KrissOS sekali sahaja. Sejurus selepas dimulakan semula, satu skrin biru muncul (MokManager). Ia muncul kali ini sahaja.",
+                steps: [
+                    "Tekan sebarang kekunci apabila tertera \"Press any key to perform MOK management\". Ia menunggu 10 saat; jika terlepas, KrissOS akan bertanya lagi pada permulaan seterusnya.",
+                    "Pilih Enroll MOK, kemudian Continue, kemudian Yes.",
+                    "Taip kata laluan  krissos  dan tekan Enter. Ini bukan kata laluan anda sendiri.",
+                    "Pilih Reboot. KrissOS akan bermula."
+                ],
+                footer: "Tiada apa-apa dalam BIOS yang perlu diubah. Windows tetap bermula seperti biasa.",
+                button: "Mulakan semula sekarang"
             }
         }
     })
@@ -149,7 +177,7 @@ ShellRoot {
                 Text {
                     id: close
                     anchors.centerIn: parent
-                    text: root.ms ? "Tutup" : "Close"
+                    text: root.text.button ?? (root.ms ? "Tutup" : "Close")
                     color: "{{bg}}"
                     font.family: "{{font_sans}}"
                     font.pixelSize: 15

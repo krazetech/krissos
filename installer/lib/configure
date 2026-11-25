@@ -16,17 +16,38 @@ if chr pacman -Q plasma-desktop >/dev/null 2>&1; then desktop=plasma; fi
 # Steam and the lib32 packages (kriss-meta-gaming) need [multilib]; ARCHITECTURE §gaming.
 sed -i "/^#\[multilib\]/,/^#Include/ s/^#//" "$root/etc/pacman.conf"
 
+# --- disk encryption -------------------------------------------------------------
+# With "Encrypt system" ticked, / is a LUKS2 mapping Calamares named luks-<uuid> (the
+# same name its crypttab uses) and /boot is plain FAT32. The busybox encrypt hook asks
+# for the passphrase before / mounts; plymouth, when present, draws the prompt.
+crypt='' cryptdevice=''
+rootdev=$(findmnt -nvo SOURCE "$root")
+if [ "$(lsblk -ndo TYPE "$rootdev")" = crypt ]; then
+  # The LUKS partition is the mapping's one slave (lsblk -d leaves PKNAME empty for dm).
+  dm=$(basename "$(readlink -f "$rootdev")")
+  slaves=("/sys/class/block/$dm/slaves/"*)
+  luksdev=/dev/${slaves[0]##*/}
+  luksuuid=$(lsblk -ndo UUID "$luksdev")
+  [ -n "$luksuuid" ] || { echo "kriss: no LUKS UUID for $luksdev" >&2; exit 1; }
+  cryptdevice="cryptdevice=UUID=$luksuuid:${rootdev##*/} "
+  crypt=' encrypt'
+  echo "kriss: / is encrypted ($luksdev)"
+fi
+
 # --- initramfs -------------------------------------------------------------------
 # busybox hooks, not systemd, so kriss-snapshot (kriss-settings) can put a RAM overlay
 # over a read-only snapshot booted from the Limine menu. kriss-kms (kriss-settings) is
 # kms without nouveau, which would add ~105 MB of firmware that older cards never use.
 # The NVIDIA driver gets no early KMS at all, so nothing races with it.
-kms=kriss-kms
-if chr pacman -Q nvidia-utils >/dev/null 2>&1; then kms=; fi
+# plymouth shows the boot splash from the moment the GPU is up (kriss-settings'
+# kriss-plymouth.hook makes kriss the theme). It needs early KMS, so NVIDIA boots go
+# without it: a quiet, text-free boot with no splash.
+kms='kriss-kms plymouth' splash=' splash'
+if chr pacman -Q nvidia-utils >/dev/null 2>&1; then kms='' splash=''; fi
 mkdir -p "$root/etc/mkinitcpio.conf.d"
 cat >"$root/etc/mkinitcpio.conf.d/kriss.conf" <<EOF
 # Written by the KrissOS installer.
-HOOKS=(base udev autodetect microcode modconf $kms keyboard keymap consolefont block filesystems fsck kriss-snapshot)
+HOOKS=(base udev autodetect microcode modconf $kms keyboard keymap consolefont block$crypt filesystems fsck kriss-snapshot)
 EOF
 
 # --- snapper ---------------------------------------------------------------------
@@ -48,42 +69,68 @@ printf '[zram0]\nzram-size = min(ram / 2, 8192)\ncompression-algorithm = zstd\n'
   >"$root/etc/systemd/zram-generator.conf"
 
 # --- Limine ----------------------------------------------------------------------
-esp=$root/efi
 uuid=$(findmnt -nvo UUID "$root")
-echo "root=UUID=$uuid rootflags=subvol=@ rw quiet zswap.enabled=0" >"$root/etc/kernel/cmdline"
-
-install -Dm644 "$root/usr/share/limine/BOOTX64.EFI" "$esp/EFI/limine/BOOTX64.EFI"
-# Firmware that forgets boot entries (and QEMU without saved NVRAM) falls back to
-# EFI/BOOT/BOOTX64.EFI. Take that path only when nothing else, like Windows, owns it.
-if [ ! -e "$esp/EFI/BOOT/BOOTX64.EFI" ]; then
-  install -Dm644 "$root/usr/share/limine/BOOTX64.EFI" "$esp/EFI/BOOT/BOOTX64.EFI"
-  touch "$esp/EFI/BOOT/limine.conf"  # kriss-limine-update keeps this copy current too
-fi
-espdev=$(findmnt -nvo SOURCE "$esp")
-disk=/dev/$(lsblk -no PKNAME "$espdev")
-part=$(cat "/sys/class/block/${espdev##*/}/partition")
-efibootmgr --create --disk "$disk" --part "$part" --label KrissOS --loader '\EFI\limine\BOOTX64.EFI' ||
-  echo 'kriss: could not add a firmware boot entry; the fallback path still boots' >&2
-
-# Keep Windows in the menu: look for its boot manager on every FAT partition.
+echo "${cryptdevice}root=UUID=$uuid rootflags=subvol=@ rw quiet$splash zswap.enabled=0" >"$root/etc/kernel/cmdline"
 mkdir -p "$root/etc/kriss/limine.d"
-tmp=$(mktemp -d)
-while read -r dev partuuid; do
-  # Our own ESP is already mounted; look at the others read-only.
-  mnt=$(findmnt -nfo TARGET --source "$dev" || true)
-  if [ -z "$mnt" ]; then
-    mount -o ro "$dev" "$tmp" 2>/dev/null || continue
-    mnt=$tmp
+
+if [ ! -d /sys/firmware/efi ]; then
+  # Legacy BIOS: no ESP. kriss-limine-update puts limine-bios.sys next to limine.conf on
+  # the FAT /boot and runs `limine bios-install` on its disk (now and after Limine updates).
+  # On GPT, Limine keeps its stage 2 in a BIOS boot partition. Calamares cannot make one
+  # on BIOS only, but it starts the first partition at 1 MiB on BIOS, so the space after
+  # the GPT (sectors 34-2047) takes it.
+  bootdev=$(findmnt -nvo SOURCE "$root/boot")
+  disk=/dev/$(lsblk -no PKNAME "$bootdev")
+  if ! lsblk -lno PARTTYPE "$disk" | grep -qix 21686148-6449-6e6f-744e-656564454649; then
+    sgdisk -a 1 -n 0:34:2047 -t 0:ef02 -c 0:BIOSBOOT "$disk" ||
+      { echo "kriss: no room for a BIOS boot partition at the start of $disk" >&2; exit 1; }
   fi
-  if [ -f "$mnt/EFI/Microsoft/Boot/bootmgfw.efi" ]; then
-    printf '/Windows\n    protocol: efi\n    path: guid(%s):/EFI/Microsoft/Boot/bootmgfw.efi\n' \
-      "$partuuid" >"$root/etc/kriss/limine.d/50-windows.conf"
-    echo "kriss: Windows boot manager found on $dev"
+  # ponytail: no Windows entry on BIOS. Windows in BIOS mode needs an MBR disk, which the
+  # partition step does not install next to; kriss-install sends UEFI Windows to UEFI mode.
+  mkdir -p "$root/boot/limine"
+  conf=$root/boot/limine/limine.conf
+else
+  esp=$root/efi
+  conf=$esp/EFI/limine/limine.conf
+  # Secure Boot stays on: the firmware starts Microsoft-signed shim (BOOTX64.EFI), shim
+  # starts Limine (grubx64.efi, written and signed by kriss-limine-update) once this PC's
+  # key is in its MOK list (kriss-secureboot below). mmx64.efi is MokManager.
+  shim() {
+    install -Dm644 "$root/usr/share/shim-signed/shimx64.efi" "$1/BOOTX64.EFI"
+    install -Dm644 "$root/usr/share/shim-signed/mmx64.efi" "$1/mmx64.efi"
+  }
+  shim "$esp/EFI/limine"
+  # Firmware that forgets boot entries (and QEMU without saved NVRAM) falls back to
+  # EFI/BOOT/BOOTX64.EFI. Take that path only when nothing else, like Windows, owns it.
+  if [ ! -e "$esp/EFI/BOOT/BOOTX64.EFI" ]; then
+    shim "$esp/EFI/BOOT"
+    touch "$esp/EFI/BOOT/limine.conf"  # kriss-limine-update keeps this copy current too
   fi
-  if [ "$mnt" = "$tmp" ]; then umount "$tmp"; fi
-  if [ -f "$root/etc/kriss/limine.d/50-windows.conf" ]; then break; fi
-done < <(lsblk -lnpo PATH,PARTUUID,FSTYPE | awk '$3 == "vfat" {print $1, $2}')
-rmdir "$tmp"
+  espdev=$(findmnt -nvo SOURCE "$esp")
+  disk=/dev/$(lsblk -no PKNAME "$espdev")
+  part=$(cat "/sys/class/block/${espdev##*/}/partition")
+  efibootmgr --create --disk "$disk" --part "$part" --label KrissOS --loader '\EFI\limine\BOOTX64.EFI' ||
+    echo 'kriss: could not add a firmware boot entry; the fallback path still boots' >&2
+
+  # Keep Windows in the menu: look for its boot manager on every FAT partition.
+  tmp=$(mktemp -d)
+  while read -r dev partuuid; do
+    # Our own ESP is already mounted; look at the others read-only.
+    mnt=$(findmnt -nfo TARGET --source "$dev" || true)
+    if [ -z "$mnt" ]; then
+      mount -o ro "$dev" "$tmp" 2>/dev/null || continue
+      mnt=$tmp
+    fi
+    if [ -f "$mnt/EFI/Microsoft/Boot/bootmgfw.efi" ]; then
+      printf '/Windows\n    protocol: efi\n    path: guid(%s):/EFI/Microsoft/Boot/bootmgfw.efi\n' \
+        "$partuuid" >"$root/etc/kriss/limine.d/50-windows.conf"
+      echo "kriss: Windows boot manager found on $dev"
+    fi
+    if [ "$mnt" = "$tmp" ]; then umount "$tmp"; fi
+    if [ -f "$root/etc/kriss/limine.d/50-windows.conf" ]; then break; fi
+  done < <(lsblk -lnpo PATH,PARTUUID,FSTYPE | awk '$3 == "vfat" {print $1, $2}')
+  rmdir "$tmp"
+fi
 
 # --- services --------------------------------------------------------------------
 chr systemctl enable NetworkManager bluetooth fstrim.timer snapper-cleanup.timer kriss-limine-update.path
@@ -99,7 +146,13 @@ plasma)
   ;;
 esac
 
+# What the installer put on this PC, so kriss reset knows which apps were added later.
+mkdir -p "$root/var/lib/kriss"
+chr pacman -Qqe >"$root/var/lib/kriss/install-packages"
+
+# This PC's Secure Boot key, before the initramfs hook first writes and signs Limine.
+[ ! -d /sys/firmware/efi ] || chr kriss-secureboot
 chr mkinitcpio -P
 chr kriss-limine-update
 echo 'kriss: boot menu:'
-cat "$esp/EFI/limine/limine.conf"
+cat "$conf"

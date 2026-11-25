@@ -1,72 +1,95 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Kraze Tech
 import QtQuick
-import QtQuick.Controls as QQC2
 import QtQuick.Layouts
-import org.kde.kirigami as Kirigami
 
-Kirigami.ScrollablePage {
-    ColumnLayout {
-        spacing: Kirigami.Units.largeSpacing * 2
-
+Page {
+    // The greeting: a card with the emblem and the three first steps.
+    Card {
+        Layout.fillWidth: true
+        padding: 24
+        spacing: 16
         RowLayout {
-            spacing: Kirigami.Units.largeSpacing * 2
+            Layout.fillWidth: true
+            spacing: 20
             Image {
                 source: logo
-                sourceSize.width: Kirigami.Units.gridUnit * 4
-                sourceSize.height: Kirigami.Units.gridUnit * 4
+                Layout.preferredWidth: 72
+                Layout.preferredHeight: 72
+                sourceSize.width: 144
+                sourceSize.height: 144
             }
-            Kirigami.Heading {
+            ColumnLayout {
                 Layout.fillWidth: true
-                text: qsTr("Welcome to KrissOS")
-                wrapMode: Text.WordWrap
+                spacing: 6
+                Txt {
+                    Layout.fillWidth: true
+                    text: qsTr("Welcome to KrissOS")
+                    size: 22
+                    bold: true
+                }
+                Txt {
+                    Layout.fillWidth: true
+                    soft: true
+                    text: qsTr("Coming from Windows? Start here. Check that your games run, then find a home for each of your apps.")
+                }
             }
         }
-        QQC2.Label {
+        Flow {
             Layout.fillWidth: true
-            wrapMode: Text.WordWrap
-            text: qsTr("Coming from Windows? Start here. Check that your games run, then find a home for each of your apps.")
-        }
-
-        RowLayout {
-            spacing: Kirigami.Units.largeSpacing
-            QQC2.Button {
+            spacing: 10
+            Pill {
                 text: qsTr("Check my games")
-                icon.name: "input-gaming"
+                glyph: "games"
                 highlighted: true
                 onClicked: root.showPage(1)
             }
-            QQC2.Button {
+            Pill {
                 text: qsTr("Bring my apps")
-                icon.name: "system-software-install"
+                glyph: "apps"
                 onClicked: root.showPage(2)
             }
-            QQC2.Button {
+            Pill {
                 text: qsTr("Copy my files")
-                icon.name: "folder-download"
+                glyph: "folder"
                 onClicked: root.showPage(3)
             }
         }
+    }
 
-        Kirigami.FormLayout {
+    LayoutPicker {
+        Layout.fillWidth: true
+    }
+
+    // Language and what this PC is, as label and value rows on one card.
+    Card {
+        Layout.fillWidth: true
+        spacing: 0
+        GridLayout {
             Layout.fillWidth: true
-            QQC2.ComboBox {
-                Kirigami.FormData.label: qsTr("Language:")
+            columns: 2
+            columnSpacing: 24
+            rowSpacing: 14
+            Txt { soft: true; text: qsTr("Language:") }
+            Select {
+                Layout.preferredWidth: 240
                 model: ["English", "Bahasa Melayu"]
                 currentIndex: backend.language === "ms" ? 1 : 0
                 onActivated: index => backend.setLanguage(index === 1 ? "ms" : "en")
             }
-            QQC2.Label {
-                Kirigami.FormData.label: qsTr("This PC:")
+            Txt { soft: true; text: qsTr("This PC:") }
+            Txt {
+                Layout.fillWidth: true
                 text: qsTr("%1 GB RAM · %2 CPU threads · graphics: %3")
                     .arg(Math.round(backend.hw.ram_mb / 1024))
                     .arg(backend.hw.cores)
                     .arg(backend.hw.gpus.length ? backend.hw.gpus.join(", ") : qsTr("unknown"))
             }
-            QQC2.Label {
-                Kirigami.FormData.label: qsTr("Windows apps:")
-                text: backend.hw.winboat_ok ? qsTr("This PC can run Windows apps in WinBoat")
-                                            : qsTr("Linux apps and Wine (WinBoat needs a stronger PC)")
+            Txt { soft: true; text: qsTr("Windows apps:") }
+            Txt {
+                Layout.fillWidth: true
+                text: backend.hw.winboat_ok ? qsTr("This PC can run Windows apps in WinPodX")
+                                            : qsTr("Linux apps and Wine (WinPodX needs a stronger PC)")
             }
         }
     }

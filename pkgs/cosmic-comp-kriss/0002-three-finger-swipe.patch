@@ -1,0 +1,50 @@
+diff --git a/src/input/actions.rs b/src/input/actions.rs
+index 6015ff8..83ab248 100644
+--- a/src/input/actions.rs
++++ b/src/input/actions.rs
+@@ -142,6 +142,7 @@ impl State {
+                     &mut self.common.workspace_state.update(),
+                 );
+             }
++            SwipeAction::TaskView => self.spawn_command("kriss-shell taskview".into()),
+         }
+     }
+ 
+diff --git a/src/input/gestures/mod.rs b/src/input/gestures/mod.rs
+index 6c9c2f3..d884839 100644
+--- a/src/input/gestures/mod.rs
++++ b/src/input/gestures/mod.rs
+@@ -16,6 +16,7 @@ pub struct SwipeEvent {
+ pub enum SwipeAction {
+     NextWorkspace,
+     PrevWorkspace,
++    TaskView,
+ }
+ 
+ #[derive(Debug, Clone)]
+diff --git a/src/input/mod.rs b/src/input/mod.rs
+index d51dd8a..3d4908f 100644
+--- a/src/input/mod.rs
++++ b/src/input/mod.rs
+@@ -1248,8 +1248,8 @@ impl State {
+                                 natural_scroll = natural;
+                             }
+                             activate_action = match gesture_state.fingers {
+-                                3 => None, // TODO: 3 finger gestures
+-                                4 => {
++                                // KrissOS: three fingers as well as four, as on Windows.
++                                3 | 4 => {
+                                     if self.common.config.cosmic_conf.workspaces.workspace_layout
+                                         == WorkspaceLayout::Horizontal
+                                     {
+@@ -1268,6 +1268,10 @@ impl State {
+                                                     Some(SwipeAction::NextWorkspace)
+                                                 }
+                                             }
++                                            // KrissOS: three fingers up opens Task View.
++                                            Some(Direction::Up) if gesture_state.fingers == 3 => {
++                                                Some(SwipeAction::TaskView)
++                                            }
+                                             _ => None, // TODO: Other actions
+                                         }
+                                     } else {

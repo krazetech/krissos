@@ -1,0 +1,10 @@
+# The on-screen keyboard in KrissOS colours (theme/tokens.json).
+name = "KrissOS Dark"
+
+[palette]
+background = "{{surface}}"
+text = "{{fg}}"
+primary = "{{accent}}"
+success = "{{color2}}"
+danger = "{{color1}}"
+warning = "{{color3}}"

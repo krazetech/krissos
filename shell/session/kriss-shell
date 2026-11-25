@@ -6,11 +6,31 @@
 #   kriss-shell launcher   open or close the launcher (cosmic-comp runs this for the Windows key)
 #   kriss-shell quick      open or close quick settings (Windows+A)
 #   kriss-shell notifications
-#                          open or close the notification list (Windows+N)
+#                          open or close the notification center (Windows+N)
 #   kriss-shell calendar   open or close the calendar under the clock (Windows+Alt+D)
+#   kriss-shell widgets    open or close the widgets panel (Windows+W)
 #   kriss-shell lock       lock the screen (Windows+L)
+#   kriss-shell clipboard  open or close the clipboard history (Windows+V)
+#   kriss-shell emoji      open or close the emoji and symbol picker (Windows+.)
 #   kriss-shell greeter    the login screen, which greetd runs (see shell/README.md)
 #   kriss-shell desktop    show the desktop, or bring the windows back (Windows+D)
+#   kriss-shell taskbar focus|tray|startMenu|open N|newWindow N|jumpList N
+#                          the taskbar keys: Windows+T, Windows+B, Windows+X, Windows+1…9,
+#                          Windows+Shift+1…9 and Windows+Alt+1…9
+#   kriss-shell taskview   open or close Task View (Windows+Tab)
+#   kriss-shell desktops add|close
+#                          a new desktop, or close the current one (Windows+Ctrl+D, Windows+Ctrl+F4)
+#   kriss-shell personalise [colours|background|taskbar|pins|text]
+#                          Settings, at that Personalise page
+#   kriss-shell settings [PAGE]
+#                          Settings, at a page (display, sound, wifi, datetime...)
+#   kriss-shell project    Windows+P: PC screen only, Duplicate, Extend, Second screen only
+#   kriss-shell snap       the snap layouts for the window in front (Windows+Z)
+#   kriss-shell layout windows|mac
+#                          the taskbar, or the Mac layout (top bar and dock); saved, live
+#   kriss-shell input next|previous|osk
+#                          the next input method, EN, 拼, த or ج (Windows+Space, Windows+Shift+Space),
+#                          or show or hide the on-screen keyboard
 #   kriss-shell switcher next|previous
 #                          the Alt+Tab window switcher (Alt+Tab and Alt+Shift+Tab)
 #   kriss-shell media playPause|next|previous
@@ -30,7 +50,7 @@ launcher)
     # Fall back to COSMIC's own launcher when the KrissOS Shell is not running.
     qs -p "$qml" ipc call launcher toggle 2>/dev/null || exec cosmic-launcher
     ;;
-quick | notifications | calendar)
+quick | notifications | calendar | widgets)
     qs -p "$qml" ipc call "$1" toggle
     ;;
 lock)
@@ -39,8 +59,46 @@ lock)
 desktop)
     qs -p "$qml" ipc call desktop toggle
     ;;
+taskview)
+    qs -p "$qml" ipc call taskview toggle
+    ;;
+desktops)
+    qs -p "$qml" ipc call desktops "${2:?usage: kriss-shell desktops add|close}"
+    ;;
+clipboard)
+    qs -p "$qml" ipc call clipboard history
+    ;;
+emoji)
+    qs -p "$qml" ipc call clipboard emoji
+    ;;
+personalise)
+    qs -p "$qml" ipc call personalise open "${2:-colours}"
+    ;;
+settings)
+    qs -p "$qml" ipc call settings open "${2:-}"
+    ;;
+project)
+    qs -p "$qml" ipc call project toggle
+    ;;
+snap)
+    qs -p "$qml" ipc call snap layouts
+    ;;
+layout)
+    case "${2:-}" in
+    windows | mac) qs -p "$qml" ipc call layout set "$2" ;;
+    "") qs -p "$qml" ipc call layout get ;;
+    *) echo "usage: kriss-shell layout windows|mac" >&2; exit 2 ;;
+    esac
+    ;;
+input)
+    # Without the shell, fcitx5 still switches: toggle between the first and the last used.
+    qs -p "$qml" ipc call input "${2:-next}" 2>/dev/null || exec fcitx5-remote -t
+    ;;
 switcher | media)
     qs -p "$qml" ipc call "$1" "${2:?usage: kriss-shell $1 ACTION}"
+    ;;
+taskbar)
+    qs -p "$qml" ipc call taskbar "${2:?usage: kriss-shell taskbar ACTION [N]}" ${3:+"$3"}
     ;;
 brightness)
     # The brightness keys: set it and show the level, or just set it without the shell.
@@ -79,8 +137,17 @@ greeter)
     # The shell inside a running cosmic-comp. Also how to run it nested for development.
     # ponytail: restart the shell after a crash so open apps survive it; a clean exit
     # (Sign out in the launcher) ends the session. A crash loop retries once a second.
+    # The kernel backs memory with 2 MB huge pages for every process (THP "always"), which
+    # adds about 110 MB to the shell's half-used heap for no speed it needs. Turn them off for
+    # qs and its helpers only (prctl PR_SET_THP_DISABLE, kept across exec); python3 comes with
+    # python-pywayland.
+    nothp='import ctypes, os, sys; ctypes.CDLL(None).prctl(41, 1, 0, 0, 0); os.execvp(sys.argv[1], sys.argv[1:])'
     while :; do
-        qs -p "$qml" && exit 0
+        # The icon pack: COSMIC's setting, which Settings > Personalise > Icons changes (and
+        # then restarts the shell, since Quickshell reads it only at start).
+        QS_ICON_THEME=$(tr -d '"' < "${XDG_CONFIG_HOME:-$HOME/.config}/cosmic/com.system76.CosmicTk/v1/icon_theme" 2>/dev/null)
+        export QS_ICON_THEME="${QS_ICON_THEME:-Papirus-Dark}"
+        python3 -c "$nothp" qs -p "$qml" && exit 0
         sleep 1
     done
     ;;
@@ -88,6 +155,10 @@ greeter)
     export XDG_CURRENT_DESKTOP=KrissOS:COSMIC XDG_SESSION_DESKTOP=KrissOS XDG_SESSION_TYPE=wayland
     # The qt6ct config from kriss-settings only applies with this set (see its PKGBUILD).
     export QT_QPA_PLATFORMTHEME=qt6ct
+    # Input methods (fcitx5, from kriss-settings). Wayland apps reach it through text-input
+    # on their own, GTK ones included, so there is no GTK_IM_MODULE. These cover Qt apps
+    # that fall back to fcitx's own module, and X11 apps and games under XWayland (XIM).
+    export XMODIFIERS=@im=fcitx QT_IM_MODULES="wayland;fcitx"
 
     # COSMIC defaults: the Windows key opens our launcher, Windows+L locks, the KrissOS
     # dark and light themes (accent, backgrounds, corners; no coloured ring around the
@@ -127,6 +198,16 @@ greeter)
     sed -i 's|"brightnessctl -q -c backlight set \(5%[-+]\)"|"kriss-shell brightness \1"|' \
         "$cfg/$sc/system_actions" 2>/dev/null || true
 
+    # The language and formats chosen in Settings > Time and language. /etc/profile.d/locale.sh
+    # reads this file only when LANG is unset, and the login has set it from /etc/locale.conf.
+    loc=${XDG_CONFIG_HOME:-$HOME/.config}/locale.conf
+    if [ -r "$loc" ]; then
+        set -a
+        . "$loc"
+        set +a
+        systemctl --user import-environment LANG LANGUAGE LC_TIME LC_NUMERIC LC_MONETARY LC_PAPER LC_MEASUREMENT 2>/dev/null || true
+    fi
+
     # Not `cosmic-comp COMMAND`: that is cosmic-comp's kiosk mode, which turns off every
     # keyboard shortcut. Start it on its own; once it is ready it publishes
     # WAYLAND_DISPLAY and DISPLAY to the systemd user environment, so wait for that.
@@ -143,24 +224,33 @@ greeter)
     done
     # shellcheck disable=SC2086,SC2163 # one NAME=value per line; values are socket names, no spaces
     export $env
-    dbus-update-activation-environment --systemd XDG_CURRENT_DESKTOP XDG_SESSION_TYPE QT_QPA_PLATFORMTHEME 2>/dev/null
+    dbus-update-activation-environment --systemd XDG_CURRENT_DESKTOP XDG_SESSION_TYPE QT_QPA_PLATFORMTHEME \
+        XMODIFIERS QT_IM_MODULES 2>/dev/null
     # Switches light and dark (by hand or at sunset) and keeps the gsettings icon theme and
     # fonts in step with COSMIC's, so COSMIC apps and the terminal follow the mode live.
     cosmic-settings-daemon &
     daemon=$!
+    # Turns the screens off and puts the PC to sleep after the times in Settings > Power and
+    # battery (com.system76.CosmicIdle), locking as the screens go off; videos and games that
+    # ask the screen to stay on hold it off.
+    cosmic-idle &
+    idle=$!
     # Apps in /etc/xdg/autostart and ~/.config/autostart, such as kriss-welcome on first
     # login, through systemd's XDG autostart units.
     systemctl --user --no-block start kriss-shell-session.target
+    # Clipboard history keeps only pinned items from one session to the next (also after a crash).
+    kriss-shell-clipboard clear 2>/dev/null
     # The ISO boot test waits for this line.
     logger -t kriss-shell "KrissOS Shell started on $WAYLAND_DISPLAY" 2>/dev/null
 
     "$0" --inside
+    kriss-shell-clipboard clear 2>/dev/null
     systemctl --user stop kriss-shell-session.target graphical-session.target
-    kill "$daemon" "$comp" 2>/dev/null
+    kill "$daemon" "$idle" "$comp" 2>/dev/null
     wait "$comp"
     ;;
 *)
-    echo "usage: kriss-shell [launcher|quick|notifications|calendar|lock|desktop|switcher next|media playPause|brightness STEP|screenshot [region]|greeter]" >&2
+    echo "usage: kriss-shell [launcher|quick|notifications|calendar|widgets|lock|desktop|taskview|desktops add|clipboard|emoji|snap|layout windows|mac|input next|taskbar ACTION|switcher next|media playPause|brightness STEP|screenshot [region]|greeter]" >&2
     exit 2
     ;;
 esac

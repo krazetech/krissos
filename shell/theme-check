@@ -1,0 +1,75 @@
+#!/usr/bin/env node
+// Checks qml/theme.js: the "auto" schedule, input checks, and that every curated accent
+// and its shades pass contrast in dark and light. node shell/theme-check
+const fs = require("fs"), path = require("path"), assert = require("assert");
+const src = fs.readFileSync(path.join(__dirname, "qml/theme.js"), "utf8").replace(".pragma library", "");
+const T = new Function(src + "; return { parseColor, isMode, minutes, lightAt, contrast, shades, surfaces, mix, trackAlpha };")();
+const tokens = JSON.parse(fs.readFileSync(path.join(__dirname, "../theme/tokens.json"), "utf8"));
+
+// Schedule, in minutes after midnight.
+const at = (h, m) => h * 60 + m;
+assert(T.lightAt(at(12, 0), "07:00", "19:00"));
+assert(T.lightAt(at(7, 0), "07:00", "19:00"));           // light from the minute itself
+assert(!T.lightAt(at(19, 0), "07:00", "19:00"));         // dark from the minute itself
+assert(!T.lightAt(at(6, 59), "07:00", "19:00"));
+assert(!T.lightAt(at(0, 0), "07:00", "19:00"));
+assert(T.lightAt(at(23, 0), "22:00", "06:00"));          // a light span across midnight
+assert(T.lightAt(at(3, 0), "22:00", "06:00"));
+assert(!T.lightAt(at(12, 0), "22:00", "06:00"));
+assert(T.lightAt(at(12, 0), "nonsense", "19:00"));       // bad times: 07:00 / 19:00
+assert(!T.lightAt(at(20, 0), "08:00", "08:00"));         // equal times too
+assert(T.lightAt(at(8, 0), "8:00", "18:30"));
+assert.strictEqual(T.minutes("24:00"), null);
+assert.strictEqual(T.minutes("07:60"), null);
+assert.strictEqual(T.minutes("23:59"), at(23, 59));
+
+// Input from shell.json and IPC.
+assert.strictEqual(T.parseColor("#24B1E6"), "#24b1e6");
+assert.strictEqual(T.parseColor(" #abc "), "#aabbcc");
+for (const bad of ["24B1E6", "#24B1E", "#GGGGGG", "red", "", null, 5, "#24B1E6;rm"]) assert.strictEqual(T.parseColor(bad), null, bad);
+for (const m of ["dark", "light", "system", "auto"]) assert(T.isMode(m));
+for (const m of ["Dark", "night", "", undefined]) assert(!T.isMode(m));
+
+// Contrast, in dark and light: text on the accent fill and its hover and pressed shades
+// reads 4.5:1; accent text (labels, links, icons, rims) reads 4.5:1 on every surface of the
+// mode; the fill stays the picked colour unless it is nearly the page. The curated list is
+// read from Theme.qml so the two cannot drift.
+const qml = fs.readFileSync(path.join(__dirname, "qml/Theme.qml"), "utf8");
+const list = [...qml.matchAll(/name: Tr\.t\("([^"]+)"\), color: "([^"]+)"/g)]
+    .map(m => [m[1], m[2] === "{{accent}}" ? tokens.accent : m[2]]);
+assert(list.length >= 8, "curated accents not found in Theme.qml");
+const check = (c, name, keys) => {
+    for (const dark of [true, false]) {
+        const bgs = T.surfaces(dark, tokens), s = T.shades(T.parseColor(c), dark, bgs);
+        for (const k of keys)
+            assert(T.contrast(s[k], s.ink) >= 4.5, `${name} ${k} ink: ${T.contrast(s[k], s.ink).toFixed(2)}`);
+        for (const bg of bgs) {
+            assert(T.contrast(s.text, bg) >= 4.5, `${name} text on ${bg}: ${T.contrast(s.text, bg).toFixed(2)}`);
+            assert(T.contrast(s.accent, bg) >= 1.5, `${name} fill on ${bg}: ${T.contrast(s.accent, bg).toFixed(2)}`);
+        }
+    }
+};
+for (const [name, c] of list) {
+    check(c, name, ["accent", "hover", "pressed"]);
+    // Light mode keeps the picked colour for fills (the audit's muddy amber, item 4).
+    assert.strictEqual(T.shades(T.parseColor(c), false, T.surfaces(false, tokens)).accent, T.parseColor(c), name);
+}
+// Any colour still gets readable text on it and readable accent text, even ones off the list.
+for (const c of ["#000000", "#ffffff", "#ff0000", "#777777", "#0000ff", "#eef2f5"]) check(c, c, ["accent"]);
+
+// Slider and meter tracks show 3:1 on every surface (Theme.track).
+for (const dark of [true, false])
+    for (const bg of T.surfaces(dark, tokens)) {
+        const c = T.contrast(T.mix(bg, dark ? tokens.fg : tokens.light_fg, T.trackAlpha), bg);
+        assert(c >= 3, `track on ${bg}: ${c.toFixed(2)}`);
+    }
+
+// The radius scale: every shape takes Theme.rPanel, rCard, rControl or rSmall, or a size
+// over 2 for a pill or a dot. A number written in a radius is a new radius off the scale.
+const qmlDir = path.join(__dirname, "qml");
+for (const f of fs.readdirSync(qmlDir).filter(f => f.endsWith(".qml") && f !== "Theme.qml"))
+    fs.readFileSync(path.join(qmlDir, f), "utf8").split("\n").forEach((line, i) => {
+        const m = line.match(/\bradius:\s*(-?[0-9.]+)/);
+        assert(!m, `${f}:${i + 1}: literal radius ${m && m[1]}; use the scale in Theme.qml`);
+    });
+console.log("ok");

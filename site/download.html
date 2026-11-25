@@ -70,7 +70,7 @@
         <p class="lede">KrissOS is still young. Try the preview in a VM or on a spare PC, not on the only computer you have. Not yet.</p>
       </div>
       <ul class="list reveal">
-        <li><span>Your PC<small>64-bit Intel and AMD PCs. Apple Silicon Macs come later, with their own image.</small></span></li>
+        <li><span>Your PC<small>64-bit Intel and AMD PCs, with UEFI or legacy BIOS. Apple Silicon Macs come later, with their own image.</small></span></li>
         <li><span>Desktop<small>The KrissOS Shell by default. The installer also offers KDE Plasma.</small></span></li>
         <li><span>Updates<small>Small updates all the time, straight from Arch, plus our own signed packages. Each one takes a snapshot first.</small></span></li>
         <li><span>Releases<small>Nightly builds go to <code>preview</code>. Releases are numbered on the Kriss line, <code>110</code>, <code>115</code> and on, and named after a place in Malaysia. <code>110</code> is Sungai Petani.</small></span></li>
@@ -83,7 +83,7 @@
       <div class="card note reveal">
         <h2>Before you boot.</h2>
         <ul class="list">
-          <li><span>UEFI firmware on<small>In virt-manager, GNOME Boxes, VirtualBox or VMware, pick UEFI (OVMF) before the first boot. The installer needs it, and it is what CI tests.</small></span></li>
+          <li><span>UEFI if you have it<small>Legacy BIOS (CSM) works too, so older PCs install fine, and CI tests both. Pick UEFI when the PC or VM offers it (OVMF in virt-manager, GNOME Boxes, VirtualBox or VMware): Windows 10 and 11 use it, so dual-boot shares one boot menu.</small></span></li>
           <li><span>4 GB of RAM or more<small>The live session runs from memory. Two CPU cores and 3D acceleration make it smoother.</small></span></li>
           <li><span>No login needed<small>The live session logs straight into the KrissOS Shell. Press the Windows key to open the launcher.</small></span></li>
         </ul>

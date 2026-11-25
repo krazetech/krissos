@@ -18,8 +18,12 @@ sof-firmware
 kriss-keyring
 kriss-settings
 kriss-theme
+# The lock clock's depth effect on your own pictures, like a phone's: kriss-wallpaper-mask
+# runs kriss-theme's model with it. x86 only, so kriss-theme keeps it optional for aarch64.
+python-onnxruntime-cpu
 kriss-tools
 kriss-welcome
+kriss-store
 
 # Installer: Calamares with the KrissOS sequence. os-prober finds Windows, ntfs-3g
 # resizes it. The installer copies this live system to the disk (no internet), so
@@ -35,7 +39,7 @@ cosmic-comp-kriss
 greetd
 cosmic-files
 cosmic-terminal
-cosmic-settings
+cosmic-settings-kriss
 xdg-desktop-portal-cosmic
 power-profiles-daemon
 upower
@@ -43,6 +47,16 @@ libnotify
 firefox
 noto-fonts
 noto-fonts-emoji
+# Typing in Chinese (Pinyin), Tamil and Jawi: fcitx5, set up by kriss-settings.
+# fcitx5-kriss is fcitx5 with the modifier fix the on-screen keyboard needs.
+fcitx5-kriss
+fcitx5-osk
+fcitx5-qt
+fcitx5-gtk
+fcitx5-chinese-addons
+fcitx5-m17n
+m17n-db
+adobe-source-han-sans-cn-fonts
 pipewire
 pipewire-alsa
 pipewire-pulse
@@ -63,6 +77,10 @@ exfatprogs
 gptfdisk
 efibootmgr
 limine
+shim-signed
+mokutil
+sbctl
+binutils
 snapper
 snap-pac
 zram-generator

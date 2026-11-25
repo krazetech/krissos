@@ -4,7 +4,7 @@ on:
   push:
     tags: ['[0-9]*', 'MR*']   # release codenames: 110, 115, MR3
   pull_request:
-    paths: ['iso/**', 'installer/**', 'pkgs/calamares/**', 'pkgs/kriss-installer/**', 'pkgs/kriss-settings/**', 'pkgs/kriss-theme/**', 'pkgs/kriss-tools/**', 'theme/**', 'tools/kriss', '.github/workflows/iso.yml']
+    paths: ['iso/**', 'installer/**', 'pkgs/calamares/**', 'pkgs/kriss-installer/**', 'pkgs/kriss-settings/**', 'pkgs/kriss-theme/**', 'pkgs/kriss-tools/**', 'pkgs/kriss-store/**', 'pkgs/shim-signed/**', 'tools/kriss-migrate', 'store/**', 'theme/**', 'tools/kriss', '.github/workflows/iso.yml']
   schedule:
     - cron: '30 3 * * *'      # nightly
   workflow_dispatch:
@@ -23,6 +23,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # A tag ships with its CHANGELOG.md section as the release notes. Checked first so a tag
+      # without notes fails in seconds instead of after the build. See docs/releasing.md.
+      - name: Release notes
+        if: startsWith(github.ref, 'refs/tags/')
+        run: tools/ci/release-notes.sh "$GITHUB_REF_NAME" > "$RUNNER_TEMP/notes.md"
+
       # The work dir peaks around 10 GB on top of the ISO. Drop the toolchains we never use.
       - name: Free disk space
         run: |
@@ -32,11 +38,15 @@ jobs:
           df -h /
 
       # mkarchiso needs mounts, so the container must be privileged.
+      # Tagged releases install from [kriss]; nightly and PR ISOs from [kriss-testing], so
+      # their boot and install tests check what promote.yml would move to [kriss] next.
       - name: Build ISO
         id: build
+        env:
+          KRISS_CHANNEL: ${{ startsWith(github.ref, 'refs/tags/') && 'stable' || 'testing' }}
         run: |
           mkdir -p out
-          sudo docker run --rm --privileged -v "$PWD:/src" -v "$RUNNER_TEMP:/work" archlinux:latest \
+          sudo docker run --rm --privileged -e KRISS_CHANNEL -v "$PWD:/src" -v "$RUNNER_TEMP:/work" archlinux:latest \
             /src/iso/build.sh /src/out /work
           sudo chown -R "$USER" out
           cd out && sha256sum -- *.iso > sha256sums.txt
@@ -55,19 +65,30 @@ jobs:
           # The release steps then upload everything but the ISO.
           if (( size > 2147483648 )); then echo ISO_OVER_2GIB=1 >>"$GITHUB_ENV"; fi
 
+      # A tagged release must never go out unsigned: without the key this step fails, and the
+      # SourceForge and release steps after it are skipped. The nightly preview only warns.
+      # Each signature is checked against the key's fingerprint (VALIDSIG ends with the primary
+      # key's), so a wrong key in the secret fails too.
       - name: Sign
         if: startsWith(github.ref, 'refs/tags/') || (github.ref == 'refs/heads/main' && github.event_name != 'pull_request')
         env:
           KRISS_GPG_KEY: ${{ secrets.KRISS_GPG_KEY }}
+          FPR: 7C92AE8B599AF81321666CA31317AA31B21C5F87
         run: |
           if [ -z "$KRISS_GPG_KEY" ]; then
-            echo "::warning::KRISS_GPG_KEY is not set; the ISO was built but not signed."
+            if [[ $GITHUB_REF == refs/tags/* ]]; then
+              echo "::error::KRISS_GPG_KEY is not set. Tagged releases must be signed, so $GITHUB_REF_NAME was not published."
+              exit 1
+            fi
+            echo "::warning::KRISS_GPG_KEY is not set; the preview ISO was built but not signed."
             exit 0
           fi
           printf '%s\n' "$KRISS_GPG_KEY" | gpg --batch --import
           cd out
           for f in *.iso sha256sums.txt; do
-            gpg --batch --yes --local-user 7C92AE8B599AF81321666CA31317AA31B21C5F87 --detach-sign "$f"
+            gpg --batch --yes --local-user "$FPR" --detach-sign "$f"
+            gpg --batch --status-fd 1 --verify "$f.sig" "$f" 2>/dev/null | grep -q "^\[GNUPG:\] VALIDSIG .* $FPR\$" \
+              || { echo "::error::$f.sig is not a good signature from $FPR."; exit 1; }
           done
 
       - name: Boot test
@@ -88,6 +109,7 @@ jobs:
           if-no-files-found: ignore
 
       # Unattended install onto a QEMU disk with the installer's own scripts, then boot it.
+      # The boot test also boots the ISO under SeaBIOS (legacy BIOS).
       - name: Install test
         if: always() && steps.build.outcome == 'success'
         run: |
@@ -95,14 +117,32 @@ jobs:
           df -h /
           iso/install-test.sh out/*.iso install-test
 
+      # The same under SeaBIOS: the installer's legacy BIOS path (Limine bios-install, no ESP).
+      - name: Install test (legacy BIOS)
+        if: always() && steps.build.outcome == 'success'
+        run: |
+          rm -f install-test/disk.qcow2
+          FIRMWARE=bios iso/install-test.sh out/*.iso install-test-bios
+
+      # Secure Boot on with Microsoft's keys (OVMF): shim refuses the ISO until its key is
+      # trusted, then boots it; an install enrolls its own key through MokManager and boots.
+      - name: Secure Boot test
+        if: always() && steps.build.outcome == 'success'
+        run: |
+          rm -f install-test*/disk.qcow2
+          sudo apt-get install -y -q --no-install-recommends python3-venv openssl
+          iso/secureboot-test.sh out/*.iso secureboot-test
+
       - name: Upload install test
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: install-test
           path: |
-            install-test/*.log
-            install-test/*.png
+            install-test*/*.log
+            install-test*/*.png
+            secureboot-test/*.log
+            secureboot-test/*.png
           if-no-files-found: ignore
 
       # Also when a test fails, so the ISO can be tried by hand.
@@ -150,8 +190,11 @@ jobs:
             echo "::notice::The ISO is over GitHub's 2 GiB release asset limit, so this release gets only sha256sums.txt and the .sig files. The ISO is on SourceForge and in the workflow artifact."
             files=(out/!(*.iso))
           fi
+          # A tag with a suffix (110-beta1, 110-rc1) is a pre-release.
+          pre=(); [[ $GITHUB_REF_NAME == *-* ]] && pre=(--prerelease)
           gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
-            || gh release create "$GITHUB_REF_NAME" --verify-tag --title "KrissOS $GITHUB_REF_NAME" --notes ''
+            || gh release create "$GITHUB_REF_NAME" --verify-tag "${pre[@]}" --title "KrissOS $GITHUB_REF_NAME" \
+                 --notes-file "$RUNNER_TEMP/notes.md"
           gh release upload "$GITHUB_REF_NAME" "${files[@]}" --clobber
 
       # Nightly and manual runs on main refresh the public `preview` pre-release that the website's

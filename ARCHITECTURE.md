@@ -47,10 +47,10 @@ ship.
 |---|---|
 | Base | Arch Linux, x86_64 only at 1.0. Apple Silicon is a separate image, in preview (§13) |
 | Update model | Rolling. Upstream Arch packages come straight from Arch mirrors |
-| Our packages | A single `[kriss]` repo, ideally fewer than 25 packages |
+| Our packages | A `[kriss]` repo, ideally fewer than 25 packages, fed only from a `[kriss-testing]` repo (§4) |
 | Rollback | btrfs + snapper, with snapshots bootable from the Limine menu |
 | Installer | Calamares on an archiso live image |
-| Secure Boot | Supported at 1.0 via `sbctl`. A pacman hook re-signs the kernel and bootloader on every update |
+| Secure Boot | On, with the PC's stock keys: Microsoft-signed shim, then Limine signed with a per-PC key enrolled once in MokManager. Updates re-sign it ([docs/secure-boot.md](docs/secure-boot.md)) |
 
 Only our own packages are built for x86-64-v3. Rebuilding all of Arch for v3 is a full
 distro team's workload, and it is out of scope.
@@ -62,7 +62,8 @@ distro team's workload, and it is out of scope.
 | `linux-kriss` | Kernel for x86-64-v3, built with CachyOS patches (EEVDF/BORE, sched_ext) and LTO |
 | `linux-kriss-generic` | The same kernel for baseline x86-64: the live ISO's kernel, kept on CPUs without v3 |
 | `linux-kriss-asahi` | The Asahi kernel for Apple Silicon Macs (aarch64 only, §13) |
-| `kriss-tools` | `kriss` (with `kriss tune`), `kriss-ctl`, `kriss-vm` |
+| `kriss-tools` | `kriss` (with `kriss tune` and `kriss install`), `kriss-ctl`, `kriss-vm` |
+| `kriss-store` | The Store: find, install, update and remove apps (Flathub and the `kriss-meta-*` packs) |
 | `kriss-shell` | The KrissOS Shell (panel, dock, launcher, notifications, lock screen) |
 | `kriss-theme` | Wallpapers, icons, cursors, GTK/Qt/terminal colors, Plymouth, Limine, SDDM/greeter |
 | `kriss-settings` | Default configs in `/etc/skel` and `/usr/share/kriss`, plus pacman/snapper/sbctl hooks |
@@ -91,13 +92,23 @@ the installer itself, and the NVIDIA driver on PCs without a Turing or newer car
 is a bonus only: `installer/lib/online` then switches to `linux-kriss`, runs `pacman -Syu`
 and installs KDE Plasma, which is not on the ISO. Offline, Plasma falls back to the shell.
 
-- **Disk:** GPT and UEFI only. Dual-boot alongside Windows is the default, erase disk the
-  other choice; manual partitioning and disk encryption are off for now. `kriss-install`
-  stops before the installer with steps to follow when BitLocker is on, or when the USB
-  started in legacy BIOS mode.
+- **Disk:** GPT only, on UEFI or legacy BIOS (CSM). Dual-boot alongside Windows is the
+  default, erase disk the other choice; manual partitioning is off for now. "Encrypt
+  system" (opt-in) puts the btrfs root in LUKS2 and leaves the FAT32 `/boot` plain for
+  Limine; the busybox `encrypt` hook asks for the passphrase at boot. The user's password
+  needs 8 characters. `kriss-install` stops before the installer with steps to follow when
+  BitLocker is on, or when the USB started in legacy BIOS mode on a PC whose Windows boots
+  UEFI (`kriss-install --legacy` goes on anyway). An MBR disk, as Windows uses in BIOS mode,
+  gets Calamares' own "partition table is not GPT" message and only *Erase disk*.
 - **Layout:** the ESP at `/efi` holds only Limine, so Windows' small ESP is enough. The
   kernels go on a 2 GiB FAT32 `/boot` (XBOOTLDR), because Limine reads only FAT. btrfs
   root with `@`, `@home`, `@cache`, `@log` and `@snapshots`; zram, no swap partition.
+  Legacy BIOS has no ESP: `limine-bios.sys` and `limine.conf` go in `/boot/limine` on the
+  FAT32 `/boot`, and `limine bios-install` writes the boot sector and its stage 2 into a
+  BIOS boot partition. Calamares can't add one for BIOS only, so `installer/lib/configure`
+  makes it in the free space before the first partition (sectors 34-2047, which Calamares
+  leaves on BIOS). `kriss-limine-update` tells the two apart by
+  `/sys/firmware/efi` and runs `bios-install` again whenever Limine's boot code changes.
 - **Boot menu:** `kriss-limine-update` (`kriss-settings`) writes `limine.conf` after every
   kernel, initramfs or Limine change (pacman hook and mkinitcpio post hook) and whenever
   `/.snapshots` changes (path unit): a `KrissOS` directory with one versioned entry per
@@ -116,10 +127,17 @@ and installs KDE Plasma, which is not on the ISO. Offline, Plasma falls back to 
   For Maxwell, Pascal and Volta, kriss-welcome offers NVIDIA's 580 driver afterwards as an
   optional online extra (`kriss nvidia setup`, pinned AUR builds in `[kriss]`; see
   `pkgs/nvidia-580xx-utils/SOURCES.md`).
-- **Secure Boot:** not set up by the installer yet. Once `sbctl` has keys,
-  `kriss-limine-update` hashes every path in `limine.conf` (BLAKE2b), enrolls the config's
-  hash into Limine with `limine enroll-config` and signs it with `sbctl`; the pacman hook
-  re-signs the rest. Untested on real firmware.
+- **Secure Boot:** stays on, with the PC's stock keys. The ESP holds Microsoft-signed shim
+  (`shim-signed`, Fedora's build) as `BOOTX64.EFI`, MokManager as `mmx64.efi` and Limine as
+  `grubx64.efi`, the file shim starts. With Secure Boot on, the installer's
+  `kriss-secureboot` makes the PC's own key (`sbctl create-keys`, offline) and queues it for
+  MokManager, which asks once at the next start (password `krissos`). `kriss-limine-update`
+  adds the `.sbat` section shim requires, hashes every path in `limine.conf` (BLAKE2b),
+  enrolls the config's hash with `limine enroll-config` and signs Limine with that key after
+  every change. With Secure Boot off nothing is signed (`kriss-secureboot --enroll` prepares
+  it). The live ISO: shim, then systemd-boot and the kernel signed with a key made for that
+  build only, whose `KRISSOS.cer` the user enrolls from the USB. UEFI only: legacy BIOS is
+  unchanged. Why shim and not sbctl in Setup Mode: [docs/secure-boot.md](docs/secure-boot.md).
 
 ## 3. Repository layout (monorepo, public GitHub org)
 
@@ -143,14 +161,24 @@ krissos/
     code from pull requests on your own machine.
   - Your desktop stays the local box for test builds and VM testing.
 - **Pipelines:**
-  - `pkgs.yml`: rebuilds any package whose PKGBUILD changed, signs it, and publishes it to the
-    repo.
+  - `pkgs.yml`: rebuilds any package whose PKGBUILD changed, signs it, and publishes it to
+    `[kriss-testing]`. `kernel.yml`, `kernel-asahi.yml` and `cosmic-comp.yml` publish there too.
+  - `promote.yml`: run by hand. Moves packages from `[kriss-testing]` to `[kriss]`, the repo
+    installs update from: the same files, signatures checked, never rebuilt. A dry run first by
+    default. Writers to one repo share a concurrency group (`testing-ARCH` or `repo-ARCH`).
   - `kernel.yml`: runs on a schedule, checks for new CachyOS kernel patch releases, opens a
     version-bump PR, and builds both kernels.
   - `iso.yml`: builds the live ISO on every tag (`110`, `115`, …), nightly, and on PRs that
-    touch `iso/`, then boots it in QEMU until the KrissOS Shell starts. Tags attach the ISO to a release.
+    touch `iso/`, then boots it in QEMU until the KrissOS Shell and the installer start, and
+    installs it unattended and boots the result, each under both OVMF (UEFI) and SeaBIOS
+    (legacy BIOS). Tags attach the ISO to a release.
+    Tags build from `[kriss]`; nightly and PR ISOs from `[kriss-testing]`, so their tests are the
+    check before promoting.
 - **Repo hosting:** the pacman database and packages are uploaded as assets to a GitHub
-  Release, and pacman fetches them over plain HTTPS. No server to run.
+  Release, and pacman fetches them over plain HTTPS. No server to run. `[kriss]` is on
+  `repo-ARCH`, `[kriss-testing]` on `testing-ARCH`.
+- **Channels:** installs use `[kriss]` only. `kriss channel testing` adds `[kriss-testing]`
+  above it; `kriss channel stable` removes it and downgrades back to `[kriss]` after a snapshot.
 - **Signing:** one GPG key, stored only in a GitHub Actions secret. Its public half ships in
   `kriss-keyring`.
 
@@ -198,11 +226,20 @@ available as the installer's alternative.
 
 - **Style:** soft and rounded. Floating windows with large corner radii and a light rim, and
   no coloured ring around the focused window. Light and dark window themes over a dark wallpaper.
-  One bottom bar holds the launcher, apps and status. Sky Cyan is the only accent; no neon.
-- **Type:** Figtree + JetBrains Mono (OFL) proposed.
+  One taskbar, full width along the bottom edge and 48 px tall like Windows 11, holds the
+  launcher, apps and status, with acrylic blur and a soft top rim. Sky Cyan is the default and
+  only shipped accent; users may pick another in settings. No neon.
+- **Material:** shell surfaces are tinted and blurred (acrylic) through `ext-background-effect`,
+  which cosmic-comp and Quickshell both support. Solid surfaces are the fallback when blur is off.
+- **Layouts:** the Windows-familiar layout (centred taskbar) is the default. An optional Mac
+  layout follows: top bar, centred dock, window buttons on the left, in the KrissOS look, with no
+  Apple logo, fonts or icons. Users pick one in `kriss-welcome` and can switch in settings.
+  Familiar, never a clone: neither layout copies Windows or macOS visuals. Plan:
+  `docs/shell-roadmap.md`.
+- **Type:** Inter + JetBrains Mono (OFL, both in Arch's extra repo; Inter is the closest free match to Apple's SF Pro, which may not ship off Apple hardware), rendered like macOS: grey smoothing, light hinting, stem darkening.
 - **Apps:** COSMIC Files, Terminal and Settings get KrissOS dark and light COSMIC themes, built
   from the tokens by libcosmic's own ThemeBuilder (`shell/cosmic-theme/`), and a matching
-  COSMIC Terminal scheme. Icons are Papirus-Dark and the cursor is Vimix white, both from
+  COSMIC Terminal scheme. Icons are Papirus-Dark and the cursor is Breeze (dark on light, light on dark), both from
   Arch. Flathub apps see the GTK colours through a global `flatpak override`, and Flatpak
   pulls the matching adw-gtk3 theme from Flathub.
 - **Reference:** the concept mockup at https://claude.ai/artifact/Cye2G1TUoXHAGoNX3typoD.
@@ -225,11 +262,18 @@ available as the installer's alternative.
 
 ## 7. Windows apps
 
-### Tier 1: productivity (WinBoat)
-- The `kriss-meta-winapps` package installs WinBoat with Podman, Compose v2, KVM and FreeRDP
-  3.x.
-- `kriss winapps setup` checks for KVM and group membership, then provisions the Windows
-  container.
+### Tier 1: productivity (WinPodX)
+- The `kriss-meta-winapps` package installs WinPodX with rootless Podman, podman-compose, KVM
+  and FreeRDP 3.x. WinPodX (MIT) opens each Windows app as its own window with its own Start
+  entry and file types. KrissOS moved to it from WinBoat for 110.
+- `kriss winapps setup` checks for KVM and group membership, says what WinPodX changes in
+  Windows (below), then runs `winpodx setup`, which downloads Windows from Microsoft.
+- WinPodX's defaults are kept: it patches Windows' one-session-per-user limit (rdprrap, based
+  on RDP Wrapper) so apps get separate windows, and hides the VM from Windows ("disguise",
+  balanced). Microsoft's licence terms do not allow working around Windows' limits, so setup
+  says so before it starts and how to turn each off; the user decides.
+- `kriss winapps office` installs Word, Excel and PowerPoint from Microsoft's Office Deployment
+  Tool with the user's own licence; KrissOS ships no Office files.
 
 ### Tier 2: gaming and heavy GPU apps (`kriss-vm`)
 `kriss-vm` follows the approach of Omarchy PR #3454; that PR is to be reviewed before
@@ -296,7 +340,7 @@ kriss-vm revert         # restore every file `kriss-vm` changed from its backups
 
 ## 11. Open decisions
 
-1. Font: confirm Figtree.
+1. Font: Inter (decided 2026-11-19).
 2. License for the tooling: GPL-3.0-or-later (assumed) or MIT.
 3. ~~Results of the cosmic-comp layer-shell test.~~ Passed; see §5.
 
@@ -308,7 +352,7 @@ kriss-vm revert         # restore every file `kriss-vm` changed from its backups
 3. Calamares installer with the desktop picker (KrissOS Shell or Plasma), btrfs + snapper and
    sbctl.
 4. `kriss tune` and the gaming metapackage.
-5. `kriss-vm` (desktop first), then the laptop paths for systems with no MUX switch.
+5. `kriss-vm` (desktop first). The laptop paths for systems with no MUX switch come in `115`.
 6. WinBoat tier and the AI setup.
 7. `110`: the first tagged release.
 
@@ -326,7 +370,7 @@ until `110` ships. Details: `docs/apple-silicon.md`.
   builds the image and boots it in a QEMU `virt` VM (UEFI) until the KrissOS Shell starts.
 - **Boot:** a unified kernel image at the ESP's fallback path, started directly by U-Boot (or
   edk2 in a VM). Root is ext4 for now.
-- **Not on this image:** the CachyOS kernel, x86-64-v3, WinBoat and `kriss-vm`. Games go through
+- **Not on this image:** the CachyOS kernel, x86-64-v3, WinPodX and `kriss-vm`. Games go through
   FEX + muvm.
 
 Shared code stays architecture-neutral from day one so this image costs as little as possible.
@@ -342,18 +386,47 @@ office users, and creators and AI tinkerers. Every default is checked against on
 | Desktop | The KrissOS Shell (§5) with Windows habits in the KrissOS look: bottom taskbar, Start-style launcher, close button top-right, the Win key opens the menu. Not a Windows 11 clone. KDE Plasma is the installer's alternative |
 | Install | Dual-boot alongside Windows by default. The installer resizes Windows safely, detects BitLocker and stops with clear steps if it's on, and keeps Windows in the boot menu |
 | NVIDIA | The installer detects the GPU and installs the right driver (open modules on Turing and newer), so games work on first boot |
-| Apps | Discover with Flathub on by default, pacman underneath |
+| Apps | The Store (`kriss-store`, pinned to the taskbar): Flathub apps and the KrissOS packs, with categories, search, Install, Uninstall and Update all. Every change runs `pkexec kriss install/remove/update`, which takes a snapper snapshot first, so it rolls back from the boot menu. Start's search offers "Get X from the Store" for apps not installed yet. Plasma keeps Discover. In a terminal, `kriss install` reaches the repos, Flathub and the AUR in one command (below) |
 | Updates | A desktop notification with an Update button (`kriss-update-notify.timer`). One click runs `kriss update`, which takes a btrfs snapshot through snapper first, so a bad update rolls back from the boot menu |
-| Windows apps | WinBoat up front, adapted to the hardware (see `kriss-welcome`). The Windows licence follows WinBoat's own approach; KrissOS adds no licence step |
+| Windows apps | WinPodX up front, adapted to the hardware (see `kriss-welcome`). Windows is downloaded from Microsoft; the user's own licence. KrissOS adds no licence step, and setup says what WinPodX changes in Windows (§7) |
 | Anti-cheat | Said upfront: gamers check their games before switching, on the website and in `kriss-welcome` |
 | Language | English and Bahasa Melayu from day one: installer, `kriss-welcome`, website |
+
+### `kriss search`, `kriss install`, `kriss remove`: every source, safest first
+
+One command for what people otherwise reach for yay for, with KrissOS's promises kept.
+
+- **Order:** the repos (`[kriss]`, then Arch), then Flathub, then the AUR. `kriss install NAME`
+  takes the first that has NAME (Flathub by exact id, last id part or app name); `--repo`,
+  `--flatpak` or `--aur` picks one. `kriss search` lists all four under plain labels.
+- **Plan first:** what will be installed, from where, the download size, AUR warnings (out of
+  date, orphaned, fewer than 10 votes), and how to undo it (`kriss remove`, or `kriss rollback`
+  from the snapshot snap-pac takes before every pacman run). Nothing changes until "y".
+- **AUR builds never run as root.** `kriss` re-runs itself under sudo and runs git and makepkg
+  as the user who called it (`runuser`); with no such user it refuses. Build files are git
+  clones in `~/.cache/kriss/aur/`. The first install shows the PKGBUILD and `.install` scripts;
+  later ones show the diff from the commit last built. Every AUR package is read and agreed to
+  before the first change, so a "no" leaves the system as it was.
+- **Engine:** pacman and makepkg with a small AUR RPC v5 client (curl and jq), not paru or yay.
+  Both are AUR-only, so shipping one would add a package to `[kriss]` (§2), and their prompts
+  are what this replaces. pacman answers "installed?" and "in a repo?" (`-T`, `-Sp`, versions and
+  provides included); AUR dependencies on AUR packages are resolved by name and built in order;
+  make-only dependencies are removed after, unless something else needs them.
+- **`kriss update`** also updates AUR packages (`pacman -Qm`) that have a newer AUR version,
+  showing what changed. From the update notice there is no terminal to read it in, so it says
+  so and leaves them; packages the AUR no longer has (CachyOS leftovers, say) are named and kept.
+- **Offline:** repo packages already in pacman's cache install without internet (no `-Sy`).
+  Otherwise kriss says the PC is offline before changing anything; search skips the AUR and
+  says so.
+- Tested by `tools/ci/install-test.sh` with stub pacman, flatpak, git, makepkg and a mocked
+  AUR RPC; no network.
 
 ### `kriss-welcome`: the first-boot app
 
 A new `[kriss]` package. It opens on first login and stays in the menu.
 
 1. **Bring your apps.** The user picks the Windows apps they use. Each gets one answer: a native
-   alternative, Wine/Proton, or WinBoat. A hardware check decides what is offered: WinBoat only
+   alternative, Wine/Proton, or WinPodX. A hardware check decides what is offered: WinPodX only
    when the PC can run a Windows VM well (about 16 GB RAM, CPU virtualisation on, enough cores);
    otherwise Wine/Proton and native apps.
 2. **Game checker.** Search a game and see whether it runs, and whether its anti-cheat blocks
@@ -365,7 +438,9 @@ A new `[kriss]` package. It opens on first login and stays in the menu.
 4. **Drivers and extras.** Codecs, printers, the gaming pack (`kriss-meta-gaming`), and the local
    AI setup (Ollama plus the AI CLIs from §9).
 
-- **Stack:** Qt/QML (Kirigami) to match KDE. Every system change goes through `kriss` / `pkexec`
+- **Stack:** Qt/QML (PySide6) in the KrissOS Shell look: its tokens (`theme/tokens.json`), light
+  or dark as the shell follows it, the user's accent, and small components of its own
+  (`welcome/qml/Card.qml`, `Pill.qml`, ...) in place of Kirigami. Every system change goes through `kriss` / `pkexec`
   commands, or through udisks and Flatpak, which ask polkit themselves, so the app holds no root
   logic of its own.
 - **Strings:** every string is translatable from the start, with English and Bahasa Melayu shipped.

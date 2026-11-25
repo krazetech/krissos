@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Kraze Tech
-"""Run: QT_QPA_PLATFORM=offscreen python welcome/smoke_qml.py (needs PySide6 and Kirigami).
+"""Run: QT_QPA_PLATFORM=offscreen python welcome/smoke_qml.py (needs PySide6).
 Opens every page and fails on any QML warning from our own files."""
 import os
 import sys
@@ -44,8 +44,8 @@ for i in range(5):  # the pages in Main.qml
     if shots:
         root.grabWindow().save(f"{shots}/page{i}.png")
 # The Local AI model list, as shown once Ollama is installed.
-e = QQmlExpression(engine.contextForObject(root), root, 'pageStack.currentItem.installs = { ollama: "installed" };'
-                   ' pageStack.currentItem.pulls = { "llama3.2:3b": "pulled" }')
+e = QQmlExpression(engine.contextForObject(root), root, 'root.currentItem.installs = { ollama: "installed" };'
+                   ' root.currentItem.pulls = { "llama3.2:3b": "pulled" }')
 e.evaluate()
 assert not e.hasError(), e.error().toString()
 for _ in range(20):
@@ -55,7 +55,7 @@ if shots:
 # The Install dialog's text calls backend. It used to fail once you switched pages or
 # closed the app with an install picked.
 QQmlExpression(engine.contextForObject(root), root,
-               'pageStack.currentItem.pending = { id: "codecs", name: "Codecs" }').evaluate()
+               'root.currentItem.pending = { id: "codecs", name: "Codecs" }').evaluate()
 show(0)
 show(4)
 del root

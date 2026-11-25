@@ -1,12 +1,19 @@
 # Maintainer: Kraze Tech
-# cosmic-comp with KrissOS patches: windows fade and scale when they open and close.
+# cosmic-comp with KrissOS patches: windows fade and scale when they open and close, a
+# three-finger swipe switches desktops or opens Task View, the colour behind everything is
+# black, the shell can place windows in snap layouts (kriss_snap_v1), a shell panel keeps
+# the keyboard on whichever screen it is on, Alt+Tab gets out of a game's X11 keyboard grab,
+# title bars get KrissOS's round buttons, on the side window_buttons in
+# com.system76.CosmicTk asks for, the cursor theme and size follow org.krissos.Cursor
+# live (the shell's light/dark), and new windows open on the main display chosen in
+# KrissOS Settings.
 # Follows Arch's cosmic-comp PKGBUILD. It replaces cosmic-comp, so pacman never moves back
 # to Arch's build on its own: bump pkgver here when Arch bumps cosmic-comp, rebase the
 # patch on the new tag, and update the patch's b2sum.
 pkgname=cosmic-comp-kriss
 pkgver=1.11.0
-pkgrel=2
-pkgdesc='Compositor for the COSMIC desktop environment, with open and close animations'
+pkgrel=10
+pkgdesc='Compositor for the COSMIC desktop environment, with open and close animations, three-finger swipes and snap layouts'
 arch=('x86_64')
 url='https://github.com/pop-os/cosmic-comp'
 license=('GPL-3.0-only')
@@ -19,13 +26,40 @@ provides=("cosmic-comp=1:$pkgver")
 conflicts=('cosmic-comp')
 replaces=('cosmic-comp')
 source=("git+https://github.com/pop-os/cosmic-comp.git#tag=epoch-$pkgver"
-        0001-open-close-animations.patch)
+        0001-open-close-animations.patch
+        0002-three-finger-swipe.patch
+        0003-snap-layouts.patch
+        0004-exclusive-layer-any-output.patch
+        0005-alt-tab-through-x11-grab.patch
+        0006-round-window-buttons.patch
+        0007-cursor-theme-live.patch
+        0008-new-windows-on-primary.patch)
 b2sums=('4f6e0dbb8e7028ae8a47765ebd8ab198f87bacfe6d15e5856be51142f46aabddcb29b9f2dbf99acaf9b74fd45f6611330c19f7d29013719fecdf746c9e14ace2'
-        '19cd7a12261c359fc5c5943cfec16887600d84867e9286a55efd09d13d15cbe36de330de0f371c0c7414ae040b1899cd684a4bc0a25b055bd51140ec59e4d0ea')
+        '19cd7a12261c359fc5c5943cfec16887600d84867e9286a55efd09d13d15cbe36de330de0f371c0c7414ae040b1899cd684a4bc0a25b055bd51140ec59e4d0ea'
+        '8ca1f7675d08d5f7f9c496af5c7ae47f5b754ab11b60a4c8cfefaeb9749a6c78cc3b7dd6f3047adc6b60b99ffc3faa07d707460e030ddc0dfcddcef2ade5683a'
+        '29a8fc4e2db80f46b191372765c066f3e2bc92afe71b9da7ea8b3b2f484d930733664f286b7fc6f3ced006df26542de9455a50be206d98fb2324261c1337f1f4'
+        'd1324466dd33752dd81ba0d11fde325256b80761fa22623ed617cd2ad1b3b7f263d12029126b4fdc0dcc7deac2b8e3a861338d9f27996ea6c1598bbbc96a2bf0'
+        'd109a17fb3f101c401ba582f401d9e16622756171d8265a2347dc5958c88348de644b6c74e11b7edb37a62227d8f493926ef0e8da001df392ecc3d05af0037f0'
+        '807611fd4d61256743d94b1a53b6ab1152c607d295bda84ecbcb2c9b57450a3d23373884623d671f3af3c48bbd739eb2d86337f7e40b01026f09c4efa1a196e2'
+        '397f837bc030c859fe875d0885b54099987171fe5f5309e26b6191cd4129a7910119cac71f131b5937ab5862f0b439b864affb646a0e1b46e7dc3f4c717f26b1'
+        '995262ccff7c95b973dee003d5a536c398bed48f82fc82573bce585fdc6b4821d53b34bf2f87795e3d8b8fc80811c7c920ae64a6f9e22c37e9b1a1a96de7045a')
 
 prepare() {
   cd cosmic-comp
   git apply "$srcdir/0001-open-close-animations.patch"
+  git apply "$srcdir/0002-three-finger-swipe.patch"
+  git apply "$srcdir/0003-snap-layouts.patch"
+  git apply "$srcdir/0004-exclusive-layer-any-output.patch"
+  git apply "$srcdir/0005-alt-tab-through-x11-grab.patch"
+  git apply "$srcdir/0006-round-window-buttons.patch"
+  git apply "$srcdir/0007-cursor-theme-live.patch"
+  git apply "$srcdir/0008-new-windows-on-primary.patch"
+  # Black where nothing is drawn (upstream: a dark grey), the boot splash's and the login
+  # screen's background, so no grey frame shows between them. grep fails the build if the
+  # line moved.
+  sed -i 's/CLEAR_COLOR: Color32F = Color32F::new(0.153, 0.161, 0.165, 1.0)/CLEAR_COLOR: Color32F = Color32F::new(0.0, 0.0, 0.0, 1.0)/' \
+    src/backend/render/mod.rs
+  grep -q 'CLEAR_COLOR: Color32F = Color32F::new(0.0, 0.0, 0.0, 1.0)' src/backend/render/mod.rs
   cargo fetch --locked
   sed 's/lto = "fat"/lto = "thin"/' -i Cargo.toml
 }

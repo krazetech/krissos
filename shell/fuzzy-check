@@ -4,7 +4,8 @@
 // Checks the launcher's fuzzy ranking in qml/fuzzy.js: node shell/fuzzy-check
 const fs = require("fs"), path = require("path"), assert = require("assert");
 const src = fs.readFileSync(path.join(__dirname, "qml/fuzzy.js"), "utf8").replace(".pragma library", "");
-const { score, best, typeahead } = new Function(src + "; return { score, best, typeahead };")();
+const { score, best, typeahead, order, calcExpr, calcAnswer, calc } =
+    new Function(src + "; return { score, best, typeahead, order, calcExpr, calcAnswer, calc };")();
 
 assert(score("Firefox", "firefox") > score("Firefox", "fire"));          // exact over prefix
 assert(score("Firefox", "fire") > score("COSMIC Files", "files"));       // prefix over word start
@@ -22,4 +23,33 @@ assert.strictEqual(typeahead(menu, "ppp", 2), 1);      // and round again
 assert.strictEqual(typeahead(menu, "pr", 1), 2);       // a longer prefix
 assert.strictEqual(typeahead(menu, "pi", 1), 1);       // still matches the current one
 assert.strictEqual(typeahead(menu, "x", 0), -1);
+
+// Start's groups: the calculator first, the best match next, ties in the order given, the web last.
+const g = (key, ...scores) => ({ key, items: scores.map(score => ({ score })) });
+const keys = gs => order(gs).map(x => x.key).join(" ");
+assert.strictEqual(keys([g("app", 600), g("setting", 900), g("file"), g("web", 1)]), "setting app web");
+assert.strictEqual(keys([g("web", 1), g("app", 800), g("action", 800), g("calc", 1)]), "calc app action web");
+assert.strictEqual(keys([g("app", 1000), g("file", 1100)]), "file app");          // a recent file can win
+// "display" finds the Displays page by its words before an app that only has the letters.
+assert(best(["Displays", "screen", "monitor"], "display") > score("Disk Usage Analyser", "display"));
+assert(best(["Shut down", "shutdown", "matikan"], "matikan") === 1000);           // Malay words
+
+// What the calculator is given, and what it leaves alone.
+assert.strictEqual(calcExpr("2*(3+4)"), "2*(3+4)");
+assert.strictEqual(calcExpr("15% of 80"), "15% * 80");
+assert.strictEqual(calcExpr("5 km in miles"), "5 km to -miles");
+assert.strictEqual(calcExpr("30 c in f"), "30 °C to -°F");
+assert.strictEqual(calcExpr("1 usd in myr"), "1 usd to -myr");
+assert.strictEqual(calcExpr("3 × 4"), "3 * 4");
+assert.strictEqual(calcExpr("sqrt(16) + pi"), "sqrt(16) + pi");
+for (const q of ["firefox", "lock", "42", "hello world", "> ls", "2048 game", "4k video"]) assert.strictEqual(calcExpr(q), "", q);
+// qalc's answers: kept when they are a number and a unit, dropped when it made up units.
+for (const r of ["14", "3.106855961 mi", "86 °F", "MYR 4.083", "120 min", "2.5E-7", "−4"]) assert(calcAnswer(r), r);
+for (const r of ["−2.575156088iei d", "−MYR(xy × yz × z)(−4.08 / (xy²z²))", "2.718281828 B·h·L²", "3 mi + 188 yd"]) assert.strictEqual(calcAnswer(r), "", r);
+// The fallback calculator, which never evals.
+assert.strictEqual(calc("2*(3+4)"), 14);
+assert.strictEqual(calc("15% * 80"), 12);
+assert.strictEqual(calc("2^3^2"), 512);
+assert.strictEqual(calc("-3 + 10 / 4"), -0.5);
+for (const bad of ["2*", "(1", "alert(1)", "1;2", "2 km"]) assert(isNaN(calc(bad)), bad);
 console.log("ok");

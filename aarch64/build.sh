@@ -39,6 +39,17 @@ grep -q '^\[asahi-alarm\]' /etc/pacman.conf || add_repos /etc/pacman.conf
 # Until the first publish there is no repo-aarch64 release; build from this checkout alone.
 curl -fsIL -o /dev/null https://github.com/krazetech/krissos/releases/download/repo-aarch64/kriss.db \
   || sed -i '/^\[kriss\]/,$d' /etc/pacman.conf
+# KRISS_CHANNEL=testing (CI on main and PRs) puts [kriss-testing] ahead of [kriss] for the
+# build only, as iso/build.sh does; the image itself keeps [kriss] alone.
+testing_url=https://github.com/krazetech/krissos/releases/download/testing-aarch64
+if [ "${KRISS_CHANNEL:-stable}" = testing ] && ! grep -q '^\[kriss-testing\]' /etc/pacman.conf \
+  && curl -fsIL -o /dev/null "$testing_url/kriss-testing.db"; then
+  if grep -q '^\[kriss\]' /etc/pacman.conf; then
+    sed -i "/^\[kriss\]/i [kriss-testing]\nServer = $testing_url\n" /etc/pacman.conf
+  else
+    printf '\n[kriss-testing]\nServer = %s\n' "$testing_url" >>/etc/pacman.conf
+  fi
+fi
 pacman -Syu --noconfirm --needed asahi-alarm-keyring arch-install-scripts dosfstools mtools e2fsprogs gptfdisk
 
 # --- [kriss] from this checkout ----------------------------------------------------------
@@ -46,7 +57,7 @@ pacman -Syu --noconfirm --needed asahi-alarm-keyring arch-install-scripts dosfst
 local_repo=$work/kriss-local
 rm -rf "$local_repo"
 (cd "$repo" && "$repo/tools/ci/build-pkgs.sh" "$local_repo" \
-  pkgs/kriss-keyring pkgs/kriss-settings pkgs/kriss-theme pkgs/kriss-tools pkgs/kriss-shell pkgs/kriss-welcome)
+  pkgs/kriss-keyring pkgs/kriss-settings pkgs/kriss-theme pkgs/kriss-tools pkgs/kriss-shell pkgs/kriss-welcome pkgs/kriss-store)
 repo-add "$local_repo/kriss-local.db.tar.zst" "$local_repo"/*.pkg.tar.zst
 # pacstrap -K fills the image's keyring from the keyrings installed here.
 pacman -U --noconfirm "$local_repo"/kriss-keyring-*.pkg.tar.zst
@@ -57,7 +68,7 @@ pacman --config "$conf" -Sy
 # --- the system ----------------------------------------------------------------------------
 pkgs=(base mkinitcpio sudo nano man-db networkmanager bluez bluez-utils flatpak
       pipewire pipewire-alsa pipewire-pulse wireplumber firefox noto-fonts noto-fonts-emoji
-      kriss-keyring kriss-settings kriss-theme kriss-tools kriss-welcome
+      kriss-keyring kriss-settings kriss-theme kriss-tools kriss-welcome kriss-store
       kriss-shell greetd cosmic-files cosmic-terminal cosmic-settings
       xdg-desktop-portal-cosmic power-profiles-daemon upower libnotify)
 case $flavour in
@@ -75,7 +86,8 @@ rm -rf "$root"
 # The ESP is a plain directory at /boot/efi until it is packed below. m1n1's pacman hook
 # writes m1n1/boot.bin there when the directory exists.
 mkdir -p "$root/boot/efi/m1n1"
-pacstrap -C "$conf" -K "$root" "${pkgs[@]}"
+# -M: the image keeps Arch Linux ARM's own mirrorlist, not the CI one (tools/ci/alarm.sh).
+pacstrap -C "$conf" -K -M "$root" "${pkgs[@]}"
 gpgconf --homedir "$root/etc/pacman.d/gnupg" --kill all 2>/dev/null || true
 
 cp -a "$here/rootfs/." "$root/"

@@ -1,0 +1,30 @@
+name: Suggestion
+description: An idea that would make KrissOS better, or easier for someone coming from Windows.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea. You can write in English or Bahasa Melayu.
+
+        KrissOS is kept small on purpose, so that one or two people can maintain it. Ideas that
+        help someone fresh from Windows get unstuck come first.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The problem or the moment you got stuck, rather than the solution.
+      placeholder: When I plug in a second monitor, I can't find where to ...
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help?
+      description: How you would like it to work. On Windows or another system, how does it work there?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Anything you tried instead?
