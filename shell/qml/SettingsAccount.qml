@@ -55,10 +55,17 @@ Column {
                 .map(p => [decodeURIComponent(String(Qt.resolvedUrl("pictures/" + p[0] + ".svg")).replace(/^file:\/\//, "")), p[1]])
             // ~/.face for the shell (a PNG: the login screen's copy has no name to tell an SVG
             // by), then AccountsService's copy of it for the login screen.
-            onChosen: path => Quickshell.execDetached(["sh", "-c", `
-                case "$1" in *.svg|*.SVG) rsvg-convert -w 256 -h 256 -o "$HOME/.face" "$1" ;; *) cp -f "$1" "$HOME/.face" ;; esac &&
-                busctl --system call org.freedesktop.Accounts "$2" org.freedesktop.Accounts.User SetIconFile s "$HOME/.face"`,
-                "sh", path, page.objectPath])
+            onChosen: path => {
+                setFace.command = ["sh", "-c", `
+                    case "$1" in *.svg|*.SVG) rsvg-convert -w 256 -h 256 -o "$HOME/.face" "$1" ;; *) cp -f "$1" "$HOME/.face" ;; esac &&
+                    busctl --system call org.freedesktop.Accounts "$2" org.freedesktop.Accounts.User SetIconFile s "$HOME/.face"`,
+                    "sh", path, page.objectPath];
+                setFace.running = true;
+            }
+        }
+        Process {
+            id: setFace
+            onExited: Desktop.faceVersion++
         }
     }
 

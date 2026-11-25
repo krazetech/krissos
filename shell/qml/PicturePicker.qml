@@ -4,28 +4,29 @@ import Quickshell
 import Quickshell.Io
 import "reveal.js" as Reveal
 
-// "Choose a picture" inside the Settings window, as Windows' picture picker: the pictures in a
-// folder as thumbnails (starting in Pictures, newest first), its folders to go into, Up to go
-// back, and a row of KrissOS pictures when `stock` has some. Enter or a click picks, Esc or a
-// click outside closes. Settings > Accounts, Background and Lock screen use it.
-Rectangle {
+// "Choose a picture" in the Settings page that asks, as Windows' picture picker: the pictures
+// in a folder as thumbnails (starting in Pictures, newest first), its folders to go into, Up to
+// go back, and a row of KrissOS pictures when `stock` has some. It opens in place, under the
+// button, and scrolls into view. Enter or a click picks, Esc or Close shuts it. Settings >
+// Accounts, Background and Lock screen use it.
+// ponytail: in the page, not over the window: an item moved onto a Quickshell window's
+// content item is not drawn.
+Item {
     id: picker
     property string title: Tr.t("Choose a picture")
     property var stock: []  // [[path, name]]
     property var kinds: ["*.jpg", "*.jpeg", "*.png", "*.webp", "*.svg"]
     signal chosen(string path)
 
-    // Over the whole window, whichever page opened it.
     // The control that opened it gets the keyboard back.
     property Item back: null
     function open() {
         back = Window.activeFocusItem;
-        parent = Window.window.contentItem;
-        anchors.fill = parent;
         if (home) folder = home;
         visible = true;
         grid.currentIndex = 0;
         grid.forceActiveFocus();
+        Reveal.show(picker);
     }
     function close() { visible = false; back?.forceActiveFocus(); }
     function pick(path) { close(); chosen(path); }
@@ -48,20 +49,16 @@ Rectangle {
     }
 
     visible: false
-    z: 1000
-    color: Theme.alpha("#000000", 0.4)
-    MouseArea { anchors.fill: parent; onClicked: picker.close(); onWheel: w => w.accepted = true; Accessible.ignored: true }
+    width: parent?.width ?? 0
+    height: Theme.dp(520)
 
     Rectangle {
         id: box
-        anchors.centerIn: parent
-        width: Math.min(Theme.dp(760), parent.width - 48)
-        height: Math.min(Theme.dp(600), parent.height - 48)
+        anchors.fill: parent
         radius: Theme.rCard
         color: Theme.win
         border.width: Theme.rimWidth
         border.color: Theme.line
-        MouseArea { anchors.fill: parent; Accessible.ignored: true }  // clicks on the box do not close it
         Accessible.role: Accessible.Dialog
         Accessible.name: picker.title
 
