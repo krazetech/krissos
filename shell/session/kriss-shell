@@ -147,6 +147,24 @@ switch-user)
     # and starting it again would do nothing.
     exec systemctl start "kriss-switch-user@$(date +%s).service"
     ;;
+reapply-modes)
+    # Coming back from Switch user, cosmic-comp can leave a monitor showing a stale, zoomed
+    # picture (its mode-sets fail while the login screen's compositor owns the GPU). Setting
+    # each output's mode afresh, through another refresh rate and back, clears it.
+    cosmic-randr list 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | awk '
+        /^[^ ]/ { out = $1; next }
+        / [0-9]+x[0-9]+ @ / {
+            split($1, wh, "x"); r = $3
+            if ($0 ~ /\(current\)/) { cw[out] = wh[1]; ch[out] = wh[2]; cr[out] = r }
+            rows[out] = rows[out] "\n" $1 " " $3
+        }
+        END { for (k in cw) { n = split(rows[k], l, "\n"); alt = ""
+                for (i = 2; i <= n; i++) { split(l[i], a, " "); if (a[1] == cw[k] "x" ch[k] && a[2] != cr[k]) { alt = a[2]; break } }
+                if (alt != "") print k, cw[k], ch[k], cr[k], alt } }' |
+    while read -r out w h cur alt; do
+        cosmic-randr mode "$out" "$w" "$h" --refresh "$alt" && sleep 1 && cosmic-randr mode "$out" "$w" "$h" --refresh "$cur"
+    done
+    ;;
 greeter)
     # greetd's greeter user has no home, and cosmic-comp keeps running after its command
     # exits, so give it one under the runtime dir and stop cosmic-comp once the login
