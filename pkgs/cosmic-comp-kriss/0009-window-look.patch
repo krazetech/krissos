@@ -1,3 +1,41 @@
+diff --git a/src/backend/render/mod.rs b/src/backend/render/mod.rs
+index 9ad6158..55f08c6 100644
+--- a/src/backend/render/mod.rs
++++ b/src/backend/render/mod.rs
+@@ -966,14 +966,14 @@ where
+                 let alpha = match &overview.0 {
+                     OverviewMode::Started(_, started) => {
+                         (1.0 - (Instant::now().duration_since(*started).as_millis()
+-                            / ANIMATION_DURATION.as_millis()) as f32)
++                            / ANIMATION_DURATION().as_millis()) as f32)
+                             .max(0.0)
+                             * 0.4
+                             + 0.6
+                     }
+                     OverviewMode::Ended(_, ended) => {
+                         ((Instant::now().duration_since(*ended).as_millis()
+-                            / ANIMATION_DURATION.as_millis()) as f32)
++                            / ANIMATION_DURATION().as_millis()) as f32)
+                             * 0.4
+                             + 0.6
+                     }
+@@ -991,14 +991,14 @@ where
+                 let alpha = match &overview.0 {
+                     OverviewMode::Started(_, started) => {
+                         (1.0 - (Instant::now().duration_since(*started).as_millis()
+-                            / ANIMATION_DURATION.as_millis()) as f32)
++                            / ANIMATION_DURATION().as_millis()) as f32)
+                             .max(0.0)
+                             * 0.4
+                             + 0.6
+                     }
+                     OverviewMode::Ended(_, ended) => {
+                         ((Instant::now().duration_since(*ended).as_millis()
+-                            / ANIMATION_DURATION.as_millis()) as f32)
++                            / ANIMATION_DURATION().as_millis()) as f32)
+                             * 0.4
+                             + 0.6
+                     }
 diff --git a/src/backend/render/shadow.rs b/src/backend/render/shadow.rs
 index 87fdd2e..1369069 100644
 --- a/src/backend/render/shadow.rs
@@ -71,8 +109,459 @@ index 515e340..06bf082 100644
          let _ = loop_handle.insert_idle(|state| {
              let filter_conf = state.common.config.dynamic_conf.screen_filter();
              state
+diff --git a/src/shell/focus/order.rs b/src/shell/focus/order.rs
+index 937fa31..18e1266 100644
+--- a/src/shell/focus/order.rs
++++ b/src/shell/focus/order.rs
+@@ -248,7 +248,7 @@ fn render_input_order_internal<R: 'static>(
+                         0.0,
+                         1.0,
+                         Instant::now().duration_since(*st).as_millis() as f32
+-                            / ANIMATION_DURATION.as_millis() as f32,
++                            / ANIMATION_DURATION().as_millis() as f32,
+                     ),
+                 ),
+                 WorkspaceDelta::Gesture {
+diff --git a/src/shell/layout/floating/mod.rs b/src/shell/layout/floating/mod.rs
+index 210aea3..8880718 100644
+--- a/src/shell/layout/floating/mod.rs
++++ b/src/shell/layout/floating/mod.rs
+@@ -53,8 +53,16 @@ use crate::{
+ mod grabs;
+ pub use self::grabs::*;
+ 
+-pub const ANIMATION_DURATION: Duration = Duration::from_millis(200);
+-pub const MINIMIZE_ANIMATION_DURATION: Duration = Duration::from_millis(320);
++// KrissOS: scaled by the animation speed in Settings > Personalise > Windows.
++#[allow(non_snake_case)]
++pub fn ANIMATION_DURATION() -> Duration {
++    crate::shell::open_close::scaled(Duration::from_millis(200))
++}
++// KrissOS: scaled by the animation speed in Settings > Personalise > Windows.
++#[allow(non_snake_case)]
++pub fn MINIMIZE_ANIMATION_DURATION() -> Duration {
++    crate::shell::open_close::scaled(Duration::from_millis(320))
++}
+ const SHAKE_ANIMATION_DURATION: Duration = Duration::from_millis(320);
+ const SHAKE_AMPLITUDE: f32 = 10.0;
+ 
+@@ -108,17 +116,17 @@ impl Animation {
+             Animation::Minimize { start, .. } => {
+                 let percentage = Instant::now()
+                     .duration_since(*start)
+-                    .min(MINIMIZE_ANIMATION_DURATION)
++                    .min(MINIMIZE_ANIMATION_DURATION())
+                     .as_secs_f32()
+-                    / MINIMIZE_ANIMATION_DURATION.as_secs_f32();
++                    / MINIMIZE_ANIMATION_DURATION().as_secs_f32();
+                 1.0 - ((percentage - 0.5).max(0.0) * 2.0)
+             }
+             Animation::Unminimize { start, .. } => {
+                 let percentage = Instant::now()
+                     .duration_since(*start)
+-                    .min(MINIMIZE_ANIMATION_DURATION)
++                    .min(MINIMIZE_ANIMATION_DURATION())
+                     .as_secs_f32()
+-                    / MINIMIZE_ANIMATION_DURATION.as_secs_f32();
++                    / MINIMIZE_ANIMATION_DURATION().as_secs_f32();
+                 (percentage * 2.0).min(1.0)
+             }
+         }
+@@ -167,7 +175,7 @@ impl Animation {
+             }
+             | Animation::Unminimize {
+                 target_geometry, ..
+-            } => (MINIMIZE_ANIMATION_DURATION, *target_geometry),
++            } => (MINIMIZE_ANIMATION_DURATION(), *target_geometry),
+             Animation::Tiled { .. } => {
+                 let target_geometry = if let Some(target_rect) =
+                     tiled_state.map(|state| state.relative_geometry(output_geometry, gaps))
+@@ -176,7 +184,7 @@ impl Animation {
+                 } else {
+                     current_geometry
+                 };
+-                (ANIMATION_DURATION, target_geometry)
++                (ANIMATION_DURATION(), target_geometry)
+             }
+         };
+         let previous_rect = *self.previous_geometry();
+@@ -1519,9 +1527,9 @@ impl FloatingLayout {
+         let was_empty = self.animations.is_empty();
+         self.animations.retain(|_, anim| {
+             let duration = match anim {
+-                Animation::Tiled { .. } => ANIMATION_DURATION,
++                Animation::Tiled { .. } => ANIMATION_DURATION(),
+                 Animation::Shake { .. } => SHAKE_ANIMATION_DURATION,
+-                _ => MINIMIZE_ANIMATION_DURATION,
++                _ => MINIMIZE_ANIMATION_DURATION(),
+             };
+             Instant::now().duration_since(*anim.start()) < duration
+         });
+diff --git a/src/shell/layout/tiling/mod.rs b/src/shell/layout/tiling/mod.rs
+index 618b7ae..084a91a 100644
+--- a/src/shell/layout/tiling/mod.rs
++++ b/src/shell/layout/tiling/mod.rs
+@@ -79,8 +79,16 @@ mod grabs;
+ pub use self::blocker::*;
+ pub use self::grabs::*;
+ 
+-pub const ANIMATION_DURATION: Duration = Duration::from_millis(200);
+-pub const MINIMIZE_ANIMATION_DURATION: Duration = Duration::from_millis(320);
++// KrissOS: scaled by the animation speed in Settings > Personalise > Windows.
++#[allow(non_snake_case)]
++pub fn ANIMATION_DURATION() -> Duration {
++    crate::shell::open_close::scaled(Duration::from_millis(200))
++}
++// KrissOS: scaled by the animation speed in Settings > Personalise > Windows.
++#[allow(non_snake_case)]
++pub fn MINIMIZE_ANIMATION_DURATION() -> Duration {
++    crate::shell::open_close::scaled(Duration::from_millis(320))
++}
+ pub const MOUSE_ANIMATION_DELAY: Duration = Duration::from_millis(150);
+ pub const INITIAL_MOUSE_ANIMATION_DELAY: Duration = Duration::from_millis(500);
+ 
+@@ -418,9 +426,9 @@ impl TilingLayout {
+             .and_then(|focus_stack| TilingLayout::last_active_window(&tree, focus_stack))
+             .map(|(node_id, _)| node_id);
+         let duration = if minimize_rect.is_some() {
+-            MINIMIZE_ANIMATION_DURATION
++            MINIMIZE_ANIMATION_DURATION()
+         } else {
+-            ANIMATION_DURATION
++            ANIMATION_DURATION()
+         };
+ 
+         TilingLayout::map_to_tree(
+@@ -498,7 +506,7 @@ impl TilingLayout {
+ 
+                 let blocker = TilingLayout::update_positions(&self.output, &mut tree, gaps);
+                 self.queue
+-                    .push_tree(tree, MINIMIZE_ANIMATION_DURATION, blocker);
++                    .push_tree(tree, MINIMIZE_ANIMATION_DURATION(), blocker);
+                 return;
+             }
+ 
+@@ -536,7 +544,7 @@ impl TilingLayout {
+ 
+                 let blocker = TilingLayout::update_positions(&self.output, &mut tree, gaps);
+                 self.queue
+-                    .push_tree(tree, MINIMIZE_ANIMATION_DURATION, blocker);
++                    .push_tree(tree, MINIMIZE_ANIMATION_DURATION(), blocker);
+                 return;
+             }
+         }
+@@ -638,7 +646,7 @@ impl TilingLayout {
+             new.output_enter(&self.output, new.bbox());
+ 
+             let blocker = TilingLayout::update_positions(&self.output, &mut tree, gaps);
+-            self.queue.push_tree(tree, ANIMATION_DURATION, blocker);
++            self.queue.push_tree(tree, ANIMATION_DURATION(), blocker);
+         }
+     }
+ 
+@@ -816,13 +824,13 @@ impl TilingLayout {
+                 TilingLayout::unmap_internal(&mut this_tree, &desc.node);
+                 let blocker =
+                     TilingLayout::update_positions(&this.output, &mut this_tree, this_gaps);
+-                this.queue.push_tree(this_tree, ANIMATION_DURATION, blocker);
++                this.queue.push_tree(this_tree, ANIMATION_DURATION(), blocker);
+ 
+                 let blocker =
+                     TilingLayout::update_positions(&other.output, &mut other_tree, other_gaps);
+                 other
+                     .queue
+-                    .push_tree(other_tree, ANIMATION_DURATION, blocker);
++                    .push_tree(other_tree, ANIMATION_DURATION(), blocker);
+ 
+                 other.node_desc_to_focus(&NodeDesc {
+                     handle: *other_handle,
+@@ -1256,7 +1264,7 @@ impl TilingLayout {
+ 
+         let this_gaps = this.gaps();
+         let blocker = TilingLayout::update_positions(&this.output, &mut this_tree, this_gaps);
+-        this.queue.push_tree(this_tree, ANIMATION_DURATION, blocker);
++        this.queue.push_tree(this_tree, ANIMATION_DURATION(), blocker);
+ 
+         let has_other_tree = other_tree.is_some();
+         if let Some(mut other_tree) = other_tree {
+@@ -1267,7 +1275,7 @@ impl TilingLayout {
+                 (&mut this.queue, this_gaps)
+             };
+             let blocker = TilingLayout::update_positions(&other_output, &mut other_tree, gaps);
+-            other_queue.push_tree(other_tree, ANIMATION_DURATION, blocker);
++            other_queue.push_tree(other_tree, ANIMATION_DURATION(), blocker);
+         }
+ 
+         match (&this_desc.stack_window, &other_desc.stack_window) {
+@@ -1431,9 +1439,9 @@ impl TilingLayout {
+             TilingLayout::unmap_internal(&mut tree, &node_id);
+ 
+             let duration = if minimizing {
+-                MINIMIZE_ANIMATION_DURATION
++                MINIMIZE_ANIMATION_DURATION()
+             } else {
+-                ANIMATION_DURATION
++                ANIMATION_DURATION()
+             };
+             let blocker = TilingLayout::update_positions(&self.output, &mut tree, gaps);
+             self.queue.push_tree(tree, duration, blocker);
+@@ -1552,7 +1560,7 @@ impl TilingLayout {
+                     *mapped.tiling_node_id.lock().unwrap() = Some(new_id);
+ 
+                     let blocker = TilingLayout::update_positions(&self.output, &mut tree, gaps);
+-                    self.queue.push_tree(tree, ANIMATION_DURATION, blocker);
++                    self.queue.push_tree(tree, ANIMATION_DURATION(), blocker);
+                     return MoveResult::ShiftFocus(mapped.into());
+                 }
+                 StackMoveResult::Default => {} // continue normally
+@@ -1628,7 +1636,7 @@ impl TilingLayout {
+                     .remove_window(og_idx);
+ 
+                 let blocker = TilingLayout::update_positions(&self.output, &mut tree, gaps);
+-                self.queue.push_tree(tree, ANIMATION_DURATION, blocker);
++                self.queue.push_tree(tree, ANIMATION_DURATION(), blocker);
+                 return MoveResult::Done;
+             }
+ 
+@@ -1654,7 +1662,7 @@ impl TilingLayout {
+                     .remove_window(og_idx);
+ 
+                 let blocker = TilingLayout::update_positions(&self.output, &mut tree, gaps);
+-                self.queue.push_tree(tree, ANIMATION_DURATION, blocker);
++                self.queue.push_tree(tree, ANIMATION_DURATION(), blocker);
+                 return MoveResult::Done;
+             }
+ 
+@@ -1810,7 +1818,7 @@ impl TilingLayout {
+                 };
+ 
+                 let blocker = TilingLayout::update_positions(&self.output, &mut tree, gaps);
+-                self.queue.push_tree(tree, ANIMATION_DURATION, blocker);
++                self.queue.push_tree(tree, ANIMATION_DURATION(), blocker);
+                 return result;
+             }
+ 
+@@ -2125,7 +2133,7 @@ impl TilingLayout {
+             *orientation = new_orientation;
+ 
+             let blocker = TilingLayout::update_positions(&self.output, &mut tree, gaps);
+-            self.queue.push_tree(tree, ANIMATION_DURATION, blocker);
++            self.queue.push_tree(tree, ANIMATION_DURATION(), blocker);
+         }
+     }
+ 
+@@ -2245,7 +2253,7 @@ impl TilingLayout {
+         };
+ 
+         let blocker = TilingLayout::update_positions(&self.output, &mut tree, gaps);
+-        self.queue.push_tree(tree, ANIMATION_DURATION, blocker);
++        self.queue.push_tree(tree, ANIMATION_DURATION(), blocker);
+ 
+         Some(result)
+     }
+@@ -2322,7 +2330,7 @@ impl TilingLayout {
+                     };
+ 
+                     let blocker = TilingLayout::update_positions(&self.output, &mut tree, gaps);
+-                    self.queue.push_tree(tree, ANIMATION_DURATION, blocker);
++                    self.queue.push_tree(tree, ANIMATION_DURATION(), blocker);
+ 
+                     return Some(KeyboardFocusTarget::Element(mapped));
+                 }
+@@ -2337,7 +2345,7 @@ impl TilingLayout {
+ 
+         let mut tree = self.queue.trees.back().unwrap().0.copy_clone();
+         let blocker = TilingLayout::update_positions(&self.output, &mut tree, gaps);
+-        self.queue.push_tree(tree, ANIMATION_DURATION, blocker);
++        self.queue.push_tree(tree, ANIMATION_DURATION(), blocker);
+     }
+ 
+     #[profiling::function]
+@@ -2658,7 +2666,7 @@ impl TilingLayout {
+             if let Some(mut new_tree) = new_tree {
+                 let blocker =
+                     TilingLayout::update_positions(&self.output, &mut new_tree, self.gaps());
+-                self.queue.push_tree(new_tree, ANIMATION_DURATION, blocker);
++                self.queue.push_tree(new_tree, ANIMATION_DURATION(), blocker);
+             }
+         }
+     }
+@@ -2817,7 +2825,7 @@ impl TilingLayout {
+         }
+ 
+         let blocker = TilingLayout::update_positions(&self.output, &mut tree, gaps);
+-        self.queue.push_tree(tree, ANIMATION_DURATION, blocker);
++        self.queue.push_tree(tree, ANIMATION_DURATION(), blocker);
+ 
+         let location = self.element_geometry(&mapped).unwrap().loc;
+         (mapped, location)
+@@ -3408,7 +3416,7 @@ impl TilingLayout {
+                 )
+                 .unwrap();
+                 let blocker = TilingLayout::update_positions(&self.output, &mut tree, gaps);
+-                self.queue.push_tree(tree, ANIMATION_DURATION, blocker);
++                self.queue.push_tree(tree, ANIMATION_DURATION(), blocker);
+             }
+             return;
+         };
+@@ -3747,9 +3755,9 @@ impl TilingLayout {
+                                 let duration = if target_zone.is_window_zone()
+                                     && !old_target_zone.is_window_zone()
+                                 {
+-                                    ANIMATION_DURATION * 2
++                                    ANIMATION_DURATION() * 2
+                                 } else {
+-                                    ANIMATION_DURATION
++                                    ANIMATION_DURATION()
+                                 };
+ 
+                                 let mut tree = tree.copy_clone();
+@@ -3979,7 +3987,7 @@ impl TilingLayout {
+         TilingLayout::merge_trees(src, &mut dst, orientation);
+ 
+         let blocker = TilingLayout::update_positions(&self.output, &mut dst, gaps);
+-        self.queue.push_tree(dst, ANIMATION_DURATION, blocker);
++        self.queue.push_tree(dst, ANIMATION_DURATION(), blocker);
+     }
+ 
+     fn merge_trees(src: Tree<Data>, dst: &mut Tree<Data>, orientation: Orientation) {
+diff --git a/src/shell/mod.rs b/src/shell/mod.rs
+index 1da98c3..1803352 100644
+--- a/src/shell/mod.rs
++++ b/src/shell/mod.rs
+@@ -126,7 +126,11 @@ use self::{
+     },
+ };
+ 
+-const ANIMATION_DURATION: Duration = Duration::from_millis(200);
++// KrissOS: scaled by the animation speed in Settings > Personalise > Windows.
++#[allow(non_snake_case)]
++fn ANIMATION_DURATION() -> Duration {
++    crate::shell::open_close::scaled(Duration::from_millis(200))
++}
+ const GESTURE_MAX_LENGTH: f64 = 150.0;
+ const GESTURE_POSITION_THRESHOLD: f64 = 0.5;
+ const GESTURE_VELOCITY_THRESHOLD: f64 = 0.02;
+@@ -155,13 +159,13 @@ impl OverviewMode {
+         match self {
+             OverviewMode::Started(_, start) => {
+                 let percentage = Instant::now().duration_since(*start).as_millis() as f32
+-                    / ANIMATION_DURATION.as_millis() as f32;
++                    / ANIMATION_DURATION().as_millis() as f32;
+                 Some(ease(EaseInOutCubic, 0.0, 1.0, percentage))
+             }
+             OverviewMode::Active(_) => Some(1.0),
+             OverviewMode::Ended(_, end) => {
+                 let percentage = Instant::now().duration_since(*end).as_millis() as f32
+-                    / ANIMATION_DURATION.as_millis() as f32;
++                    / ANIMATION_DURATION().as_millis() as f32;
+                 if percentage < 1.0 {
+                     Some(ease(EaseInOutCubic, 1.0, 0.0, percentage))
+                 } else {
+@@ -208,13 +212,13 @@ impl ResizeMode {
+         match self {
+             ResizeMode::Started(_, start, _) => {
+                 let percentage = Instant::now().duration_since(*start).as_millis() as f32
+-                    / ANIMATION_DURATION.as_millis() as f32;
++                    / ANIMATION_DURATION().as_millis() as f32;
+                 Some(ease(EaseInOutCubic, 0.0, 1.0, percentage))
+             }
+             ResizeMode::Active(_, _) => Some(1.0),
+             ResizeMode::Ended(end, _) => {
+                 let percentage = Instant::now().duration_since(*end).as_millis() as f32
+-                    / ANIMATION_DURATION.as_millis() as f32;
++                    / ANIMATION_DURATION().as_millis() as f32;
+                 if percentage < 1.0 {
+                     Some(ease(EaseInOutCubic, 1.0, 0.0, percentage))
+                 } else {
+@@ -625,7 +629,7 @@ impl WorkspaceSet {
+             match start {
+                 WorkspaceDelta::Shortcut(st) => {
+                     if Instant::now().duration_since(st).as_millis() as f32
+-                        >= ANIMATION_DURATION.as_millis() as f32
++                        >= ANIMATION_DURATION().as_millis() as f32
+                     {
+                         self.previously_active = None;
+                     }
+@@ -2506,8 +2510,8 @@ impl Shell {
+             let (reverse_duration, trigger) =
+                 if let OverviewMode::Started(trigger, start) = self.overview_mode.clone() {
+                     (
+-                        ANIMATION_DURATION
+-                            - Instant::now().duration_since(start).min(ANIMATION_DURATION),
++                        ANIMATION_DURATION()
++                            - Instant::now().duration_since(start).min(ANIMATION_DURATION()),
+                         Some(trigger),
+                     )
+                 } else {
+@@ -2519,7 +2523,7 @@ impl Shell {
+ 
+     pub fn overview_mode(&self) -> (OverviewMode, Option<SwapIndicator>) {
+         if let OverviewMode::Started(trigger, timestamp) = &self.overview_mode
+-            && Instant::now().duration_since(*timestamp) > ANIMATION_DURATION
++            && Instant::now().duration_since(*timestamp) > ANIMATION_DURATION()
+         {
+             return (
+                 OverviewMode::Active(trigger.clone()),
+@@ -2527,7 +2531,7 @@ impl Shell {
+             );
+         }
+         if let OverviewMode::Ended(_, timestamp) = &self.overview_mode
+-            && Instant::now().duration_since(*timestamp) > ANIMATION_DURATION
++            && Instant::now().duration_since(*timestamp) > ANIMATION_DURATION()
+         {
+             return (OverviewMode::None, None);
+         }
+@@ -2564,7 +2568,7 @@ impl Shell {
+ 
+     pub fn resize_mode(&self) -> (ResizeMode, Option<ResizeIndicator>) {
+         if let ResizeMode::Started(binding, timestamp, direction) = &self.resize_mode
+-            && Instant::now().duration_since(*timestamp) > ANIMATION_DURATION
++            && Instant::now().duration_since(*timestamp) > ANIMATION_DURATION()
+         {
+             return (
+                 ResizeMode::Active(binding.clone(), *direction),
+@@ -2572,7 +2576,7 @@ impl Shell {
+             );
+         }
+         if let ResizeMode::Ended(timestamp, _) = self.resize_mode
+-            && Instant::now().duration_since(timestamp) > ANIMATION_DURATION
++            && Instant::now().duration_since(timestamp) > ANIMATION_DURATION()
+         {
+             return (ResizeMode::None, None);
+         }
+@@ -2716,12 +2720,12 @@ impl Shell {
+     ) {
+         match &self.overview_mode {
+             OverviewMode::Started(trigger, timestamp)
+-                if Instant::now().duration_since(*timestamp) > ANIMATION_DURATION =>
++                if Instant::now().duration_since(*timestamp) > ANIMATION_DURATION() =>
+             {
+                 self.overview_mode = OverviewMode::Active(trigger.clone());
+             }
+             OverviewMode::Ended(_, timestamp)
+-                if Instant::now().duration_since(*timestamp) > ANIMATION_DURATION =>
++                if Instant::now().duration_since(*timestamp) > ANIMATION_DURATION() =>
+             {
+                 self.overview_mode = OverviewMode::None;
+                 self.swap_indicator = None;
+@@ -2731,12 +2735,12 @@ impl Shell {
+ 
+         match &self.resize_mode {
+             ResizeMode::Started(binding, timestamp, direction)
+-                if Instant::now().duration_since(*timestamp) > ANIMATION_DURATION =>
++                if Instant::now().duration_since(*timestamp) > ANIMATION_DURATION() =>
+             {
+                 self.resize_mode = ResizeMode::Active(binding.clone(), *direction);
+             }
+             ResizeMode::Ended(timestamp, _)
+-                if Instant::now().duration_since(*timestamp) > ANIMATION_DURATION =>
++                if Instant::now().duration_since(*timestamp) > ANIMATION_DURATION() =>
+             {
+                 self.resize_mode = ResizeMode::None;
+                 self.resize_indicator = None;
 diff --git a/src/shell/open_close.rs b/src/shell/open_close.rs
-index f4c099d..c6c6ea7 100644
+index f4c099d..c8f78f0 100644
 --- a/src/shell/open_close.rs
 +++ b/src/shell/open_close.rs
 @@ -16,7 +16,7 @@ use std::{
@@ -84,7 +573,7 @@ index f4c099d..c6c6ea7 100644
      },
      time::{Duration, Instant},
  };
-@@ -50,8 +50,38 @@ use crate::{
+@@ -50,8 +50,44 @@ use crate::{
      utils::prelude::*,
  };
  
@@ -115,17 +604,23 @@ index f4c099d..c6c6ea7 100644
 +    f32::from_bits(SPEED.load(Ordering::Relaxed))
 +}
 +
++/// `duration` at the user's animation speed: open and close here, and maximize, minimize,
++/// snap, tiling, fullscreen and workspace switches in the layouts.
++pub fn scaled(duration: Duration) -> Duration {
++    duration.div_f32(speed())
++}
++
 +pub fn open_duration() -> Duration {
-+    OPEN_BASE.div_f32(speed())
++    scaled(OPEN_BASE)
 +}
 +
 +pub fn close_duration() -> Duration {
-+    CLOSE_BASE.div_f32(speed())
++    scaled(CLOSE_BASE)
 +}
  /// Size a window opens from and closes to, as a fraction of its own.
  const MIN_SCALE: f64 = 0.94;
  
-@@ -121,14 +151,14 @@ impl CosmicMapped {
+@@ -121,14 +157,14 @@ impl CosmicMapped {
      /// Alpha and scale while the window is opening.
      pub fn open_animation(&self) -> Option<(f32, f64)> {
          let start = (*self.opened_at.lock().unwrap())?;
@@ -142,7 +637,7 @@ index f4c099d..c6c6ea7 100644
              *opened_at = None;
              return true;
          }
-@@ -157,7 +187,7 @@ impl fmt::Debug for ClosingWindow {
+@@ -157,7 +193,7 @@ impl fmt::Debug for ClosingWindow {
  
  impl ClosingWindow {
      pub fn is_done(&self) -> bool {
@@ -151,7 +646,7 @@ index f4c099d..c6c6ea7 100644
      }
  
      pub fn render_element<R: AsGlowRenderer>(
-@@ -166,7 +196,7 @@ impl ClosingWindow {
+@@ -166,7 +202,7 @@ impl ClosingWindow {
          output_scale: f64,
      ) -> Option<TextureRenderElement<GlesTexture>> {
          // Ease-in-out: with ease-out the window is mostly gone after a third of the time.
@@ -160,7 +655,7 @@ index f4c099d..c6c6ea7 100644
          // Whole pixels: a fractional position leaves a 1 px trail when the damage is rounded.
          let geometry = scale_rect(self.geometry, 1.0 - (1.0 - MIN_SCALE) * e);
  
-@@ -338,9 +368,9 @@ mod tests {
+@@ -338,9 +374,9 @@ mod tests {
  
      #[test]
      fn progress_ends() {
@@ -173,3 +668,185 @@ index f4c099d..c6c6ea7 100644
          assert!((0.0..0.1).contains(&p));
      }
  }
+diff --git a/src/shell/workspace.rs b/src/shell/workspace.rs
+index 30e8f14..3e09277 100644
+--- a/src/shell/workspace.rs
++++ b/src/shell/workspace.rs
+@@ -72,7 +72,11 @@ use super::{
+     layout::tiling::{Data, NodeDesc},
+ };
+ 
+-const FULLSCREEN_ANIMATION_DURATION: Duration = Duration::from_millis(200);
++// KrissOS: scaled by the animation speed in Settings > Personalise > Windows.
++#[allow(non_snake_case)]
++fn FULLSCREEN_ANIMATION_DURATION() -> Duration {
++    crate::shell::open_close::scaled(Duration::from_millis(200))
++}
+ 
+ // For stable workspace id, generate random 24-bit integer, as a hex string
+ // Must be compared with existing workspaces work uniqueness.
+@@ -556,7 +560,7 @@ impl Workspace {
+         for f in self.fullscreen_surfaces.iter_mut() {
+             if let Some(start) = f.start_at.as_ref() {
+                 let duration_since = Instant::now().duration_since(*start);
+-                if duration_since > FULLSCREEN_ANIMATION_DURATION {
++                if duration_since > FULLSCREEN_ANIMATION_DURATION() {
+                     f.start_at.take();
+                     self.dirty.store(true, Ordering::SeqCst);
+                 }
+@@ -565,7 +569,7 @@ impl Workspace {
+ 
+         self.fullscreen_surfaces.retain(|f| {
+             if let Some(end) = f.ended_at
+-                && Instant::now().duration_since(end) >= FULLSCREEN_ANIMATION_DURATION
++                && Instant::now().duration_since(end) >= FULLSCREEN_ANIMATION_DURATION()
+             {
+                 self.dirty.store(true, Ordering::SeqCst);
+                 return false;
+@@ -1071,15 +1075,15 @@ impl Workspace {
+                 f.previous_geometry = Some(to);
+                 f.ended_at = Some(
+                     Instant::now()
+-                        - (FULLSCREEN_ANIMATION_DURATION
++                        - (FULLSCREEN_ANIMATION_DURATION()
+                             - f.start_at
+                                 .take()
+                                 .map(|earlier| {
+                                     Instant::now()
+                                         .duration_since(earlier)
+-                                        .min(FULLSCREEN_ANIMATION_DURATION)
++                                        .min(FULLSCREEN_ANIMATION_DURATION())
+                                 })
+-                                .unwrap_or(FULLSCREEN_ANIMATION_DURATION)),
++                                .unwrap_or(FULLSCREEN_ANIMATION_DURATION())),
+                 );
+             }
+ 
+@@ -1353,16 +1357,16 @@ impl Workspace {
+ 
+         surface.ended_at = Some(
+             Instant::now()
+-                - (FULLSCREEN_ANIMATION_DURATION
++                - (FULLSCREEN_ANIMATION_DURATION()
+                     - surface
+                         .start_at
+                         .take()
+                         .map(|earlier| {
+                             Instant::now()
+                                 .duration_since(earlier)
+-                                .min(FULLSCREEN_ANIMATION_DURATION)
++                                .min(FULLSCREEN_ANIMATION_DURATION())
+                         })
+-                        .unwrap_or(FULLSCREEN_ANIMATION_DURATION)),
++                        .unwrap_or(FULLSCREEN_ANIMATION_DURATION())),
+         );
+ 
+         Some((
+@@ -1678,7 +1682,7 @@ impl Workspace {
+                 let (target_geo, alpha) = match (fullscreen.start_at, fullscreen.ended_at) {
+                     (Some(started), _) => {
+                         let duration = Instant::now().duration_since(started).as_secs_f64()
+-                            / FULLSCREEN_ANIMATION_DURATION.as_secs_f64();
++                            / FULLSCREEN_ANIMATION_DURATION().as_secs_f64();
+                         (
+                             ease(
+                                 EaseInOutCubic,
+@@ -1692,7 +1696,7 @@ impl Workspace {
+                     }
+                     (_, Some(ended)) => {
+                         let duration = Instant::now().duration_since(ended).as_secs_f64()
+-                            / FULLSCREEN_ANIMATION_DURATION.as_secs_f64();
++                            / FULLSCREEN_ANIMATION_DURATION().as_secs_f64();
+                         (
+                             ease(
+                                 EaseInOutCubic,
+@@ -1776,14 +1780,14 @@ impl Workspace {
+             let alpha = match &overview.0 {
+                 OverviewMode::Started(_, started) => {
+                     (1.0 - (Instant::now().duration_since(*started).as_millis()
+-                        / ANIMATION_DURATION.as_millis()) as f32)
++                        / ANIMATION_DURATION().as_millis()) as f32)
+                         .max(0.0)
+                         * 0.4
+                         + 0.6
+                 }
+                 OverviewMode::Ended(_, ended) => {
+                     ((Instant::now().duration_since(*ended).as_millis()
+-                        / ANIMATION_DURATION.as_millis()) as f32)
++                        / ANIMATION_DURATION().as_millis()) as f32)
+                         * 0.4
+                         + 0.6
+                 }
+@@ -1907,7 +1911,7 @@ impl Workspace {
+             let (target_geo, alpha) = match (fullscreen.start_at, fullscreen.ended_at) {
+                 (Some(started), _) => {
+                     let duration = Instant::now().duration_since(started).as_secs_f64()
+-                        / FULLSCREEN_ANIMATION_DURATION.as_secs_f64();
++                        / FULLSCREEN_ANIMATION_DURATION().as_secs_f64();
+                     (
+                         ease(
+                             EaseInOutCubic,
+@@ -1921,7 +1925,7 @@ impl Workspace {
+                 }
+                 (_, Some(ended)) => {
+                     let duration = Instant::now().duration_since(ended).as_secs_f64()
+-                        / FULLSCREEN_ANIMATION_DURATION.as_secs_f64();
++                        / FULLSCREEN_ANIMATION_DURATION().as_secs_f64();
+                     (
+                         ease(
+                             EaseInOutCubic,
+@@ -1967,14 +1971,14 @@ impl Workspace {
+             let alpha = match &overview.0 {
+                 OverviewMode::Started(_, started) => {
+                     (1.0 - (Instant::now().duration_since(*started).as_millis()
+-                        / ANIMATION_DURATION.as_millis()) as f32)
++                        / ANIMATION_DURATION().as_millis()) as f32)
+                         .max(0.0)
+                         * 0.4
+                         + 0.6
+                 }
+                 OverviewMode::Ended(_, ended) => {
+                     ((Instant::now().duration_since(*ended).as_millis()
+-                        / ANIMATION_DURATION.as_millis()) as f32)
++                        / ANIMATION_DURATION().as_millis()) as f32)
+                         * 0.4
+                         + 0.6
+                 }
+diff --git a/src/shell/zoom.rs b/src/shell/zoom.rs
+index b3a795e..c19682c 100644
+--- a/src/shell/zoom.rs
++++ b/src/shell/zoom.rs
+@@ -113,13 +113,13 @@ impl OutputZoomState {
+     pub fn animating_focal_point(&mut self) -> Point<f64, Local> {
+         if let Some((old_point, start)) = self.previous_point.as_ref() {
+             let duration_since = Instant::now().duration_since(*start);
+-            if duration_since > ANIMATION_DURATION {
++            if duration_since > ANIMATION_DURATION() {
+                 self.previous_point.take();
+                 return self.focal_point;
+             }
+ 
+             let percentage =
+-                duration_since.as_millis() as f32 / ANIMATION_DURATION.as_millis() as f32;
++                duration_since.as_millis() as f32 / ANIMATION_DURATION().as_millis() as f32;
+             ease(
+                 Linear,
+                 EasePoint(*old_point),
+@@ -143,7 +143,7 @@ impl OutputZoomState {
+     pub fn animating_level(&self) -> f64 {
+         if let Some((old_level, start)) = self.previous_level.as_ref() {
+             let percentage = Instant::now().duration_since(*start).as_millis() as f32
+-                / ANIMATION_DURATION.as_millis() as f32;
++                / ANIMATION_DURATION().as_millis() as f32;
+ 
+             ease(Linear, *old_level, self.level, percentage)
+         } else {
+@@ -159,7 +159,7 @@ impl OutputZoomState {
+         if self
+             .previous_level
+             .as_ref()
+-            .is_some_and(|(_, start)| Instant::now().duration_since(*start) > ANIMATION_DURATION)
++            .is_some_and(|(_, start)| Instant::now().duration_since(*start) > ANIMATION_DURATION())
+         {
+             self.previous_level.take();
+         }

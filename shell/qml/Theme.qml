@@ -247,7 +247,7 @@ Singleton {
             ({ square: "0.0", small: "8.0" })[Desktop.windowCorners] ?? "20.0",
             ({ thin: "2", thick: "4" })[Desktop.windowBorder] ?? "0",
             ({ off: "0.0", soft: "0.5", strong: "1.6" })[Desktop.windowShadow] ?? "1.0",
-            ({ slow: "0.7", fast: "1.5" })[Desktop.animationSpeed] ?? "1.0"])
+            ({ slow: "0.5", fast: "2.0" })[Desktop.animationSpeed] ?? "1.0"])
     }
 
     // COSMIC builds its own accent shades with libcosmic's ThemeBuilder.
