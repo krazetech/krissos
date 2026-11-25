@@ -19,6 +19,8 @@ labels: release
       to Windows 11, KrissOS Shell and Plasma, network unplugged.
 - [ ] Rollback tried: update, boot the previous snapshot from the Limine menu, `kriss rollback`.
 - [ ] `shell/perf-check` within budget on the preview ISO.
+- [ ] **promote** run after a green nightly (dry run first), so `[kriss]` has what the nightly
+      tested: tagged ISOs build from `[kriss]`, and a package missing there stops the build.
 - [ ] Signing key in the `KRISS_GPG_KEY` secret is the current one and not near expiry.
 - [ ] `CHANGELOG.md`: **Unreleased** renamed to `## <tag>`, read through for plain words, new
       empty **Unreleased** above it. Merged to `main`.
