@@ -96,6 +96,10 @@ package() {
   install -Dm644 -t "$pkgdir/usr/lib/systemd/user" "$_shell/session/kriss-shell-session.target"
   install -Dm644 "$_shell/session/logind.conf" "$pkgdir/usr/lib/systemd/logind.conf.d/50-kriss-shell.conf"
   install -Dm644 "$_shell/session/greetd.conf" "$pkgdir/usr/lib/systemd/system/greetd.service.d/kriss-shell.conf"
+  # Switch user (Start's account menu): a second login screen on the next VT.
+  install -Dm644 "$_shell/session/kriss-switch-user@.service" "$pkgdir/usr/lib/systemd/system/kriss-switch-user@.service"
+  install -Dm644 "$_shell/session/greetd-switch.toml" "$pkgdir/usr/share/kriss-shell/greetd-switch.toml"
+  install -Dm644 "$_shell/session/50-kriss-switch-user.rules" "$pkgdir/usr/share/polkit-1/rules.d/50-kriss-switch-user.rules"
   install -d "$pkgdir/usr/share/kriss-shell" "$pkgdir/usr/lib/kriss-shell"
   cp -r --no-preserve=ownership "$srcdir/qml" "$srcdir/config/cosmic" "$pkgdir/usr/share/kriss-shell/"
   cp -r --no-preserve=ownership "$srcdir/kriss_protocols" "$pkgdir/usr/lib/kriss-shell/"

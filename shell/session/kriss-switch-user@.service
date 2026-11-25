@@ -1,0 +1,10 @@
+# Switch user: a second KrissOS login screen, on the next free VT, while the first person's
+# session stays open (locked) on its own. Started by `kriss-shell switch-user`; polkit lets
+# the person at the PC start it (50-kriss-switch-user.rules).
+[Unit]
+Description=KrissOS login screen for another person (Switch user)
+After=systemd-user-sessions.service plymouth-quit-wait.service
+
+[Service]
+ExecStart=/usr/bin/greetd --config /usr/share/kriss-shell/greetd-switch.toml
+Restart=no

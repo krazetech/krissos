@@ -37,6 +37,8 @@
 #                          the media keys, for the player playing (or the last one)
 #   kriss-shell brightness STEP
 #                          change the brightness and show the level (brightness keys, e.g. 5%+)
+#   kriss-shell switch-user
+#                          lock and show the login screen for someone else (Start's account menu)
 #   kriss-shell screenshot [region|area]
 #                          the whole screen (Print Screen) to ~/Pictures/Screenshots and the
 #                          clipboard; region opens the snipping bar (Windows+Shift+S), area a
@@ -130,6 +132,39 @@ screenshot)
     esac
     notify-send -a Screenshot -i "$file" "$title" "$body" 2>/dev/null
     ;;
+switch-user)
+    # Start > account menu > Switch user: lock this session, then a login screen on another
+    # VT (kriss-switch-user@.service, a second greetd; polkit lets the person at the PC start
+    # it), or back to that one if it is up already. The login screen's "Back to" buttons and
+    # this session's lock screen bring them back here.
+    qs -p "$qml" ipc call lock lock 2>/dev/null || loginctl lock-session
+    sleep 0.5
+    greeter=$(loginctl list-sessions --no-legend | awk '$3 == "greeter" { print $1; exit }')
+    if [ -n "$greeter" ]; then
+        exec loginctl activate "$greeter"
+    fi
+    # A new instance each time: one that someone signed in through is that person's session now,
+    # and starting it again would do nothing.
+    exec systemctl start "kriss-switch-user@$(date +%s).service"
+    ;;
+reapply-modes)
+    # Coming back from Switch user, cosmic-comp can leave a monitor showing a stale, zoomed
+    # picture (its mode-sets fail while the login screen's compositor owns the GPU). Setting
+    # each output's mode afresh, through another refresh rate and back, clears it.
+    cosmic-randr list 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | awk '
+        /^[^ ]/ { out = $1; next }
+        / [0-9]+x[0-9]+ @ / {
+            split($1, wh, "x"); r = $3
+            if ($0 ~ /\(current\)/) { cw[out] = wh[1]; ch[out] = wh[2]; cr[out] = r }
+            rows[out] = rows[out] "\n" $1 " " $3
+        }
+        END { for (k in cw) { n = split(rows[k], l, "\n"); alt = ""
+                for (i = 2; i <= n; i++) { split(l[i], a, " "); if (a[1] == cw[k] "x" ch[k] && a[2] != cr[k]) { alt = a[2]; break } }
+                if (alt != "") print k, cw[k], ch[k], cr[k], alt } }' |
+    while read -r out w h cur alt; do
+        cosmic-randr mode "$out" "$w" "$h" --refresh "$alt" && sleep 1 && cosmic-randr mode "$out" "$w" "$h" --refresh "$cur"
+    done
+    ;;
 greeter)
     # greetd's greeter user has no home, and cosmic-comp keeps running after its command
     # exits, so give it one under the runtime dir and stop cosmic-comp once the login
@@ -160,6 +195,12 @@ greeter)
     done
     ;;
 "")
+    # The guest account (`kriss guest on`): every sign-in starts from a fresh home.
+    if [ "$(id -un)" = guest ] && [ -e /var/lib/kriss/guest ] && [ "$HOME" = /home/guest ]; then
+        find /home/guest -mindepth 1 -delete 2>/dev/null
+        cp -a /etc/skel/. /home/guest/
+        cd /home/guest || exit 1
+    fi
     export XDG_CURRENT_DESKTOP=KrissOS:COSMIC XDG_SESSION_DESKTOP=KrissOS XDG_SESSION_TYPE=wayland
     # The qt6ct config from kriss-settings only applies with this set (see its PKGBUILD).
     export QT_QPA_PLATFORMTHEME=qt6ct
