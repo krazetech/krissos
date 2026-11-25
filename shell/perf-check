@@ -18,6 +18,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import signal
 import subprocess
 import sys
@@ -149,11 +150,18 @@ def env_of(pid):
 
 def frames(qml, live_hz):
     log = tempfile.NamedTemporaryFile("w+", prefix="kriss-perf-", suffix=".log")
+    # A copy of the shell's state (the same notification history, so the same cost), so the
+    # test toast and anything else the nested shell saves stay out of the live one.
+    state = tempfile.TemporaryDirectory(prefix="kriss-perf-state-")
+    live = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "kriss")
+    if os.path.isdir(live):
+        shutil.copytree(live, os.path.join(state.name, "kriss"))
     # A private session bus, so the nested shell owns notifications there and not the live one.
     comp = subprocess.Popen(
         ["dbus-run-session", "--", "cosmic-comp", "sh", "-c",
          'QSG_RENDER_TIMING=1 exec qs -p "$1" --no-color --log-times', "sh", qml],
-        stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True)
+        stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True,
+        env=dict(os.environ, XDG_STATE_HOME=state.name))
     try:
         qs = None
         for _ in range(300):  # 30 s
