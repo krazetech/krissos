@@ -355,6 +355,31 @@ PanelWindow {
             // The ^ opens the overflow flyout with the hidden ones; drag an icon onto the ^, or
             // up off the bar, to hide it there. The ^ shows when something is hidden or dragged.
             // Only the main display's bar has the tray, as on Windows.
+            // A screen recording is running: how long, and a click stops it.
+            BarButton {
+                id: recBtn
+                visible: Desktop.recording && bar.main
+                Layout.preferredWidth: recRow.implicitWidth + 20
+                name: Tr.t("Stop recording")
+                tip: recTime.text
+                onActivated: Desktop.record()
+                property real now: Date.now()
+                Timer { running: recBtn.visible; interval: 1000; repeat: true; onTriggered: recBtn.now = Date.now() }
+                Row {
+                    id: recRow
+                    anchors.centerIn: parent
+                    spacing: Theme.s1
+                    Rectangle { anchors.verticalCenter: parent.verticalCenter; width: 10; height: 10; radius: height / 2; color: Theme.red }
+                    Text {
+                        id: recTime
+                        anchors.verticalCenter: parent.verticalCenter
+                        readonly property int secs: Desktop.recordingSince ? Math.max(0, Math.floor((recBtn.now - Desktop.recordingSince) / 1000)) : 0
+                        text: Math.floor(secs / 60) + ":" + String(secs % 60).padStart(2, "0")
+                        color: Theme.fg
+                        font { family: Theme.sans; pixelSize: Theme.sp(12); features: { "tnum": 1 } }
+                    }
+                }
+            }
             BarButton {
                 id: more
                 property bool dragging: false
