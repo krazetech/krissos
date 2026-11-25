@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Install and first start · KrissOS help</title>
+<meta name="description" content="Install KrissOS next to Windows with Secure Boot on, then use KrissOS Welcome.">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="alternate" hreflang="en" href="https://krazetech.github.io/krissos/help-install.html">
+<link rel="alternate" hreflang="ms" href="https://krazetech.github.io/krissos/ms/help-install.html">
+<link rel="alternate" hreflang="x-default" href="https://krazetech.github.io/krissos/help-install.html">
+<link rel="canonical" href="https://krazetech.github.io/krissos/help-install.html">
+<meta property="og:title" content="Install and first start · KrissOS help">
+<meta property="og:description" content="Install KrissOS next to Windows with Secure Boot on, then use KrissOS Welcome.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://krazetech.github.io/krissos/help-install.html">
+<meta property="og:site_name" content="KrissOS">
+<meta property="og:locale" content="en_MY">
+<meta property="og:image" content="https://krazetech.github.io/krissos/og-sp.jpg">
+<meta property="og:image:alt" content="The Sungai Petani clock tower against a darkening Kedah sky, the KrissOS Sungai Petani wallpaper.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+<script src="reveal.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="KrissOS home"><img src="logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
+    <nav aria-label="Main">
+      <ul>
+        <li><a href="shell.html">Shell</a></li>
+        <li><a href="download.html">Download</a></li>
+        <li><a href="install.html">Kriss repo</a></li>
+        <li><a href="roadmap.html">Roadmap</a></li>
+        <li><a href="help.html" aria-current="page">Help</a></li>
+        <li class="gh"><a href="https://github.com/krazetech/krissos">GitHub</a></li>
+        <li class="kofi"><a href="https://ko-fi.com/razmanzaidi" aria-label="Support KrissOS on Ko-fi"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.5 1.1 5.3 3 1.8-1.9 3.2-3 5.3-3 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21Z"/></svg><span>Support</span></a></li>
+        <li><a class="lang" href="ms/help-install.html" hreflang="ms" lang="ms">BM</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+<section>
+  <div class="wrap">
+    <div class="head">
+      <nav class="crumb rise d1" aria-label="Breadcrumb"><a href="help.html">← All help</a></nav>
+      <h1 class="rise d1">Install and first start.</h1>
+      <p class="lede rise d2">Put KrissOS next to Windows, then let Welcome help you move in.</p>
+    </div>
+    <ul class="toc"><li><a href="#install">Install next to Windows</a></li><li><a href="#welcome">First-run Welcome</a></li></ul>
+    <article class="task" id="install">
+<h2>Install KrissOS next to Windows</h2>
+
+<p>Windows stays. KrissOS makes room beside it, and a boot menu lets you pick one each time the PC starts. Secure Boot can stay on, and no internet is needed.</p>
+<ol class="steps"><li><h3>Get Windows ready</h3><p>In Windows, turn off BitLocker if it is on: <b>Settings &gt; Privacy &amp; security &gt; Device encryption</b> (or <b>Control Panel &gt; BitLocker Drive Encryption</b>), and wait until decryption is finished. Keep your recovery key anyway (aka.ms/myrecoverykey). Then turn off Fast Startup: <b>Control Panel &gt; Power Options &gt; Choose what the power buttons do</b>.</p></li><li><h3>Make the USB stick</h3><p><a href="download.html">Download the ISO and check it</a>, then write it to a USB stick. A Ventoy stick works too.</p></li><li><h3>Start from the USB</h3><p>Restart and open the boot menu, often <kbd>F12</kbd>, <kbd>F11</kbd>, <kbd>F8</kbd> or <kbd>Esc</kbd> while the PC starts, and pick the USB. Start it in UEFI mode, like Windows, so both share one boot menu.</p></li><li><h3>Trust the USB once (Secure Boot)</h3><p>With Secure Boot on, a blue screen (MokManager) appears the first time and says verification failed. Choose <b>Enroll key from disk</b>, pick the USB, then <code>KRISSOS.cer</code>, <b>Continue</b>, <b>Yes</b> and <b>Reboot</b>. A new ISO has a new key, so it asks again.</p></li><li><h3>Install</h3><p>Choose <b>Install KrissOS</b>. On the disk page, <b>Install alongside</b> is already picked: drag the divider to share the space. <b>Encrypt system</b> works like BitLocker and asks for a passphrase at every start. Leave it off unless you will keep the passphrase safe, as a lost passphrase means lost files.</p></li><li><h3>Enroll KrissOS's key (one blue screen)</h3><p>After <b>Restart now</b>, the blue screen shows once more. Press any key within 10 seconds, choose <b>Enroll MOK</b>, <b>Continue</b>, <b>Yes</b>, type the password <code>krissos</code> (it is not your own password) and choose <b>Reboot</b>. If you miss it, KrissOS asks again at the next start. Nothing in the BIOS needs changing.</p></li></ol>
+<p>If the installer says <b>Turn off BitLocker first</b>, or that the USB started in legacy BIOS mode, follow the steps it shows: nothing has been changed yet.</p>
+<p>Installed with Secure Boot off? To turn it on later, run this, restart, enroll the key in MokManager as above, then turn Secure Boot on in the firmware settings:</p>
+<div class="code"><pre><code>sudo kriss-secureboot --enroll</code></pre></div>
+
+</article>
+<article class="task" id="welcome">
+<h2>Use KrissOS Welcome on the first start</h2>
+
+<p><b>KrissOS Welcome</b> opens when you first sign in. It has five pages; skip any of them, and open it again any time from Start.</p>
+<ul>
+<li><b>Welcome</b>: your language, a summary of this PC, and whether it can run Windows apps.</li>
+<li><b>Game checker</b>: search a game to see if its anti-cheat works on Linux.</li>
+<li><b>Bring your apps</b>: pick the Windows apps you use, and get the KrissOS version, a Linux app that does the same job, or a web version.</li>
+<li><b>Copy from Windows</b>: copies Desktop, Documents, Pictures, Music, Videos and your Edge and Chrome bookmarks. Windows is opened read-only, so nothing there changes, and files you already have are never replaced. If Windows can't be opened, start Windows, hold <kbd>Shift</kbd> while you choose <b>Shut down</b>, then try again.</li>
+<li><b>Drivers and extras</b>: video and music codecs, printers, the gaming pack, the NVIDIA 580 driver for older cards, and local AI. These need internet.</li>
+</ul>
+
+</article>
+
+  </div>
+</section>
+<script>
+// Copy buttons for code blocks, as on the other pages.
+for (const box of document.querySelectorAll('.code')) {
+  const b = document.createElement('button');
+  b.className = 'copy';
+  b.type = 'button';
+  b.textContent = 'Copy';
+  b.onclick = () => navigator.clipboard.writeText(box.querySelector('pre').textContent)
+    .then(() => { b.textContent = 'Copied'; setTimeout(() => b.textContent = 'Copy', 1500); });
+  box.append(b);
+}
+</script>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-brand">
+      <a class="brand" href="./" aria-label="KrissOS home"><img src="logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
+      <p>Made ready for everyday people, in Malaysia, with a lot of kopi.</p>
+      <a class="btn kofi" href="https://ko-fi.com/razmanzaidi"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.5 1.1 5.3 3 1.8-1.9 3.2-3 5.3-3 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21Z"/></svg>Support KrissOS on Ko-fi</a>
+    </div>
+    <nav class="foot-cols" aria-label="Footer">
+      <div><p>KrissOS</p><a href="shell.html">Shell</a><a href="download.html">Download</a><a href="roadmap.html">Roadmap</a><a href="help.html">Help</a><a href="hardware.html">Hardware</a></div>
+      <div><p>Project</p><a href="install.html">Kriss repo</a><a href="https://github.com/krazetech/krissos">GitHub</a><a href="https://github.com/krazetech/krissos/blob/main/LICENSE">License</a></div>
+    </nav>
+    <div class="foot-base">
+      <p>Free software under the <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>. Not affiliated with Arch Linux.</p>
+      <a class="sponsor" href="https://ruck-fi.com"><span>Proudly supported by</span><img src="ruckfi-white.png" alt="RUCK-Fi" width="360" height="81"></a>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

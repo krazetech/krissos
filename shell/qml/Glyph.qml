@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Kraze Tech
 import QtQuick
 import QtQuick.Shapes
 
@@ -51,6 +53,7 @@ Item {
         edit: "M4 20h4L19 9l-4-4L4 16zM14 6l4 4",
         taskView: "M3 9h12v11H3zM8 9V4h13v11h-6",
         taskbar: "M3 5h18v14H3zM3 15h18M7 17h.01M10 17h.01",
+        window: "M3 5h18v14H3zM3 9h18M6 7h.01M9 7h.01",
         image: "M3 5h18v14H3zM3 16l5-5 5 5 3-3 5 5M15 9h.01",
         text: "M5 7V5h14v2M12 5v14M9 19h6",
         apps: "M4 4h4v4H4zM10 4h4v4h-4zM16 4h4v4h-4zM4 10h4v4H4zM10 10h4v4h-4zM16 10h4v4h-4zM4 16h4v4H4zM10 16h4v4h-4zM16 16h4v4h-4z",
@@ -86,6 +89,8 @@ Item {
         more: "M5 12h.01M12 12h.01M19 12h.01",
         send: "M5 12h14M13 6l6 6-6 6",
         stop: "M7 7h10v10H7z",
+        region: "M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4",
+        record: "M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0M8 12a4 4 0 1 0 8 0a4 4 0 1 0-8 0",
         ai: "M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z",
         cloud: "M7 18a4 4 0 0 1-.5-8 6 6 0 0 1 11.5 1.5A3.5 3.5 0 0 1 17.5 18z",
         rain: "M7 14a4 4 0 0 1-.5-8 6 6 0 0 1 11.5 1.5A3.5 3.5 0 0 1 17.5 14zM8 17l-1 3M12 17l-1 3M16 17l-1 3",

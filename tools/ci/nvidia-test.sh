@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 # Checks kriss nvidia's GPU range and config edits on fixture /sys and /etc trees.
 set -euo pipefail
 t=$(mktemp -d)

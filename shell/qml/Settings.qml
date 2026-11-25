@@ -277,7 +277,7 @@ FloatingWindow {
                     visible: !win.query
                     active: win.visible
                     sourceComponent: !win.current ? sectionPage
-                        : ({ users: accountPage, datetime: timePage, language: languagePage, privacy: privacyPage, updates: updatesPage, installed: installedPage, defaultapps: defaultAppsPage, startup: startupPage, wifi: wifiPage, ethernet: ethernetPage, bluetooth: bluetoothPage, mouse: mousePage, keyboard: keyboardPage, touchpad: touchpadPage, display: displayPage, sound: soundPage, notifications: notificationsPage, power: powerPage, about: aboutPage, storage: storagePage, printers: printersPage, recovery: recoveryPage, report: reportPage, colours: colours, background: background, taskbar: taskbar, pins: pins, icons: iconsPage, lock: lockPage, text: textPage })[win.current.id] ?? null
+                        : ({ users: accountPage, datetime: timePage, language: languagePage, privacy: privacyPage, updates: updatesPage, installed: installedPage, defaultapps: defaultAppsPage, startup: startupPage, wifi: wifiPage, ethernet: ethernetPage, bluetooth: bluetoothPage, mouse: mousePage, keyboard: keyboardPage, touchpad: touchpadPage, display: displayPage, sound: soundPage, notifications: notificationsPage, power: powerPage, about: aboutPage, storage: storagePage, printers: printersPage, recovery: recoveryPage, report: reportPage, colours: colours, background: background, taskbar: taskbar, pins: pins, icons: iconsPage, windows: windowsPage, lock: lockPage, text: textPage })[win.current.id] ?? null
                     onLoaded: if (SettingsPages.key) pointLater.restart()
                 }
             }
@@ -330,6 +330,7 @@ FloatingWindow {
     Component { id: recoveryPage; SettingsRecovery {} }
     Component { id: reportPage; SettingsReport {} }
     Component { id: iconsPage; SettingsIcons {} }
+    Component { id: windowsPage; SettingsWindows {} }
 
     // Colours: the accent and light or dark.
     Component {

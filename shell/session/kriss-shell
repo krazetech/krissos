@@ -1,4 +1,6 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 # KrissOS Shell.
 #   kriss-shell            start a session: cosmic-comp with the shell inside it (SDDM runs this)
 #   kriss-shell launcher   open or close the launcher (cosmic-comp runs this for the Windows key)
@@ -35,9 +37,11 @@
 #                          the media keys, for the player playing (or the last one)
 #   kriss-shell brightness STEP
 #                          change the brightness and show the level (brightness keys, e.g. 5%+)
-#   kriss-shell screenshot [region]
-#                          the whole screen (Print Screen) or a dragged region
-#                          (Windows+Shift+S) to ~/Pictures/Screenshots and the clipboard
+#   kriss-shell screenshot [region|area]
+#                          the whole screen (Print Screen) to ~/Pictures/Screenshots and the
+#                          clipboard; region opens the snipping bar (Windows+Shift+S), area a
+#                          dragged box straight away
+#   kriss-shell record     start or stop a screen recording (Windows+Alt+R)
 set -u
 
 data=${KRISS_SHELL_DATA:-/usr/share/kriss-shell}
@@ -103,11 +107,17 @@ brightness)
     qs -p "$qml" ipc call osd brightness "${2:?usage: kriss-shell brightness 5%+}" 2>/dev/null ||
         exec brightnessctl -q -c backlight set "$2"
     ;;
+record)
+    # Windows+Alt+R: start or stop a screen recording.
+    exec qs -p "$qml" ipc call snip record
+    ;;
 screenshot)
+    # Windows+Shift+S (region): the snipping bar, whose Rectangle comes back here as `area`.
+    if [ "${2:-}" = region ] && qs -p "$qml" ipc call snip toggle 2>/dev/null; then exit 0; fi
     dir=$(xdg-user-dir PICTURES 2>/dev/null || echo "$HOME/Pictures")/Screenshots
     file=$dir/Screenshot_$(date +%Y%m%d_%H%M%S).png
     mkdir -p "$dir"
-    if [ "${2:-}" = region ]; then
+    if [ "${2:-}" = region ] || [ "${2:-}" = area ]; then
         area=$(slurp) || exit 0  # Escape cancels
         grim -g "$area" "$file" || exit 1
     else
@@ -163,18 +173,93 @@ greeter)
     # focused window), Papirus icons, the KrissOS fonts and terminal colours. Copied key by key
     # only where the user has no value of their own, so their changes win.
     cfg=${XDG_CONFIG_HOME:-$HOME/.config}/cosmic
+    # merge DEFAULTS USERFILE: add the KrissOS shortcuts the user's file lacks, matched by
+    # their modifiers and key whatever the layout (COSMIC Settings saves it pretty-printed).
+    # Each one is offered once (~/.local/state/kriss/shortcuts-offered), so one the user
+    # removed stays removed and one they rebound is left as theirs.
     merge() {
-        # shellcheck disable=SC2016 # awk's own $0
-        add=$(awk 'function key(l) { sub(/^[ \t]+/, "", l); return substr(l, 1, index(l, l ~ /^\(/ ? "): " : ": ")) }
-            /^[ \t]+[^ \t\/}]/ { k = key($0); if (NR == FNR) have[k] = 1; else if (!(k in have)) print }' "$2" "$1") || return 0
-        [ -n "$add" ] || return 0
-        # Before the closing brace, with a comma after the user's last entry if it has none.
-        add=$add awk '{ l[NR] = $0 } /^}/ { last = NR }
-            END {
-                for (i = last - 1; i > 0 && l[i] ~ /^[ \t]*(\/\/.*)?$/; i--) ;
-                if (i > 0 && l[i] !~ /[,{][ \t]*$/) l[i] = l[i] ","
-                for (i = 1; i <= NR; i++) { if (i == last) print ENVIRON["add"]; print l[i] }
-            }' "$2" > "$2.new" && mv "$2.new" "$2"
+        python3 - "$1" "$2" "${XDG_STATE_HOME:-$HOME/.local/state}/kriss/shortcuts-offered" <<'EOF' || true
+import os, re, sys
+
+defaults, user, state = sys.argv[1:4]
+name = os.path.basename(user)
+
+
+def entries(text):
+    """The top-level entries of a RON map: [(key, whole entry)], comments left out."""
+    text = re.sub(r"//[^\n]*", "", text)
+    out, depth, start, quote = [], 0, None, False
+    for i, c in enumerate(text):
+        if quote:
+            if c == '"' and text[i - 1] != "\\":
+                quote = False
+            continue
+        if c == '"':
+            quote = True
+        elif c in "([{":
+            depth += 1
+            if depth == 2 and start is None:
+                start = i
+        elif c in ")]}":
+            depth -= 1
+        elif c == "," and depth == 1 and start is not None:
+            out.append(text[start:i])
+            start = None
+        elif depth == 1 and start is None and not c.isspace():
+            start = i
+    if start is not None and text[start:].strip("} \n\t"):
+        out.append(text[start:text.rindex("}")])
+    result = []
+    for e in out:
+        e = e.strip()
+        d = 0
+        for i, c in enumerate(e):
+            d += c in "([{"
+            d -= c in ")]}"
+            if c == ":" and d == 0:
+                result.append((norm(e[:i]), e))
+                break
+    return result
+
+
+def norm(key):
+    key = re.sub(r"\s+", "", key).replace(",)", ")").replace(",]", "]")
+    m = re.search(r"modifiers:\[([^\]]*)\]", key)
+    if m:
+        mods = ",".join(sorted(x for x in m.group(1).split(",") if x))
+        key = key[: m.start(1)] + mods + key[m.end(1) :]
+    return key
+
+
+try:
+    text = open(user).read()
+except FileNotFoundError:
+    sys.exit(0)
+have = {k for k, _ in entries(text)}
+try:
+    offered = set(open(state).read().splitlines())
+except FileNotFoundError:
+    offered = set()
+add, seen = [], []
+for k, e in entries(open(defaults).read()):
+    tag = name + "\t" + k
+    if k not in have and tag not in offered:
+        add.append(e)
+    if tag not in offered:
+        seen.append(tag)
+if add:
+    head, tail = text[: text.rindex("}")].rstrip(), text[text.rindex("}") :]
+    if not head.endswith(("{", ",")):
+        head += ","
+    new = head + "\n" + "".join("    " + e + ",\n" for e in add) + tail
+    with open(user + ".new", "w") as f:
+        f.write(new)
+    os.replace(user + ".new", user)
+if seen:
+    os.makedirs(os.path.dirname(state), exist_ok=True)
+    with open(state, "a") as f:
+        f.write("".join(t + "\n" for t in seen))
+EOF
     }
     for dir in "$data"/cosmic/*/v*; do
         rel=${dir#"$data/cosmic/"}
@@ -183,9 +268,8 @@ greeter)
             [ -e "$cfg/$rel/${f##*/}" ] || cp "$f" "$cfg/$rel/"
         done
     done
-    # A newer kriss-shell can bring new shortcuts (Alt+Tab and the media keys came in 0.2.7):
-    # add each entry whose key the user's file lacks, keeping theirs as they are. Entries are
-    # one per line, as in shell/cosmic/com.system76.CosmicSettings.Shortcuts.
+    # A newer kriss-shell can bring new shortcuts (Alt+Tab and the media keys came in 0.2.7,
+    # Windows+Alt+R in 0.2.18): add each one the user's file lacks (merge, above).
     sc=com.system76.CosmicSettings.Shortcuts/v1
     for f in "$data/cosmic/$sc"/*; do
         merge "$f" "$cfg/$sc/${f##*/}"

@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settings and the desktop · KrissOS help</title>
+<meta name="description" content="Wi-Fi, Bluetooth, printers, displays, the look, typing in other languages, recording the screen and switching users on KrissOS.">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="alternate" hreflang="en" href="https://krazetech.github.io/krissos/help-desktop.html">
+<link rel="alternate" hreflang="ms" href="https://krazetech.github.io/krissos/ms/help-desktop.html">
+<link rel="alternate" hreflang="x-default" href="https://krazetech.github.io/krissos/help-desktop.html">
+<link rel="canonical" href="https://krazetech.github.io/krissos/help-desktop.html">
+<meta property="og:title" content="Settings and the desktop · KrissOS help">
+<meta property="og:description" content="Wi-Fi, Bluetooth, printers, displays, the look, typing in other languages, recording the screen and switching users on KrissOS.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://krazetech.github.io/krissos/help-desktop.html">
+<meta property="og:site_name" content="KrissOS">
+<meta property="og:locale" content="en_MY">
+<meta property="og:image" content="https://krazetech.github.io/krissos/og-sp.jpg">
+<meta property="og:image:alt" content="The Sungai Petani clock tower against a darkening Kedah sky, the KrissOS Sungai Petani wallpaper.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+<script src="reveal.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="KrissOS home"><img src="logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
+    <nav aria-label="Main">
+      <ul>
+        <li><a href="shell.html">Shell</a></li>
+        <li><a href="download.html">Download</a></li>
+        <li><a href="install.html">Kriss repo</a></li>
+        <li><a href="roadmap.html">Roadmap</a></li>
+        <li><a href="help.html" aria-current="page">Help</a></li>
+        <li class="gh"><a href="https://github.com/krazetech/krissos">GitHub</a></li>
+        <li class="kofi"><a href="https://ko-fi.com/razmanzaidi" aria-label="Support KrissOS on Ko-fi"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.5 1.1 5.3 3 1.8-1.9 3.2-3 5.3-3 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21Z"/></svg><span>Support</span></a></li>
+        <li><a class="lang" href="ms/help-desktop.html" hreflang="ms" lang="ms">BM</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+<section>
+  <div class="wrap">
+    <div class="head">
+      <nav class="crumb rise d1" aria-label="Breadcrumb"><a href="help.html">← All help</a></nav>
+      <h1 class="rise d1">Settings and the desktop.</h1>
+      <p class="lede rise d2">The things you set once, and the keys you'll use every day.</p>
+    </div>
+    <ul class="toc"><li><a href="#network">Wi-Fi, Bluetooth, printers</a></li><li><a href="#display">Main display, Windows+P</a></li><li><a href="#look">Taskbar, windows, Start, Mac layout</a></li><li><a href="#typing">Chinese, Tamil, Jawi</a></li><li><a href="#osk">On-screen keyboard</a></li><li><a href="#record">Screen recording</a></li><li><a href="#users">Switch user, guest</a></li></ul>
+    <article class="task" id="network">
+<h2>Connect Wi-Fi, Bluetooth and printers</h2>
+
+<p>Open Settings from Start, or press <kbd>Windows</kbd> and type <i>settings</i>. For a quick switch, <span class="combo"><kbd>Windows</kbd> + <kbd>A</kbd></span> opens quick settings with Wi-Fi and Bluetooth toggles.</p>
+<ol class="steps"><li><h3>Wi-Fi</h3><p><b>Settings &gt; Network and internet &gt; Wi-Fi</b>. Pick a network and type its password. <b>Forget</b> removes a saved one.</p></li><li><h3>Bluetooth</h3><p><b>Settings &gt; Bluetooth and devices &gt; Bluetooth &gt; Add a device</b>, then put the headphones, mouse or phone in pairing mode and pick it.</p></li><li><h3>Printers</h3><p><b>KrissOS Welcome &gt; Drivers and extras &gt; Printers</b> adds printing support and a tool to add your printer. Most printers from the last ten years work without a driver. With 110, <b>Settings &gt; Bluetooth and devices &gt; Printers</b> lists the printers on your network by itself, prints a test page, and adds a printer by its address.</p></li></ol>
+<p class="muted">The Wi-Fi and Bluetooth pages and the Printers page become KrissOS's own in 110 and are still being tested (<a href="https://github.com/krazetech/krissos/pull/122">#122</a>, <a href="https://github.com/krazetech/krissos/pull/129">#129</a>). Until then, Wi-Fi and Bluetooth open COSMIC Settings' page for the same thing.</p>
+
+</article>
+<article class="task" id="display">
+<h2>Set the main display and use Windows+P</h2>
+
+<p>The main display gets the full taskbar, Start, notifications, new windows, the sign-in screen and fullscreen games.</p>
+<ol class="steps"><li><h3>Open Display settings</h3><p>Right-click the desktop &gt; <b>Display settings</b>, or <b>Settings &gt; System &gt; Display</b>. <b>Identify</b> shows a big number on each screen.</p></li><li><h3>Arrange</h3><p>Drag the screens so they sit like the real ones on your desk. They snap edge to edge.</p></li><li><h3>Pick the main one</h3><p>Choose a screen, then <b>Make this my main display</b>. Changes to resolution or refresh rate go back after 15 seconds unless you choose <b>Keep changes</b>.</p></li></ol>
+<p><span class="combo"><kbd>Windows</kbd> + <kbd>P</kbd></span> switches between <b>PC screen only</b>, <b>Duplicate</b>, <b>Extend</b> and <b>Second screen only</b>, as on Windows. Use the arrow keys and <kbd>Enter</kbd>.</p>
+
+</article>
+<article class="task" id="look">
+<h2>Change the taskbar, windows, Start and icons, or use the Mac layout</h2>
+
+<p>Everything here is in <b>Settings &gt; Personalise</b>, and changes straight away.</p>
+<ul>
+<li><b>Like Windows or like a Mac</b>: <b>Personalise &gt; Taskbar &gt; Desktop layout</b> picks <b>Taskbar</b> (Start and your apps along the bottom) or <b>Top bar and dock</b> (a menu bar at the top, a dock at the bottom, window buttons on the left). Or right-click the taskbar &gt; <b>Switch to the top bar and dock</b>, and right-click the dock &gt; <b>Switch to the taskbar</b> to go back.</li>
+<li><b>Taskbar</b>: alignment, size, combine buttons, hide automatically, tray icons, and the taskbar on all screens.</li>
+<li><b>Colours</b>, <b>Background</b>, <b>Lock screen</b>, and <b>Text and contrast</b> for bigger text.</li>
+</ul>
+<p>Coming with 110:</p>
+<ul>
+<li><b>Taskbar items</b>: search as a box, an icon or hidden, the Widgets button, and taskbar transparency (<a href="https://github.com/krazetech/krissos/pull/128">#128</a>).</li>
+<li><b>Personalise &gt; Windows</b>: corners, a border around the window you are using, shadows and animation speed (<a href="https://github.com/krazetech/krissos/pull/130">#130</a>).</li>
+<li><b>Personalise &gt; Start</b>: the Start layout (more pins or more recommendations) and <b>Show recently opened files in Start</b>. <b>Personalise &gt; Icons</b> picks an icon pack; the taskbar restarts for a moment to pick it up (<a href="https://github.com/krazetech/krissos/pull/131">#131</a>).</li>
+</ul>
+
+</article>
+<article class="task" id="typing">
+<h2>Type in Chinese, Tamil or Jawi</h2>
+
+<p><span class="combo"><kbd>Windows</kbd> + <kbd>Space</kbd></span> switches to the next language, and <span class="combo"><kbd>Windows</kbd> + <kbd>Shift</kbd> + <kbd>Space</kbd></span> goes back. The taskbar shows which one is on: <b>EN</b>, <b>拼</b> (Chinese, Pinyin), <b>த</b> (Tamil) or <b>ج</b> (Jawi). Click it to switch too.</p>
+<ul>
+<li><b>Chinese</b>: type the Pinyin, then pick the character.</li>
+<li><b>Tamil</b>: type the sound, for example <i>vanakkam</i> for வணக்கம்.</li>
+<li><b>Jawi</b>: each letter is on the Latin key that sounds like it.</li>
+</ul>
+<p>With 110, <b>Settings &gt; Bluetooth and devices &gt; Keyboard &gt; Languages</b> turns each one on or off (<a href="https://github.com/krazetech/krissos/pull/126">#126</a>, in testing).</p>
+
+</article>
+<article class="task" id="osk">
+<h2>Use the on-screen keyboard</h2>
+
+<p>On a PC with a touch screen, a keyboard button sits on the taskbar next to the language. Tap it to show or hide the on-screen keyboard. It types in the language that is on, and pressing a key on a real keyboard hides it.</p>
+
+</article>
+<article class="task" id="record">
+<span class="tag wip">In testing for 110</span>
+<h2>Record the screen</h2>
+
+<p><span class="combo"><kbd>Windows</kbd> + <kbd>Alt</kbd> + <kbd>R</kbd></span> starts a recording, and the same keys stop it. The first time, KrissOS asks which screen or window to record; it remembers after that. While it records, the taskbar shows a red dot and the time: click it to stop. The video is saved in <b>Videos &gt; Screen Recordings</b>, with sound.</p>
+<p><span class="combo"><kbd>Windows</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd></span> opens a snipping bar: <b>Rectangle</b>, <b>Full screen</b>, or <b>Record the screen</b>. <kbd>Print Screen</kbd> still takes a picture of everything.</p>
+
+<p class="muted">This part comes with KrissOS 110 and is still being tested (<a href="https://github.com/krazetech/krissos/pull/132">#132</a>).</p></article>
+<article class="task" id="users">
+<span class="tag wip">In testing for 110</span>
+<h2>Switch user, or let a guest use the PC</h2>
+
+<p>Click your picture at the bottom of Start: <b>Change account settings</b>, <b>Lock</b>, <b>Sign out</b>, <b>Switch user</b> and <b>Turn on the guest account</b>.</p>
+<ul>
+<li><b>Switch user</b> locks your session and shows the login screen. Your apps stay open; the login screen shows <b>Back to</b> and your name to return.</li>
+<li><b>Guest</b> signs in with no password and can't change the system. Its files are emptied every time a guest signs in. <b>Turn off the guest account</b> removes it.</li>
+<li>To add a person with their own account: <b>Settings &gt; Accounts &gt; Your info and sign-in &gt; Other people</b>.</li>
+</ul>
+
+<p class="muted">This part comes with KrissOS 110 and is still being tested (<a href="https://github.com/krazetech/krissos/pull/133">#133</a>).</p></article>
+
+  </div>
+</section>
+<script>
+// Copy buttons for code blocks, as on the other pages.
+for (const box of document.querySelectorAll('.code')) {
+  const b = document.createElement('button');
+  b.className = 'copy';
+  b.type = 'button';
+  b.textContent = 'Copy';
+  b.onclick = () => navigator.clipboard.writeText(box.querySelector('pre').textContent)
+    .then(() => { b.textContent = 'Copied'; setTimeout(() => b.textContent = 'Copy', 1500); });
+  box.append(b);
+}
+</script>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-brand">
+      <a class="brand" href="./" aria-label="KrissOS home"><img src="logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
+      <p>Made ready for everyday people, in Malaysia, with a lot of kopi.</p>
+      <a class="btn kofi" href="https://ko-fi.com/razmanzaidi"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.5 1.1 5.3 3 1.8-1.9 3.2-3 5.3-3 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21Z"/></svg>Support KrissOS on Ko-fi</a>
+    </div>
+    <nav class="foot-cols" aria-label="Footer">
+      <div><p>KrissOS</p><a href="shell.html">Shell</a><a href="download.html">Download</a><a href="roadmap.html">Roadmap</a><a href="help.html">Help</a><a href="hardware.html">Hardware</a></div>
+      <div><p>Project</p><a href="install.html">Kriss repo</a><a href="https://github.com/krazetech/krissos">GitHub</a><a href="https://github.com/krazetech/krissos/blob/main/LICENSE">License</a></div>
+    </nav>
+    <div class="foot-base">
+      <p>Free software under the <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>. Not affiliated with Arch Linux.</p>
+      <a class="sponsor" href="https://ruck-fi.com"><span>Proudly supported by</span><img src="ruckfi-white.png" alt="RUCK-Fi" width="360" height="81"></a>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

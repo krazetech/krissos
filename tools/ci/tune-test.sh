@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 # Checks kriss tune's profile table against stub powerprofilesctl and scxctl.
 set -euo pipefail
 kriss=$(realpath "$(dirname "$0")/../kriss")

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Kraze Tech
 // KrissOS install slideshow (Calamares slideshowAPI 2). Rendered from theme/tokens.json.
 import QtQuick 2.15
 import calamares.slideshow 1.0

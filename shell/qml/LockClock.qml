@@ -63,6 +63,7 @@ Item {
                 required property string modelData
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: modelData
+                rolls: !clock.glass
                 // Outline: hollow digits; high contrast: solid ones with a dark edge.
                 color: clock.glass ? "#ffffff" : clock.style === "outline" && !Theme.high ? "transparent" : Theme.nightFg
                 style: clock.style === "outline" || Theme.high ? Text.Outline : Text.Normal
@@ -72,7 +73,10 @@ Item {
             }
         }
     }
-    // The glass: the digits' shape over the wallpaper behind them.
+    // The glass: the digits' shape over the wallpaper behind them. A change inside the hidden
+    // digits alone doesn't make the screen draw a frame, so a screen nobody touched kept the
+    // old shape ("00 00" after sleep) until the pointer moved over it. Ask for the frame.
+    onNowChanged: if (glass) { shapeSource.scheduleUpdate(); behindSource.scheduleUpdate(); Window.window?.update(); }
     ShaderEffectSource {
         id: shapeSource
         sourceItem: clock.glass ? digits : null

@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pasang dan mula kali pertama · Bantuan KrissOS</title>
+<meta name="description" content="Pasang KrissOS di sebelah Windows dengan Secure Boot dihidupkan, kemudian guna Selamat Datang ke KrissOS.">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="../logo.svg" type="image/svg+xml">
+<link rel="icon" href="../favicon.ico" sizes="32x32">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="alternate" hreflang="en" href="https://krazetech.github.io/krissos/help-install.html">
+<link rel="alternate" hreflang="ms" href="https://krazetech.github.io/krissos/ms/help-install.html">
+<link rel="alternate" hreflang="x-default" href="https://krazetech.github.io/krissos/help-install.html">
+<link rel="canonical" href="https://krazetech.github.io/krissos/ms/help-install.html">
+<meta property="og:title" content="Pasang dan mula kali pertama · Bantuan KrissOS">
+<meta property="og:description" content="Pasang KrissOS di sebelah Windows dengan Secure Boot dihidupkan, kemudian guna Selamat Datang ke KrissOS.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://krazetech.github.io/krissos/ms/help-install.html">
+<meta property="og:site_name" content="KrissOS">
+<meta property="og:locale" content="ms_MY">
+<meta property="og:image" content="https://krazetech.github.io/krissos/og-sp.jpg">
+<meta property="og:image:alt" content="Menara jam Sungai Petani dengan langit Kedah yang semakin gelap. Kertas dinding KrissOS Sungai Petani.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../style.css">
+<script src="../reveal.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Langkau ke kandungan</a>
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="Laman utama KrissOS"><img src="../logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
+    <nav aria-label="Main">
+      <ul>
+        <li><a href="shell.html">Shell</a></li>
+        <li><a href="download.html">Muat turun</a></li>
+        <li><a href="install.html">Repo Kriss</a></li>
+        <li><a href="roadmap.html">Hala tuju</a></li>
+        <li><a href="help.html" aria-current="page">Bantuan</a></li>
+        <li class="gh"><a href="https://github.com/krazetech/krissos">GitHub</a></li>
+        <li class="kofi"><a href="https://ko-fi.com/razmanzaidi" aria-label="Sokong KrissOS di Ko-fi"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.5 1.1 5.3 3 1.8-1.9 3.2-3 5.3-3 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21Z"/></svg><span>Sokong</span></a></li>
+        <li><a class="lang" href="../help-install.html" hreflang="en" lang="en">EN</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+<section>
+  <div class="wrap">
+    <div class="head">
+      <nav class="crumb rise d1" aria-label="Breadcrumb"><a href="help.html">← Semua bantuan</a></nav>
+      <h1 class="rise d1">Pasang dan mula kali pertama.</h1>
+      <p class="lede rise d2">Letakkan KrissOS di sebelah Windows, kemudian biar Selamat Datang membantu anda berpindah.</p>
+    </div>
+    <ul class="toc"><li><a href="#install">Pasang di sebelah Windows</a></li><li><a href="#welcome">Selamat Datang pada kali pertama</a></li></ul>
+    <article class="task" id="install">
+<h2>Pasang KrissOS di sebelah Windows</h2>
+
+<p>Windows kekal. KrissOS membuat ruang di sebelahnya, dan menu but membolehkan anda memilih salah satu setiap kali PC dimulakan. Secure Boot boleh terus dihidupkan, dan internet tidak diperlukan.</p>
+<ol class="steps"><li><h3>Sediakan Windows</h3><p>Dalam Windows, matikan BitLocker jika ia dihidupkan: <b>Tetapan &gt; Privasi &amp; keselamatan &gt; Penyulitan peranti</b> (atau <b>Panel Kawalan &gt; Penyulitan Pemacu BitLocker</b>), dan tunggu sehingga penyahsulitan selesai. Simpan juga kunci pemulihan anda (aka.ms/myrecoverykey). Kemudian matikan Fast Startup: <b>Panel Kawalan &gt; Pilihan Kuasa &gt; Pilih fungsi butang kuasa</b>.</p></li><li><h3>Sediakan batang USB</h3><p><a href="download.html">Muat turun ISO dan semak ia</a>, kemudian tulis ke batang USB. Batang Ventoy juga boleh digunakan.</p></li><li><h3>Mulakan dari USB</h3><p>Mulakan semula PC dan buka menu but, selalunya <kbd>F12</kbd>, <kbd>F11</kbd>, <kbd>F8</kbd> atau <kbd>Esc</kbd> semasa PC dimulakan, kemudian pilih USB. Mulakan dalam mod UEFI, sama seperti Windows, supaya kedua-duanya berkongsi satu menu but.</p></li><li><h3>Percayai USB sekali (Secure Boot)</h3><p>Jika Secure Boot dihidupkan, satu skrin biru (MokManager) muncul pada kali pertama dan menyatakan pengesahan gagal. Pilih <b>Enroll key from disk</b>, pilih USB, kemudian <code>KRISSOS.cer</code>, <b>Continue</b>, <b>Yes</b> dan <b>Reboot</b>. ISO baharu mempunyai kunci baharu, jadi ia akan bertanya lagi.</p></li><li><h3>Pasang</h3><p>Pilih <b>Install KrissOS</b>. Pemasang ini dalam bahasa Inggeris. Pada halaman cakera, <b>Install alongside</b> sudah dipilih: seret pembahagi untuk membahagikan ruang. <b>Encrypt system</b> berfungsi seperti BitLocker dan meminta frasa laluan setiap kali PC dimulakan. Biarkan ia mati melainkan anda dapat menyimpan frasa laluan itu dengan selamat, kerana frasa laluan yang hilang bermakna fail anda juga hilang.</p></li><li><h3>Daftarkan kunci KrissOS (satu skrin biru)</h3><p>Selepas <b>Restart now</b>, skrin biru muncul sekali lagi. Tekan sebarang kekunci dalam masa 10 saat, pilih <b>Enroll MOK</b>, <b>Continue</b>, <b>Yes</b>, taip kata laluan <code>krissos</code> (ini bukan kata laluan anda sendiri) dan pilih <b>Reboot</b>. Jika terlepas, KrissOS akan bertanya lagi pada permulaan seterusnya. Tiada apa-apa dalam BIOS yang perlu diubah.</p></li></ol>
+<p>Jika pemasang memaparkan <b>Matikan BitLocker dahulu</b>, atau menyatakan USB dimulakan dalam mod BIOS legasi, ikut langkah yang ditunjukkan: belum ada apa-apa yang diubah.</p>
+<p>Dipasang ketika Secure Boot dimatikan? Untuk menghidupkannya kemudian, jalankan arahan ini, mulakan semula, daftarkan kunci dalam MokManager seperti di atas, kemudian hidupkan Secure Boot dalam tetapan perisian tegar:</p>
+<div class="code"><pre><code>sudo kriss-secureboot --enroll</code></pre></div>
+
+</article>
+<article class="task" id="welcome">
+<h2>Guna Selamat Datang ke KrissOS pada kali pertama</h2>
+
+<p><b>Selamat Datang ke KrissOS</b> dibuka apabila anda log masuk buat kali pertama. Ia ada lima halaman; langkau mana-mana yang tidak perlu, dan buka semula bila-bila masa dari Mula.</p>
+<ul>
+<li><b>Selamat datang</b>: bahasa anda, ringkasan PC ini, dan sama ada ia boleh menjalankan aplikasi Windows.</li>
+<li><b>Semak permainan</b>: cari permainan untuk melihat sama ada anti-tipunya berfungsi di Linux.</li>
+<li><b>Bawa aplikasi anda</b>: pilih aplikasi Windows yang anda guna, dan dapatkan versi KrissOS, aplikasi Linux yang melakukan kerja yang sama, atau versi web.</li>
+<li><b>Salin dari Windows</b>: menyalin Desktop, Dokumen, Gambar, Muzik, Video serta penanda halaman Edge dan Chrome anda. Windows dibuka secara baca sahaja, jadi tiada apa-apa di sana yang berubah, dan fail yang sudah ada tidak akan diganti. Jika Windows tidak dapat dibuka, mulakan Windows, tahan <kbd>Shift</kbd> semasa memilih <b>Matikan</b>, kemudian cuba lagi.</li>
+<li><b>Pemacu dan tambahan</b>: codec video dan muzik, pencetak, pek permainan, pemacu NVIDIA 580 untuk kad lama, dan AI setempat. Semua ini memerlukan internet.</li>
+</ul>
+
+</article>
+
+  </div>
+</section>
+<script>
+// Copy buttons for code blocks, as on the other pages.
+for (const box of document.querySelectorAll('.code')) {
+  const b = document.createElement('button');
+  b.className = 'copy';
+  b.type = 'button';
+  b.textContent = 'Salin';
+  b.onclick = () => navigator.clipboard.writeText(box.querySelector('pre').textContent)
+    .then(() => { b.textContent = 'Disalin'; setTimeout(() => b.textContent = 'Salin', 1500); });
+  box.append(b);
+}
+</script>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-brand">
+      <a class="brand" href="./" aria-label="Laman utama KrissOS"><img src="../logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
+      <p>Sedia untuk semua orang. Dibuat di Malaysia dengan banyak kopi.</p>
+      <a class="btn kofi" href="https://ko-fi.com/razmanzaidi"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.5 1.1 5.3 3 1.8-1.9 3.2-3 5.3-3 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21Z"/></svg>Sokong KrissOS di Ko-fi</a>
+    </div>
+    <nav class="foot-cols" aria-label="Footer">
+      <div><p>KrissOS</p><a href="shell.html">Shell</a><a href="download.html">Muat turun</a><a href="roadmap.html">Hala tuju</a><a href="help.html">Bantuan</a><a href="hardware.html">Perkakasan</a></div>
+      <div><p>Projek</p><a href="install.html">Repo Kriss</a><a href="https://github.com/krazetech/krissos">GitHub</a><a href="https://github.com/krazetech/krissos/blob/main/LICENSE">Lesen</a></div>
+    </nav>
+    <div class="foot-base">
+      <p>Perisian bebas di bawah <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>. Tiada kaitan dengan Arch Linux.</p>
+      <a class="sponsor" href="https://ruck-fi.com"><span>Dengan bangga disokong oleh</span><img src="../ruckfi-white.png" alt="RUCK-Fi" width="360" height="81"></a>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

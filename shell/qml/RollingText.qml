@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Kraze Tech
 import QtQuick
 
 // Text whose digits roll to their new value when it changes, like NumberFlow; other
@@ -10,6 +12,9 @@ Row {
     property color color: Theme.fg
     property int style: Text.Normal     // Text.Outline for hollow or edged digits
     property color styleColor: "transparent"
+    // false: the digits change in place. The lock's glass clock needs that: there the roll
+    // stuck at its start, 0, on a screen where nothing else moved ("00 00").
+    property bool rolls: true
 
     // Read out as the text, not the digit columns.
     Accessible.role: Accessible.StaticText
@@ -30,7 +35,7 @@ Row {
             // As wide as its own character, so a narrow 1 leaves no hole ("1 5:30"); the
             // width eases when the digit changes, in step with the roll.
             width: Math.ceil(plain.implicitWidth)
-            Behavior on width { enabled: slot.digit; NumberAnimation { duration: Theme.ms(Theme.slow); easing.type: Easing.BezierSpline; easing.bezierCurve: Theme.settleCurve } }
+            Behavior on width { enabled: slot.digit && root.rolls; NumberAnimation { duration: Theme.ms(Theme.slow); easing.type: Easing.BezierSpline; easing.bezierCurve: Theme.settleCurve } }
             height: root.step
             clip: true
             Accessible.ignored: true
@@ -42,7 +47,7 @@ Row {
             Column {
                 visible: slot.digit
                 y: -(slot.digit ? Number(slot.ch) : 0) * root.step
-                Behavior on y { NumberAnimation { duration: Theme.ms(Theme.slow); easing.type: Easing.BezierSpline; easing.bezierCurve: Theme.settleCurve } }
+                Behavior on y { enabled: root.rolls; NumberAnimation { duration: Theme.ms(Theme.slow); easing.type: Easing.BezierSpline; easing.bezierCurve: Theme.settleCurve } }
                 Repeater {
                     model: 10
                     Text { required property int index; height: root.step; width: slot.width; horizontalAlignment: Text.AlignHCenter; text: index; font: root.font; color: root.color; style: root.style; styleColor: root.styleColor }

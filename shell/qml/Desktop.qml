@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Kraze Tech
 pragma Singleton
 
 import QtQuick
@@ -68,6 +70,75 @@ Singleton {
             mkdir -p "$d" && f="$d/$(date +%F_%H-%M-%S).png" && grim "$f" && notify-send -i "$f" "$1" "$f"`,
             "sh", Tr.t("Screenshot saved")]);
     }
+    // Screen recording (Windows+Alt+R, the snipping bar, the taskbar's stop button): the
+    // screen, or a window, through the COSMIC portal (it asks which the first time and
+    // remembers), with the sound the PC plays, into Videos/Screen Recordings as MP4, encoded
+    // on the graphics card. It runs in an app-org.krissos.ScreenRecording scope, so the
+    // portal's picker names it (org.krissos.ScreenRecording.desktop).
+    // `recorderBusy` from the start, `recording` only once the file has something in it, so
+    // the timer does not run while the picker is open. Asking again while the picker is open
+    // cancels (SIGKILL: gpu-screen-recorder ignores SIGINT while it waits for the portal).
+    // Stopping a recording: the timer goes at once, SIGINT finishes the file, then SIGTERM
+    // and SIGKILL if it has not quit (it can hang on its way out after the file is written).
+    // ponytail: a shell restart ends a recording; gpu-screen-recorder still closes the file.
+    readonly property bool recorderBusy: recorder.running && !recordingStopping
+    readonly property bool recording: recorder.running && recordingSince > 0 && !recordingStopping
+    property string recordingFile: ""
+    property real recordingSince: 0
+    property bool recordingStopping: false
+    function record() {
+        if (!recorder.running) {
+            recordingFile = "";
+            recordingSince = 0;
+            recordingStopping = false;
+            recorder.running = true;
+        } else if (recordingStopping) {
+            return;
+        } else if (recordingSince > 0) {
+            recordingStopping = true;
+            recorder.signal(2);
+            stopTerm.restart();
+        } else {
+            recorder.signal(9);
+        }
+    }
+    Timer { id: stopTerm; interval: 5000; onTriggered: if (recorder.running) { recorder.signal(15); stopKill.restart(); } }
+    Timer { id: stopKill; interval: 3000; onTriggered: if (recorder.running) recorder.signal(9) }
+    Process {
+        id: recorder
+        command: ["sh", "-c", `d="$(xdg-user-dir VIDEOS 2>/dev/null || echo "$HOME/Videos")/$1"
+            mkdir -p "$d" && f="$d/Recording_$(date +%Y%m%d_%H%M%S).mp4" && printf '%s\n' "$f" || exit 1
+            exec systemd-run --user --scope --quiet --collect --unit="app-org.krissos.ScreenRecording-$$" \
+                gpu-screen-recorder -w portal -restore-portal-session yes -f 60 -a default_output -c mp4 -o "$f"`,
+            "sh", Tr.t("Screen Recordings")]
+        stdout: SplitParser { onRead: line => { if (!root.recordingFile) root.recordingFile = line; } }
+        onExited: code => {
+            stopTerm.stop();
+            stopKill.stop();
+            root.recordingStopping = false;
+            const f = root.recordingFile;
+            const recorded = root.recordingSince > 0;
+            root.recordingFile = "";
+            root.recordingSince = 0;
+            if (!f) return;
+            // Cancelled, or nothing was recorded: no empty file left behind.
+            Quickshell.execDetached(["sh", "-c", '[ -s "$1" ] || { rm -f "$1"; exit; }; [ "$5" = yes ] && notify-send -a "$2" -i video-x-generic "$3" "$4"',
+                "sh", f, Tr.t("Screen recording"), Tr.t("Recording saved"), Tr.t("%1 is in Videos > Screen Recordings.", f.split("/").pop()), recorded ? "yes" : "no"]);
+        }
+    }
+    // The recording has really started once the file has data (after the picker).
+    Timer {
+        running: recorder.running && root.recordingFile !== "" && root.recordingSince === 0
+        interval: 500
+        repeat: true
+        onTriggered: if (!started.running) started.running = true
+    }
+    Process {
+        id: started
+        command: ["test", "-s", root.recordingFile]
+        onExited: code => { if (code === 0 && recorder.running && root.recordingSince === 0) root.recordingSince = Date.now(); }
+    }
+
     // Esc in a panel: the bar that opened it from the keyboard takes the focus back (see
     // Bar.returnTo), then the panel closes.
     signal backOut()
@@ -236,6 +307,10 @@ Singleton {
     property alias taskbarTransparency: config.taskbarTransparency
     property alias startLayout: config.startLayout
     property alias startRecommended: config.startRecommended
+    property alias windowCorners: config.windowCorners
+    property alias windowBorder: config.windowBorder
+    property alias windowShadow: config.windowShadow
+    property alias animationSpeed: config.animationSpeed
     property alias desktopNames: config.desktopNames
     property alias accent: config.accent
     property alias theme: config.theme
@@ -353,6 +428,14 @@ Singleton {
             // files), and whether Recommended shows at all.
             property string startLayout: "default"
             property bool startRecommended: true
+            // App windows (Settings > Personalise > Windows, applied in Theme.qml): corners
+            // "square", "small" or "round"; the focused window's border "off", "thin" or
+            // "thick"; shadows "off", "soft", "normal" or "strong"; and how fast windows and
+            // the shell animate, "slow", "normal" or "fast".
+            property string windowCorners: "round"
+            property string windowBorder: "off"
+            property string windowShadow: "normal"
+            property string animationSpeed: "normal"
             // Desktop names given in Task View, by position ("" keeps "Desktop N").
             property list<string> desktopNames: []
             // Theme.qml: the accent ("#RRGGBB", empty for Sky Cyan), "dark", "light",
