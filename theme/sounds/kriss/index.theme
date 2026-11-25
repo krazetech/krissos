@@ -1,0 +1,8 @@
+[Sound Theme]
+Name=KrissOS
+Comment=The KrissOS system sounds; the rest from Ocean
+Inherits=ocean
+Directories=stereo
+
+[stereo]
+OutputProfile=stereo

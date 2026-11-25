@@ -17,8 +17,9 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 
 - System sounds like Windows has: a sound when you sign in, a tick when you change the
   volume, a chime with notifications, sounds when you plug in a charger or a USB device,
-  and a warning when the battery drops to 15% and to 5%. KDE's Ocean sounds unless you
-  pick another set in Settings > Sound.
+  and a warning when the battery drops to 15% and to 5%. KrissOS has its own set of
+  sounds; pick another (or No sounds) in Settings > Sound, which plays a sample. Sound
+  themes made for Linux desktops work too: copy one into `~/.local/share/sounds`.
 - More taskbar choices in Settings > Personalise > Taskbar: show search as a box, an icon
   or not at all, hide the Widgets button, make the taskbar more or less see-through, and
   show button labels by turning off "Combine taskbar buttons and hide labels".

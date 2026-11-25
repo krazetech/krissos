@@ -17,13 +17,26 @@ Column {
     readonly property var apps: Pipewire.nodes.values.filter(n => n.audio && n.isSink && n.isStream)
     PwObjectTracker { objects: [page.sink, page.source].concat(page.apps) }
 
-    // Sound themes installed (/usr/share/sounds/NAME/index.theme), as [name, shown name].
+    // Sound themes installed (sounds/NAME/index.theme in $XDG_DATA_HOME, then
+    // $XDG_DATA_DIRS: the first of a name wins), as [name, shown name], KrissOS first.
     property var themes: []
     Process {
         running: true
-        command: ["sh", "-c", "for f in /usr/share/sounds/*/index.theme; do d=${f%/index.theme}; printf '%s\\t%s\\n' \"${d##*/}\" \"$(sed -n 's/^Name=//p' \"$f\" | head -1)\"; done"]
+        command: ["sh", "-c", `
+            IFS=:; for d in \${XDG_DATA_HOME:-$HOME/.local/share}:\${XDG_DATA_DIRS:-/usr/local/share:/usr/share}; do
+                for f in "$d"/sounds/*/index.theme; do
+                    [ -f "$f" ] || continue; t=\${f%/index.theme}
+                    printf '%s\\t%s\\n' "\${t##*/}" "$(sed -n 's/^Name=//p' "$f" | head -1)"
+                done
+            done`]
         stdout: StdioCollector {
-            onStreamFinished: page.themes = text.trim().split("\n").filter(l => l).map(l => l.split("\t")).map(t => [t[0], t[1] || t[0]])
+            onStreamFinished: {
+                const seen = {};
+                page.themes = text.trim().split("\n").map(l => l.split("\t"))
+                    .filter(t => t[0] && !seen[t[0]] && (seen[t[0]] = true))
+                    .map(t => [t[0], t[1] || t[0]])
+                    .sort((x, y) => (y[0] === "kriss") - (x[0] === "kriss") || x[1].localeCompare(y[1]));
+            }
         }
     }
 
@@ -102,18 +115,18 @@ Column {
 
     SettingsUi.Card {
         SettingsUi.Label { text: Tr.t("System sounds") }
-        SettingsUi.Toggle {
-            text: Tr.t("Play system sounds")
-            detail: Tr.t("A chime with notifications, a tick when the volume changes, and sounds when you sign in, plug something in or the battery runs low")
-            checked: Desktop.sounds
-            onToggled: Desktop.sounds = !checked
-        }
+        // "No sounds" is sounds off (Desktop.sounds), so the theme picked stays for later.
         SettingsUi.Choice {
-            visible: Desktop.sounds && page.themes.length > 1
             text: Tr.t("Sound theme")
-            value: Desktop.soundTheme || "ocean"
-            options: page.themes
-            onPicked: v => Desktop.soundTheme = v
+            detail: Tr.t("A chime with notifications, a tick when the volume changes, and sounds when you sign in, plug something in or the battery runs low")
+            value: Desktop.sounds ? Desktop.soundTheme || "kriss" : ""
+            options: [["", Tr.t("No sounds")]].concat(page.themes)
+            onPicked: v => {
+                Desktop.sounds = v !== "";
+                if (v === "") return;
+                Desktop.soundTheme = v;
+                Desktop.play(v, "desktop-login", "message-new-instant");
+            }
         }
     }
 }
