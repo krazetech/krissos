@@ -97,7 +97,7 @@ Scope {
         target: Desktop
         function onLockedChanged() {
             if (Desktop.locked) engage.restart();
-            else { engage.stop(); root.engaged = false; }
+            else { engage.stop(); root.engaged = false; root.password = ""; root.message = ""; }
         }
     }
     Timer { id: engage; interval: 200; onTriggered: root.engaged = true }
@@ -124,11 +124,16 @@ Scope {
                 // `loginctl unlock-session`: logind only lets the session's owner or root send it.
                 else if (Desktop.locked && line.startsWith(root.sessionPath + ": org.freedesktop.login1.Session.Unlock ("))
                     root.unlock();
+                // This session is the active one again (Switch user's "Back to"): see `kriss-shell reapply-modes`.
+                else if (line.startsWith(root.sessionPath + ": org.freedesktop.DBus.Properties.PropertiesChanged")
+                         && line.includes("'Active': <true>"))
+                    modes.start();
             }
         }
         // ponytail: restart with a fixed delay, as kriss-shell-toplevels does.
         onExited: (code, status) => relogin1.start()
     }
+    Timer { id: modes; interval: 1500; onTriggered: Quickshell.execDetached(["kriss-shell", "reapply-modes"]) }
     Timer { id: relogin1; interval: 2000; onTriggered: login1.running = true }
 
     // Hold off sleep until the lock is up, so the desktop never shows on resume. logind

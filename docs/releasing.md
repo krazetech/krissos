@@ -86,7 +86,7 @@ that milestone; nothing else does. Milestone description:
 - [x] **Security policy:** `SECURITY.md` says how to report a vulnerability, and bugs are
       tracked in GitHub Issues.
 - [x] **Installer defaults:** no one-character passwords.
-- [ ] **Licence:** the tooling licence (ARCHITECTURE.md §11.2) is decided and `LICENSE`
+- [x] **Licence:** the tooling licence (ARCHITECTURE.md §11.2) is decided and `LICENSE`
       matches it.
 - [x] No open issue or pull request left on the `110` milestone.
 

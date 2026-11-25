@@ -1,0 +1,11 @@
+// Switch user: the person at the PC (local and active) may start the second login screen,
+// and the login screen may switch back to a locked session (logind's chvt, which it allows
+// for the active session already).
+polkit.addRule(function (action, subject) {
+    if (action.id == "org.freedesktop.systemd1.manage-units" &&
+        action.lookup("unit").indexOf("kriss-switch-user@") == 0 &&
+        action.lookup("verb") == "start" &&
+        subject.local && subject.active) {
+        return polkit.Result.YES;
+    }
+});
