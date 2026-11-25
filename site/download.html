@@ -12,31 +12,37 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="alternate" hreflang="en" href="https://krazetech.github.io/krissos/download.html">
 <link rel="alternate" hreflang="ms" href="https://krazetech.github.io/krissos/ms/download.html">
+<link rel="alternate" hreflang="x-default" href="https://krazetech.github.io/krissos/download.html">
+<link rel="canonical" href="https://krazetech.github.io/krissos/download.html">
 <meta property="og:title" content="Download KrissOS">
 <meta property="og:description" content="Get the KrissOS preview ISO, test it in a VM, and check the image.">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://krazetech.github.io/krissos/download.html">
 <meta property="og:site_name" content="KrissOS">
 <meta property="og:locale" content="en_MY">
-<meta property="og:image" content="https://krazetech.github.io/krissos/og.jpg">
-<meta property="og:image:alt" content="The KrissOS logo, a keris hilt on a Sky Cyan disc, over the KrissOS wallpaper.">
+<meta property="og:image" content="https://krazetech.github.io/krissos/og-sp.jpg">
+<meta property="og:image:alt" content="The Sungai Petani clock tower against a darkening Kedah sky, the KrissOS Sungai Petani wallpaper.">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="style.css">
+<script src="reveal.js"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <header class="nav">
   <div class="wrap">
-    <a class="brand" href="./"><img src="logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
+    <a class="brand" href="./" aria-label="KrissOS home"><img src="logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
     <nav aria-label="Main">
       <ul>
         <li><a href="shell.html">Shell</a></li>
         <li><a href="download.html" aria-current="page">Download</a></li>
-        <li><a href="install.html">Arch repo</a></li>
+        <li><a href="install.html">Kriss repo</a></li>
         <li><a href="roadmap.html">Roadmap</a></li>
+        <li><a href="help.html">Help</a></li>
         <li class="gh"><a href="https://github.com/krazetech/krissos">GitHub</a></li>
+        <li class="kofi"><a href="https://ko-fi.com/razmanzaidi" aria-label="Support KrissOS on Ko-fi"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.5 1.1 5.3 3 1.8-1.9 3.2-3 5.3-3 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21Z"/></svg><span>Support</span></a></li>
         <li><a class="lang" href="ms/download.html" hreflang="ms" lang="ms">BM</a></li>
       </ul>
     </nav>
@@ -67,7 +73,7 @@
         <li><span>Your PC<small>64-bit Intel and AMD PCs, with UEFI or legacy BIOS. Apple Silicon Macs come later, with their own image.</small></span></li>
         <li><span>Desktop<small>The KrissOS Shell by default. The installer also offers KDE Plasma.</small></span></li>
         <li><span>Updates<small>Small updates all the time, straight from Arch, plus our own signed packages. Each one takes a snapshot first.</small></span></li>
-        <li><span>Releases<small>Nightly builds go to <code>preview</code>. Releases are tagged by codename: <code>110</code>, <code>115</code>, and on.</small></span></li>
+        <li><span>Releases<small>Nightly builds go to <code>preview</code>. Releases are numbered on the Kriss line, <code>110</code>, <code>115</code> and on, and named after a place in Malaysia. <code>110</code> is Sungai Petani.</small></span></li>
       </ul>
     </div>
   </section>
@@ -75,7 +81,7 @@
   <section>
     <div class="wrap">
       <div class="card note reveal">
-        <h2>Two settings, then boot.</h2>
+        <h2>Before you boot.</h2>
         <ul class="list">
           <li><span>UEFI if you have it<small>Legacy BIOS (CSM) works too, so older PCs install fine, and CI tests both. Pick UEFI when the PC or VM offers it (OVMF in virt-manager, GNOME Boxes, VirtualBox or VMware): Windows 10 and 11 use it, so dual-boot shares one boot menu.</small></span></li>
           <li><span>4 GB of RAM or more<small>The live session runs from memory. Two CPU cores and 3D acceleration make it smoother.</small></span></li>
@@ -131,7 +137,7 @@ fetch('https://api.github.com/repos/krazetech/krissos/releases?per_page=20')
       const iso = rel.assets.find(a => a.name === name);
       // The preview release is reused, so its own date is old; the upload date is the build date.
       const when = new Date(sums.updated_at).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
-      const size = iso ? ` ${(iso.size / 1e9).toFixed(1)} GB` : '';
+      const size = iso ? ` ${(iso.size / 1e9).toFixed(1)}\u00a0GB` : '';
       const box = document.getElementById('release');
       const p = document.createElement('p');
       p.className = 'lede';
@@ -152,14 +158,19 @@ fetch('https://api.github.com/repos/krazetech/krissos/releases?per_page=20')
 
 <footer>
   <div class="wrap">
-    <p>KrissOS by Kraze Tech, made in Malaysia with a lot of kopi. Free software under the <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>.<br>Not affiliated with Arch Linux.</p>
-    <nav aria-label="Footer">
-      <a href="shell.html">Shell</a>
-      <a href="download.html">Download</a>
-      <a href="install.html">Arch repo</a>
-      <a href="roadmap.html">Roadmap</a>
-      <a href="https://github.com/krazetech/krissos">GitHub</a>
+    <div class="foot-brand">
+      <a class="brand" href="./" aria-label="KrissOS home"><img src="logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
+      <p>Made ready for everyday people, in Malaysia, with a lot of kopi.</p>
+      <a class="btn kofi" href="https://ko-fi.com/razmanzaidi"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.5 1.1 5.3 3 1.8-1.9 3.2-3 5.3-3 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21Z"/></svg>Support KrissOS on Ko-fi</a>
+    </div>
+    <nav class="foot-cols" aria-label="Footer">
+      <div><p>KrissOS</p><a href="shell.html">Shell</a><a href="download.html">Download</a><a href="roadmap.html">Roadmap</a><a href="help.html">Help</a><a href="hardware.html">Hardware</a></div>
+      <div><p>Project</p><a href="install.html">Kriss repo</a><a href="https://github.com/krazetech/krissos">GitHub</a><a href="https://github.com/krazetech/krissos/blob/main/LICENSE">License</a></div>
     </nav>
+    <div class="foot-base">
+      <p>Free software under the <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>. Not affiliated with Arch Linux.</p>
+      <a class="sponsor" href="https://ruck-fi.com"><span>Proudly supported by</span><img src="ruckfi-white.png" alt="RUCK-Fi" width="360" height="81"></a>
+    </div>
   </div>
 </footer>
 </body>

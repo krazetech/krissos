@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 """kriss-welcome: the KrissOS first-boot app. Holds no root logic: hardware facts come from
 `kriss hwcheck`, Flatpak installs go through `flatpak` and the Windows partition is mounted
 read-only through `udisksctl` (both ask polkit themselves), and package installs go through

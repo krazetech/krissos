@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://krazetech.github.io/krissos/sitemap.xml

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 """Tell the KrissOS Shell which windows and desktops there are, act on them, and capture previews.
 
 Quickshell lists windows through wlr-foreign-toplevel-management, which

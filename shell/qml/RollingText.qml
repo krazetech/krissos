@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Kraze Tech
 import QtQuick
 
 // Text whose digits roll to their new value when it changes, like NumberFlow; other

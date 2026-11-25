@@ -1,4 +1,6 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 # KrissOS Shell.
 #   kriss-shell            start a session: cosmic-comp with the shell inside it (SDDM runs this)
 #   kriss-shell launcher   open or close the launcher (cosmic-comp runs this for the Windows key)

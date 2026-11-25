@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 # Self-check for publish.sh: two publishes to [kriss-testing] against a directory standing
 # in for the GitHub release, and one to [kriss] that must leave testing alone.
 # Needs pacman's repo-add, gpg and bsdtar (any Arch container).

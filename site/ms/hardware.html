@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Perkakasan yang menjalankan KrissOS</title>
+<meta name="description" content="PC dan mesin yang sudah diuji dengan KrissOS, dan caranya: berfungsi, berfungsi dengan catatan, atau belum diuji.">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="../logo.svg" type="image/svg+xml">
+<link rel="icon" href="../favicon.ico" sizes="32x32">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="alternate" hreflang="en" href="https://krazetech.github.io/krissos/hardware.html">
+<link rel="alternate" hreflang="ms" href="https://krazetech.github.io/krissos/ms/hardware.html">
+<link rel="alternate" hreflang="x-default" href="https://krazetech.github.io/krissos/hardware.html">
+<link rel="canonical" href="https://krazetech.github.io/krissos/ms/hardware.html">
+<meta property="og:title" content="Perkakasan yang menjalankan KrissOS">
+<meta property="og:description" content="PC dan mesin yang sudah diuji dengan KrissOS, dan caranya: berfungsi, berfungsi dengan catatan, atau belum diuji.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://krazetech.github.io/krissos/ms/hardware.html">
+<meta property="og:site_name" content="KrissOS">
+<meta property="og:locale" content="ms_MY">
+<meta property="og:image" content="https://krazetech.github.io/krissos/og-sp.jpg">
+<meta property="og:image:alt" content="Menara jam Sungai Petani dengan langit Kedah yang semakin gelap. Kertas dinding KrissOS Sungai Petani.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../style.css">
+<script src="../reveal.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Langkau ke kandungan</a>
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="Laman utama KrissOS"><img src="../logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
+    <nav aria-label="Main">
+      <ul>
+        <li><a href="shell.html">Shell</a></li>
+        <li><a href="download.html">Muat turun</a></li>
+        <li><a href="install.html">Repo Kriss</a></li>
+        <li><a href="roadmap.html">Hala tuju</a></li>
+        <li><a href="help.html">Bantuan</a></li>
+        <li class="gh"><a href="https://github.com/krazetech/krissos">GitHub</a></li>
+        <li class="kofi"><a href="https://ko-fi.com/razmanzaidi" aria-label="Sokong KrissOS di Ko-fi"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.5 1.1 5.3 3 1.8-1.9 3.2-3 5.3-3 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21Z"/></svg><span>Sokong</span></a></li>
+        <li><a class="lang" href="../hardware.html" hreflang="en" lang="en">EN</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+<section>
+  <div class="wrap">
+    <div class="head">
+      <h1 class="rise d1">Berfungsi pada.</h1>
+      <p class="lede rise d2">Hanya yang benar-benar sudah kami semak. Selain itu ditandakan belum diuji, sehingga ada orang yang mencubanya.</p>
+      <p class="muted rise d2">Status pada 25 November 2026, daripada CI KrissOS dan catatan kami sendiri.</p>
+    </div>
+    <div class="help-group"><h2>Mesin maya, setiap binaan</h2><p class="muted">Setiap ISO KrissOS dimulakan dan dipasang oleh <a href="https://github.com/krazetech/krissos/actions/workflows/iso.yml">CI</a> sebelum diterbitkan.</p><ul class="list hw"><li><span>PC dengan UEFI (QEMU, OVMF)<small>But, dipasang dan sampai ke skrin log masuk.</small></span><span class="tag live">Berfungsi</span></li><li><span>PC dengan BIOS legasi (QEMU, SeaBIOS)<small>Dipasang dengan Limine dalam mod BIOS, dan boleh dimulakan.</small></span><span class="tag live">Berfungsi</span></li><li><span>UEFI dengan Secure Boot dihidupkan dan kunci Microsoft (OVMF)<small>USB ditolak sehingga kuncinya dipercayai; dipasang dengan Secure Boot dihidupkan, kunci didaftarkan dalam MokManager, sampai ke skrin log masuk.</small></span><span class="tag live">Berfungsi</span></li><li><span>Mesin maya ARM64 (QEMU, imej generik)<small>Imej aarch64 boleh but dalam <a href="https://github.com/krazetech/krissos/actions/workflows/image-aarch64.yml">CI</a>. Pratonton sahaja, belum ditawarkan untuk dimuat turun.</small></span><span class="tag live">Berfungsi</span></li></ul></div><div class="help-group"><h2>Grafik</h2><p class="muted">Pemacu yang disediakan oleh KrissOS. Diuji hanya jika dinyatakan.</p><ul class="list hw"><li><span>AMD Radeon<small>amdgpu, dalam kernel dan Mesa.</small></span><span class="tag plan">Ada dalam kernel, belum kami uji</span></li><li><span>Grafik Intel<small>i915 dan xe, dalam kernel dan Mesa.</small></span><span class="tag plan">Ada dalam kernel, belum kami uji</span></li><li><span>NVIDIA GeForce siri 16 dan lebih baharu<small>Pemasang menambah pemacu terbuka NVIDIA (nvidia-open).</small></span><span class="tag plan">Ada dalam kernel, belum kami uji</span></li><li><span>Kad NVIDIA yang lebih lama daripada GeForce siri 16<small>nouveau secara lalai; pemacu NVIDIA 580 daripada Welcome atau <code>kriss nvidia setup</code>. Pada komputer riba ujian kami, kuasa semasa melahu naik daripada kira-kira 4.7 W kepada 6.8 W, jadi bateri tahan kira-kira satu pertiga kurang semasa melahu.</small></span><span class="tag wip">Berfungsi, ada catatan</span></li></ul></div><div class="help-group"><h2>Mac</h2><ul class="list hw"><li><span>Mac Intel dengan cip T2<small>Kernel KrissOS membawa tampung T2 (papan kekunci, pad jejak, Touch Bar, SMC).</small></span><span class="tag plan">Ada dalam kernel, belum kami uji</span></li><li><span>Mac Apple Silicon<small>Imej Asahi dibina dalam CI, tetapi belum ada sesiapa yang menjalankannya pada Mac. Lihat <a href="https://github.com/krazetech/krissos/blob/main/docs/apple-silicon.md">rancangannya</a>.</small></span><span class="tag no">Belum diuji</span></li></ul></div><div class="help-group"><h2>Komputer riba lain</h2><ul class="list hw"><li><span>Microsoft Surface<small>Pemacu Surface Aggregator ada dalam kernel.</small></span><span class="tag plan">Ada dalam kernel, belum kami uji</span></li><li><span>Komputer riba ASUS<small>asus-wmi dan pemacu papan kekunci ASUS ada dalam kernel.</small></span><span class="tag plan">Ada dalam kernel, belum kami uji</span></li></ul></div><div class="help-group"><h2>PC kami sendiri</h2><p class="muted">Diisi selepas ujian perkakasan 110.</p><ul class="list hw"><li><span>PC meja, dua monitor<small>Akan diisi.</small></span><span class="tag no">Belum diuji</span></li><li><span>Komputer riba<small>Akan diisi.</small></span><span class="tag no">Belum diuji</span></li><li><span>PC skrin sentuh (papan kekunci pada skrin)<small>Akan diisi.</small></span><span class="tag no">Belum diuji</span></li></ul></div>
+  </div>
+</section>
+<section>
+  <div class="wrap">
+    <div class="card note">
+      <h2>Tambah PC anda.</h2>
+      <p>Sudah cuba KrissOS pada PC anda? Buka <a href="https://github.com/krazetech/krissos/issues/new?template=bug_report.yml">laporan pepijat di GitHub</a> dan pilih <b>Drivers and hardware</b>, atau jalankan <code>kriss report</code> (atau <b>Tetapan &gt; Sistem &gt; Laporkan masalah</b>) dan nyatakan <i>berfungsi</i> atau apa yang tidak menjadi. Laporan itu menyertakan komponen PC ini, dengan nama anda, nama Wi-Fi dan nombor siri dibuang. Kami senaraikan PC itu sebaik sahaja laporannya kami terima.</p>
+    </div>
+  </div>
+</section>
+<script>
+// Copy buttons for code blocks, as on the other pages.
+for (const box of document.querySelectorAll('.code')) {
+  const b = document.createElement('button');
+  b.className = 'copy';
+  b.type = 'button';
+  b.textContent = 'Salin';
+  b.onclick = () => navigator.clipboard.writeText(box.querySelector('pre').textContent)
+    .then(() => { b.textContent = 'Disalin'; setTimeout(() => b.textContent = 'Salin', 1500); });
+  box.append(b);
+}
+</script>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-brand">
+      <a class="brand" href="./" aria-label="Laman utama KrissOS"><img src="../logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
+      <p>Sedia untuk semua orang. Dibuat di Malaysia dengan banyak kopi.</p>
+      <a class="btn kofi" href="https://ko-fi.com/razmanzaidi"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.5 1.1 5.3 3 1.8-1.9 3.2-3 5.3-3 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21Z"/></svg>Sokong KrissOS di Ko-fi</a>
+    </div>
+    <nav class="foot-cols" aria-label="Footer">
+      <div><p>KrissOS</p><a href="shell.html">Shell</a><a href="download.html">Muat turun</a><a href="roadmap.html">Hala tuju</a><a href="help.html">Bantuan</a><a href="hardware.html">Perkakasan</a></div>
+      <div><p>Projek</p><a href="install.html">Repo Kriss</a><a href="https://github.com/krazetech/krissos">GitHub</a><a href="https://github.com/krazetech/krissos/blob/main/LICENSE">Lesen</a></div>
+    </nav>
+    <div class="foot-base">
+      <p>Perisian bebas di bawah <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>. Tiada kaitan dengan Arch Linux.</p>
+      <a class="sponsor" href="https://ruck-fi.com"><span>Dengan bangga disokong oleh</span><img src="../ruckfi-white.png" alt="RUCK-Fi" width="360" height="81"></a>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 # mkinitcpio's kms hook without nouveau. KrissOS gives Turing and newer the NVIDIA
 # driver, so nouveau only ever runs older cards, which need no GSP firmware. But kms
 # copies nouveau's whole firmware list, about 105 MB of GSP blobs, into the early

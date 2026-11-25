@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 # Build [kriss] packages from this checkout. Run as root in an Arch Linux (x86_64) or
 # Arch Linux ARM (aarch64) container, from the repo root; makepkg itself runs as a
 # throwaway user because it refuses root.

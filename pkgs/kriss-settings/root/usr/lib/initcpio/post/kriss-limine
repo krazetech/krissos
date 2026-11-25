@@ -1,4 +1,6 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 # mkinitcpio runs this after it writes an image. With Secure Boot set up, limine.conf
 # carries each initramfs's hash, so a rebuilt one (even `mkinitcpio -P` by hand) must be
 # hashed again or Limine refuses to boot it.

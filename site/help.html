@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KrissOS help: How do I…</title>
+<meta name="description" content="Short how-to pages for KrissOS: installing next to Windows, Settings, apps, games, updates and fixes.">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="alternate" hreflang="en" href="https://krazetech.github.io/krissos/help.html">
+<link rel="alternate" hreflang="ms" href="https://krazetech.github.io/krissos/ms/help.html">
+<link rel="alternate" hreflang="x-default" href="https://krazetech.github.io/krissos/help.html">
+<link rel="canonical" href="https://krazetech.github.io/krissos/help.html">
+<meta property="og:title" content="KrissOS help: How do I…">
+<meta property="og:description" content="Short how-to pages for KrissOS: installing next to Windows, Settings, apps, games, updates and fixes.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://krazetech.github.io/krissos/help.html">
+<meta property="og:site_name" content="KrissOS">
+<meta property="og:locale" content="en_MY">
+<meta property="og:image" content="https://krazetech.github.io/krissos/og-sp.jpg">
+<meta property="og:image:alt" content="The Sungai Petani clock tower against a darkening Kedah sky, the KrissOS Sungai Petani wallpaper.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+<script src="reveal.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="KrissOS home"><img src="logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
+    <nav aria-label="Main">
+      <ul>
+        <li><a href="shell.html">Shell</a></li>
+        <li><a href="download.html">Download</a></li>
+        <li><a href="install.html">Kriss repo</a></li>
+        <li><a href="roadmap.html">Roadmap</a></li>
+        <li><a href="help.html" aria-current="page">Help</a></li>
+        <li class="gh"><a href="https://github.com/krazetech/krissos">GitHub</a></li>
+        <li class="kofi"><a href="https://ko-fi.com/razmanzaidi" aria-label="Support KrissOS on Ko-fi"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.5 1.1 5.3 3 1.8-1.9 3.2-3 5.3-3 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21Z"/></svg><span>Support</span></a></li>
+        <li><a class="lang" href="ms/help.html" hreflang="ms" lang="ms">BM</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+<section>
+  <div class="wrap">
+    <div class="head">
+      <h1 class="rise d1">How do I…</h1>
+      <p class="lede rise d2">Short answers for people coming from Windows. Type what you want to do.</p>
+      <label class="rise d2" for="q"><span class="muted">Search the help</span>
+      <input class="find" id="q" type="search" placeholder="Wi-Fi, Office, rollback…" autocomplete="off"></label>
+    </div>
+    <p id="none" class="muted" hidden>Nothing matches. Try another word, or <a href="help-fix.html#report">report a problem</a>.</p>
+    <div class="help-group"><h2>Install and first start</h2><ul class="list"><li data-k="install krissos next to windows windows stays. krissos makes room beside it, and a boot menu lets you pick one each time the pc starts. secure boot can stay on, and no internet is needed. get windows ready in windows, turn off bitlocker if it is on: settings &gt; privacy &amp; security &gt; device encryption (or control panel &gt; bitlocker drive encryption ), and wait until decryption is finished. keep your recovery key anyway (aka.ms/myrecoverykey). then turn off fast startup: control panel &gt; power options &gt; choose what the power buttons do . make the usb stick download the iso and check it , then write it to a usb stick. a ventoy stick works too. start from the usb restart and open the boot menu, often f12 , f11 , f8 or esc while the pc starts, and pick the usb. start it in uefi mode, like windows, so both share one boot menu. trust the usb once (secure boot) with secure boot on, a blue screen (mokmanager) appears the first time and says verification failed. choose enroll key from disk , pick the usb, then krissos.cer , continue , yes and reboot . a new iso has a new key, so it asks again. install choose install krissos . on the disk page, install alongside is already picked: drag the divider to share the space. encrypt system works like bitlocker and asks for a passphrase at every start. leave it off unless you will keep the passphrase safe, as a lost passphrase means lost files. enroll krissos&#x27;s key (one blue screen) after restart now , the blue screen shows once more. press any key within 10 seconds, choose enroll mok , continue , yes , type the password krissos (it is not your own password) and choose reboot . if you miss it, krissos asks again at the next start. nothing in the bios needs changing. if the installer says turn off bitlocker first , or that the usb started in legacy bios mode, follow the steps it shows: nothing has been changed yet. installed with secure boot off? to turn it on later, run this, restart, enroll the key in mokmanager as above, then turn secure boot on in the firmware settings: sudo kriss-secureboot --enroll"><a href="help-install.html#install">Install next to Windows</a></li><li data-k="use krissos welcome on the first start krissos welcome opens when you first sign in. it has five pages; skip any of them, and open it again any time from start. welcome : your language, a summary of this pc, and whether it can run windows apps. game checker : search a game to see if its anti-cheat works on linux. bring your apps : pick the windows apps you use, and get the krissos version, a linux app that does the same job, or a web version. copy from windows : copies desktop, documents, pictures, music, videos and your edge and chrome bookmarks. windows is opened read-only, so nothing there changes, and files you already have are never replaced. if windows can&#x27;t be opened, start windows, hold shift while you choose shut down , then try again. drivers and extras : video and music codecs, printers, the gaming pack, the nvidia 580 driver for older cards, and local ai. these need internet."><a href="help-install.html#welcome">First-run Welcome</a></li></ul></div><div class="help-group"><h2>Settings and the desktop</h2><ul class="list"><li data-k="connect wi-fi, bluetooth and printers open settings from start, or press windows and type settings . for a quick switch, windows + a opens quick settings with wi-fi and bluetooth toggles. wi-fi settings &gt; network and internet &gt; wi-fi . pick a network and type its password. forget removes a saved one. bluetooth settings &gt; bluetooth and devices &gt; bluetooth &gt; add a device , then put the headphones, mouse or phone in pairing mode and pick it. printers krissos welcome &gt; drivers and extras &gt; printers adds printing support and a tool to add your printer. most printers from the last ten years work without a driver. with 110, settings &gt; bluetooth and devices &gt; printers lists the printers on your network by itself, prints a test page, and adds a printer by its address. the wi-fi and bluetooth pages and the printers page become krissos&#x27;s own in 110 and are still being tested ( #122 , #129 ). until then, wi-fi and bluetooth open cosmic settings&#x27; page for the same thing."><a href="help-desktop.html#network">Wi-Fi, Bluetooth, printers</a></li><li data-k="set the main display and use windows+p the main display gets the full taskbar, start, notifications, new windows, the sign-in screen and fullscreen games. open display settings right-click the desktop &gt; display settings , or settings &gt; system &gt; display . identify shows a big number on each screen. arrange drag the screens so they sit like the real ones on your desk. they snap edge to edge. pick the main one choose a screen, then make this my main display . changes to resolution or refresh rate go back after 15 seconds unless you choose keep changes . windows + p switches between pc screen only , duplicate , extend and second screen only , as on windows. use the arrow keys and enter ."><a href="help-desktop.html#display">Main display, Windows+P</a></li><li data-k="change the taskbar, windows, start and icons, or use the mac layout everything here is in settings &gt; personalise , and changes straight away. like windows or like a mac : personalise &gt; taskbar &gt; desktop layout picks taskbar (start and your apps along the bottom) or top bar and dock (a menu bar at the top, a dock at the bottom, window buttons on the left). or right-click the taskbar &gt; switch to the top bar and dock , and right-click the dock &gt; switch to the taskbar to go back. taskbar : alignment, size, combine buttons, hide automatically, tray icons, and the taskbar on all screens. colours , background , lock screen , and text and contrast for bigger text. coming with 110: taskbar items : search as a box, an icon or hidden, the widgets button, and taskbar transparency ( #128 ). personalise &gt; windows : corners, a border around the window you are using, shadows and animation speed ( #130 ). personalise &gt; start : the start layout (more pins or more recommendations) and show recently opened files in start . personalise &gt; icons picks an icon pack; the taskbar restarts for a moment to pick it up ( #131 )."><a href="help-desktop.html#look">Taskbar, windows, Start, Mac layout</a></li><li data-k="type in chinese, tamil or jawi windows + space switches to the next language, and windows + shift + space goes back. the taskbar shows which one is on: en , 拼 (chinese, pinyin), த (tamil) or ج (jawi). click it to switch too. chinese : type the pinyin, then pick the character. tamil : type the sound, for example vanakkam for வணக்கம். jawi : each letter is on the latin key that sounds like it. with 110, settings &gt; bluetooth and devices &gt; keyboard &gt; languages turns each one on or off ( #126 , in testing)."><a href="help-desktop.html#typing">Chinese, Tamil, Jawi</a></li><li data-k="use the on-screen keyboard on a pc with a touch screen, a keyboard button sits on the taskbar next to the language. tap it to show or hide the on-screen keyboard. it types in the language that is on, and pressing a key on a real keyboard hides it."><a href="help-desktop.html#osk">On-screen keyboard</a></li><li data-k="in testing for 110 record the screen windows + alt + r starts a recording, and the same keys stop it. the first time, krissos asks which screen or window to record; it remembers after that. while it records, the taskbar shows a red dot and the time: click it to stop. the video is saved in videos &gt; screen recordings , with sound. windows + shift + s opens a snipping bar: rectangle , full screen , or record the screen . print screen still takes a picture of everything. this part comes with krissos 110 and is still being tested ( #132 )."><a href="help-desktop.html#record">Screen recording</a></li><li data-k="in testing for 110 switch user, or let a guest use the pc click your picture at the bottom of start: change account settings , lock , sign out , switch user and turn on the guest account . switch user locks your session and shows the login screen. your apps stay open; the login screen shows back to and your name to return. guest signs in with no password and can&#x27;t change the system. its files are emptied every time a guest signs in. turn off the guest account removes it. to add a person with their own account: settings &gt; accounts &gt; your info and sign-in &gt; other people . this part comes with krissos 110 and is still being tested ( #133 )."><a href="help-desktop.html#users">Switch user, guest</a></li></ul></div><div class="help-group"><h2>Apps and games</h2><ul class="list"><li data-k="install apps with the store open store from start. search apps and games, then install . each app says where it comes from: from krissos , or from flathub · runs in a sandbox . updates has update all , and uninstall takes a snapshot first, so you can undo it from the boot menu. in a terminal, the same thing picks the safest place that has the app (krissos, arch, flathub, then the aur): kriss search words kriss install name kriss remove name"><a href="help-apps.html#store">The Store</a></li><li data-k="play games with steam and kriss tune check your games krissos welcome &gt; game checker says whether a game&#x27;s anti-cheat works on linux, the usual reason a game won&#x27;t run. most other games run through steam&#x27;s proton. install the gaming pack in the store, install krissos gaming pack : steam with proton, gamemode, gamescope, the mangohud overlay and the vulkan drivers. it is also in krissos welcome &gt; drivers and extras &gt; gaming pack . pick a power profile kriss tune sets the power profile and the cpu scheduler together. it stays after a restart. kriss tune performance the others are balanced and powersave ; kriss tune status shows what is on. fullscreen games open on the main display, and alt + tab gets you out of them. an nvidia card older than the geforce 16 series uses the open nouveau driver; kriss nvidia check says whether nvidia&#x27;s faster 580 driver fits it, and drivers and extras installs it."><a href="help-apps.html#games">Games, Steam, kriss tune</a></li><li data-k="in testing for 110 run windows apps and microsoft office krissos can run the real windows versions of your apps in winpodx , which keeps windows in a virtual machine and shows each app in its own window, with its own icon and start entry. it needs about 16 gb of ram, at least 4 cpu threads, and virtualisation (vt-x or amd-v) on in the bios. kriss winapps check kriss winapps setup setup fixes what is missing, then says what winpodx changes and asks before it goes on. read it, because it changes windows: a patch to windows. windows allows one remote session per user, so a second app would take over the first one&#x27;s window. winpodx patches windows (rdprrap, based on rdp wrapper) so each app gets its own window. microsoft&#x27;s licence terms do not allow working around windows&#x27; limits like this, so the choice is yours. turn it off with winpodx guest multi-session off ; apps then share one window. defender exclusions. it tells microsoft defender not to scan c:\oem , c:\winpodx and c:\users\public\winpodx . hiding the vm. it hides from windows that it runs in a virtual machine. turn that off with winpodx config set pod.disguise_level off . the download. windows itself, about 7.5 gb, comes from microsoft. microsoft office : in the store, or: kriss winapps office it downloads microsoft&#x27;s own office installer inside windows and installs word, excel and powerpoint (add --business for a work account). bring your own microsoft 365 licence: krissos ships no office files and no activation tricks. word, excel and powerpoint then show in start and open their files. this part comes with krissos 110 and is still being tested ( #117 )."><a href="help-apps.html#winapps">Windows apps, Office</a></li></ul></div><div class="help-group"><h2>Updates and fixes</h2><ul class="list"><li data-k="update krissos when updates are waiting, a notification says updates available : press update and type your password. or open the store &gt; updates &gt; update all . or, in a terminal: sudo kriss update it takes a snapshot first, then updates krissos, arch, flatpak apps and aur packages together. if an update goes wrong, go back to the snapshot . want updates a few days early, to help catch problems? kriss channel testing . kriss channel stable goes back."><a href="help-fix.html#update">Update</a></li><li data-k="roll back a bad update start a snapshot restart. in the boot menu, choose krissos &gt; snapshots and pick one from before the update. the 15 newest are there. try it a notice says you are running a snapshot: changes are lost at the next restart, so it is safe to look around. keep it if it works, open a terminal, run this, answer y and restart: kriss rollback the system you came from is kept as a backup. the command prints how to free its space once you are happy."><a href="help-fix.html#rollback">Roll back a bad update</a></li><li data-k="reset this pc settings &gt; system &gt; recovery &gt; reset this pc , as on windows: keep my files : apps you added and your settings go. your files in home stay. remove everything : apps you added, your settings, every file in home and saved wi-fi go. it shows the plan, asks you to type reset , takes a snapshot (so you can still go back from the boot menu) and finishes at the next restart. accounts and passwords stay, and nothing is downloaded. the same in a terminal: kriss reset --keep-files kriss reset --everything --dry-run only shows the plan, and kriss reset --cancel stops a reset that is waiting."><a href="help-fix.html#reset">Reset this PC</a></li><li data-k="report a problem settings &gt; system &gt; report a problem collects the logs and a summary of this pc. your name, wi-fi names and serial numbers are taken out, and you see all of it first. say what went wrong optional, but it helps. show the report read what will be sent. send or save open as a github issue fills in an issue for you; nothing is sent until you press submit on github. or save to a file . in a terminal: kriss report &quot;what went wrong&quot; . when the pc is offline, it saves the report to a file in your home folder, so you can send it later."><a href="help-fix.html#report">Report a problem</a></li></ul></div>
+    <p class="muted" style="margin-top:56px">Wondering if KrissOS runs on your PC? See <a href="hardware.html">the hardware list</a>.</p>
+  </div>
+</section>
+<script>
+// Copy buttons for code blocks, as on the other pages.
+for (const box of document.querySelectorAll('.code')) {
+  const b = document.createElement('button');
+  b.className = 'copy';
+  b.type = 'button';
+  b.textContent = 'Copy';
+  b.onclick = () => navigator.clipboard.writeText(box.querySelector('pre').textContent)
+    .then(() => { b.textContent = 'Copied'; setTimeout(() => b.textContent = 'Copy', 1500); });
+  box.append(b);
+}
+
+// Search on the page: hide the tasks whose title and text don't hold every word typed.
+const q = document.getElementById('q'), none = document.getElementById('none');
+q.addEventListener('input', () => {
+  const ws = q.value.toLowerCase().split(/\s+/).filter(Boolean);
+  let shown = 0;
+  for (const g of document.querySelectorAll('.help-group')) {
+    let n = 0;
+    for (const li of g.querySelectorAll('li')) {
+      const hit = ws.every(w => (li.textContent + ' ' + li.dataset.k).toLowerCase().includes(w));
+      li.hidden = !hit; n += hit;
+    }
+    g.hidden = !n; shown += n;
+  }
+  none.hidden = shown > 0;
+});
+</script>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-brand">
+      <a class="brand" href="./" aria-label="KrissOS home"><img src="logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
+      <p>Made ready for everyday people, in Malaysia, with a lot of kopi.</p>
+      <a class="btn kofi" href="https://ko-fi.com/razmanzaidi"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.5 1.1 5.3 3 1.8-1.9 3.2-3 5.3-3 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21Z"/></svg>Support KrissOS on Ko-fi</a>
+    </div>
+    <nav class="foot-cols" aria-label="Footer">
+      <div><p>KrissOS</p><a href="shell.html">Shell</a><a href="download.html">Download</a><a href="roadmap.html">Roadmap</a><a href="help.html">Help</a><a href="hardware.html">Hardware</a></div>
+      <div><p>Project</p><a href="install.html">Kriss repo</a><a href="https://github.com/krazetech/krissos">GitHub</a><a href="https://github.com/krazetech/krissos/blob/main/LICENSE">License</a></div>
+    </nav>
+    <div class="foot-base">
+      <p>Free software under the <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>. Not affiliated with Arch Linux.</p>
+      <a class="sponsor" href="https://ruck-fi.com"><span>Proudly supported by</span><img src="ruckfi-white.png" alt="RUCK-Fi" width="360" height="81"></a>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

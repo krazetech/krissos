@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apps and games · KrissOS help</title>
+<meta name="description" content="Install apps with the Store, play games with Steam and kriss tune, and run Windows apps and Office.">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="alternate" hreflang="en" href="https://krazetech.github.io/krissos/help-apps.html">
+<link rel="alternate" hreflang="ms" href="https://krazetech.github.io/krissos/ms/help-apps.html">
+<link rel="alternate" hreflang="x-default" href="https://krazetech.github.io/krissos/help-apps.html">
+<link rel="canonical" href="https://krazetech.github.io/krissos/help-apps.html">
+<meta property="og:title" content="Apps and games · KrissOS help">
+<meta property="og:description" content="Install apps with the Store, play games with Steam and kriss tune, and run Windows apps and Office.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://krazetech.github.io/krissos/help-apps.html">
+<meta property="og:site_name" content="KrissOS">
+<meta property="og:locale" content="en_MY">
+<meta property="og:image" content="https://krazetech.github.io/krissos/og-sp.jpg">
+<meta property="og:image:alt" content="The Sungai Petani clock tower against a darkening Kedah sky, the KrissOS Sungai Petani wallpaper.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+<script src="reveal.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="KrissOS home"><img src="logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
+    <nav aria-label="Main">
+      <ul>
+        <li><a href="shell.html">Shell</a></li>
+        <li><a href="download.html">Download</a></li>
+        <li><a href="install.html">Kriss repo</a></li>
+        <li><a href="roadmap.html">Roadmap</a></li>
+        <li><a href="help.html" aria-current="page">Help</a></li>
+        <li class="gh"><a href="https://github.com/krazetech/krissos">GitHub</a></li>
+        <li class="kofi"><a href="https://ko-fi.com/razmanzaidi" aria-label="Support KrissOS on Ko-fi"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.5 1.1 5.3 3 1.8-1.9 3.2-3 5.3-3 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21Z"/></svg><span>Support</span></a></li>
+        <li><a class="lang" href="ms/help-apps.html" hreflang="ms" lang="ms">BM</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+<section>
+  <div class="wrap">
+    <div class="head">
+      <nav class="crumb rise d1" aria-label="Breadcrumb"><a href="help.html">← All help</a></nav>
+      <h1 class="rise d1">Apps and games.</h1>
+      <p class="lede rise d2">Where your apps come from, and how to run the ones that only exist on Windows.</p>
+    </div>
+    <ul class="toc"><li><a href="#store">The Store</a></li><li><a href="#games">Games, Steam, kriss tune</a></li><li><a href="#winapps">Windows apps, Office</a></li></ul>
+    <article class="task" id="store">
+<h2>Install apps with the Store</h2>
+
+<p>Open <b>Store</b> from Start. Search apps and games, then <b>Install</b>. Each app says where it comes from: <b>From KrissOS</b>, or <b>From Flathub · runs in a sandbox</b>. <b>Updates</b> has <b>Update all</b>, and <b>Uninstall</b> takes a snapshot first, so you can undo it from the boot menu.</p>
+<p>In a terminal, the same thing picks the safest place that has the app (KrissOS, Arch, Flathub, then the AUR):</p>
+<div class="code"><pre><code>kriss search WORDS</code></pre></div>
+<div class="code"><pre><code>kriss install NAME</code></pre></div>
+<div class="code"><pre><code>kriss remove NAME</code></pre></div>
+
+</article>
+<article class="task" id="games">
+<h2>Play games with Steam and kriss tune</h2>
+
+<ol class="steps"><li><h3>Check your games</h3><p><b>KrissOS Welcome &gt; Game checker</b> says whether a game's anti-cheat works on Linux, the usual reason a game won't run. Most other games run through Steam's Proton.</p></li><li><h3>Install the gaming pack</h3><p>In the Store, install <b>KrissOS Gaming Pack</b>: Steam with Proton, GameMode, Gamescope, the MangoHud overlay and the Vulkan drivers. It is also in <b>KrissOS Welcome &gt; Drivers and extras &gt; Gaming pack</b>.</p></li><li><h3>Pick a power profile</h3><p><code>kriss tune</code> sets the power profile and the CPU scheduler together. It stays after a restart.</p><div class="code"><pre><code>kriss tune performance</code></pre></div><p>The others are <code>balanced</code> and <code>powersave</code>; <code>kriss tune status</code> shows what is on.</p></li></ol>
+<p>Fullscreen games open on the main display, and <kbd>Alt</kbd> + <kbd>Tab</kbd> gets you out of them. An NVIDIA card older than the GeForce 16 series uses the open nouveau driver; <code>kriss nvidia check</code> says whether NVIDIA's faster 580 driver fits it, and <b>Drivers and extras</b> installs it.</p>
+
+</article>
+<article class="task" id="winapps">
+<span class="tag wip">In testing for 110</span>
+<h2>Run Windows apps and Microsoft Office</h2>
+
+<p>KrissOS can run the real Windows versions of your apps in <b>WinPodX</b>, which keeps Windows in a virtual machine and shows each app in its own window, with its own icon and Start entry. It needs about 16 GB of RAM, at least 4 CPU threads, and virtualisation (VT-x or AMD-V) on in the BIOS.</p>
+<div class="code"><pre><code>kriss winapps check</code></pre></div>
+<div class="code"><pre><code>kriss winapps setup</code></pre></div>
+<p><code>setup</code> fixes what is missing, then says what WinPodX changes and asks before it goes on. Read it, because it changes Windows:</p>
+<ul>
+<li><b>A patch to Windows.</b> Windows allows one remote session per user, so a second app would take over the first one's window. WinPodX patches Windows (rdprrap, based on RDP Wrapper) so each app gets its own window. Microsoft's licence terms do not allow working around Windows' limits like this, so the choice is yours. Turn it off with <code>winpodx guest multi-session off</code>; apps then share one window.</li>
+<li><b>Defender exclusions.</b> It tells Microsoft Defender not to scan <code>C:\OEM</code>, <code>C:\winpodx</code> and <code>C:\Users\Public\winpodx</code>.</li>
+<li><b>Hiding the VM.</b> It hides from Windows that it runs in a virtual machine. Turn that off with <code>winpodx config set pod.disguise_level off</code>.</li>
+<li><b>The download.</b> Windows itself, about 7.5 GB, comes from Microsoft.</li>
+</ul>
+<p><b>Microsoft Office</b>: in the Store, or:</p>
+<div class="code"><pre><code>kriss winapps office</code></pre></div>
+<p>It downloads Microsoft's own Office installer inside Windows and installs Word, Excel and PowerPoint (add <code>--business</code> for a work account). Bring your own Microsoft 365 licence: KrissOS ships no Office files and no activation tricks. Word, Excel and PowerPoint then show in Start and open their files.</p>
+
+<p class="muted">This part comes with KrissOS 110 and is still being tested (<a href="https://github.com/krazetech/krissos/pull/117">#117</a>).</p></article>
+
+  </div>
+</section>
+<script>
+// Copy buttons for code blocks, as on the other pages.
+for (const box of document.querySelectorAll('.code')) {
+  const b = document.createElement('button');
+  b.className = 'copy';
+  b.type = 'button';
+  b.textContent = 'Copy';
+  b.onclick = () => navigator.clipboard.writeText(box.querySelector('pre').textContent)
+    .then(() => { b.textContent = 'Copied'; setTimeout(() => b.textContent = 'Copy', 1500); });
+  box.append(b);
+}
+</script>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-brand">
+      <a class="brand" href="./" aria-label="KrissOS home"><img src="logo.svg" alt="" width="26" height="26"><span>KrissOS</span></a>
+      <p>Made ready for everyday people, in Malaysia, with a lot of kopi.</p>
+      <a class="btn kofi" href="https://ko-fi.com/razmanzaidi"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.5 1.1 5.3 3 1.8-1.9 3.2-3 5.3-3 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21Z"/></svg>Support KrissOS on Ko-fi</a>
+    </div>
+    <nav class="foot-cols" aria-label="Footer">
+      <div><p>KrissOS</p><a href="shell.html">Shell</a><a href="download.html">Download</a><a href="roadmap.html">Roadmap</a><a href="help.html">Help</a><a href="hardware.html">Hardware</a></div>
+      <div><p>Project</p><a href="install.html">Kriss repo</a><a href="https://github.com/krazetech/krissos">GitHub</a><a href="https://github.com/krazetech/krissos/blob/main/LICENSE">License</a></div>
+    </nav>
+    <div class="foot-base">
+      <p>Free software under the <a href="https://github.com/krazetech/krissos/blob/main/LICENSE">GPL-3.0-or-later</a>. Not affiliated with Arch Linux.</p>
+      <a class="sponsor" href="https://ruck-fi.com"><span>Proudly supported by</span><img src="ruckfi-white.png" alt="RUCK-Fi" width="360" height="81"></a>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

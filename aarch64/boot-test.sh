@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 # Boot the generic aarch64 disk in a QEMU `virt` VM with UEFI firmware (edk2), as firmware
 # boots it: edk2 starts the unified kernel image at EFI/BOOT/BOOTAA64.EFI. Wait until the
 # KrissOS Shell starts, then screenshot it. Apple hardware cannot be emulated; this checks

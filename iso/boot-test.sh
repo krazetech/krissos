@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Kraze Tech
 # Boot the ISO in QEMU/KVM, screenshot the UEFI boot menu, then boot the "Install KrissOS"
 # entry with a serial console and wait until the KrissOS Shell and then the installer
 # (Calamares) start. Then the same under SeaBIOS (legacy BIOS), through the ISO's own
