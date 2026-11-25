@@ -179,6 +179,7 @@ Column {
                     cursorShape: page.outs.length > 1 ? Qt.OpenHandCursor : Qt.PointingHandCursor
                     activeFocusOnTab: true
                     drag.target: page.outs.length > 1 ? tile : null
+                    drag.smoothed: false  // the tile stays under the pointer, so it lands where it is let go
                     onPressed: page.sel = modelData.name
                     onReleased: {
                         if (!drag.active && Math.abs(x - (map.ox + (modelData.x - map.box.x) * map.k)) < 2) return;
