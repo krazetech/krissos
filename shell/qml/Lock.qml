@@ -95,7 +95,7 @@ Scope {
         target: Desktop
         function onLockedChanged() {
             if (Desktop.locked) engage.restart();
-            else { engage.stop(); root.engaged = false; }
+            else { engage.stop(); root.engaged = false; root.password = ""; root.message = ""; }
         }
     }
     Timer { id: engage; interval: 200; onTriggered: root.engaged = true }
