@@ -23,7 +23,8 @@ Column {
     Process {
         running: true
         command: ["sh", "-c", `
-            IFS=:; for d in \${XDG_DATA_HOME:-$HOME/.local/share}:\${XDG_DATA_DIRS:-/usr/local/share:/usr/share}; do
+            dirs="\${XDG_DATA_HOME:-$HOME/.local/share}:\${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+            IFS=:; for d in $dirs; do
                 for f in "$d"/sounds/*/index.theme; do
                     [ -f "$f" ] || continue; t=\${f%/index.theme}
                     printf '%s\\t%s\\n' "\${t##*/}" "$(sed -n 's/^Name=//p' "$f" | head -1)"
