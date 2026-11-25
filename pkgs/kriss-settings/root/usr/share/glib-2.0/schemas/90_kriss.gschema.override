@@ -15,10 +15,10 @@ font-hinting='slight'
 [org.gnome.desktop.wm.preferences]
 button-layout='appmenu:minimize,maximize,close'
 
-# KDE's Ocean sounds (ocean-sound-theme, from kriss-theme); the shell keeps this in step
+# The KrissOS sounds (kriss-theme, the rest from Ocean); the shell keeps this in step
 # with its own setting.
 [org.gnome.desktop.sound]
-theme-name='ocean'
+theme-name='kriss'
 event-sounds=true
 
 [org.gnome.desktop.background]

@@ -1,6 +1,6 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-theme
-pkgver=0.5.4
+pkgver=0.5.5
 pkgrel=1
 pkgdesc='KrissOS colours, fonts, wallpaper, Plasma, SDDM, Plymouth and Limine theme'
 arch=('any')
@@ -78,6 +78,9 @@ package() {
   # Every light of the scene and the plain wallpapers share the one composition.
   install -Dm644 "$_theme/kriss-scene.mask.png" "$pkgdir/usr/share/backgrounds/kriss/kriss-scene.mask.png"
   install -Dm755 "$_theme/kriss-wallpaper-mask" "$pkgdir/usr/bin/kriss-wallpaper-mask"
+  # The KrissOS sound theme: its own few sounds (theme/sounds/make-sounds), the rest Ocean's.
+  install -Dm644 -t "$pkgdir/usr/share/sounds/kriss" "$_theme/sounds/kriss/index.theme"
+  install -Dm644 -t "$pkgdir/usr/share/sounds/kriss/stereo" "$_theme/sounds/kriss/stereo/"*.oga
   install -Dm644 "$srcdir/u2netp.onnx" "$pkgdir/usr/share/kriss/models/u2netp.onnx"
   install -d "$pkgdir/usr/share/licenses/kriss-theme"
   printf '%s\n' "u2netp.onnx: U-2-Net (https://github.com/xuebinqin/U-2-Net), Apache-2.0," \

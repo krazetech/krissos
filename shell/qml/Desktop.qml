@@ -211,14 +211,29 @@ Singleton {
     property alias soundTheme: config.soundTheme
 
     // Plays a freedesktop sound by its name (message-new-instant, audio-volume-change, ...):
-    // the first of the names given found in the sound theme (Ocean unless the user picked
-    // another), then in freedesktop's, played with PipeWire's pw-play. libcanberra only if
-    // neither has it or pw-play is missing. Quiet when sounds are off.
-    function sound(...ids) {
-        if (sounds) Quickshell.execDetached(["sh", "-c", `
-            theme=$1; shift
+    // the first of the names given found in the sound theme (KrissOS unless the user picked
+    // another), the themes it inherits (index.theme's Inherits=), then freedesktop's, in
+    // $XDG_DATA_HOME and $XDG_DATA_DIRS (sounds/THEME/stereo/NAME.oga|ogg|wav), played with
+    // PipeWire's pw-play. libcanberra only if none has it or pw-play is missing. Quiet
+    // when sounds are off, unless asked to preview a theme.
+    function sound(...ids) { if (sounds) play(soundTheme || "kriss", ...ids); }
+    function play(theme, ...ids) {
+        Quickshell.execDetached(["sh", "-c", `
             dirs="\${XDG_DATA_HOME:-$HOME/.local/share}:\${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
-            for id; do for t in "$theme" freedesktop; do
+            themes=" $1 "; todo=$1; shift; ids="$*"
+            # ponytail: breadth-first over Inherits=, each theme once; themes nest a level or two.
+            while [ -n "$todo" ]; do
+                set -f; set -- $todo; set +f; t=$1; shift; todo="$*"
+                IFS=:; for d in $dirs; do unset IFS
+                    [ -f "$d/sounds/$t/index.theme" ] || continue
+                    for i in $(sed -n 's/^Inherits=//p' "$d/sounds/$t/index.theme" | head -1 | tr ',;' '  '); do
+                        case $themes in *" $i "*) ;; *) themes="$themes$i "; todo="$todo $i" ;; esac
+                    done
+                done
+            done
+            case $themes in *" freedesktop "*) ;; *) themes="$themes""freedesktop " ;; esac
+            set -f; set -- $ids; set +f
+            for id; do for t in $themes; do
                 IFS=:; for d in $dirs; do unset IFS
                     for f in "$d/sounds/$t/stereo/$id.oga" "$d/sounds/$t/stereo/$id.ogg" "$d/sounds/$t/stereo/$id.wav"; do
                         [ -f "$f" ] || continue
@@ -231,7 +246,7 @@ Singleton {
                     done
                 done
             done; done
-            exec canberra-gtk-play -i "$1"`, "sh", soundTheme || "ocean", ...ids]);
+            exec canberra-gtk-play -i "$1"`, "sh", theme, ...ids]);
     }
     // Signing in: once a session, not when the shell comes back after a crash.
     Process {
@@ -254,7 +269,7 @@ Singleton {
             gsettings set org.gnome.desktop.sound theme-name "$1"
             gsettings set org.gnome.desktop.sound event-sounds "$2"
             command -v kwriteconfig6 >/dev/null && kwriteconfig6 --file kdeglobals --group Sounds --key Theme "$1"
-            exit 0`, "sh", soundTheme || "ocean", String(sounds)]);
+            exit 0`, "sh", soundTheme || "kriss", String(sounds)]);
     }
     onSoundsChanged: syncSound()
     onSoundThemeChanged: syncSound()
@@ -382,9 +397,9 @@ Singleton {
             // The user picked the main display in Settings (else cosmic-comp picked it).
             property bool mainChosen: false
             // System sounds (Desktop.sound): on or off, and the freedesktop sound theme
-            // (/usr/share/sounds/NAME) they come from. KDE's Ocean by default.
+            // (sounds/NAME in the XDG data dirs) they come from. KrissOS by default.
             property bool sounds: true
-            property string soundTheme: "ocean"
+            property string soundTheme: "kriss"
             // Apps whose notifications go straight to the center, with no pop-up (Settings >
             // Notifications), by the name they send.
             property list<string> quietApps: []
