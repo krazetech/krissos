@@ -142,8 +142,7 @@ Singleton {
     // Plays a freedesktop sound by its name (message-new-instant, audio-volume-change, ...):
     // the first of the names given found in the sound theme (Ocean unless the user picked
     // another), then in freedesktop's, played with PipeWire's pw-play. libcanberra only if
-    // neither has it or pw-play is missing (canberra-gtk-play stayed quiet inside the
-    // session on cachyos-pc, though it played from a terminal). Quiet when sounds are off.
+    // neither has it or pw-play is missing. Quiet when sounds are off.
     function sound(...ids) {
         if (sounds) Quickshell.execDetached(["sh", "-c", `
             theme=$1; shift
@@ -152,7 +151,11 @@ Singleton {
                 IFS=:; for d in $dirs; do unset IFS
                     for f in "$d/sounds/$t/stereo/$id.oga" "$d/sounds/$t/stereo/$id.ogg" "$d/sounds/$t/stereo/$id.wav"; do
                         [ -f "$f" ] || continue
-                        command -v pw-play >/dev/null && exec pw-play --media-role=Notification "$f"
+                        # To the default output, as Windows does: WirePlumber otherwise sends every
+                        # Notification-role stream where one was last moved (on cachyos-pc, a
+                        # headset), which is why canberra was silent in the session.
+                        out=$(wpctl inspect @DEFAULT_AUDIO_SINK@ 2>/dev/null | awk -F'"' '/node.name =/ { print $2; exit }')
+                        command -v pw-play >/dev/null && exec pw-play --media-role=Notification --target="\${out:-auto}" "$f"
                         exec canberra-gtk-play -f "$f"
                     done
                 done
