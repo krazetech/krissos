@@ -179,7 +179,8 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 ### Fixed
 
 - Notification pop-ups and the notification center open smoothly again with a long
-  notification history.
+  notification history, and Start, quick settings and the calendar open without a slow
+  first frame.
 - Alt+Tab in full-screen games stays on the game's screen, keeps the keyboard, waits for
   you to let go of Alt, and also works in games that grab the keyboard (Wine and Proton).
 - The lock screen's glass clock shows the right time on every screen, also after sleep,
