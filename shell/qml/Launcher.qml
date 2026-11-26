@@ -16,9 +16,20 @@ import "fuzzy.js" as Fuzzy
 PanelWindow {
     id: win
 
-    // Stays up while the menu fades away, but lets go of the keyboard and the pointer at once.
-    visible: Desktop.launcherOpen || panel.opacity > 0
+    // On show while open and while the menu fades away, but lets go of the keyboard and the
+    // pointer at once.
+    readonly property bool shownNow: Desktop.launcherOpen || panel.opacity > 0
+    // Once hidden, nothing in it keeps the keyboard (a blinking cursor would keep redrawing it).
+    onShownNowChanged: if (!shownNow) contentItem.forceActiveFocus()
+    // The window itself stays mapped, empty and click-through while closed: Quickshell rebuilds a
+    // layer window each time it is shown, and that first frame (a new scene graph, glyph cache and
+    // textures) took 9-15 ms to build. Kept, opening only redraws. A fullscreen window hides the
+    // top layer, so games are not covered.
+    visible: true
     screen: Desktop.screen
+    // Moves with Desktop.screen only while on show: moving it rebuilds it, so a panel opening on
+    // another display leaves it be.
+    Binding { target: win; property: "screen"; when: win.shownNow; value: Desktop.screen; restoreMode: Binding.RestoreNone }
 
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.namespace: "kriss-launcher"
@@ -30,7 +41,7 @@ PanelWindow {
     exclusiveZone: 0
     anchors { top: true; bottom: true; left: true; right: true }
     color: "transparent"
-    BackgroundEffect.blurRegion: Region { item: panel; radius: panel.radius }
+    BackgroundEffect.blurRegion: Region { item: win.shownNow ? panel : null; radius: panel.radius }
 
     property string query: ""
     property bool allApps: false
@@ -249,7 +260,7 @@ PanelWindow {
 
     Connections {
         target: Desktop
-        function onLauncherOpenChanged() { if (Desktop.launcherOpen) win.reset(); }
+        function onLauncherOpenChanged() { if (Desktop.launcherOpen) { win.reset(); Desktop.takeKeys(); } }
     }
     function reset() {
         query = ""; allApps = false; powerMenu = false; accountMenu = false; current = 0;
@@ -273,6 +284,7 @@ PanelWindow {
     // menu first), as in Windows Start.
     Item {
         id: keyCatch
+        visible: win.shownNow
         anchors.fill: parent
         Keys.onPressed: event => {
             if (event.key === Qt.Key_Escape) {

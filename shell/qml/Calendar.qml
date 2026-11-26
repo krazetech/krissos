@@ -11,11 +11,15 @@ PanelWindow {
     id: win
 
     readonly property bool open: Desktop.calendarOpen
-    // Stays up while the card fades away, but lets clicks through to what is behind it.
-    visible: open || card.opacity > 0
+    // On show while open and while the card fades away, but lets clicks through to what is behind it.
+    readonly property bool shownNow: open || card.opacity > 0
+    // Kept mapped, empty and click-through while closed, so opening only redraws (see Launcher.qml).
+    visible: true
+    onShownNowChanged: if (!shownNow) contentItem.forceActiveFocus()
     mask: open ? null : noInput
     Region { id: noInput }
     screen: Desktop.screen
+    Binding { target: win; property: "screen"; when: win.shownNow; value: Desktop.screen; restoreMode: Binding.RestoreNone }
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.namespace: "kriss-calendar"
     WlrLayershell.keyboardFocus: open ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
@@ -26,7 +30,7 @@ PanelWindow {
     color: "transparent"
     BackgroundEffect.blurRegion: Region { item: card.opacity > 0 ? card : null; radius: card.radius }
 
-    onOpenChanged: if (open) { body.reset(); body.focusFirst(); }
+    onOpenChanged: if (open) { body.reset(); body.focusFirst(); Desktop.takeKeys(); }
     Binding { when: win.open; target: Desktop; property: "cornerRoom"; value: card.height + Theme.panelGap }
 
     MouseArea {
@@ -37,6 +41,7 @@ PanelWindow {
 
     Rectangle {
         id: card
+        visible: win.shownNow
         // Under the clock: above the taskbar, or below the Mac top bar.
         anchors.right: parent.right
         anchors.rightMargin: Theme.panelGap
