@@ -198,6 +198,34 @@ Singleton {
         }
     }
 
+    // The panels (Start, quick settings, the calendar) stay mapped while closed and turn
+    // exclusive to open. cosmic-comp moves the keyboard to an exclusive surface only when it
+    // takes it from something, so with nothing focused (an empty desktop) one would never get it.
+    // This 1 px surface appears, which takes the keyboard, and goes as soon as it has it:
+    // cosmic-comp then gives the keyboard to the exclusive panel.
+    // ponytail: a workaround like keyProxy; drop it with keyProxy.
+    property bool kicking: false
+    function takeKeys() { kicking = true; kickEnd.restart(); }
+    Timer { id: kickEnd; interval: 1000; onTriggered: root.kicking = false }
+    PanelWindow {
+        visible: root.kicking
+        screen: root.screen
+        implicitWidth: 1
+        implicitHeight: 1
+        anchors { top: true; left: true }
+        color: "transparent"
+        mask: Region {}
+        exclusionMode: ExclusionMode.Ignore
+        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.namespace: "kriss-keys"
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+        Item {
+            Accessible.ignored: true
+            readonly property bool active: Window.active
+            onActiveChanged: if (active) Qt.callLater(() => root.kicking = false)
+        }
+    }
+
     function focusedScreen() {
         const out = Windows.list.find(w => w.active && !w.minimized)?.output;
         return Quickshell.screens.find(s => s.name === out) ?? screen ?? primary;

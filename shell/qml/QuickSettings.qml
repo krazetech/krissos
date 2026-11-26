@@ -21,11 +21,16 @@ import Quickshell.Services.UPower
 PanelWindow {
     id: win
 
-    // Stays up while the sheet slides away, but lets clicks through to what is behind it.
-    visible: Desktop.quickOpen || Math.abs(panel.y) < sheet.closed - 0.5
+    // On show while open and while the sheet slides away, but lets clicks through to what is behind it.
+    readonly property bool shownNow: Desktop.quickOpen || Math.abs(panel.y) < sheet.closed - 0.5
+    // Once hidden, nothing in it keeps the keyboard (a blinking cursor would keep redrawing it).
+    onShownNowChanged: if (!shownNow) contentItem.forceActiveFocus()
+    // Kept mapped, empty and click-through while closed, so opening only redraws (see Launcher.qml).
+    visible: true
     mask: Desktop.quickOpen ? null : noInput
     Region { id: noInput }
     screen: Desktop.screen
+    Binding { target: win; property: "screen"; when: win.shownNow; value: Desktop.screen; restoreMode: Binding.RestoreNone }
 
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.namespace: "kriss-quick-settings"
@@ -37,7 +42,7 @@ PanelWindow {
     color: "transparent"
     // Blur only behind the part of the sheet that is showing.
     BackgroundEffect.blurRegion: Region {
-        item: sheet
+        item: win.shownNow ? sheet : null
         Region { item: panel; radius: panel.radius; intersection: Intersection.Intersect }
     }
 
@@ -73,6 +78,7 @@ PanelWindow {
         target: Desktop
         function onQuickOpenChanged() {
             if (!Desktop.quickOpen) return;
+            Desktop.takeKeys();
             win.page = "";
             win.askPsk = null;
             win.pskFailed = false;
@@ -86,8 +92,8 @@ PanelWindow {
     PwObjectTracker { objects: [win.sink, win.source] }
 
     // Scan for networks and devices only while their list is open.
-    Binding { when: win.wifi !== null; target: win.wifi; property: "scannerEnabled"; value: win.visible && win.page === "wifi" }
-    Binding { when: win.adapter !== null; target: win.adapter; property: "discovering"; value: win.visible && win.page === "bluetooth" }
+    Binding { when: win.wifi !== null; target: win.wifi; property: "scannerEnabled"; value: win.shownNow && win.page === "wifi" }
+    Binding { when: win.adapter !== null; target: win.adapter; property: "discovering"; value: win.shownNow && win.page === "bluetooth" }
 
     // Screen brightness through brightnessctl (it goes through logind, so no root needed).
     property int brightness: -1
@@ -100,6 +106,7 @@ PanelWindow {
 
     // The backdrop: dims as the sheet comes up, and follows a drag.
     Rectangle {
+        visible: win.shownNow
         anchors.fill: parent
         color: Theme.alpha(Theme.night, 0.3)
         opacity: Math.max(0, 1 - Math.abs(panel.y) / sheet.closed)
@@ -113,6 +120,7 @@ PanelWindow {
     // The sheet slides inside this, so it disappears below its resting place, not over the bar.
     Item {
         id: sheet
+        visible: win.shownNow
         readonly property real closed: panel.height + 24
         anchors.right: parent.right
         anchors.rightMargin: Theme.panelGap
