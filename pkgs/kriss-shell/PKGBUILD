@@ -1,6 +1,6 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-shell
-pkgver=0.2.19
+pkgver=0.2.20
 pkgrel=1
 pkgdesc='KrissOS Shell: bar, launcher, quick settings, notifications and lock screen on cosmic-comp'
 arch=('any')
