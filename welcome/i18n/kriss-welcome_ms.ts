@@ -92,13 +92,13 @@
         <translation>Pasang %1?</translation>
     </message>
     <message>
-        <location filename="../qml/AppsPage.qml" line="37"/>
-        <source>KrissOS will install it from Flathub. You may be asked for your password.
+        <location filename="../qml/AppsPage.qml" line="46"/>
+        <source>KrissOS will take a snapshot first and install it from Flathub. You may be asked for your password.
 
-Runs: flatpak install flathub %1</source>
-        <translation>KrissOS akan memasangnya dari Flathub. Anda mungkin diminta kata laluan.
+Runs: kriss install --yes --flatpak %1</source>
+        <translation>KrissOS akan mengambil snapshot dahulu dan memasangnya dari Flathub. Anda mungkin diminta kata laluan.
 
-Arahan: flatpak install flathub %1</translation>
+Arahan: kriss install --yes --flatpak %1</translation>
     </message>
     <message>
         <location filename="../qml/AppsPage.qml" line="47"/>
@@ -341,6 +341,16 @@ Menjalankan: kriss winapps office</translation>
         <location filename="../qml/CopyPage.qml" line="130"/>
         <source>Copy to KrissOS</source>
         <translation>Salin ke KrissOS</translation>
+    </message>
+    <message>
+        <location filename="../qml/CopyPage.qml" line="164"/>
+        <source>Back</source>
+        <translation>Kembali</translation>
+    </message>
+    <message>
+        <location filename="../qml/CopyPage.qml" line="219"/>
+        <source>Try again</source>
+        <translation>Cuba lagi</translation>
     </message>
     <message>
         <location filename="../qml/CopyPage.qml" line="140"/>

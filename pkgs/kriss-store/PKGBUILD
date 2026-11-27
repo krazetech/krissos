@@ -1,6 +1,6 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-store
-pkgver=0.1.1
+pkgver=0.1.2
 pkgrel=1
 pkgdesc='KrissOS Store: find, install, update and remove apps from Flathub and KrissOS'
 arch=('any')

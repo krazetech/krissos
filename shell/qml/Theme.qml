@@ -185,10 +185,12 @@ Singleton {
         interval: 50
         onTriggered: Quickshell.execDetached(["sh", "-c",
             '[ "$3" = system ] || gsettings set org.gnome.desktop.interface color-scheme "$1"; ' +
+            'q="${XDG_CONFIG_HOME:-$HOME/.config}/qt6ct/qt6ct.conf"; ' +
+            '[ -f "$q" ] && sed -i "s|^color_scheme_path=/usr/share/qt6ct/colors/kriss.*|color_scheme_path=/usr/share/qt6ct/colors/$4|" "$q"; ' +
             'd="${XDG_CONFIG_HOME:-$HOME/.config}/cosmic/com.system76.CosmicTheme.Mode/v1"; mkdir -p "$d" || exit; ' +
             '[ "$(cat "$d/auto_switch" 2>/dev/null)" = false ] || { printf false > "$d/.auto_switch.new" && mv -f "$d/.auto_switch.new" "$d/auto_switch"; }; ' +
             '[ "$(cat "$d/is_dark" 2>/dev/null)" = "$2" ] || { printf %s "$2" > "$d/.is_dark.new" && mv -f "$d/.is_dark.new" "$d/is_dark"; }',
-            "sh", root.dark ? "prefer-dark" : "default", root.dark ? "true" : "false", root.mode])
+            "sh", root.dark ? "prefer-dark" : "default", root.dark ? "true" : "false", root.mode, root.dark ? "kriss.conf" : "kriss-light.conf"])
     }
     onDarkChanged: syncMode()
     onModeChanged: syncMode()

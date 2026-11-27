@@ -99,11 +99,9 @@ PanelWindow {
     readonly property int thumbH: Math.round(thumbW * 0.6)
     readonly property int cardH: thumbH + 48
 
-    // Capture exactly the windows on show, at their size on this screen; nothing when hidden.
-    // ponytail: one capture list for all screens; moving straight from one screen's previews
-    // to another's can leave the second without pictures until its next change.
+    // Capture the windows on show on this screen; Windows.capture merges across screens and Task View.
     readonly property string capturing: open ? Math.ceil(thumbW * (screen?.devicePixelRatio ?? 1)) + " " + wins.map(w => w.id).join(" ") : ""
-    onCapturingChanged: Windows.capture(open ? wins.map(w => w.id) : [], open ? Math.ceil(thumbW * (screen?.devicePixelRatio ?? 1)) : 0)
+    onCapturingChanged: Windows.capture(open ? wins.map(w => w.id) : [], open ? Math.ceil(thumbW * (screen?.devicePixelRatio ?? 1)) : 0, "previews:" + (screen?.name ?? ""))
 
     visible: open || panel.opacity > 0
     WlrLayershell.layer: WlrLayer.Top

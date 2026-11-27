@@ -178,6 +178,21 @@ heading must match the tag exactly (`## 110-rc1`, `## 110`).
 
 ### Fixed
 
+- Steam, the gaming pack and 32-bit NVIDIA drivers now install straight away on a fresh
+  KrissOS install (`[multilib]` is turned on out of the box), and installing an app online
+  before your first update refreshes out-of-date package lists instead of saying you are
+  offline.
+- **Update now** in Settings > Updates (and `kriss update` in a terminal) now asks for your
+  password in the terminal instead of closing right away.
+- Putting a laptop to sleep waits briefly for the lock screen to cover the desktop first,
+  and `Windows+X` opens the menu in the Mac layout too.
+- Switching to Bahasa Melayu in Settings > Time and language works even when KrissOS was
+  installed in English, the Store follows the light theme as well as dark, and KrissOS
+  Welcome takes a snapshot before installing apps and lets you go back if a Windows folder
+  copy runs out of space.
+- The lock screen's depth effect works on your own photos out of the box, Storage shows the
+  right size for USB drives whose name has a space, and `kriss report` handles Wi-Fi names
+  with brackets.
 - Notification pop-ups and the notification center open smoothly again with a long
   notification history, and Start, quick settings and the calendar open without a slow
   first frame.

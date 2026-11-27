@@ -167,7 +167,7 @@ Scope {
     property int thumbPx: 0
     readonly property var offered: assisting ? Windows.byRecent.filter(w => w.output === assistScreen && placed.indexOf(w.id) < 0) : []
     readonly property string captureKey: assisting ? thumbPx + " " + offered.map(w => w.id).join(" ") : ""
-    onCaptureKeyChanged: Windows.capture(assisting ? offered.map(w => w.id) : [], assisting ? thumbPx : 0)
+    onCaptureKeyChanged: Windows.capture(assisting ? offered.map(w => w.id) : [], assisting ? thumbPx : 0, "snap")
     onOfferedChanged: if (assisting && offered.length === 0) closeAssist()
 
     Variants {

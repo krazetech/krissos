@@ -18,17 +18,18 @@ Column {
     Process {
         id: df
         running: true
-        command: ["df", "-B1", "--output=source,target,size,used,avail", "-x", "tmpfs", "-x", "devtmpfs", "-x", "efivarfs", "-x", "overlay", "-x", "squashfs"]
+        command: ["df", "-B1", "--output=source,size,used,avail,target", "-x", "tmpfs", "-x", "devtmpfs", "-x", "efivarfs", "-x", "overlay", "-x", "squashfs"]
         stdout: StdioCollector {
             onStreamFinished: {
                 const seen = {}, out = [];
                 for (const l of text.trim().split("\n").slice(1)) {
-                    const f = l.trim().split(/\s+/);
-                    const src = f[0].replace(/\[.*\]$/, "");
+                    const m = /^(\S+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(.+)$/.exec(l.trim());
+                    if (!m) continue;
+                    const src = m[1].replace(/\[.*\]$/, ""), target = m[5];
                     // The small boot partitions are not for files.
-                    if (f.length < 5 || !src.startsWith("/dev/") || seen[src] || /^\/(boot|efi)(\/|$)/.test(f[1])) continue;
+                    if (!src.startsWith("/dev/") || seen[src] || /^\/(boot|efi)(\/|$)/.test(target)) continue;
                     seen[src] = true;
-                    out.push({ source: src, target: f[1], size: +f[2], used: +f[3], free: +f[4] });
+                    out.push({ source: src, target: target, size: +m[2], used: +m[3], free: +m[4] });
                 }
                 // The system drive first.
                 page.drives = out.sort((a, b) => (b.target === "/") - (a.target === "/"));

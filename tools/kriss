@@ -4,7 +4,7 @@
 # kriss: KrissOS system tool.
 set -euo pipefail
 
-readonly KRISS_VERSION="0.5.3"
+readonly KRISS_VERSION="0.10.2"
 readonly OS_RELEASE="${KRISS_OS_RELEASE:-/etc/os-release}"
 # Overridable so tests can point hwcheck and winapps at fixture trees.
 readonly PROC="${KRISS_PROC:-/proc}" SYS="${KRISS_SYS:-/sys}" DEV="${KRISS_DEV:-/dev}" ETC="${KRISS_ETC:-/etc}"
@@ -304,7 +304,10 @@ add_new_defaults() {
 }
 
 cmd_update() {
-  ((EUID == 0)) || die "update needs root. Run: pkexec kriss update"
+  if ((EUID != 0)); then
+    [[ -t 0 ]] || die "update needs root. Run: pkexec kriss update"
+    exec sudo "$0" update
+  fi
   snapshot 'before kriss update'
   update_system
   replace_from_kriss
@@ -586,8 +589,8 @@ report_scrub() {
   local script='' w
   while IFS= read -r w; do
     ((${#w} >= 3)) || continue
-    case $w in root | none | unknown | localhost | /home | /root) continue ;; esac
-    script+="s/$(printf '%s' "$w" | sed 's/[][\.*^$/&]/\\&/g')/[removed]/g;"
+    case $w in root | none | unknown | localhost | krissos | KrissOS | /home | /root) continue ;; esac
+    script+="s/$(printf '%s' "$w" | sed 's/[][\.^$*+?(){}|/&]/\\&/g')/[removed]/g;"
   done < <(report_secrets | sort -u | awk '{ print length, $0 }' | sort -rn | cut -d' ' -f2-)
   sed -E "${script}"'s/([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}/[mac]/g; s/[0-9]{1,3}(\.[0-9]{1,3}){3}/[ip]/g; s/[[:alnum:]._%+-]+@[[:alnum:].-]+\.[a-z]{2,}/[email]/g'
 }
@@ -1171,7 +1174,10 @@ cmd_install() {
     shift
   done
   (($#)) || die "install what? Example: kriss install spotify. Find names with: kriss search WORDS"
-  ((EUID == 0)) || exec sudo "$0" install ${only:+"$only"} "$@"
+  ((EUID == 0)) || exec sudo "$0" install ${YES:+--yes} ${only:+"$only"} "$@"
+  if [[ -z ${KRISS_AUR_URL:-} && ! -f /var/lib/pacman/sync/core.db ]]; then
+    pacman -Sy >/dev/null 2>&1 || true
+  fi
   local repo=() flat=() aur=()
   for n; do
     if [[ $only != --flatpak && $only != --aur ]] && pacman -Si -- "$n" >/dev/null 2>&1; then repo+=("$n")
@@ -1194,7 +1200,7 @@ cmd_install() {
   fi
 
   # The plan: what, from where, how big, and how to undo it.
-  local rows="" f r s l total=0 extra=0 missing=() want=()
+  local rows="" f r s l total=0 extra=0 missing=() want=() stale_db=0 curl_rc=0
   want=("${repo[@]}" "${AUR_REPO_DEPS[@]}")
   if ((${#want[@]})); then
     rows=$(pacman -Sp --needed --print-format $'%n\t%r\t%s\t%l\t%f' -- "${want[@]}") ||
@@ -1229,8 +1235,13 @@ cmd_install() {
   done <<<"$rows"
   ((extra == 0)) || printf '  plus %d packages they need from the repos\n' "$extra"
   ((total == 0)) || printf 'Download: %s\n' "$(human "$total")"
-  if ((${#missing[@]})) && ! curl -fsIo /dev/null --max-time 5 "${missing[0]}"; then
-    die "this PC is offline, and ${#missing[@]} of these packages are not downloaded yet. Connect to the internet and try again. Nothing was changed."
+  if ((${#missing[@]})); then
+    curl -fsIo /dev/null --max-time 5 "${missing[0]}" || curl_rc=$?
+    if ((curl_rc == 22)); then
+      stale_db=1
+    elif ((curl_rc != 0)); then
+      die "this PC is offline, and ${#missing[@]} of these packages are not downloaded yet. Connect to the internet and try again. Nothing was changed."
+    fi
   fi
   ! has_snapper || echo "A snapshot is taken first."
   echo "To undo: kriss remove $*, or kriss rollback from the boot menu's KrissOS > Snapshots."
@@ -1239,7 +1250,11 @@ cmd_install() {
   # snap-pac snapshots pacman runs; Flatpak apps live on the root subvolume too, so snapshot them.
   ((${#flat[@]} == 0)) || snapshot "before kriss install ${flat[*]}"
   if ((${#repo[@]})); then
-    pacman -S --needed --noconfirm -- "${repo[@]}" || die "installing ${repo[*]} failed (see above)."
+    if ((stale_db)); then
+      pacman -Syu --needed --noconfirm -- "${repo[@]}" || die "installing ${repo[*]} failed (see above)."
+    else
+      pacman -S --needed --noconfirm -- "${repo[@]}" || die "installing ${repo[*]} failed (see above)."
+    fi
   fi
   if ((${#flat[@]})); then
     flatpak install --noninteractive flathub "${flat[@]}" || die "installing ${flat[*]} from Flathub failed (see above)."
@@ -1251,7 +1266,7 @@ cmd_install() {
 cmd_remove() {
   [[ ${1:-} != --yes ]] || { YES=1; shift; }
   (($#)) || die "remove what? Example: kriss remove spotify"
-  ((EUID == 0)) || exec sudo "$0" remove "$@"
+  ((EUID == 0)) || exec sudo "$0" remove ${YES:+--yes} "$@"
   local n id pac=() flat=() also
   for n; do
     if pacman -Q -- "$n" >/dev/null 2>&1; then pac+=("$n")

@@ -20,7 +20,7 @@ Scope {
     readonly property var capturing: open ? panes.instances.reduce((a, p) => a.concat(p.wins.map(w => w.id)), []) : []
     readonly property int capturePx: open ? Math.max(0, ...panes.instances.map(p => p.thumbPx)) : 0
     readonly property string captureKey: capturePx + " " + capturing.join(" ")
-    onCaptureKeyChanged: Windows.capture(capturing, capturePx)
+    onCaptureKeyChanged: Windows.capture(capturing, capturePx, "taskview")
 
     // Cards for these aspect ratios (width / height of the picture) in rows of one height
     // inside w × h, each with a `head` tall title above it: the row count that gives the

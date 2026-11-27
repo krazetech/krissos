@@ -121,12 +121,16 @@ def main(src, dst):
     # XDG_DATA_DIRS (calamares -X) when the live session is light: Calamares loads one
     # stylesheet.qss and cannot switch it.
     lt = light(tokens)
+    lvals = variants({**lt, **ui(lt, False)})
     branding = "usr/share/calamares/branding/krissos"
     for f in sorted((src / branding).rglob("*")):
         if f.is_file():
             out = dst / "usr/share/kriss-theme/calamares-light/calamares/branding/krissos" / f.relative_to(src / branding)
             out.parent.mkdir(parents=True, exist_ok=True)
-            out.write_text(render(f.read_text(), variants({**lt, **ui(lt, False)})))
+            out.write_text(render(f.read_text(), lvals))
+    qt6 = src / "usr/share/qt6ct/colors/kriss.conf"
+    if qt6.is_file():
+        (dst / "usr/share/qt6ct/colors/kriss-light.conf").write_text(render(qt6.read_text(), lvals))
 
 
 PLYMOUTH_SIZES = (256, 512)  # the script picks the smallest one at least as big as the logo
