@@ -1,4 +1,4 @@
-Origin: https://github.com/CachyOS/linux tag cachyos-7.3.4-1, commit 2c228e50f4a7d7c7d935cac43c0f944ae3bcb309 (Merge branch '7.3/t2' into 7.3/base-dev)
+Origin: https://github.com/CachyOS/linux tag cachyos-7.3.6-3, commit 30d48bda863c9c1506034126aaf3039a13409590 (Merge branch '7.3/t2' into 7.3/base-dev)
 Squashed diff of the upstream commits below; their headers are unmodified.
 
 commit 8ca5749a781f1b5a0c54436eb77f21e6f45e5d8b
@@ -982,7 +982,7 @@ index b0952d066..8c7a942ad 100644
  
  	/* Binary search to find index of first SMC key bigger or equal to key */
 diff --git a/drivers/gpu/drm/amd/amdgpu/amdgpu_discovery.c b/drivers/gpu/drm/amd/amdgpu/amdgpu_discovery.c
-index 7ab2ad2c5..bb672a923 100644
+index 6d9a3e3b3..51346b829 100644
 --- a/drivers/gpu/drm/amd/amdgpu/amdgpu_discovery.c
 +++ b/drivers/gpu/drm/amd/amdgpu/amdgpu_discovery.c
 @@ -21,6 +21,7 @@
@@ -993,7 +993,7 @@ index 7ab2ad2c5..bb672a923 100644
  #include <linux/firmware.h>
  #include <linux/kernfs.h>
  
-@@ -3082,6 +3083,22 @@ static int amdgpu_discovery_set_isp_ip_blocks(struct amdgpu_device *adev)
+@@ -3118,6 +3119,22 @@ static int amdgpu_discovery_set_isp_ip_blocks(struct amdgpu_device *adev)
  	return 0;
  }
  
@@ -1016,7 +1016,7 @@ index 7ab2ad2c5..bb672a923 100644
  int amdgpu_discovery_set_ip_blocks(struct amdgpu_device *adev)
  {
  	int r;
-@@ -3679,15 +3696,23 @@ int amdgpu_discovery_set_ip_blocks(struct amdgpu_device *adev)
+@@ -3715,15 +3732,23 @@ int amdgpu_discovery_set_ip_blocks(struct amdgpu_device *adev)
  		}
  	}
  
@@ -1058,7 +1058,7 @@ index 94a733f0c..428cf0736 100644
  	    (pdev->class >> 8) == PCI_CLASS_DISPLAY_OTHER) {
  		if (drm_firmware_drivers_only() && amdgpu_modeset == -1)
 diff --git a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c
-index 4b35de53e..3a46a592c 100644
+index fc7cf1403..53dccc9bc 100644
 --- a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c
 +++ b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm.c
 @@ -617,6 +617,8 @@ static int amdgpu_dm_init(struct amdgpu_device *adev)
@@ -1082,7 +1082,7 @@ index 4b35de53e..3a46a592c 100644
  		dm_gpureset_commit_state(dm->cached_dc_state, dm);
  
  		dm_gpureset_toggle_interrupts(adev, dm->cached_dc_state, true);
-@@ -2008,11 +2015,20 @@ static int dm_resume(struct amdgpu_ip_block *ip_block)
+@@ -2012,11 +2019,20 @@ static int dm_resume(struct amdgpu_ip_block *ip_block)
  		if (!dc_link_detect_connection_type(aconnector->dc_link, &new_connection_type))
  			drm_err(adev_to_drm(adev), "KMS: Failed to detect connector\n");
  
@@ -1104,7 +1104,7 @@ index 4b35de53e..3a46a592c 100644
  			ret = dc_link_detect(aconnector->dc_link, DETECT_REASON_RESUMEFROMS3S4);
  			if (ret) {
  				/* w/a delay for certain panels */
-@@ -4624,6 +4640,25 @@ static void amdgpu_dm_commit_streams(struct drm_atomic_commit *state,
+@@ -4628,6 +4644,25 @@ static void amdgpu_dm_commit_streams(struct drm_atomic_commit *state,
  	dc_exit_ips_for_hw_access(dm->dc);
  	WARN_ON(!dc_commit_streams(dm->dc, &params));
  
@@ -1130,7 +1130,7 @@ index 4b35de53e..3a46a592c 100644
  	bool frl_stream_found = false;
  
  	for (i = 0; i < params.stream_count; i++) {
-@@ -5008,6 +5043,14 @@ STATIC_IFN_KUNIT void dm_enable_per_frame_crtc_master_sync(struct dc_state *cont
+@@ -5012,6 +5047,14 @@ STATIC_IFN_KUNIT void dm_enable_per_frame_crtc_master_sync(struct dc_state *cont
  		 */
  	}
  
@@ -1164,7 +1164,7 @@ index 20095d28b..5cadceae5 100644
  	 * @dpia_aux_lock:
  	 *
 diff --git a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_connector.c b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_connector.c
-index 11f1f223f..6a276b471 100644
+index f11164506..6f1f2a7bc 100644
 --- a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_connector.c
 +++ b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_connector.c
 @@ -125,6 +125,13 @@ STATIC_IFN_KUNIT int dm_encoder_helper_atomic_check(struct drm_encoder *encoder,
@@ -1254,10 +1254,10 @@ index 259966703..8657dd972 100644
  EXPORT_IF_KUNIT(retrieve_dmi_info);
  
 diff --git a/drivers/gpu/drm/amd/display/dc/core/dc_resource.c b/drivers/gpu/drm/amd/display/dc/core/dc_resource.c
-index fc9080f0c..4bf16f3a7 100644
+index 7fc0facc7..125e15406 100644
 --- a/drivers/gpu/drm/amd/display/dc/core/dc_resource.c
 +++ b/drivers/gpu/drm/amd/display/dc/core/dc_resource.c
-@@ -685,6 +685,14 @@ bool resource_are_streams_timing_synchronizable(
+@@ -689,6 +689,14 @@ bool resource_are_streams_timing_synchronizable(
  	struct dc_stream_state *stream1,
  	struct dc_stream_state *stream2)
  {
@@ -1286,10 +1286,10 @@ index 871063f80..022707594 100644
  
  enum visual_confirm {
 diff --git a/drivers/gpu/drm/amd/display/dc/hwss/dcn10/dcn10_hwseq.c b/drivers/gpu/drm/amd/display/dc/hwss/dcn10/dcn10_hwseq.c
-index 097e4ac2d..0c9784dbb 100644
+index a2322e884..711257ea7 100644
 --- a/drivers/gpu/drm/amd/display/dc/hwss/dcn10/dcn10_hwseq.c
 +++ b/drivers/gpu/drm/amd/display/dc/hwss/dcn10/dcn10_hwseq.c
-@@ -2675,15 +2675,21 @@ void dcn10_enable_per_frame_crtc_position_reset(
+@@ -2674,15 +2674,21 @@ void dcn10_enable_per_frame_crtc_position_reset(
  	struct pipe_ctx *grouped_pipes[])
  {
  	int i;
@@ -1356,7 +1356,7 @@ index f0b2e7da6..5067f5438 100644
  	    feature->feature_num < SMU_FEATURE_NUM_DEFAULT) {
  		ret = -EINVAL;
 diff --git a/drivers/gpu/drm/i915/display/intel_ddi.c b/drivers/gpu/drm/i915/display/intel_ddi.c
-index 02a53c984..508e84dbd 100644
+index 8de6e13cf..e53eee15b 100644
 --- a/drivers/gpu/drm/i915/display/intel_ddi.c
 +++ b/drivers/gpu/drm/i915/display/intel_ddi.c
 @@ -4970,6 +4970,9 @@ static bool intel_ddi_a_force_4_lanes(struct intel_digital_port *dig_port)
@@ -1386,7 +1386,7 @@ index db0e36dd8..2de403417 100644
  		return false;
  	}
 diff --git a/drivers/gpu/drm/i915/display/intel_quirks.c b/drivers/gpu/drm/i915/display/intel_quirks.c
-index 7d7db774d..99e19866d 100644
+index 96eb9a40d..07150dea6 100644
 --- a/drivers/gpu/drm/i915/display/intel_quirks.c
 +++ b/drivers/gpu/drm/i915/display/intel_quirks.c
 @@ -66,6 +66,18 @@ static void quirk_increase_ddi_disabled_time(struct intel_display *display)
@@ -1408,7 +1408,7 @@ index 7d7db774d..99e19866d 100644
  static void quirk_no_pps_backlight_power_hook(struct intel_display *display)
  {
  	intel_set_quirk(display, QUIRK_NO_PPS_BACKLIGHT_POWER_HOOK);
-@@ -262,6 +274,9 @@ static struct intel_quirk intel_quirks[] = {
+@@ -270,6 +282,9 @@ static struct intel_quirk intel_quirks[] = {
  
  	/* Xiaomi Book Pro 14 2026 */
  	{ 0xb081, 0x1d72, 0x2424, quirk_disable_psr2 },
@@ -1419,88 +1419,17 @@ index 7d7db774d..99e19866d 100644
  
  static const struct intel_dpcd_quirk intel_dpcd_quirks[] = {
 diff --git a/drivers/gpu/drm/i915/display/intel_quirks.h b/drivers/gpu/drm/i915/display/intel_quirks.h
-index 970a4fe52..d2b8e9183 100644
+index 4996419ae..52df2d749 100644
 --- a/drivers/gpu/drm/i915/display/intel_quirks.h
 +++ b/drivers/gpu/drm/i915/display/intel_quirks.h
-@@ -23,6 +23,7 @@ enum intel_quirk_id {
- 	QUIRK_EDP_LIMIT_RATE_HBR2,
+@@ -24,6 +24,7 @@ enum intel_quirk_id {
  	QUIRK_DISABLE_EDP_PANEL_REPLAY,
  	QUIRK_DISABLE_PSR2,
+ 	QUIRK_ENABLE_DPCD_BACKLIGHT,
 +	QUIRK_DDI_A_FORCE_4_LANES,
  };
  
  void intel_init_quirks(struct intel_display *display);
-diff --git a/drivers/gpu/drm/tiny/appletbdrm.c b/drivers/gpu/drm/tiny/appletbdrm.c
-index ef71b9957..9a5288acb 100644
---- a/drivers/gpu/drm/tiny/appletbdrm.c
-+++ b/drivers/gpu/drm/tiny/appletbdrm.c
-@@ -30,6 +30,7 @@
- #include <drm/drm_gem_atomic_helper.h>
- #include <drm/drm_gem_framebuffer_helper.h>
- #include <drm/drm_gem_shmem_helper.h>
-+#include <drm/drm_modeset_helper.h>
- #include <drm/drm_plane.h>
- #include <drm/drm_print.h>
- #include <drm/drm_probe_helper.h>
-@@ -821,6 +822,48 @@ static void appletbdrm_shutdown(struct usb_interface *intf)
- 	drm_atomic_helper_shutdown(&adev->drm);
- }
- 
-+static int appletbdrm_suspend(struct usb_interface *intf, pm_message_t message)
-+{
-+	struct appletbdrm_device *adev = usb_get_intfdata(intf);
-+
-+	return drm_mode_config_helper_suspend(&adev->drm);
-+}
-+
-+static int appletbdrm_resume(struct usb_interface *intf)
-+{
-+	struct appletbdrm_device *adev = usb_get_intfdata(intf);
-+
-+	return drm_mode_config_helper_resume(&adev->drm);
-+}
-+
-+static int appletbdrm_reset_resume(struct usb_interface *intf)
-+{
-+	struct appletbdrm_device *adev = usb_get_intfdata(intf);
-+	struct drm_device *drm = &adev->drm;
-+	int ret, resume_ret;
-+
-+	/*
-+	 * A reset puts the device back into its initial state, where it
-+	 * expects the same handshake as during probe. Resume the DRM side
-+	 * even if the handshake fails, so that the state saved on suspend
-+	 * is released.
-+	 */
-+	ret = appletbdrm_get_information(adev);
-+	if (ret) {
-+		drm_err(drm, "Failed to get display information\n");
-+		goto resume;
-+	}
-+
-+	ret = appletbdrm_signal_readiness(adev);
-+	if (ret)
-+		drm_err(drm, "Failed to signal readiness\n");
-+
-+resume:
-+	resume_ret = drm_mode_config_helper_resume(drm);
-+
-+	return ret ? ret : resume_ret;
-+}
-+
- static const struct usb_device_id appletbdrm_usb_id_table[] = {
- 	{ USB_DEVICE_INTERFACE_CLASS(0x05ac, 0x8302, USB_CLASS_AUDIO_VIDEO) },
- 	{}
-@@ -832,6 +875,9 @@ static struct usb_driver appletbdrm_usb_driver = {
- 	.probe		= appletbdrm_probe,
- 	.disconnect	= appletbdrm_disconnect,
- 	.shutdown	= appletbdrm_shutdown,
-+	.suspend	= appletbdrm_suspend,
-+	.resume		= appletbdrm_resume,
-+	.reset_resume	= appletbdrm_reset_resume,
- 	.id_table	= appletbdrm_usb_id_table,
- };
- module_usb_driver(appletbdrm_usb_driver);
 diff --git a/drivers/gpu/vga/vga_switcheroo.c b/drivers/gpu/vga/vga_switcheroo.c
 index 22cf52b78..fb0b0deba 100644
 --- a/drivers/gpu/vga/vga_switcheroo.c
@@ -3117,7 +3046,7 @@ index a71ddaa81..3ebcde5e1 100644
  		bus = "VIRTUAL";
  		break;
 diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 3b19b742d..daa8b18e1 100644
+index 042421c83..30122c84e 100644
 --- a/drivers/hid/hid-ids.h
 +++ b/drivers/hid/hid-ids.h
 @@ -96,6 +96,8 @@
@@ -3145,7 +3074,7 @@ index 3b19b742d..daa8b18e1 100644
  #define USB_VENDOR_ID_ASETEK			0x2433
  #define USB_DEVICE_ID_ASETEK_INVICTA		0xf300
 diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
-index d637c0477..4ee2ce7ef 100644
+index e6d4d4930..791493754 100644
 --- a/drivers/hid/hid-magicmouse.c
 +++ b/drivers/hid/hid-magicmouse.c
 @@ -60,8 +60,14 @@ MODULE_PARM_DESC(report_undeciphered, "Report undeciphered multi-touch state fie
@@ -3672,7 +3601,7 @@ index d637c0477..4ee2ce7ef 100644
  }
  
  static int magicmouse_event(struct hid_device *hdev, struct hid_field *field,
-@@ -567,7 +979,24 @@ static int magicmouse_event(struct hid_device *hdev, struct hid_field *field,
+@@ -571,7 +983,24 @@ static int magicmouse_event(struct hid_device *hdev, struct hid_field *field,
  	return 0;
  }
  
@@ -3698,7 +3627,7 @@ index d637c0477..4ee2ce7ef 100644
  {
  	int error;
  	int mt_flags = 0;
-@@ -646,7 +1075,7 @@ static int magicmouse_setup_input(struct input_dev *input, struct hid_device *hd
+@@ -650,7 +1079,7 @@ static int magicmouse_setup_input(struct input_dev *input, struct hid_device *hd
  
  	__set_bit(EV_ABS, input->evbit);
  
@@ -3707,7 +3636,7 @@ index d637c0477..4ee2ce7ef 100644
  	if (error)
  		return error;
  	input_set_abs_params(input, ABS_MT_TOUCH_MAJOR, 0, 255 << 2,
-@@ -726,6 +1155,171 @@ static int magicmouse_setup_input(struct input_dev *input, struct hid_device *hd
+@@ -730,6 +1159,171 @@ static int magicmouse_setup_input(struct input_dev *input, struct hid_device *hd
  	 */
  	__clear_bit(EV_REP, input->evbit);
  
@@ -3879,7 +3808,7 @@ index d637c0477..4ee2ce7ef 100644
  	return 0;
  }
  
-@@ -784,14 +1378,27 @@ static int magicmouse_enable_multitouch(struct hid_device *hdev)
+@@ -788,14 +1382,27 @@ static int magicmouse_enable_multitouch(struct hid_device *hdev)
  	int feature_size;
  
  	switch (hdev->product) {
@@ -3908,7 +3837,7 @@ index d637c0477..4ee2ce7ef 100644
  			feature_size = sizeof(feature_mt_trackpad2_usb);
  			feature = feature_mt_trackpad2_usb;
  		}
-@@ -897,12 +1504,62 @@ static int magicmouse_probe(struct hid_device *hdev,
+@@ -901,12 +1508,62 @@ static int magicmouse_probe(struct hid_device *hdev,
  	struct hid_report *report;
  	int ret;
  
@@ -3971,7 +3900,7 @@ index d637c0477..4ee2ce7ef 100644
  	msc->scroll_accel = SCROLL_ACCEL_DEFAULT;
  	msc->hdev = hdev;
  	INIT_DEFERRABLE_WORK(&msc->work, magicmouse_enable_mt_work);
-@@ -961,6 +1618,15 @@ static int magicmouse_probe(struct hid_device *hdev,
+@@ -965,6 +1622,15 @@ static int magicmouse_probe(struct hid_device *hdev,
  		break;
  	case USB_DEVICE_ID_APPLE_MAGICTRACKPAD2:
  	case USB_DEVICE_ID_APPLE_MAGICTRACKPAD2_USBC:
@@ -3987,7 +3916,7 @@ index d637c0477..4ee2ce7ef 100644
  		switch (id->vendor) {
  		case BT_VENDOR_ID_APPLE:
  			report = hid_register_report(hdev, HID_INPUT_REPORT,
-@@ -971,11 +1637,20 @@ static int magicmouse_probe(struct hid_device *hdev,
+@@ -975,11 +1641,20 @@ static int magicmouse_probe(struct hid_device *hdev,
  				TRACKPAD2_USB_REPORT_ID, 0);
  		}
  		break;
@@ -4013,7 +3942,7 @@ index d637c0477..4ee2ce7ef 100644
  	}
  
  	if (!report) {
-@@ -985,22 +1660,14 @@ static int magicmouse_probe(struct hid_device *hdev,
+@@ -989,22 +1664,14 @@ static int magicmouse_probe(struct hid_device *hdev,
  	}
  	report->size = 6;
  
@@ -4044,7 +3973,7 @@ index d637c0477..4ee2ce7ef 100644
  	}
  
  	/*
-@@ -1046,7 +1713,7 @@ static int magicmouse_reset_resume(struct hid_device *hdev)
+@@ -1050,7 +1717,7 @@ static int magicmouse_reset_resume(struct hid_device *hdev)
  	 * enable report.  Only the HID_TYPE_USBMOUSE interface accepts it, and
  	 * it must be deferred. Sending it inline here is too early.
  	 */
@@ -4053,7 +3982,7 @@ index d637c0477..4ee2ce7ef 100644
  		schedule_delayed_work(&msc->work, msecs_to_jiffies(500));
  
  	return 0;
-@@ -1102,6 +1769,28 @@ static const struct hid_device_id magic_mice[] = {
+@@ -1106,6 +1773,28 @@ static const struct hid_device_id magic_mice[] = {
  		USB_DEVICE_ID_APPLE_MAGICTRACKPAD2_USBC), .driver_data = 0 },
  	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE,
  		USB_DEVICE_ID_APPLE_MAGICTRACKPAD2_USBC), .driver_data = 0 },
@@ -9649,10 +9578,10 @@ index ef735f863..6f8460007 100644
  MODULE_AUTHOR("Michael Reeves <michael.reeves077@gmail.com>");
 +MODULE_ALIAS("platform:macsmc-power");
 diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index 05b9233b9..8cc27891b 100644
+index dcf9bdaea..49d92b33e 100644
 --- a/drivers/rtc/Kconfig
 +++ b/drivers/rtc/Kconfig
-@@ -2096,7 +2096,7 @@ config RTC_DRV_WILCO_EC
+@@ -2117,7 +2117,7 @@ config RTC_DRV_WILCO_EC
  
  config RTC_DRV_MACSMC
  	tristate "Apple Mac System Management Controller RTC"
@@ -24108,10 +24037,10 @@ index 000000000..0b7093935
 +#endif
 +#endif
 diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
-index 03b805207..b35bf30b8 100644
+index 3288f92fe..0a6573715 100644
 --- a/net/bluetooth/hci_event.c
 +++ b/net/bluetooth/hci_event.c
-@@ -6476,6 +6476,13 @@ static void hci_le_adv_report_evt(struct hci_dev *hdev, void *data,
+@@ -6526,6 +6526,13 @@ static void hci_le_adv_report_evt(struct hci_dev *hdev, void *data,
  
  		hci_store_wake_reason(hdev, &info->bdaddr, info->bdaddr_type);
  

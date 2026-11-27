@@ -1,4 +1,4 @@
-Origin: https://github.com/CachyOS/linux tag cachyos-7.3.4-1, commit c99c04b747ef4d0dd72d6bf7ef18ecd9925486a6 (Merge branch '7.3/fixes' into 7.3/base-dev)
+Origin: https://github.com/CachyOS/linux tag cachyos-7.3.6-3, commit 92fa14c6714de7512664604d71be21e0fbdce609 (Merge branch '7.3/fixes' into 7.3/base-dev)
 Squashed diff of the upstream commits below; their headers are unmodified.
 
 commit c90c777f9f7ce867fe7154aa9cfd4ebec7fc8292
@@ -751,6 +751,20 @@ Date:   Wed Oct 21 22:52:38 2026 +0530
     Signed-off-by: Johannes Berg <johannes.berg@intel.com>
     (cherry picked from commit 7ed5dce55fa8393972b1bf2bf5af1c818c5e7dc2)
 
+commit 5aec130e7f6b0036ec93953765e0a8477845610a
+Author: M0n7y5 <17201053+M0n7y5@users.noreply.github.com>
+Date:   Sat Nov 14 15:58:52 2026 +0100
+
+    HID: playstation: Ignore DualSense Bluetooth audio reports as input
+    
+    Over Bluetooth, input report 0x31 carries controller state or microphone
+    audio, told apart by the low nibble of the byte after the report ID.
+    Audio reports were parsed as controller state, so enabling audio through
+    hidraw produced bogus button, stick and touchpad events. Skip them; they
+    still reach hidraw.
+    
+    Fixes: 799b2b533a29 ("HID: playstation: add DualSense Bluetooth support.")
+
 ---
 diff --git a/arch/arm/include/asm/mmu_context.h b/arch/arm/include/asm/mmu_context.h
 index db2cb06aa..bebde469f 100644
@@ -835,11 +849,11 @@ index 9edc08b86..9c6c26e2f 100644
  
  	if (cpu_has(c, X86_FEATURE_INVLPGB) &&
  	    !cpu_has(c, X86_FEATURE_TLBSYNC_SFW_NO))
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index ece1fd426..109013b43 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -587,6 +587,8 @@ static const struct usb_device_id quirks_table[] = {
+diff --git a/drivers/bluetooth/btusb_main.c b/drivers/bluetooth/btusb_main.c
+index 67b7271c9..be9889fda 100644
+--- a/drivers/bluetooth/btusb_main.c
++++ b/drivers/bluetooth/btusb_main.c
+@@ -586,6 +586,8 @@ static const struct usb_device_id quirks_table[] = {
  						     BTUSB_WIDEBAND_SPEECH },
  	{ USB_DEVICE(0x13d3, 0x3612), .driver_info = BTUSB_REALTEK |
  						     BTUSB_WIDEBAND_SPEECH },
@@ -848,7 +862,7 @@ index ece1fd426..109013b43 100644
  	{ USB_DEVICE(0x0489, 0xe122), .driver_info = BTUSB_REALTEK |
  						     BTUSB_WIDEBAND_SPEECH },
  
-@@ -717,6 +719,8 @@ static const struct usb_device_id quirks_table[] = {
+@@ -712,6 +714,8 @@ static const struct usb_device_id quirks_table[] = {
  	{ USB_DEVICE(0x13d3, 0x3596), .driver_info = BTUSB_MEDIATEK |
  						     BTUSB_WIDEBAND_SPEECH },
  	/* MediaTek MT7922 Bluetooth devices */
@@ -876,7 +890,7 @@ index 8141c3a1e..5c0065c87 100644
  	}
  
 diff --git a/drivers/gpu/drm/i915/display/intel_dp.c b/drivers/gpu/drm/i915/display/intel_dp.c
-index 3152122e6..26c4535e7 100644
+index d79b6367c..28cc65fd7 100644
 --- a/drivers/gpu/drm/i915/display/intel_dp.c
 +++ b/drivers/gpu/drm/i915/display/intel_dp.c
 @@ -4785,6 +4785,38 @@ intel_edp_set_sink_rates(struct intel_dp *intel_dp)
@@ -965,7 +979,7 @@ index e91e5cdca..a0361f823 100644
  		return false;
  
 diff --git a/drivers/hid/hid-logitech-hidpp.c b/drivers/hid/hid-logitech-hidpp.c
-index 9646380fe..4269ca8ba 100644
+index 27d83b8bb..7ff9217ce 100644
 --- a/drivers/hid/hid-logitech-hidpp.c
 +++ b/drivers/hid/hid-logitech-hidpp.c
 @@ -214,6 +214,8 @@ struct hidpp_device {
@@ -1029,6 +1043,31 @@ index 9646380fe..4269ca8ba 100644
  	/* Now export the actual inputs and hidraw nodes to the world */
  	hid_device_io_stop(hdev);
  	ret = hid_connect(hdev, connect_mask);
+diff --git a/drivers/hid/hid-playstation.c b/drivers/hid/hid-playstation.c
+index f9dc9378c..53c8ac236 100644
+--- a/drivers/hid/hid-playstation.c
++++ b/drivers/hid/hid-playstation.c
+@@ -82,6 +82,8 @@ struct ps_led_info {
+ #define DS_INPUT_REPORT_USB_SIZE		64
+ #define DS_INPUT_REPORT_BT			0x31
+ #define DS_INPUT_REPORT_BT_SIZE			78
++#define DS_INPUT_REPORT_BT_TYPE			GENMASK(3, 0)
++#define DS_INPUT_REPORT_BT_TYPE_AUDIO		0x2
+ #define DS_OUTPUT_REPORT_USB			0x02
+ #define DS_OUTPUT_REPORT_USB_SIZE		63
+ #define DS_OUTPUT_REPORT_BT			0x31
+@@ -1463,6 +1465,11 @@ static int dualsense_parse_report(struct ps_device *ps_dev, struct hid_report *r
+ 			return -EILSEQ;
+ 		}
+ 
++		/* Report 0x31 also carries microphone audio, which is not input. */
++		if (FIELD_GET(DS_INPUT_REPORT_BT_TYPE, data[1]) ==
++		    DS_INPUT_REPORT_BT_TYPE_AUDIO)
++			return 0;
++
+ 		ds_report = (struct dualsense_input_report *)&data[2];
+ 	} else {
+ 		hid_err(hdev, "Unhandled reportID=%d\n", report->id);
 diff --git a/drivers/i2c/i2c-core-acpi.c b/drivers/i2c/i2c-core-acpi.c
 index 37d1309e9..dffeec6bd 100644
 --- a/drivers/i2c/i2c-core-acpi.c
@@ -1041,19 +1080,6 @@ index 37d1309e9..dffeec6bd 100644
  	{ "DLL0945", 0 },
  	{ "ELAN0678", 0 },
  	{ "ELAN06FA", 0 },
-diff --git a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/msgbuf.c b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/msgbuf.c
-index 069ba7016..ff47d4827 100644
---- a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/msgbuf.c
-+++ b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/msgbuf.c
-@@ -1639,7 +1639,7 @@ int brcmf_proto_msgbuf_attach(struct brcmf_pub *drvr)
- 	if (!msgbuf->tx_pktids)
- 		goto fail;
- 	msgbuf->rx_pktids = brcmf_msgbuf_init_pktids(NR_RX_PKTIDS,
--						     DMA_FROM_DEVICE);
-+						     DMA_BIDIRECTIONAL);
- 	if (!msgbuf->rx_pktids)
- 		goto fail;
- 
 diff --git a/drivers/net/wireless/intel/iwlwifi/mld/mac80211.c b/drivers/net/wireless/intel/iwlwifi/mld/mac80211.c
 index 3a4c8fda6..a007acbe7 100644
 --- a/drivers/net/wireless/intel/iwlwifi/mld/mac80211.c
@@ -1114,10 +1140,10 @@ index 276768f47..2e1df746f 100644
  		dev_dbg(&dev->dev,
  			"wrong descriptor type %02x for string %d (\"%s\")\n",
 diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
-index 0404489c2..2b12a35e6 100644
+index ba158d63b..1363c3502 100644
 --- a/drivers/usb/host/pci-quirks.c
 +++ b/drivers/usb/host/pci-quirks.c
-@@ -1193,10 +1193,11 @@ static void quirk_usb_handoff_xhci(struct pci_dev *pdev)
+@@ -1194,10 +1194,11 @@ static void quirk_usb_handoff_xhci(struct pci_dev *pdev)
  			 && pdev->device == 0x0014)) {
  		val = (val | XHCI_HC_OS_OWNED) & ~XHCI_HC_BIOS_OWNED;
  		writel(val, base + ext_cap_offset);
@@ -1133,7 +1159,7 @@ index 0404489c2..2b12a35e6 100644
  		writel(val | XHCI_HC_OS_OWNED, base + ext_cap_offset);
  
  		/* Wait for 1 second with 10 microsecond polling interval */
-@@ -1208,7 +1209,9 @@ static void quirk_usb_handoff_xhci(struct pci_dev *pdev)
+@@ -1209,7 +1210,9 @@ static void quirk_usb_handoff_xhci(struct pci_dev *pdev)
  			dev_warn(&pdev->dev,
  				 "xHCI BIOS handoff failed (BIOS bug ?) %08x\n",
  				 val);
@@ -1300,10 +1326,10 @@ index 82825e775..ce83fc743 100644
  	if (vtime_accounting_enabled_this_cpu())
  		vtime_task_switch_generic(prev);
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 5d38537dd..7563d55d1 100644
+index 39f70dbae..4d080af10 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -5097,7 +5097,7 @@ static inline void prepare_task(struct task_struct *next)
+@@ -5101,7 +5101,7 @@ static inline void prepare_task(struct task_struct *next)
  	WRITE_ONCE(next->on_cpu, 1);
  }
  
@@ -1312,7 +1338,7 @@ index 5d38537dd..7563d55d1 100644
  {
  	/*
  	 * This must be the very last reference to @prev from this CPU. After
-@@ -5141,7 +5141,7 @@ static void zap_balance_callbacks(struct rq *rq)
+@@ -5145,7 +5145,7 @@ static void zap_balance_callbacks(struct rq *rq)
  	rq->balance_callback = found ? &balance_push_callback : NULL;
  }
  
@@ -1321,7 +1347,7 @@ index 5d38537dd..7563d55d1 100644
  {
  	void (*func)(struct rq *rq);
  	struct balance_callback *next;
-@@ -5176,7 +5176,7 @@ struct balance_callback balance_push_callback = {
+@@ -5180,7 +5180,7 @@ struct balance_callback balance_push_callback = {
  	.func = balance_push,
  };
  
@@ -1330,7 +1356,7 @@ index 5d38537dd..7563d55d1 100644
  __splice_balance_callbacks(struct rq *rq, bool split)
  {
  	struct balance_callback *head = rq->balance_callback;
-@@ -5250,7 +5250,7 @@ prepare_lock_switch(struct rq *rq, struct task_struct *next, struct rq_flags *rf
+@@ -5254,7 +5254,7 @@ prepare_lock_switch(struct rq *rq, struct task_struct *next, struct rq_flags *rf
  	__acquire(__rq_lockp(this_rq()));
  }
  
@@ -1339,7 +1365,7 @@ index 5d38537dd..7563d55d1 100644
  	__releases(__rq_lockp(rq))
  {
  	/*
-@@ -5284,7 +5284,7 @@ static inline void kmap_local_sched_out(void)
+@@ -5288,7 +5288,7 @@ static inline void kmap_local_sched_out(void)
  #endif
  }
  
@@ -1348,7 +1374,7 @@ index 5d38537dd..7563d55d1 100644
  {
  #ifdef CONFIG_KMAP_LOCAL
  	if (unlikely(current->kmap_ctrl.idx))
-@@ -5338,7 +5338,7 @@ prepare_task_switch(struct rq *rq, struct task_struct *prev,
+@@ -5342,7 +5342,7 @@ prepare_task_switch(struct rq *rq, struct task_struct *prev,
   * past. 'prev == current' is still correct but we need to recalculate this_rq
   * because prev may have moved to another CPU.
   */
@@ -1358,10 +1384,10 @@ index 5d38537dd..7563d55d1 100644
  {
  	struct rq *rq = this_rq();
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 9d657f70c..e413fdc70 100644
+index ff24bb7a0..75b98c118 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -13827,12 +13827,15 @@ redo:
+@@ -13835,12 +13835,15 @@ redo:
  		 * still unbalanced. ld_moved simply stays zero, so it is
  		 * correctly treated as an imbalance.
  		 */
@@ -1380,10 +1406,10 @@ index 9d657f70c..e413fdc70 100644
  		 * cur_ld_moved - load moved in current iteration
  		 * ld_moved     - cumulative load moved across iterations
 diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 87750d280..efd96e9ff 100644
+index 2bb50dad8..9fd7e1bc6 100644
 --- a/kernel/sched/sched.h
 +++ b/kernel/sched/sched.h
-@@ -1481,12 +1481,12 @@ static inline struct cpumask *sched_group_span(struct sched_group *sg);
+@@ -1483,12 +1483,12 @@ static inline struct cpumask *sched_group_span(struct sched_group *sg);
  
  DECLARE_STATIC_KEY_FALSE(__sched_core_enabled);
  
@@ -1398,7 +1424,7 @@ index 87750d280..efd96e9ff 100644
  {
  	return !static_branch_unlikely(&__sched_core_enabled);
  }
-@@ -1495,7 +1495,7 @@ static inline bool sched_core_disabled(void)
+@@ -1497,7 +1497,7 @@ static inline bool sched_core_disabled(void)
   * Be careful with this function; not for general use. The return value isn't
   * stable unless you actually hold a relevant rq->__lock.
   */
@@ -1407,7 +1433,7 @@ index 87750d280..efd96e9ff 100644
  {
  	if (sched_core_enabled(rq))
  		return &rq->core->__lock;
-@@ -1503,7 +1503,7 @@ static inline raw_spinlock_t *rq_lockp(struct rq *rq)
+@@ -1505,7 +1505,7 @@ static inline raw_spinlock_t *rq_lockp(struct rq *rq)
  	return &rq->__lock;
  }
  
@@ -1416,7 +1442,7 @@ index 87750d280..efd96e9ff 100644
  	__returns_ctx_lock(rq_lockp(rq)) /* alias them */
  {
  	if (rq->core_enabled)
-@@ -1606,12 +1606,12 @@ static inline bool sched_core_disabled(void)
+@@ -1608,12 +1608,12 @@ static inline bool sched_core_disabled(void)
  	return true;
  }
  
@@ -1431,7 +1457,7 @@ index 87750d280..efd96e9ff 100644
  	__returns_ctx_lock(rq_lockp(rq)) /* alias them */
  {
  	return &rq->__lock;
-@@ -1671,33 +1671,33 @@ extern void raw_spin_rq_lock_nested(struct rq *rq, int subclass)
+@@ -1673,33 +1673,33 @@ extern void raw_spin_rq_lock_nested(struct rq *rq, int subclass)
  extern bool raw_spin_rq_trylock(struct rq *rq)
  	__cond_acquires(true, __rq_lockp(rq));
  
@@ -1470,7 +1496,7 @@ index 87750d280..efd96e9ff 100644
  	__acquires(__rq_lockp(rq))
  {
  	unsigned long flags;
-@@ -1708,7 +1708,7 @@ static inline unsigned long _raw_spin_rq_lock_irqsave(struct rq *rq)
+@@ -1710,7 +1710,7 @@ static inline unsigned long _raw_spin_rq_lock_irqsave(struct rq *rq)
  	return flags;
  }
  
@@ -1480,7 +1506,7 @@ index 87750d280..efd96e9ff 100644
  {
  	raw_spin_rq_unlock(rq);
 diff --git a/mm/slub.c b/mm/slub.c
-index 544cff397..a0f0bdc1e 100644
+index 6bb75db08..41a66fc15 100644
 --- a/mm/slub.c
 +++ b/mm/slub.c
 @@ -422,6 +422,7 @@ struct node_barn {
@@ -1598,127 +1624,6 @@ index 544cff397..a0f0bdc1e 100644
  	gfp_nomemalloc = gfp | __GFP_NOMEMALLOC;
  	if (gfp_pfmemalloc_allowed(gfp))
  		gfp_nomemalloc |= __GFP_NOWARN;
-diff --git a/security/apparmor/match.c b/security/apparmor/match.c
-index ca30a4292..a3361d3db 100644
---- a/security/apparmor/match.c
-+++ b/security/apparmor/match.c
-@@ -613,7 +613,7 @@ aa_state_t aa_dfa_match_until(const struct aa_dfa *dfa, aa_state_t start,
- 	u32 *next = NEXT_TABLE(dfa);
- 	u32 *check = CHECK_TABLE(dfa);
- 	u32 *accept = ACCEPT_TABLE(dfa);
--	aa_state_t state = start, pos;
-+	aa_state_t state = start;
- 
- 	if (state == DFA_NOMATCH)
- 		return DFA_NOMATCH;
-@@ -624,22 +624,18 @@ aa_state_t aa_dfa_match_until(const struct aa_dfa *dfa, aa_state_t start,
- 		u8 *equiv = EQUIV_TABLE(dfa);
- 		/* default is direct to next state */
- 		while (*str) {
--			pos = base_idx(base[state]) + equiv[(u8) *str++];
--			if (check[pos] == state)
--				state = next[pos];
--			else
--				state = def[state];
-+			u8 c = equiv[(u8) *str++];
-+
-+			match_char(state, def, base, next, check, c);
- 			if (accept[state])
- 				break;
- 		}
- 	} else {
- 		/* default is direct to next state */
- 		while (*str) {
--			pos = base_idx(base[state]) + (u8) *str++;
--			if (check[pos] == state)
--				state = next[pos];
--			else
--				state = def[state];
-+			u8 c = (u8) *str++;
-+
-+			match_char(state, def, base, next, check, c);
- 			if (accept[state])
- 				break;
- 		}
-@@ -674,7 +670,7 @@ aa_state_t aa_dfa_matchn_until(const struct aa_dfa *dfa, aa_state_t start,
- 	u32 *next = NEXT_TABLE(dfa);
- 	u32 *check = CHECK_TABLE(dfa);
- 	u32 *accept = ACCEPT_TABLE(dfa);
--	aa_state_t state = start, pos;
-+	aa_state_t state = start;
- 
- 	*retpos = NULL;
- 	if (state == DFA_NOMATCH)
-@@ -686,22 +682,18 @@ aa_state_t aa_dfa_matchn_until(const struct aa_dfa *dfa, aa_state_t start,
- 		u8 *equiv = EQUIV_TABLE(dfa);
- 		/* default is direct to next state */
- 		for (; n; n--) {
--			pos = base_idx(base[state]) + equiv[(u8) *str++];
--			if (check[pos] == state)
--				state = next[pos];
--			else
--				state = def[state];
-+			u8 c = equiv[(u8) *str++];
-+
-+			match_char(state, def, base, next, check, c);
- 			if (accept[state])
- 				break;
- 		}
- 	} else {
- 		/* default is direct to next state */
- 		for (; n; n--) {
--			pos = base_idx(base[state]) + (u8) *str++;
--			if (check[pos] == state)
--				state = next[pos];
--			else
--				state = def[state];
-+			u8 c = (u8) *str++;
-+
-+			match_char(state, def, base, next, check, c);
- 			if (accept[state])
- 				break;
- 		}
-@@ -750,7 +742,7 @@ static aa_state_t leftmatch_fb(const struct aa_dfa *dfa, aa_state_t start,
- 	u32 *base = BASE_TABLE(dfa);
- 	u32 *next = NEXT_TABLE(dfa);
- 	u32 *check = CHECK_TABLE(dfa);
--	aa_state_t state = start, pos;
-+	aa_state_t state = start;
- 
- 	AA_BUG(!dfa);
- 	AA_BUG(!str);
-@@ -768,13 +760,10 @@ static aa_state_t leftmatch_fb(const struct aa_dfa *dfa, aa_state_t start,
- 		/* default is direct to next state */
- 		while (*str) {
- 			unsigned int adjust;
-+			u8 c = equiv[(u8) *str++];
- 
- 			wb->history[wb->pos] = state;
--			pos = base_idx(base[state]) + equiv[(u8) *str++];
--			if (check[pos] == state)
--				state = next[pos];
--			else
--				state = def[state];
-+			match_char(state, def, base, next, check, c);
- 			if (is_loop(wb, state, &adjust)) {
- 				state = aa_dfa_match(dfa, state, str);
- 				*count -= adjust;
-@@ -787,13 +776,10 @@ static aa_state_t leftmatch_fb(const struct aa_dfa *dfa, aa_state_t start,
- 		/* default is direct to next state */
- 		while (*str) {
- 			unsigned int adjust;
-+			u8 c = (u8) *str++;
- 
- 			wb->history[wb->pos] = state;
--			pos = base_idx(base[state]) + (u8) *str++;
--			if (check[pos] == state)
--				state = next[pos];
--			else
--				state = def[state];
-+			match_char(state, def, base, next, check, c);
- 			if (is_loop(wb, state, &adjust)) {
- 				state = aa_dfa_match(dfa, state, str);
- 				*count -= adjust;
 diff --git a/sound/soc/intel/boards/sof_sdw.c b/sound/soc/intel/boards/sof_sdw.c
 index 72fe013ff..60b4d868a 100644
 --- a/sound/soc/intel/boards/sof_sdw.c

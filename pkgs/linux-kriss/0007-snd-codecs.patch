@@ -1,4 +1,4 @@
-Origin: https://github.com/CachyOS/linux tag cachyos-7.3.4-1, commit 297ffc72657f6b50ee02cc4f7525176201a10004 (Merge branch '7.3/snd-codecs' into 7.3/base-dev)
+Origin: https://github.com/CachyOS/linux tag cachyos-7.3.6-3, commit 0fd65274e078c1c97a7714d00468ac4eb4ca9a64 (Merge branch '7.3/snd-codecs' into 7.3/base-dev)
 Squashed diff of the upstream commits below; their headers are unmodified.
 
 commit 9d043d31363d442afa9f3401e81dafdfb9700e67
@@ -53,7 +53,7 @@ Date:   Sun Mar 29 23:43:25 2026 +0800
 
 ---
 diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index 163a3cccf..80e2c7e08 100644
+index e8189849e..c301d4b00 100644
 --- a/drivers/acpi/scan.c
 +++ b/drivers/acpi/scan.c
 @@ -1760,6 +1760,7 @@ static bool acpi_device_enumeration_by_parent(struct acpi_device *device)
@@ -95,10 +95,10 @@ index 3e89fcdd4..6a716cf55 100644
  	/* Non-conforming _HID for Cirrus Logic already released */
  	{ "CLSA0100", (unsigned long)&cs35l41_hda },
 diff --git a/sound/hda/codecs/realtek/alc269.c b/sound/hda/codecs/realtek/alc269.c
-index 68650004c..25bd9da9c 100644
+index 350003d40..1405179b0 100644
 --- a/sound/hda/codecs/realtek/alc269.c
 +++ b/sound/hda/codecs/realtek/alc269.c
-@@ -3421,6 +3421,11 @@ static void cs35l41_fixup_spi_four(struct hda_codec *codec, const struct hda_fix
+@@ -3429,6 +3429,11 @@ static void cs35l41_fixup_spi_four(struct hda_codec *codec, const struct hda_fix
  	comp_generic_fixup(codec, action, "spi", "CSC3551", "-%s:00-cs35l41-hda.%d", 4);
  }
  
@@ -110,7 +110,7 @@ index 68650004c..25bd9da9c 100644
  static void alc287_fixup_legion_16achg6_speakers(struct hda_codec *cdc, const struct hda_fixup *fix,
  						 int action)
  {
-@@ -4243,6 +4248,7 @@ enum {
+@@ -4295,6 +4300,7 @@ enum {
  	ALC298_FIXUP_SAMSUNG_AMP,
  	ALC298_FIXUP_SAMSUNG_AMP_V2_2_AMPS,
  	ALC298_FIXUP_SAMSUNG_AMP_V2_4_AMPS,
@@ -118,7 +118,7 @@ index 68650004c..25bd9da9c 100644
  	ALC298_FIXUP_LG_GRAM_STYLE_14,
  	ALC298_FIXUP_RAZER_BLADE16_2025_PINS,
  	ALC298_FIXUP_RAZER_BLADE16_2025,
-@@ -6123,6 +6129,10 @@ static const struct hda_fixup alc269_fixups[] = {
+@@ -6190,6 +6196,10 @@ static const struct hda_fixup alc269_fixups[] = {
  		.type = HDA_FIXUP_FUNC,
  		.v.func = alc298_fixup_lg_gram_style_14
  	},
@@ -129,7 +129,7 @@ index 68650004c..25bd9da9c 100644
  	[ALC298_FIXUP_SAMSUNG_HEADPHONE_VERY_QUIET] = {
  		.type = HDA_FIXUP_VERBS,
  		.v.verbs = (const struct hda_verb[]) {
-@@ -8061,6 +8071,11 @@ static const struct hda_quirk alc269_fixup_tbl[] = {
+@@ -8157,6 +8167,11 @@ static const struct hda_quirk alc269_fixup_tbl[] = {
  	SND_PCI_QUIRK(0x144d, 0xc876, "Samsung 730QED (NP730QED-KA2US)", ALC256_FIXUP_SAMSUNG_HEADPHONE_VERY_QUIET),
  	SND_PCI_QUIRK(0x144d, 0xca03, "Samsung Galaxy Book2 Pro 360 (NP930QED)", ALC298_FIXUP_SAMSUNG_AMP),
  	SND_PCI_QUIRK(0x144d, 0xca06, "Samsung Galaxy Book3 360 (NP730QFG)", ALC298_FIXUP_SAMSUNG_HEADPHONE_VERY_QUIET),
@@ -141,7 +141,7 @@ index 68650004c..25bd9da9c 100644
  	SND_PCI_QUIRK(0x144d, 0xc868, "Samsung Galaxy Book2 Pro (NP930XED)", ALC298_FIXUP_SAMSUNG_AMP),
  	SND_PCI_QUIRK(0x144d, 0xc870, "Samsung Galaxy Book2 Pro (NP950XED)", ALC298_FIXUP_SAMSUNG_AMP_V2_2_AMPS),
  	SND_PCI_QUIRK(0x144d, 0xc872, "Samsung Galaxy Book2 Pro (NP950XEE)", ALC298_FIXUP_SAMSUNG_AMP_V2_2_AMPS),
-@@ -8660,6 +8675,7 @@ static const struct hda_model_fixup alc269_fixup_models[] = {
+@@ -8757,6 +8772,7 @@ static const struct hda_model_fixup alc269_fixup_models[] = {
  	{.id = ALC298_FIXUP_SAMSUNG_AMP, .name = "alc298-samsung-amp"},
  	{.id = ALC298_FIXUP_SAMSUNG_AMP_V2_2_AMPS, .name = "alc298-samsung-amp-v2-2-amps"},
  	{.id = ALC298_FIXUP_SAMSUNG_AMP_V2_4_AMPS, .name = "alc298-samsung-amp-v2-4-amps"},

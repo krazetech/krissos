@@ -1,4 +1,4 @@
-Origin: https://github.com/CachyOS/linux tag cachyos-7.3.4-1, commit 779ca9af71579431ca932a13a7c2ed5934b289ad (Merge branch '7.3/zram' into 7.3/base-dev)
+Origin: https://github.com/CachyOS/linux tag cachyos-7.3.6-3, commit bb1d7cb7a1b786ee7fc504d82964183847e07dca (Merge branch '7.3/zram' into 7.3/base-dev)
 Squashed diff of the upstream commits below; their headers are unmodified.
 
 commit e823a1bcdce33759006835c0d114c281ddce57f2
@@ -1637,7 +1637,7 @@ index 81a0f3f6f..db9fc7aa5 100644
  
  #endif /* _ZCOMP_H_ */
 diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index 4ba0f77b2..d47d1e412 100644
+index 30f11e36d..d47d1e412 100644
 --- a/drivers/block/zram/zram_drv.c
 +++ b/drivers/block/zram/zram_drv.c
 @@ -32,6 +32,7 @@
@@ -1696,136 +1696,7 @@ index 4ba0f77b2..d47d1e412 100644
  	slot_unlock(zram, index);
  
  	return ret;
-@@ -1547,68 +1554,70 @@ static void zram_debugfs_destroy(void)
- 	debugfs_remove_recursive(zram_debugfs_root);
- }
- 
--static ssize_t read_block_state(struct file *file, char __user *buf,
--				size_t count, loff_t *ppos)
-+static void *zram_block_state_start(struct seq_file *seq, loff_t *pos)
- {
--	char *kbuf;
--	unsigned long index;
--	ssize_t written = 0;
--	struct zram *zram = file->private_data;
-+	struct zram *zram = seq->private;
- 	unsigned long nr_pages;
- 
--	kbuf = kvmalloc(count, GFP_KERNEL);
--	if (!kbuf)
--		return -ENOMEM;
--
--	guard(rwsem_read)(&zram->dev_lock);
--	if (!init_done(zram)) {
--		kvfree(kbuf);
--		return -EINVAL;
--	}
-+	down_read(&zram->dev_lock);
-+	if (!init_done(zram))
-+		return ERR_PTR(-EINVAL);
- 
- 	nr_pages = zram->disksize >> PAGE_SHIFT;
-+	if (*pos >= nr_pages)
-+		return NULL;
- 
--	for (index = *ppos; index < nr_pages; index++) {
--		int copied;
-+	return pos;
-+}
- 
--		slot_lock(zram, index);
--		if (!slot_allocated(zram, index))
--			goto next;
-+static void *zram_block_state_next(struct seq_file *seq, void *v, loff_t *pos)
-+{
-+	struct zram *zram = seq->private;
-+	unsigned long nr_pages = zram->disksize >> PAGE_SHIFT;
- 
--		copied = snprintf(kbuf + written, count,
--			"%12lu %12u.%06d %c%c%c%c%c%c\n",
--			index, zram->table[index].attr.ac_time, 0,
--			test_slot_flag(zram, index, ZRAM_SAME) ? 's' : '.',
--			test_slot_flag(zram, index, ZRAM_WB) ? 'w' : '.',
--			test_slot_flag(zram, index, ZRAM_HUGE) ? 'h' : '.',
--			test_slot_flag(zram, index, ZRAM_IDLE) ? 'i' : '.',
--			get_slot_comp_priority(zram, index) ? 'r' : '.',
--			test_slot_flag(zram, index,
--				       ZRAM_INCOMPRESSIBLE) ? 'n' : '.');
--
--		if (count <= copied) {
--			slot_unlock(zram, index);
--			break;
--		}
--		written += copied;
--		count -= copied;
--next:
--		slot_unlock(zram, index);
--		*ppos += 1;
--	}
-+	++*pos;
-+	if (*pos >= nr_pages)
-+		return NULL;
-+
-+	return pos;
-+}
- 
--	if (copy_to_user(buf, kbuf, written))
--		written = -EFAULT;
--	kvfree(kbuf);
-+static void zram_block_state_stop(struct seq_file *seq, void *v)
-+{
-+	struct zram *zram = seq->private;
-+
-+	up_read(&zram->dev_lock);
-+}
-+
-+static int zram_block_state_show(struct seq_file *seq, void *v)
-+{
-+	struct zram *zram = seq->private;
-+	unsigned long index = *(loff_t *)v;
-+
-+	slot_lock(zram, index);
-+	if (slot_allocated(zram, index)) {
-+		seq_printf(seq, "%12lu %12u.%06d %c%c%c%c%c%c\n",
-+			   index, zram->table[index].attr.ac_time, 0,
-+			   test_slot_flag(zram, index, ZRAM_SAME) ? 's' : '.',
-+			   test_slot_flag(zram, index, ZRAM_WB) ? 'w' : '.',
-+			   test_slot_flag(zram, index, ZRAM_HUGE) ? 'h' : '.',
-+			   test_slot_flag(zram, index, ZRAM_IDLE) ? 'i' : '.',
-+			   get_slot_comp_priority(zram, index) ? 'r' : '.',
-+			   test_slot_flag(zram, index,
-+					  ZRAM_INCOMPRESSIBLE) ? 'n' : '.');
-+	}
-+	slot_unlock(zram, index);
- 
--	return written;
-+	return 0;
- }
- 
--static const struct file_operations proc_zram_block_state_op = {
--	.open = simple_open,
--	.read = read_block_state,
--	.llseek = default_llseek,
-+static const struct seq_operations zram_block_state_sops = {
-+	.start = zram_block_state_start,
-+	.next = zram_block_state_next,
-+	.stop = zram_block_state_stop,
-+	.show = zram_block_state_show,
- };
-+DEFINE_SEQ_ATTRIBUTE(zram_block_state);
- 
- static void zram_debugfs_register(struct zram *zram)
- {
-@@ -1618,7 +1627,7 @@ static void zram_debugfs_register(struct zram *zram)
- 	zram->debugfs_dir = debugfs_create_dir(zram->disk->disk_name,
- 						zram_debugfs_root);
- 	debugfs_create_file("block_state", 0400, zram->debugfs_dir,
--				zram, &proc_zram_block_state_op);
-+				zram, &zram_block_state_fops);
- }
- 
- static void zram_debugfs_unregister(struct zram *zram)
-@@ -1722,11 +1731,6 @@ static int comp_params_store(struct zram *zram, u32 prio, s32 level,
+@@ -1724,11 +1731,6 @@ static int comp_params_store(struct zram *zram, u32 prio, s32 level,
  			       dict_path, sz);
  			return sz;
  		}
@@ -1837,7 +1708,7 @@ index 4ba0f77b2..d47d1e412 100644
  	}
  
  	zram->params[prio].dict_sz = sz;
-@@ -2091,15 +2095,19 @@ static int read_same_filled_page(struct zram *zram, struct page *page,
+@@ -2093,15 +2095,19 @@ static int read_same_filled_page(struct zram *zram, struct page *page,
  static int read_incompressible_page(struct zram *zram, struct page *page,
  				    unsigned long index)
  {
@@ -1859,7 +1730,7 @@ index 4ba0f77b2..d47d1e412 100644
  
  	return 0;
  }
-@@ -2107,24 +2115,28 @@ static int read_incompressible_page(struct zram *zram, struct page *page,
+@@ -2109,24 +2115,28 @@ static int read_incompressible_page(struct zram *zram, struct page *page,
  static int read_compressed_page(struct zram *zram, struct page *page,
  				unsigned long index)
  {
@@ -1896,7 +1767,7 @@ index 4ba0f77b2..d47d1e412 100644
  
  	return ret;
  }
-@@ -2133,25 +2145,23 @@ static int read_compressed_page(struct zram *zram, struct page *page,
+@@ -2135,25 +2145,23 @@ static int read_compressed_page(struct zram *zram, struct page *page,
  static int read_from_zspool_raw(struct zram *zram, struct page *page,
  				unsigned long index)
  {
@@ -1931,7 +1802,7 @@ index 4ba0f77b2..d47d1e412 100644
  
  	memzero_page(page, size, PAGE_SIZE - size);
  
-@@ -2294,7 +2304,7 @@ static int zram_write_page(struct zram *zram, struct page *page,
+@@ -2296,7 +2304,7 @@ static int zram_write_page(struct zram *zram, struct page *page,
  	unsigned long handle;
  	unsigned int comp_len;
  	void *mem;
@@ -1940,7 +1811,7 @@ index 4ba0f77b2..d47d1e412 100644
  	unsigned long element;
  	bool same_filled;
  
-@@ -2304,20 +2314,20 @@ static int zram_write_page(struct zram *zram, struct page *page,
+@@ -2306,20 +2314,20 @@ static int zram_write_page(struct zram *zram, struct page *page,
  	if (same_filled)
  		return write_same_filled_page(zram, element, index);
  
@@ -1964,7 +1835,7 @@ index 4ba0f77b2..d47d1e412 100644
  		return write_incompressible_page(zram, page, index);
  	}
  
-@@ -2325,18 +2335,18 @@ static int zram_write_page(struct zram *zram, struct page *page,
+@@ -2327,18 +2335,18 @@ static int zram_write_page(struct zram *zram, struct page *page,
  			   GFP_NOIO | __GFP_NOWARN |
  			   __GFP_HIGHMEM | __GFP_MOVABLE, page_to_nid(page));
  	if (IS_ERR_VALUE(handle)) {
@@ -1986,7 +1857,7 @@ index 4ba0f77b2..d47d1e412 100644
  
  	slot_lock(zram, index);
  	slot_free(zram, index);
-@@ -2445,7 +2455,7 @@ static int recompress_slot(struct zram *zram, unsigned long index,
+@@ -2447,7 +2455,7 @@ static int recompress_slot(struct zram *zram, unsigned long index,
  			   struct page *page, u64 *num_recomp_pages,
  			   u32 threshold, u32 prio)
  {
@@ -1995,7 +1866,7 @@ index 4ba0f77b2..d47d1e412 100644
  	unsigned long handle_old;
  	unsigned long handle_new;
  	unsigned int comp_len_old;
-@@ -2477,7 +2487,7 @@ static int recompress_slot(struct zram *zram, unsigned long index,
+@@ -2479,7 +2487,7 @@ static int recompress_slot(struct zram *zram, unsigned long index,
  	 */
  	clear_slot_flag(zram, index, ZRAM_IDLE);
  
@@ -2004,7 +1875,7 @@ index 4ba0f77b2..d47d1e412 100644
  	src = kmap_local_page(page);
  	ret = zcomp_compress(zram->comps[prio], zstrm, src, &comp_len_new);
  	kunmap_local(src);
-@@ -2492,7 +2502,7 @@ static int recompress_slot(struct zram *zram, unsigned long index,
+@@ -2494,7 +2502,7 @@ static int recompress_slot(struct zram *zram, unsigned long index,
  		*num_recomp_pages -= 1;
  
  	if (ret) {
@@ -2013,7 +1884,7 @@ index 4ba0f77b2..d47d1e412 100644
  		return ret;
  	}
  
-@@ -2501,7 +2511,7 @@ static int recompress_slot(struct zram *zram, unsigned long index,
+@@ -2503,7 +2511,7 @@ static int recompress_slot(struct zram *zram, unsigned long index,
  
  	if (class_index_new >= class_index_old ||
  	    (threshold && comp_len_new >= threshold)) {
@@ -2022,7 +1893,7 @@ index 4ba0f77b2..d47d1e412 100644
  
  		/*
  		 * Secondary algorithms failed to re-compress the page
-@@ -2516,7 +2526,7 @@ static int recompress_slot(struct zram *zram, unsigned long index,
+@@ -2518,7 +2526,7 @@ static int recompress_slot(struct zram *zram, unsigned long index,
  	}
  
  	/*
@@ -2031,7 +1902,7 @@ index 4ba0f77b2..d47d1e412 100644
  	 * avoid direct reclaim.  Allocation error is not fatal since
  	 * we still have the old object in the mem_pool.
  	 *
-@@ -2530,12 +2540,12 @@ static int recompress_slot(struct zram *zram, unsigned long index,
+@@ -2532,12 +2540,12 @@ static int recompress_slot(struct zram *zram, unsigned long index,
  			       __GFP_HIGHMEM | __GFP_MOVABLE,
  			       page_to_nid(page));
  	if (IS_ERR_VALUE(handle_new)) {
@@ -2046,7 +1917,7 @@ index 4ba0f77b2..d47d1e412 100644
  
  	slot_free(zram, index);
  	set_slot_handle(zram, index, handle_new);
-@@ -2876,6 +2886,12 @@ static void zram_reset_device(struct zram *zram)
+@@ -2878,6 +2886,12 @@ static void zram_reset_device(struct zram *zram)
  	zram_destroy_comps(zram);
  	memset(&zram->stats, 0, sizeof(zram->stats));
  	reset_bdev(zram);
@@ -2059,7 +1930,7 @@ index 4ba0f77b2..d47d1e412 100644
  }
  
  static ssize_t disksize_store(struct device *dev, struct device_attribute *attr,
-@@ -2912,7 +2928,8 @@ static ssize_t disksize_store(struct device *dev, struct device_attribute *attr,
+@@ -2914,7 +2928,8 @@ static ssize_t disksize_store(struct device *dev, struct device_attribute *attr,
  			continue;
  
  		comp = zcomp_create(zram->comp_algs[prio],
@@ -2069,7 +1940,7 @@ index 4ba0f77b2..d47d1e412 100644
  		if (IS_ERR(comp)) {
  			pr_err("Cannot initialise %s compressing backend\n",
  			       zram->comp_algs[prio]);
-@@ -3292,6 +3309,7 @@ static int __init zram_init(void)
+@@ -3294,6 +3309,7 @@ static int __init zram_init(void)
  	if (zram_major <= 0) {
  		pr_err("Unable to get major number\n");
  		class_unregister(&zram_control_class);
