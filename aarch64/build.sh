@@ -93,7 +93,7 @@ gpgconf --homedir "$root/etc/pacman.d/gnupg" --kill all 2>/dev/null || true
 cp -a "$here/rootfs/." "$root/"
 add_repos "$root/etc/pacman.conf"
 chr() { arch-chroot "$root" "$@"; }
-sed -i 's/^#en_US.UTF-8/en_US.UTF-8/' "$root/etc/locale.gen"
+sed -i -e 's/^#en_US.UTF-8/en_US.UTF-8/' -e 's/^#ms_MY.UTF-8/ms_MY.UTF-8/' "$root/etc/locale.gen"
 chr locale-gen
 ln -sf /usr/share/zoneinfo/UTC "$root/etc/localtime"
 # No autodetect: the image is built in a container, not on the machine it boots.

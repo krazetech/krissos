@@ -27,8 +27,11 @@ INDEX = pathlib.Path(os.environ.get("XDG_CACHE_HOME") or pathlib.Path.home() / "
 
 
 def lang():
-    v = os.environ.get("LC_ALL") or os.environ.get("LC_MESSAGES") or os.environ.get("LANG") or ""
-    return "ms" if v.startswith("ms") else "en"
+    for k in ("LANGUAGE", "LC_ALL", "LC_MESSAGES", "LANG"):
+        v = (os.environ.get(k) or "").split(":")[0]
+        if v and v not in ("C", "POSIX"):
+            return "ms" if v.startswith("ms") else "en"
+    return "en"
 
 
 def out(argv):
@@ -75,8 +78,14 @@ class Backend(QObject):
     def reload(self):
         def work():
             apps = logic.load_catalogue(ROOT, lang())
-            self._apps, self._by_id = apps, {a["id"]: a for a in apps}
+            by_id = {a["id"]: a for a in apps}
+            self._apps, self._by_id = apps, by_id
             self._ready = True
+            if self._updates:
+                for u in self._updates:
+                    if "id" in u and u["id"] in by_id:
+                        u["name"] = by_id[u["id"]]["name"]
+                self.updatesChanged.emit()
             try:
                 logic.write_index(apps, INDEX)
             except OSError:
@@ -87,6 +96,9 @@ class Backend(QObject):
     @Slot()
     def refresh(self):
         """What is installed, then what has updates (that needs the network, so it is second)."""
+        if self._checking:
+            return
+
         def work():
             ids = logic.parse_flatpak_ids(out(["flatpak", "list", "--app", "--columns=application"]))
             packs = [p["id"] for p in logic.PACKS if p["kind"] == "pacman"]
@@ -96,7 +108,7 @@ class Backend(QObject):
                 self._installed.append("microsoft-office")
             self.stateChanged.emit()
             ups = [{"name": n, "version": v} for n, v in logic.parse_checkupdates(out(["checkupdates"]))]
-            ups += [{"name": self._by_id.get(i, {}).get("name", i), "version": ""}
+            ups += [{"id": i, "name": self._by_id.get(i, {}).get("name", i), "version": ""}
                     for i in logic.parse_flatpak_ids(out(["flatpak", "remote-ls", "--updates", "--app", "--columns=application"]))]
             self._updates, self._checking = ups, False
             self.updatesChanged.emit()

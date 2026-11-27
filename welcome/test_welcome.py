@@ -148,9 +148,9 @@ assert logic.ollama_packages(["intel", "nvidia"]) == ["ollama", "ollama-cuda"]
 assert logic.ollama_packages(["amd"]) == ["ollama", "ollama-rocm"]
 assert logic.ollama_packages([]) == ["ollama"]
 assert logic.extra_command("gaming", []) == [
-    "pkexec", "sh", "-c", 'pacman -S --needed --noconfirm "$@"', "sh", "kriss-meta-gaming"]
+    "pkexec", "kriss", "install", "--yes", "--repo", "kriss-meta-gaming"]
 cmd = logic.extra_command("ollama", ["nvidia"])
-assert cmd[3].endswith("systemctl enable --now ollama.service") and cmd[-2:] == ["ollama", "ollama-cuda"], cmd
+assert cmd[:4] == ["pkexec", "sh", "-c", 'kriss install --yes --repo "$@" && systemctl enable --now ollama.service'] and cmd[-2:] == ["ollama", "ollama-cuda"], cmd
 assert logic.extra_command("claude-code", [])[0] == "sh"  # per-user install, no root
 assert logic.extra_command("nvidia-legacy", ["intel", "nvidia"]) == ["pkexec", "kriss", "nvidia", "setup"]
 assert all(logic.extra_command(e, ["amd"]) for e in logic.EXTRAS)

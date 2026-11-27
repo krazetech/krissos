@@ -18,6 +18,7 @@ MouseArea {
 
     property point press
     property bool dragging: false
+    property bool suppressClick: false
 
     width: Theme.trayIcon
     height: Theme.trayIcon
@@ -29,7 +30,7 @@ MouseArea {
     Behavior on scale { NumberAnimation { duration: Theme.ms(Theme.fast); easing.type: Theme.ease } }
     acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
     // Window coordinates: mouse.x moves with the Translate below, so it would undo the drag.
-    onPressed: mouse => { press = mapToItem(null, mouse.x, mouse.y); dragging = false; tipUp = false; }
+    onPressed: mouse => { press = mapToItem(null, mouse.x, mouse.y); dragging = false; suppressClick = false; tipUp = false; }
     onPositionChanged: mouse => {
         const p = mapToItem(null, mouse.x, mouse.y);
         if (pressed && pressedButtons & Qt.LeftButton && Math.hypot(p.x - press.x, p.y - press.y) > 10) dragging = true;
@@ -37,17 +38,20 @@ MouseArea {
     }
     onReleased: mouse => {
         if (!dragging) return;
+        dragging = false;
+        suppressClick = true;
         const p = mapToItem(null, mouse.x, mouse.y);
         shift.x = shift.y = 0;
         dropped(p.x, p.y);
     }
+    onCanceled: { dragging = false; suppressClick = false; shift.x = shift.y = 0; }
     onClicked: mouse => {
-        if (dragging) { dragging = false; return; }
+        if (suppressClick) { suppressClick = false; return; }
         if (mouse.button === Qt.MiddleButton) modelData.secondaryActivate();
         else if (mouse.button === Qt.RightButton || modelData.onlyMenu) openMenu(false);
         else { modelData.activate(); used(); }
     }
-    onVisibleChanged: dragging = false
+    onVisibleChanged: { dragging = false; suppressClick = false; }
     onWheel: wheel => modelData.scroll(wheel.angleDelta.y, false)
     // On the bar's focus chain: Enter opens the app, the Menu key or Shift+F10 its menu.
     // (In the overflow flyout the flyout keeps the keyboard and moves kbFocused instead.)

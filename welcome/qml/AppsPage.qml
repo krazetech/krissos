@@ -43,7 +43,7 @@ Page {
     Confirm {
         id: confirm
         title: page.pending ? qsTr("Install %1?").arg(page.pending.name) : ""
-        subtitle: page.pending ? qsTr("KrissOS will install it from Flathub. You may be asked for your password.\n\nRuns: flatpak install flathub %1").arg(page.pending.flatpak) : ""
+        subtitle: page.pending ? qsTr("KrissOS will take a snapshot first and install it from Flathub. You may be asked for your password.\n\nRuns: kriss install --yes --flatpak %1").arg(page.pending.flatpak) : ""
         onAccepted: { page.setInstall(page.pending.flatpak, "installing"); backend.install(page.pending.flatpak) }
     }
 
@@ -141,7 +141,7 @@ Page {
                                     : installState === "installed" ? qsTr("Installed")
                                     : installState === "failed" ? qsTr("Failed, try again") : qsTr("Install")
                                 glyph: !modelData.flatpak ? "globe" : installState === "installed" ? "check" : "update"
-                                enabled: installState !== "installing" && installState !== "installed"
+                                enabled: installState !== "installing" && installState !== "installed" && (backend.online || !modelData.flatpak)
                                 onClicked: {
                                     if (!modelData.flatpak) return Qt.openUrlExternally(modelData.url)
                                     page.pending = modelData
@@ -151,9 +151,13 @@ Page {
                         }
                     }
                     Pill {
+                        readonly property string bottlesState: page.installs["com.usebottles.bottles"] || ""
                         visible: row.ans && row.ans.kind === "wine"
-                        text: qsTr("Install Bottles")
-                        glyph: "update"
+                        text: bottlesState === "installing" ? qsTr("Installing…")
+                            : bottlesState === "installed" ? qsTr("Installed")
+                            : bottlesState === "failed" ? qsTr("Failed, try again") : qsTr("Install Bottles")
+                        glyph: bottlesState === "installed" ? "check" : "update"
+                        enabled: bottlesState !== "installing" && bottlesState !== "installed" && backend.online
                         onClicked: { page.pending = { name: "Bottles", flatpak: "com.usebottles.bottles" }; confirm.open() }
                     }
                     Txt {

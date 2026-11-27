@@ -717,10 +717,10 @@ PanelWindow {
     function startMenu(byKeyboard, from) {
         const tm = taskManager();
         const settings = "com.system76.CosmicSettings";
-        const system = appEntries([[settings + ".Applications", Tr.t("Installed apps")],
-                                   [settings + ".Power", Tr.t("Power options")],
-                                   [settings + ".About", Tr.t("System")],
-                                   [settings + ".Network", Tr.t("Network connections")]])
+        const sysEntries = appEntries([[settings + ".Applications", Tr.t("Installed apps")],
+                                       [settings + ".Power", Tr.t("Power options")],
+                                       [settings + ".About", Tr.t("System")],
+                                       [settings + ".Network", Tr.t("Network connections")]])
             .concat([{ text: Tr.t("Display settings"), run: () => SettingsPages.open("display") }]);
         const tools = appEntries([["com.system76.CosmicTerm", Tr.t("Terminal")]]);
         const apps = (tm ? [{ text: Tr.t("Task Manager"), run: () => tm.execute() }] : [])
@@ -734,7 +734,7 @@ PanelWindow {
             { text: Tr.t("Restart"), glyph: "restart", run: () => Quickshell.execDetached(["systemctl", "reboot"]) }
         ] };
         const out = [];
-        for (const group of [system, tools, apps]) if (group.length) out.push(...group, { sep: true });
+        for (const group of [sysEntries, tools, apps]) if (group.length) out.push(...group, { sep: true });
         out.push(power, { text: Tr.t("Desktop"), run: () => Windows.showDesktop() });
         menu.show(from ?? (mac && top.visible ? system : start), out, byKeyboard);
     }
@@ -765,6 +765,7 @@ PanelWindow {
         // Drag a pinned app sideways to reorder the pins.
         property real pressX: 0
         property bool dragging: false
+        property bool suppressClick: false
         readonly property real step: width + appRow.spacing
 
         width: modelData.win ? bar.labelWidth : bar.button
@@ -800,7 +801,7 @@ PanelWindow {
             else if (bar.previewFor === btn) bar.previewFor = null;
         }
         // Window coordinates: mouse.x moves with the Translate below, so it would undo the drag.
-        onPressed: mouse => { pressX = mapToItem(null, mouse.x, 0).x; dragging = false; }
+        onPressed: mouse => { pressX = mapToItem(null, mouse.x, 0).x; dragging = false; suppressClick = false; }
         onPositionChanged: mouse => {
             const dx = mapToItem(null, mouse.x, 0).x - pressX;
             if (pressed && pinned && pressedButtons & Qt.LeftButton && Math.abs(dx) > 10) dragging = true;
@@ -808,15 +809,21 @@ PanelWindow {
         }
         onReleased: {
             if (!dragging) return;
-            const to = Math.max(0, Math.min(bar.apps.length - 1, index + Math.round(shift.x / step)));
-            const target = bar.apps[to];
-            Desktop.movePin(pinId, target.entry?.id ?? target.appId);
+            dragging = false;
+            suppressClick = true;
+            const pinnedApps = bar.apps.filter(a => Desktop.isPinned(a.entry?.id ?? a.appId));
+            if (pinnedApps.length > 0) {
+                const to = Math.max(0, Math.min(pinnedApps.length - 1, index + Math.round(shift.x / step)));
+                const target = pinnedApps[to];
+                Desktop.movePin(pinId, target.entry?.id ?? target.appId);
+            }
             shift.x = 0;
         }
+        onCanceled: { dragging = false; suppressClick = false; shift.x = 0; }
         // As on Windows: right-click opens the jump list, Shift+click and middle click open a
         // new window, Ctrl+click steps through the app's windows.
         onClicked: mouse => {
-            if (dragging) { dragging = false; return; }
+            if (suppressClick) { suppressClick = false; return; }
             if (mouse.button === Qt.RightButton) bar.jumpList(index, false);
             else if (mouse.button === Qt.MiddleButton || mouse.modifiers & Qt.ShiftModifier) bar.newWindow(index);
             else bar.activate(index, mouse.modifiers & Qt.ControlModifier);

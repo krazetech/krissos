@@ -144,7 +144,7 @@ Scope {
         command: ["systemd-inhibit", "--what=sleep", "--mode=delay", "--who=KrissOS Shell",
                   "--why=Lock the screen first", "cat"]
         stdinEnabled: true
-        running: !root.engaged && !drawn.running
+        running: !root.engaged || drawn.running
     }
     onEngagedChanged: if (engaged) drawn.restart()
 

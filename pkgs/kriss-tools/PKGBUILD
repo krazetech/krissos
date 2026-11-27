@@ -1,6 +1,6 @@
 # Maintainer: Kraze Tech
 pkgname=kriss-tools
-pkgver=0.10.1
+pkgver=0.10.2
 pkgrel=1
 pkgdesc='KrissOS system tools'
 arch=('any')
@@ -20,6 +20,10 @@ optdepends=('power-profiles-daemon: show and set the power profile (kriss tune)'
             'psmisc: kriss-vm bind checks nothing is using the GPU'
             'pciutils: the GPU and driver in kriss report'
             'xdg-utils: kriss report opens the issue in the browser')
+
+check() {
+  grep -qx "readonly KRISS_VERSION=\"$pkgver\"" "$startdir/../../tools/kriss"
+}
 
 # Sources live in this monorepo, so package straight from tools/.
 package() {

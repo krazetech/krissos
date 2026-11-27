@@ -60,13 +60,27 @@ Kirigami.ApplicationWindow {
         pageStack.push(page("AppPage.qml", { app: a }))
     }
 
-    Component.onCompleted: show("home")
+    property bool openedStart: false
 
-    // Opened from Start for one app: show it once the catalogue is in.
+    Component.onCompleted: {
+        show("home")
+        if (startApp !== "" && backend.app(startApp).id) {
+            openApp(startApp)
+            openedStart = true
+        }
+    }
+
+    // Opened from Start for one app: show it once the catalogue has that app (including after
+    // the first Flathub AppStream download finishes).
     Connections {
         target: backend
-        enabled: startApp !== ""
-        function onCatalogueChanged() { root.openApp(startApp); enabled = false }
+        enabled: startApp !== "" && !root.openedStart
+        function onCatalogueChanged() {
+            if (backend.app(startApp).id) {
+                root.openApp(startApp)
+                root.openedStart = true
+            }
+        }
     }
 
     // What happened to the last change, below the page, like a Windows toast.

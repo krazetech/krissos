@@ -26,9 +26,8 @@ Singleton {
 
     // `%1`, `%2`... in the text are replaced by the extra arguments, like qsTr().arg().
     function t(text, ...args) {
-        let s = strings[text] ?? text;
-        args.forEach((a, i) => s = s.replace("%" + (i + 1), a));
-        return s;
+        const s = strings[text] ?? text;
+        return args.length ? s.replace(/%([1-9]\d*)/g, (m, n) => +n <= args.length ? String(args[+n - 1]) : m) : s;
     }
 
     // "Just now", "5 min ago", "Yesterday at 21:40" or "3 Nov". Pass `now` to have a binding

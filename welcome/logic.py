@@ -224,10 +224,11 @@ def extra_command(extra_id, gpus):
         return ["sh", "-c", e["user"]]
     if "root" in e:
         return ["pkexec", *e["root"]]
-    script = 'pacman -S --needed --noconfirm "$@"'
+    pkgs = extra_packages(extra_id, gpus)
     if "enable" in e:
-        script += " && systemctl enable --now " + e["enable"]
-    return ["pkexec", "sh", "-c", script, "sh", *extra_packages(extra_id, gpus)]
+        script = 'kriss install --yes --repo "$@" && systemctl enable --now ' + e["enable"]
+        return ["pkexec", "sh", "-c", script, "sh", *pkgs]
+    return ["pkexec", "kriss", "install", "--yes", "--repo", *pkgs]
 
 
 def extra_installed(extra_id, gpus):

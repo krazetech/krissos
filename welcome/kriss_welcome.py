@@ -179,7 +179,7 @@ class Backend(QObject):
 
     @Slot(str)
     def install(self, flatpak_id):
-        self._run(flatpak_id, ["flatpak", "install", "--noninteractive", "flathub", flatpak_id])
+        self._run(flatpak_id, ["pkexec", "kriss", "install", "--yes", "--flatpak", flatpak_id])
 
     # Drivers and extras
     @Slot(str, result=str)
@@ -238,10 +238,17 @@ class Backend(QObject):
             return self.windowsMounted.emit(mountpoint, "")
 
         def done(ok, out):
-            # udisksctl says "Mounted /dev/sda3 at /run/media/me/OS"
-            where = out.rsplit(" at ", 1)[-1].rstrip(".") if ok else ""
+            where = ""
+            if ok:
+                try:
+                    where = subprocess.run(["lsblk", "-no", "MOUNTPOINT", device],
+                                           capture_output=True, text=True, timeout=5).stdout.strip()
+                except (OSError, subprocess.SubprocessError):
+                    where = ""
+                if not where and " at " in out:
+                    where = out.rsplit(" at ", 1)[-1].rstrip(".")
             try:
-                read_only = bool(os.statvfs(where).f_flag & os.ST_RDONLY)
+                read_only = bool(where and os.statvfs(where).f_flag & os.ST_RDONLY)
             except OSError:
                 read_only = False
             if where and not read_only:
@@ -253,6 +260,10 @@ class Backend(QObject):
             self.windowsMounted.emit(where, "" if where else out)
 
         self._run("mount", ["udisksctl", "mount", "-b", device, "-o", "ro"], done)
+
+    @Slot()
+    def unmountWindows(self):
+        self._unmount()
 
     @Slot(str, result="QStringList")
     def windowsUsers(self, root):
@@ -314,6 +325,7 @@ def main():
     app.setWindowIcon(QIcon(LOGO))
     engine = QQmlApplicationEngine()
     backend = Backend(app, engine)
+    app.aboutToQuit.connect(backend._unmount)
     backend.setLanguage("ms" if QLocale.system().name().startswith("ms") else "en")
     engine.rootContext().setContextProperty("backend", backend)
     engine.rootContext().setContextProperty("logo", "file://" + LOGO)

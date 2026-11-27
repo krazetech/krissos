@@ -52,11 +52,22 @@ Singleton {
     // Window id -> the latest preview picture's URL. Kept after a preview hides, so a
     // window minimized since still shows its last picture.
     property var thumbs: ({})
+    property var captureOwners: ({})
 
-    // Capture these windows' previews at about size pixels on the long edge, and only these;
-    // an empty list stops capturing.
-    function capture(ids, size) {
-        helper.write("thumbs " + Math.round(size) + " " + ids.join(" ") + "\n");
+    // Capture the union of windows requested by active surfaces (previews per screen, Task View,
+    // Snap Assist) at the largest requested size; stops capturing once all surfaces clear theirs.
+    function capture(ids, size, owner = "default") {
+        const next = Object.assign({}, captureOwners);
+        if (ids && ids.length > 0 && size > 0) next[owner] = { ids: ids, size: size };
+        else delete next[owner];
+        captureOwners = next;
+        const seen = {}, merged = [];
+        let maxPx = 0;
+        for (const k in next) {
+            if (next[k].size > maxPx) maxPx = next[k].size;
+            for (const id of next[k].ids) if (!seen[id]) { seen[id] = true; merged.push(id); }
+        }
+        helper.write("thumbs " + Math.round(maxPx) + " " + merged.join(" ") + "\n");
     }
 
     // Whether a fullscreen window is in front on this screen: the one there used last is

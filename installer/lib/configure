@@ -15,6 +15,15 @@ if chr pacman -Q plasma-desktop >/dev/null 2>&1; then desktop=plasma; fi
 
 # Steam and the lib32 packages (kriss-meta-gaming) need [multilib]; ARCHITECTURE §gaming.
 sed -i "/^#\[multilib\]/,/^#Include/ s/^#//" "$root/etc/pacman.conf"
+if ! grep -q '^\[multilib\]$' "$root/etc/pacman.conf"; then
+  sed -i '/^\[kriss\]/i [multilib]\nInclude = /etc/pacman.d/mirrorlist\n' "$root/etc/pacman.conf"
+fi
+
+# Settings > Language switches between English and Bahasa Melayu without root, so generate both.
+if [ -f "$root/etc/locale.gen" ] && ! grep -q '^ms_MY\.UTF-8' "$root/etc/locale.gen"; then
+  sed -i -e 's/^# *en_US\.UTF-8/en_US.UTF-8/' -e 's/^# *ms_MY\.UTF-8/ms_MY.UTF-8/' "$root/etc/locale.gen"
+  chr locale-gen
+fi
 
 # --- disk encryption -------------------------------------------------------------
 # With "Encrypt system" ticked, / is a LUKS2 mapping Calamares named luks-<uuid> (the

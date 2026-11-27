@@ -141,18 +141,31 @@ Page {
                 checked: true
             }
             Item { width: 1; height: 1 }
-            Pill {
-                text: qsTr("Copy to KrissOS")
-                glyph: "update"
-                highlighted: true
-                enabled: page.users.length > 0
-                onClicked: {
-                    const picked = []
-                    for (let i = 0; i < folders.count; i++)
-                        if (folders.itemAt(i).checked) picked.push(folders.itemAt(i).modelData)
-                    page.stage = "copying"
-                    // %1 is the browser name; the file goes in Documents.
-                    backend.copyFromWindows(page.root, user.currentText, picked, bookmarks.checked, qsTr("%1 bookmarks.html"))
+            RowLayout {
+                spacing: 10
+                Pill {
+                    text: qsTr("Copy to KrissOS")
+                    glyph: "update"
+                    highlighted: true
+                    enabled: page.users.length > 0
+                    onClicked: {
+                        const picked = []
+                        for (let i = 0; i < folders.count; i++)
+                            if (folders.itemAt(i).checked) picked.push(folders.itemAt(i).modelData)
+                        page.stage = "copying"
+                        // %1 is the browser name; the file goes in Documents.
+                        backend.copyFromWindows(page.root, user.currentText, picked, bookmarks.checked, qsTr("%1 bookmarks.html"))
+                    }
+                }
+                Pill {
+                    text: qsTr("Back")
+                    onClicked: {
+                        backend.unmountWindows()
+                        page.root = ""
+                        page.error = ""
+                        page.partitions = backend.windowsPartitions()
+                        page.stage = "pick"
+                    }
                 }
             }
         }
@@ -198,6 +211,18 @@ Page {
             : page.result.failed < 0 ? qsTr("Copying stopped because of an error. Files copied so far are kept.")
             : qsTr("Copied %1 files.").arg(page.result.copied)
               + (page.result.failed > 0 ? " " + qsTr("%1 files could not be read and were skipped (OneDrive files that are only online cannot be copied).").arg(page.result.failed) : "")
+    }
+    Pill {
+        visible: page.stage === "done" && !!page.result && page.result.failed < 0
+        text: qsTr("Try again")
+        glyph: "drive"
+        onClicked: {
+            page.result = null
+            page.root = ""
+            page.error = ""
+            page.partitions = backend.windowsPartitions()
+            page.stage = "pick"
+        }
     }
     Txt {
         Layout.fillWidth: true

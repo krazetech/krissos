@@ -69,6 +69,8 @@ echo kriss:kriss | arch-chroot "$t" chpasswd
 # No network here, so this must say offline and change nothing.
 /usr/lib/kriss-installer/online "$t" shell
 /usr/lib/kriss-installer/configure "$t"
+grep -q '^\[multilib\]$' "$t/etc/pacman.conf"
+arch-chroot "$t" locale -a | grep -qi '^ms_my\.utf'
 # The boot splash: plymouth after early KMS, `splash` on the command line, the KrissOS theme.
 grep -q ' kriss-kms plymouth ' "$t/etc/mkinitcpio.conf.d/kriss.conf"
 grep -qw splash "$t/etc/kernel/cmdline"
